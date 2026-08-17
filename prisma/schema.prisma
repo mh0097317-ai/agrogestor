@@ -1,0 +1,325 @@
+// Agrogestor — schema Prisma
+// Fase 1: multi-tenant + cadastros (Fazenda, Talhão, Cultura, Safra) + auth + alertas/auditoria base.
+// Regras: toda entidade de negócio tem tenantId; soft delete; Decimal para dinheiro/área/quantidade.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== Enums =====================
+
+enum Perfil {
+  ADMIN
+  PROPRIETARIO
+  GERENTE
+  AGRONOMO
+  OPERADOR
+  FINANCEIRO
+  CONSULTA
+}
+
+enum PlanoTenant {
+  TRIAL
+  BASICO
+  PRO
+  ENTERPRISE
+}
+
+enum StatusAssinatura {
+  ATIVA
+  INADIMPLENTE
+  CANCELADA
+  TRIAL
+}
+
+enum StatusTalhao {
+  DISPONIVEL
+  EM_PLANTIO
+  EM_MANEJO
+  EM_PRODUCAO
+  EM_COLHEITA
+  ATENCAO
+  INATIVO
+}
+
+enum StatusSafra {
+  PLANEJADA
+  EM_ANDAMENTO
+  COLHIDA
+  ENCERRADA
+}
+
+enum EtapaSafra {
+  PLANEJAMENTO
+  PLANTIO
+  MANEJO
+  COLHEITA
+  COMERCIALIZACAO
+}
+
+enum StatusEtapa {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+}
+
+enum NivelAlerta {
+  INFO
+  ATENCAO
+  CRITICO
+}
+
+enum TipoAlerta {
+  ESTOQUE
+  MANUTENCAO
+  FINANCEIRO
+  OPERACAO
+  CUSTO
+  PRODUCAO
+  GERAL
+}
+
+// ===================== Núcleo SaaS =====================
+
+model Tenant {
+  id        String      @id @default(cuid())
+  nome      String
+  documento String?
+  plano     PlanoTenant @default(TRIAL)
+  criadoEm  DateTime    @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarios   Usuario[]
+  assinatura Assinatura?
+  produtores Produtor[]
+  fazendas   Fazenda[]
+  talhoes    Talhao[]
+  culturas   Cultura[]
+  safras     Safra[]
+  alertas    Alerta[]
+  auditorias AuditLog[]
+
+  @@map("tenants")
+}
+
+model Assinatura {
+  id        String           @id @default(cuid())
+  tenantId  String           @unique
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plano     PlanoTenant      @default(TRIAL)
+  status    StatusAssinatura @default(TRIAL)
+  inicio    DateTime         @default(now())
+  fim       DateTime?
+
+  @@map("assinaturas")
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome      String
+  email     String
+  senhaHash String
+  perfil    Perfil   @default(PROPRIETARIO)
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  deletadoEm DateTime?
+
+  auditorias AuditLog[]
+
+  // email é único por tenant
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("usuarios")
+}
+
+// ===================== Cadastros rurais =====================
+
+model Produtor {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome      String
+  documento String?
+  contato   String?
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  deletadoEm DateTime?
+
+  fazendas Fazenda[]
+
+  @@index([tenantId])
+  @@map("produtores")
+}
+
+model Fazenda {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  produtorId    String?
+  produtor      Produtor? @relation(fields: [produtorId], references: [id], onDelete: SetNull)
+  nome          String
+  documento     String?
+  municipio     String?
+  estado        String?
+  areaTotal     Decimal? @db.Decimal(12, 2)
+  areaProdutiva Decimal? @db.Decimal(12, 2)
+  latitude      Decimal? @db.Decimal(10, 6)
+  longitude     Decimal? @db.Decimal(10, 6)
+  observacoes   String?
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+  deletadoEm    DateTime?
+
+  talhoes Talhao[]
+  safras  Safra[]
+
+  @@index([tenantId])
+  @@map("fazendas")
+}
+
+model Cultura {
+  id               String  @id @default(cuid())
+  tenantId         String
+  tenant           Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  nome             String
+  unidadeProducao  String  @default("sc") // sc, t, kg...
+  cicloDias        Int?
+  cor              String? // cor de exibição
+  criadoEm         DateTime @default(now())
+  atualizadoEm     DateTime @updatedAt
+  deletadoEm       DateTime?
+
+  talhoes Talhao[]
+  safras  Safra[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("culturas")
+}
+
+model Talhao {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fazendaId      String
+  fazenda        Fazenda      @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  codigo         String       // ex.: T-03
+  nome           String?
+  area           Decimal      @db.Decimal(12, 2) // hectares
+  culturaAtualId String?
+  culturaAtual   Cultura?     @relation(fields: [culturaAtualId], references: [id], onDelete: SetNull)
+  status         StatusTalhao @default(DISPONIVEL)
+  geojson        Json?        // geometria do polígono (fase futura)
+  criadoEm       DateTime     @default(now())
+  atualizadoEm   DateTime     @updatedAt
+  deletadoEm     DateTime?
+
+  safraTalhoes SafraTalhao[]
+
+  @@unique([tenantId, fazendaId, codigo])
+  @@index([tenantId])
+  @@index([fazendaId])
+  @@map("talhoes")
+}
+
+model Safra {
+  id                  String      @id @default(cuid())
+  tenantId            String
+  tenant              Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fazendaId           String?
+  fazenda             Fazenda?    @relation(fields: [fazendaId], references: [id], onDelete: SetNull)
+  culturaId           String?
+  cultura             Cultura?    @relation(fields: [culturaId], references: [id], onDelete: SetNull)
+  nome                String      // ex.: 2026/2027
+  status              StatusSafra @default(PLANEJADA)
+  dataInicio          DateTime?
+  dataFim             DateTime?
+  precoVendaPrevisto  Decimal?    @db.Decimal(12, 2) // R$/unidade
+  produtividadeEstimada Decimal?  @db.Decimal(12, 2) // por ha
+  criadoEm            DateTime    @default(now())
+  atualizadoEm        DateTime    @updatedAt
+  deletadoEm          DateTime?
+
+  talhoes SafraTalhao[]
+  etapas  SafraEtapa[]
+
+  @@index([tenantId])
+  @@map("safras")
+}
+
+// N:N entre Safra e Talhão, com dados por participação
+model SafraTalhao {
+  id                    String  @id @default(cuid())
+  tenantId              String
+  safraId               String
+  safra                 Safra   @relation(fields: [safraId], references: [id], onDelete: Cascade)
+  talhaoId              String
+  talhao                Talhao  @relation(fields: [talhaoId], references: [id], onDelete: Cascade)
+  areaPlantada          Decimal @db.Decimal(12, 2)
+  produtividadeEstimada Decimal? @db.Decimal(12, 2)
+
+  @@unique([safraId, talhaoId])
+  @@index([tenantId])
+  @@map("safra_talhoes")
+}
+
+// Etapas do ciclo (stepper "Situação da Safra")
+model SafraEtapa {
+  id       String      @id @default(cuid())
+  tenantId String
+  safraId  String
+  safra    Safra       @relation(fields: [safraId], references: [id], onDelete: Cascade)
+  etapa    EtapaSafra
+  status   StatusEtapa @default(PENDENTE)
+  ordem    Int
+
+  @@unique([safraId, etapa])
+  @@index([tenantId])
+  @@map("safra_etapas")
+}
+
+// ===================== Transversais =====================
+
+model Alerta {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tipo        TipoAlerta  @default(GERAL)
+  nivel       NivelAlerta @default(INFO)
+  titulo      String
+  descricao   String?
+  entidadeTipo String?
+  entidadeId  String?
+  lido        Boolean     @default(false)
+  criadoEm    DateTime    @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, lido])
+  @@map("alertas")
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuarioId     String?
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  acao          String
+  entidade      String
+  registroId    String?
+  valorAnterior Json?
+  valorNovo     Json?
+  criadoEm      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, entidade])
+  @@map("audit_logs")
+}
