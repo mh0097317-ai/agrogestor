@@ -1,0 +1,271 @@
+// Agendaí — agenda online multi-tenant para barbearias e salões.
+// Cada Negocio é um tenant: todo dado de negócio carrega negocioId.
+// Datas/horas em UTC no banco; o fuso do negócio é usado só para exibir e montar horários.
+// Dinheiro em centavos (Int).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoNegocio {
+  BARBEARIA
+  SALAO_FEMININO
+  SALAO_MASCULINO
+  SALAO_UNISSEX
+  ESTETICA
+  MANICURE
+  OUTRO
+}
+
+enum Papel {
+  DONO
+  EQUIPE
+}
+
+enum StatusAgendamento {
+  PENDENTE
+  CONFIRMADO
+  CONCLUIDO
+  CANCELADO
+  NAO_COMPARECEU
+}
+
+enum OrigemAgendamento {
+  ONLINE
+  PAINEL
+}
+
+enum Destinatario {
+  CLIENTE
+  DONO
+}
+
+enum CanalNotificacao {
+  WHATSAPP
+  EMAIL
+  PAINEL
+}
+
+enum TipoNotificacao {
+  NOVO_AGENDAMENTO
+  CONFIRMACAO
+  LEMBRETE
+  CANCELAMENTO
+  STATUS
+}
+
+enum StatusNotificacao {
+  PENDENTE
+  ENVIADA
+  SIMULADA
+  FALHOU
+}
+
+model Negocio {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  nome        String
+  tipo        TipoNegocio @default(BARBEARIA)
+  descricao   String?
+  whatsapp    String?
+  email       String?
+  endereco    String?
+  cidade      String?
+  instagram   String?
+  corPrimaria String      @default("#E4572E")
+  fusoHorario String      @default("America/Sao_Paulo")
+
+  // Regras de agendamento
+  antecedenciaMinutos   Int     @default(60) // antecedência mínima para agendar
+  janelaDias            Int     @default(30) // até quantos dias à frente
+  intervaloSlotMinutos  Int     @default(15) // granularidade dos horários
+  confirmacaoAutomatica Boolean @default(true)
+  cancelamentoAteHoras  Int     @default(2) // cliente pode cancelar até X horas antes
+  lembreteHorasAntes    Int     @default(24)
+
+  // Notificações
+  notificarDonoWhatsapp   Boolean @default(true)
+  notificarDonoEmail      Boolean @default(true)
+  notificarClienteWhatsapp Boolean @default(true)
+  notificarClienteEmail   Boolean @default(true)
+
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios      Usuario[]
+  horarios      HorarioFuncionamento[]
+  profissionais Profissional[]
+  servicos      Servico[]
+  clientes      Cliente[]
+  agendamentos  Agendamento[]
+  bloqueios     Bloqueio[]
+  notificacoes  Notificacao[]
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  negocioId String
+  nome      String
+  email     String   @unique
+  senhaHash String
+  papel     Papel    @default(DONO)
+  createdAt DateTime @default(now())
+
+  negocio Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+
+  @@index([negocioId])
+}
+
+/// Horário de funcionamento do negócio. Vários intervalos por dia são permitidos (ex.: pausa do almoço).
+model HorarioFuncionamento {
+  id         String @id @default(cuid())
+  negocioId  String
+  diaSemana  Int // 0 = domingo … 6 = sábado
+  inicioMin  Int // minutos desde 00:00
+  fimMin     Int
+
+  negocio Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+
+  @@index([negocioId, diaSemana])
+}
+
+model Profissional {
+  id        String   @id @default(cuid())
+  negocioId String
+  nome      String
+  bio       String?
+  cor       String   @default("#E4572E")
+  ativo     Boolean  @default(true)
+  ordem     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  negocio      Negocio       @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  servicos     Servico[]
+  jornadas     Jornada[]
+  agendamentos Agendamento[]
+  bloqueios    Bloqueio[]
+
+  @@index([negocioId])
+}
+
+/// Jornada semanal de um profissional. Vários intervalos por dia são permitidos.
+model Jornada {
+  id             String @id @default(cuid())
+  profissionalId String
+  diaSemana      Int
+  inicioMin      Int
+  fimMin         Int
+
+  profissional Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([profissionalId, diaSemana])
+}
+
+model Servico {
+  id            String   @id @default(cuid())
+  negocioId     String
+  nome          String
+  descricao     String?
+  duracaoMin    Int
+  precoCentavos Int
+  ativo         Boolean  @default(true)
+  ordem         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  negocio       Negocio        @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  profissionais Profissional[]
+  agendamentos  Agendamento[]
+
+  @@index([negocioId])
+}
+
+/// Folgas, feriados, horários travados. Sem profissionalId = vale para o negócio inteiro.
+model Bloqueio {
+  id             String   @id @default(cuid())
+  negocioId      String
+  profissionalId String?
+  inicio         DateTime
+  fim            DateTime
+  motivo         String?
+  createdAt      DateTime @default(now())
+
+  negocio      Negocio       @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  profissional Profissional? @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@index([negocioId, inicio])
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  negocioId String
+  nome      String
+  telefone  String // só dígitos, com DDI (ex.: 5511999998888)
+  email     String?
+  notas     String?
+  createdAt DateTime @default(now())
+
+  negocio      Negocio       @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  agendamentos Agendamento[]
+
+  @@unique([negocioId, telefone])
+}
+
+model Agendamento {
+  id                 String            @id @default(cuid())
+  negocioId          String
+  clienteId          String
+  profissionalId     String
+  servicoId          String
+  inicio             DateTime
+  fim                DateTime
+  status             StatusAgendamento @default(CONFIRMADO)
+  origem             OrigemAgendamento @default(ONLINE)
+  precoCentavos      Int
+  observacao         String?
+  token              String            @unique @default(cuid()) // link público do cliente
+  lembreteEnviadoEm  DateTime?
+  canceladoEm        DateTime?
+  motivoCancelamento String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  negocio      Negocio       @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  cliente      Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  profissional Profissional  @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  servico      Servico       @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+  notificacoes Notificacao[]
+
+  @@index([negocioId, inicio])
+  @@index([profissionalId, inicio])
+}
+
+/// Registro de toda mensagem enviada (ou simulada) para cliente e dono.
+/// Canal PAINEL = aviso dentro do painel do dono (sino).
+model Notificacao {
+  id            String            @id @default(cuid())
+  negocioId     String
+  agendamentoId String?
+  destinatario  Destinatario
+  canal         CanalNotificacao
+  tipo          TipoNotificacao
+  para          String?
+  titulo        String
+  mensagem      String
+  status        StatusNotificacao @default(PENDENTE)
+  erro          String?
+  lida          Boolean           @default(false)
+  enviadaEm     DateTime?
+  createdAt     DateTime          @default(now())
+
+  negocio     Negocio      @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  agendamento Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+
+  @@index([negocioId, createdAt])
+  @@index([negocioId, canal, lida])
+}

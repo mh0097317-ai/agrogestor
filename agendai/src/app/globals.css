@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Agendaí — tokens
+   Tom quente (papel/creme) + tinta escura + coral da marca.
+   Cada negócio sobrescreve --marca na página pública.
+   ============================================================ */
+@theme {
+  --color-ink: #17151C;
+  --color-ink-2: #2A2730;
+  --color-texto: #2E2A33;
+  --color-suave: #6E6873;
+  --color-apagado: #A29CA6;
+
+  --color-fundo: #F6F4F0;
+  --color-papel: #FFFFFF;
+  --color-papel-2: #FBFAF7;
+  --color-linha: #ECE8E1;
+  --color-linha-forte: #DDD7CD;
+
+  --color-marca-50: #FDF1EC;
+  --color-marca-100: #FBE0D5;
+  --color-marca-200: #F7BFA9;
+  --color-marca-300: #F1977A;
+  --color-marca-400: #EA7450;
+  --color-marca-500: #E4572E;
+  --color-marca-600: #C94420;
+  --color-marca-700: #A5361B;
+  --color-marca-800: #7F2A17;
+
+  --color-ok: #15935B;
+  --color-ok-bg: #E7F6EE;
+  --color-alerta: #C27A0E;
+  --color-alerta-bg: #FDF3DF;
+  --color-erro: #D2352B;
+  --color-erro-bg: #FCE9E7;
+  --color-info: #2F6FDE;
+  --color-info-bg: #EAF1FD;
+
+  --radius-xl: 16px;
+  --radius-2xl: 22px;
+  --radius-3xl: 28px;
+
+  --shadow-cartao: 0 1px 2px rgb(23 21 28 / 0.04), 0 8px 24px -8px rgb(23 21 28 / 0.08);
+  --shadow-flutuante: 0 12px 40px -12px rgb(23 21 28 / 0.25);
+
+  --font-sans: var(--font-corpo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-titulo), var(--font-corpo), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-surgir: surgir 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+
+  @keyframes surgir {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    0% { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+}
+
+:root {
+  color-scheme: light;
+  --marca: var(--color-marca-500);
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--color-fundo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--color-marca-100); }
+
+*:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+
+/* Rolagem horizontal sem barra (carrossel de datas) */
+.sem-barra { scrollbar-width: none; }
+.sem-barra::-webkit-scrollbar { display: none; }
+
+/* Grão sutil nos heros escuros */
+.grao {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+}
+
+/* Listras de poste de barbeiro */
+.listras {
+  background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.06) 0 14px, transparent 14px 28px);
+}
+
+@keyframes subir {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes deslizar {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
