@@ -183,7 +183,14 @@ export async function loadSupabaseStore(
       .map((relation) => relation.service_id);
   return withCustomerMetrics(
     normalizeStoreTimes({
-      business: businesses[0],
+      // Optional text columns come back as null; the app works with "".
+      business: {
+        ...businesses[0],
+        logo: businesses[0].logo ?? "",
+        color: businesses[0].color ?? "",
+        cnpj: businesses[0].cnpj ?? "",
+        photos: businesses[0].photos ?? [],
+      },
       services,
       professionals,
       customers,

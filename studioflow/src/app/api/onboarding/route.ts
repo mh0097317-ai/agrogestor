@@ -101,6 +101,19 @@ export async function POST(request: Request) {
         401,
       );
     const admin = createSupabaseAdmin();
+    // One account owns one business for now; repeating the setup would
+    // silently create a second, disconnected one.
+    const { data: existing } = await admin
+      .from("business_members")
+      .select("business_id")
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .limit(1);
+    if (existing?.length)
+      throw new DomainError(
+        "Sua conta já tem um estabelecimento. Abra o painel para continuar.",
+        409,
+      );
     const { data, error } = await admin.rpc("create_workspace", {
       p_user_id: user.id,
       p_slug: slug,

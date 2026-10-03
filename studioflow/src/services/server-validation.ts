@@ -80,12 +80,17 @@ export const businessSchema = z.object({
   phone: z.string().max(25),
   instagram: z.string().max(100),
   cover: image,
-  logo: image.optional(),
+  logo: image.nullish().transform((value) => value ?? ""),
   color: z
     .union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")])
-    .optional(),
+    .nullish()
+    .transform((value) => value ?? ""),
   amenities: z.array(z.string().max(50)).max(30),
-  cnpj: z.string().max(25).optional(),
+  cnpj: z
+    .string()
+    .max(25)
+    .nullish()
+    .transform((value) => value ?? ""),
   photos: z.array(image).max(12).optional(),
 });
 export const settingsSchema = z
