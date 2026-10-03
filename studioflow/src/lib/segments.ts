@@ -1,10 +1,11 @@
 import { createElement } from "react";
 import {
   Eye,
+  FlowerLotus,
+  HairDryer,
   HandPalm,
-  Heart,
   Scissors,
-  Sparkle,
+  Storefront,
   User,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon, IconWeight } from "@phosphor-icons/react";
@@ -13,10 +14,11 @@ import type { Icon, IconWeight } from "@phosphor-icons/react";
 export function segmentIcon(category = ""): Icon {
   if (/nail|unha|manicure/i.test(category)) return HandPalm;
   if (/lash|cílio|cilio|sobrancelha/i.test(category)) return Eye;
-  if (/estética|estetica/i.test(category)) return Heart;
+  if (/estética|estetica/i.test(category)) return FlowerLotus;
   if (/autônomo|autonomo/i.test(category)) return User;
   if (/barbe|cabele|cabelo/i.test(category)) return Scissors;
-  return Sparkle;
+  if (/salão|salao|beleza/i.test(category)) return HairDryer;
+  return Storefront;
 }
 
 /** Renders the segment icon; avoids creating component types during render. */

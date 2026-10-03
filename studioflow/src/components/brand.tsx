@@ -1,7 +1,7 @@
 import { useId } from "react";
 
 /**
- * StudioFlow mark: a two-tone geometric "S" (two arches) with a spark.
+ * StudioFlow mark: a two-tone geometric "S" (two arches) with an accent dot.
  * Kept in sync with public/icon.svg, which is the source for the PWA icons.
  */
 export function BrandLogo({
@@ -64,11 +64,7 @@ export function BrandLogo({
         d="M352 196 A 96 96 0 0 0 160 196 A 96 96 0 0 0 256 292 L 256 236 A 40 40 0 0 1 216 196 A 40 40 0 0 1 296 196 Z"
         fill={`url(#${id}top)`}
       />
-      <path
-        className="brand-spark"
-        d="M394 100 Q399 130 428 135 Q399 140 394 170 Q389 140 360 135 Q389 130 394 100Z"
-        fill="#fff"
-      />
+      <circle className="brand-spark" cx="388" cy="138" r="20" fill="#8CBBEA" />
     </svg>
   );
 }

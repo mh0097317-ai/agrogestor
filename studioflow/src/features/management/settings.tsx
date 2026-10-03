@@ -4,19 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import {
-  Building2,
-  ImageIcon,
-  CalendarDays,
-  Users,
-  Bell,
-  CreditCard,
-  Check,
-  Copy,
-  ExternalLink,
-  ShieldCheck,
-  Loader2,
   ArrowRight,
-} from "lucide-react";
+  ArrowSquareOut,
+  Bell,
+  CalendarBlank,
+  Check,
+  CircleNotch,
+  Copy,
+  CreditCard,
+  ImageSquare,
+  ShieldCheck,
+  Storefront,
+  Users,
+} from "@phosphor-icons/react/dist/ssr";
 import {
   Avatar,
   Button,
@@ -30,6 +30,9 @@ import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import type { Store } from "@/types";
+import { GalleryUpload, ImageUpload } from "@/components/image-upload";
+import { storedImagePattern } from "@/lib/image";
+import { formatPhone, initials } from "@/lib/utils";
 import {
   ManagementBoundary,
   FormField,
@@ -58,7 +61,7 @@ type IdentityDraft = {
   cover: string;
   logo: string;
   color: string;
-  photos: string;
+  photos: string[];
 };
 type AgendaDraft = {
   openDays: number[];
@@ -76,9 +79,9 @@ type Drafts = {
   notifications: { notifications: boolean } | null;
 };
 const tabs = [
-  { id: "business" as const, label: "Empresa", icon: Building2 },
-  { id: "identity" as const, label: "Identidade", icon: ImageIcon },
-  { id: "agenda" as const, label: "Agenda", icon: CalendarDays },
+  { id: "business" as const, label: "Empresa", icon: Storefront },
+  { id: "identity" as const, label: "Identidade", icon: ImageSquare },
+  { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
   { id: "professionals" as const, label: "Profissionais", icon: Users },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
@@ -104,7 +107,7 @@ function persistedDrafts(store: Store) {
       cnpj: business.cnpj ?? "",
       description: business.description,
       address: business.address,
-      phone: business.phone,
+      phone: formatPhone(business.phone),
       instagram: business.instagram,
       amenities: business.amenities.join(", "),
     },
@@ -112,7 +115,7 @@ function persistedDrafts(store: Store) {
       cover: business.cover,
       logo: business.logo ?? "",
       color: business.color ?? "",
-      photos: business.photos?.join("\n") ?? "",
+      photos: business.photos ?? [],
     },
     agenda: {
       openDays: settings.openDays,
@@ -159,7 +162,7 @@ function SaveBar({
           Descartar
         </Button>
         <Button type="submit" disabled={!dirty || busy || !canManage}>
-          {busy && <Loader2 size={15} className="management-spin" />}
+          {busy && <CircleNotch size={15} className="management-spin" />}
           {busy ? "Salvando..." : "Salvar alterações"}
         </Button>
       </div>
@@ -277,7 +280,7 @@ function SettingsContent({ store }: { store: Store }) {
         updateDraft("business", { [field]: event.target.value }),
     };
   }
-  function identityField(field: keyof IdentityDraft) {
+  function identityField(field: Exclude<keyof IdentityDraft, "photos">) {
     return {
       name: field,
       value: identity[field],
@@ -308,41 +311,6 @@ function SettingsContent({ store }: { store: Store }) {
     setPendingTab(null);
     action.setError("");
   }
-  async function upload(
-    event: ChangeEvent<HTMLInputElement>,
-    target: "cover" | "logo",
-  ) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || !canManage) return;
-    if (
-      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-      file.size > 2 * 1024 * 1024
-    ) {
-      action.setError("Use uma imagem JPG, PNG ou WebP com até 2 MB.");
-      return;
-    }
-    setUploading(true);
-    action.setError("");
-    try {
-      const value = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () =>
-          reject(new Error("Não foi possível ler esta imagem."));
-        reader.readAsDataURL(file);
-      });
-      updateDraft("identity", { [target]: value });
-    } catch (failure) {
-      action.setError(
-        failure instanceof Error
-          ? failure.message
-          : "Não foi possível ler esta imagem.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  }
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage || !editable || busy || !dirty) return;
@@ -363,7 +331,7 @@ function SettingsContent({ store }: { store: Store }) {
         ...store.business,
         ...company,
         name,
-        phone,
+        phone: phone.replace(/\D/g, ""),
         description: company.description.trim(),
         address: company.address.trim(),
         instagram: company.instagram.trim(),
@@ -375,28 +343,27 @@ function SettingsContent({ store }: { store: Store }) {
       };
     } else if (section === "identity") {
       const color = identity.color.trim();
-      const photos = identity.photos
-        .split("\n")
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const photos = identity.photos.filter(Boolean);
+      const cover = identity.cover.trim();
+      const logo = identity.logo.trim();
       if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) {
         action.setError("A cor deve usar o formato hexadecimal, como #123E69.");
         return;
       }
       if (
         photos.length > 12 ||
-        photos.some((value) => !/^(https?:\/\/|\/[^/])/.test(value))
+        [...photos, cover, logo].some(
+          (value) => value && !storedImagePattern.test(value),
+        )
       ) {
-        action.setError(
-          "Adicione até 12 fotos, com uma URL que começa com https:// por linha.",
-        );
+        action.setError("Revise as fotos: use até 12 imagens na galeria.");
         return;
       }
       entity = "business";
       values = {
         ...store.business,
-        cover: identity.cover.trim(),
-        logo: identity.logo.trim(),
+        cover,
+        logo,
         color,
         photos,
       };
@@ -472,7 +439,7 @@ function SettingsContent({ store }: { store: Store }) {
   }[tab];
   const sectionDescription = {
     business: "As informações que apresentam seu estabelecimento aos clientes.",
-    identity: "Uma capa que conta sua história e uma marca na medida certa.",
+    identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
     professionals:
       "Cada integrante da equipe tem uma disponibilidade independente.",
@@ -492,7 +459,7 @@ function SettingsContent({ store }: { store: Store }) {
     <>
       <PageHeader
         title="Configurações"
-        description="Seu estabelecimento, com a sua personalidade."
+        description="Dados, aparência e regras do seu estabelecimento."
         actions={
           <Button variant="secondary" onClick={() => void copyLink()}>
             <Copy size={14} />
@@ -514,7 +481,10 @@ function SettingsContent({ store }: { store: Store }) {
               disabled={busy}
               onClick={() => switchTab(item.id)}
             >
-              <item.icon size={16} />
+              <item.icon
+                size={17}
+                weight={tab === item.id ? "fill" : "duotone"}
+              />
               {item.label}
               {tab === item.id && dirty && (
                 <span aria-label="Alterações não salvas">•</span>
@@ -577,7 +547,7 @@ function SettingsContent({ store }: { store: Store }) {
                       <textarea
                         {...businessField("description")}
                         maxLength={1000}
-                        placeholder="Conte o que torna sua experiência especial."
+                        placeholder="Ex.: Corte, barba e sobrancelha com hora marcada."
                       />
                     </FormField>
                   </div>
@@ -591,6 +561,11 @@ function SettingsContent({ store }: { store: Store }) {
                       <FormField label="Telefone / WhatsApp">
                         <input
                           {...businessField("phone")}
+                          onChange={(event) =>
+                            updateDraft("business", {
+                              phone: formatPhone(event.target.value),
+                            })
+                          }
                           type="tel"
                           autoComplete="tel"
                           required
@@ -648,7 +623,7 @@ function SettingsContent({ store }: { store: Store }) {
                         }}
                       />
                     ) : (
-                      <ImageIcon size={32} aria-hidden="true" />
+                      <ImageSquare size={32} aria-hidden="true" />
                     )}
                     <span>{company.category || "Seu estabelecimento"}</span>
                   </div>
@@ -671,8 +646,19 @@ function SettingsContent({ store }: { store: Store }) {
                     </div>
                     <p className="management-top-description">
                       {company.description.trim() ||
-                        "Seu próximo momento de cuidado começa aqui."}
+                        "Descrição do seu estabelecimento."}
                     </p>
+                    {identity.photos.length > 0 && (
+                      <div className="settings-preview-gallery">
+                        {identity.photos.slice(0, 4).map((photo, index) => (
+                          <img
+                            key={`${index}-${photo.slice(-16)}`}
+                            src={photo}
+                            alt=""
+                          />
+                        ))}
+                      </div>
+                    )}
                     <span
                       className="settings-preview-cta"
                       style={
@@ -692,70 +678,81 @@ function SettingsContent({ store }: { store: Store }) {
                 disabled={!canManage || busy}
               >
                 <FormSection
-                  title="Capa e marca"
-                  description="A foto do ambiente é o destaque. A logo aparece pequena e discreta."
+                  title="Capa e logo"
+                  description="A capa é a primeira coisa que o cliente vê. Use uma foto real do seu espaço."
                 >
                   <div className="management-form">
-                    <FormField
+                    <ImageUpload
                       label="Foto de capa"
-                      hint="Prefira uma foto horizontal. JPG, PNG ou WebP, até 2 MB."
-                    >
-                      <input
-                        className="management-upload"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => void upload(event, "cover")}
-                      />
-                      <input
-                        {...identityField("cover")}
-                        aria-label="URL da capa"
-                        placeholder="Ou cole o endereço https:// da imagem"
-                      />
-                    </FormField>
-                    <FormField
+                      hint="Foto horizontal, de preferência com boa luz. Ajustamos o tamanho para carregar rápido."
+                      preset="cover"
+                      shape="wide"
+                      value={identity.cover}
+                      onChange={(cover) => updateDraft("identity", { cover })}
+                      emptyTitle="Adicionar foto de capa"
+                      emptyText="A fachada, a recepção ou as cadeiras do seu espaço"
+                      disabled={!canManage || action.busy}
+                      onBusy={setUploading}
+                    />
+                    <ImageUpload
                       label="Logo (opcional)"
-                      hint="Sem logo, usamos as iniciais do seu estabelecimento. JPG, PNG ou WebP, até 2 MB."
-                    >
-                      <input
-                        className="management-upload"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => void upload(event, "logo")}
-                      />
-                      <input
-                        {...identityField("logo")}
-                        aria-label="URL da logo"
-                        placeholder="https://..."
-                      />
-                    </FormField>
+                      hint="Sem logo, mostramos as iniciais do estabelecimento."
+                      preset="logo"
+                      shape="square"
+                      value={identity.logo}
+                      onChange={(logo) => updateDraft("identity", { logo })}
+                      fallback={
+                        <span className="settings-logo-fallback">
+                          {initials(company.name.trim() || "Seu espaço")}
+                        </span>
+                      }
+                      disabled={!canManage || action.busy}
+                      onBusy={setUploading}
+                    />
                   </div>
                 </FormSection>
                 <FormSection
-                  title="Detalhes da identidade"
-                  description="Personalização discreta para uma experiência consistente."
+                  title="Galeria de fotos"
+                  description="Cortes, trabalhos feitos e o ambiente. É o que convence o cliente a marcar."
                 >
-                  <div className="management-form">
-                    <FormField
-                      label="Cor personalizada (opcional)"
-                      hint="Prefira uma cor escura para manter contraste nos botões."
-                    >
+                  <GalleryUpload
+                    label="Fotos da galeria"
+                    hint="A primeira foto aparece em destaque. Use as setas para mudar a ordem."
+                    value={identity.photos}
+                    onChange={(photos) => updateDraft("identity", { photos })}
+                    disabled={!canManage || action.busy}
+                    onBusy={setUploading}
+                  />
+                </FormSection>
+                <FormSection
+                  title="Cor dos botões"
+                  description="Usada nos botões e destaques da sua página."
+                >
+                  <FormField
+                    label="Cor personalizada (opcional)"
+                    hint="Prefira uma cor escura para manter contraste nos botões."
+                  >
+                    <span className="settings-color">
+                      <input
+                        type="color"
+                        aria-label="Escolher cor"
+                        value={
+                          /^#[0-9a-fA-F]{6}$/.test(identity.color)
+                            ? identity.color
+                            : "#123e69"
+                        }
+                        onChange={(event) =>
+                          updateDraft("identity", { color: event.target.value })
+                        }
+                      />
                       <input
                         {...identityField("color")}
                         placeholder="#123E69"
                         pattern="#[0-9a-fA-F]{6}"
                         maxLength={7}
                       />
-                    </FormField>
-                    <FormField
-                      label="Fotos do estabelecimento (opcional)"
-                      hint="Cole uma URL de imagem por linha, até 12 fotos."
-                    >
-                      <textarea
-                        {...identityField("photos")}
-                        placeholder="https://..."
-                      />
-                    </FormField>
-                  </div>
+                    </span>
+                  </FormField>
                 </FormSection>
               </fieldset>
               <Link
@@ -764,7 +761,7 @@ function SettingsContent({ store }: { store: Store }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <ExternalLink size={14} />
+                <ArrowSquareOut size={14} />
                 Ver página pública salva
               </Link>
               <FormError error={action.error} />
@@ -901,7 +898,7 @@ function SettingsContent({ store }: { store: Store }) {
                     href="/dashboard/agenda"
                     className="management-link-button"
                   >
-                    <CalendarDays size={15} />
+                    <CalendarBlank size={15} />
                     Abrir agenda
                   </Link>
                 </div>

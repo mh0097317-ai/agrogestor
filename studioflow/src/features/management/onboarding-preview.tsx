@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarBlank } from "@phosphor-icons/react/dist/ssr";
+import { storedImagePattern } from "@/lib/image";
 import { SegmentIcon } from "@/lib/segments";
 import { money } from "@/lib/utils";
 
@@ -21,17 +22,15 @@ export function OnboardingPreview(props: PreviewProps) {
   const services = props.services.filter((service) => service.name.trim());
   const professionals = props.professionals.filter((name) => name.trim());
   const hasCover =
-    /^https?:\/\//.test(props.cover) && failedCover !== props.cover;
+    storedImagePattern.test(props.cover) && failedCover !== props.cover;
 
   return (
     <aside
       className="onboarding-preview"
       aria-label="Prévia do estabelecimento"
     >
-      <span className="onboarding-step-label">UM PRIMEIRO OLHAR</span>
-      <p className="onboarding-preview-intro">
-        Seu espaço começa a ganhar forma.
-      </p>
+      <span className="onboarding-step-label">PRÉVIA DA SUA PÁGINA</span>
+      <p className="onboarding-preview-intro">É assim que o cliente vai ver.</p>
       <div className="onboarding-preview-page">
         <div className="onboarding-preview-cover">
           {hasCover ? (
@@ -47,9 +46,9 @@ export function OnboardingPreview(props: PreviewProps) {
         </div>
         <div className="onboarding-preview-body">
           <h2>{props.name.trim() || "Seu estabelecimento"}</h2>
-          <p>Um espaço para cuidar de você.</p>
+          <p>Agende seu horário online.</p>
           <div className="onboarding-preview-cta">
-            <CalendarDays size={16} /> Agendar horário
+            <CalendarBlank size={16} weight="duotone" /> Agendar horário
           </div>
           <h3>Serviços</h3>
           {services.length ? (
@@ -78,7 +77,7 @@ export function OnboardingPreview(props: PreviewProps) {
             </>
           )}
           <div className="onboarding-preview-hours">
-            <CalendarDays size={16} />
+            <CalendarBlank size={16} weight="duotone" />
             <span>
               {props.days.length} dias por semana · {props.start} às {props.end}
             </span>

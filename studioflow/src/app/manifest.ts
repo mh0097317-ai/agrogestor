@@ -3,7 +3,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "StudioFlow · Gestão & agenda",
     short_name: "StudioFlow",
-    description: "Seu negócio de beleza em boa fase.",
+    description: "Agenda online e gestão para barbearias e salões.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

@@ -223,3 +223,26 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Field icons */
+.booking-input {
+  position: relative;
+  display: block;
+  margin-top: 7px;
+}
+.booking-input > svg {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7b8fa3;
+  pointer-events: none;
+  transition: color 0.18s;
+}
+.booking-customer-form .booking-input input:not([type="checkbox"]) {
+  margin-top: 0;
+  padding-left: 44px;
+}
+.booking-input:focus-within > svg {
+  color: #123e69;
+}

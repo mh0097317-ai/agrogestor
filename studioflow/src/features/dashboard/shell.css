@@ -473,3 +473,10 @@
   animation: sf-scale-in 220ms var(--ease-out) both;
   transform-origin: bottom right;
 }
+.sidebar-business-mark .avatar {
+  border-radius: 0;
+}
+.mobile-top-business .avatar {
+  border-radius: 9px;
+  box-shadow: 0 0 0 1px #ffffff2e;
+}

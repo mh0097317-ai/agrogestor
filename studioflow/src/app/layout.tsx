@@ -20,11 +20,11 @@ const geist = localFont({
 });
 export const metadata: Metadata = {
   title: {
-    default: "StudioFlow · Seu negócio em boa fase",
+    default: "StudioFlow · Agenda online para barbearias e salões",
     template: "%s · StudioFlow",
   },
   description:
-    "Agenda, clientes e gestão para negócios de beleza. Mais tempo para fazer o que você ama.",
+    "Agenda online, clientes e caixa para barbearias, salões e estúdios de beleza.",
   applicationName: "StudioFlow",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

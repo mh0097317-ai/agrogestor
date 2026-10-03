@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties } from "react";
-import { Coffee, LockKeyhole, Plus } from "lucide-react";
+import { Coffee, LockKey, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, EmptyState } from "@/components/ui";
 import { businessDay, dateLabel, localDay, statusLabels } from "@/lib/utils";
 import type { Appointment, Store, Professional, BlockedTime } from "@/types";
@@ -222,7 +222,7 @@ export function DayTimeline({
                         Math.min(range.end, breakEnd),
                       )}
                     >
-                      <Coffee size={14} />
+                      <Coffee size={14} weight="duotone" />
                       <span>
                         Intervalo · {professional.breakStart}–
                         {professional.breakEnd}
@@ -241,7 +241,7 @@ export function DayTimeline({
                     onClick={() => onBlock(block)}
                     aria-label={`Bloqueio: ${block.reason}`}
                   >
-                    <LockKeyhole size={14} />
+                    <LockKey size={14} weight="duotone" />
                     <strong>{block.reason}</strong>
                     <span>
                       {dateLabel(block.start, "HH:mm")}–

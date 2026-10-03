@@ -12,13 +12,13 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
+  CalendarBlank,
+  CaretLeft,
+  CaretRight,
+  Clock,
+  LockKey,
   Plus,
-  Clock3,
-  LockKeyhole,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import {
   PageHeader,
   Button,
@@ -188,7 +188,7 @@ export function AgendaPage() {
     <div className="calendar-page">
       <PageHeader
         title="Agenda"
-        description="Tempo bem organizado. Atendimento com presença."
+        description="Horários de toda a equipe por dia, semana ou mês."
         actions={
           canEdit ? (
             <Button onClick={() => add(date)}>
@@ -213,7 +213,7 @@ export function AgendaPage() {
             onClick={() => navigate(-1)}
             aria-label="Período anterior"
           >
-            <ChevronLeft size={18} />
+            <CaretLeft size={18} />
           </button>
           <strong>
             {view === "month"
@@ -228,7 +228,7 @@ export function AgendaPage() {
             onClick={() => navigate(1)}
             aria-label="Próximo período"
           >
-            <ChevronRight size={18} />
+            <CaretRight size={18} />
           </button>
           <Button
             variant="ghost"
@@ -365,7 +365,7 @@ export function AgendaPage() {
               variant="secondary"
               onClick={() => changeCalendar({ view: "day" })}
             >
-              <CalendarDays size={15} /> Abrir dia
+              <CalendarBlank size={15} /> Abrir dia
             </Button>
           )}
         </div>
@@ -391,7 +391,7 @@ export function AgendaPage() {
       </div>
       <footer className="calendar-footer">
         <span>
-          <Clock3 size={14} /> Horário de Brasília
+          <Clock size={14} /> Horário de Brasília
         </span>
         <span>
           {selectedAppointments.length} atendimentos em{" "}
@@ -412,7 +412,7 @@ export function AgendaPage() {
       >
         {block && (
           <div className="calendar-block-detail">
-            <LockKeyhole size={24} />
+            <LockKey size={24} weight="duotone" />
             <h3>{block.reason}</h3>
             <p>
               {

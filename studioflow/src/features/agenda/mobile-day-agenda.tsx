@@ -1,5 +1,10 @@
 "use client";
-import { ArrowUpRight, Clock3, Plus, LockKeyhole } from "lucide-react";
+import {
+  ArrowUpRight,
+  Clock,
+  LockKey,
+  Plus,
+} from "@phosphor-icons/react/dist/ssr";
 import { availableSlots } from "@/lib/availability";
 import { businessDay, dateLabel, localDay, money } from "@/lib/utils";
 import { Avatar, EmptyState, StatusBadge } from "@/components/ui";
@@ -121,7 +126,7 @@ export function MobileDayAgenda({
         <section className="calendar-list-blocks">
           <header>
             <h2>Horários bloqueados</h2>
-            <LockKeyhole size={15} />
+            <LockKey size={15} weight="duotone" />
           </header>
           {blocks.map((block) => (
             <button
@@ -129,7 +134,7 @@ export function MobileDayAgenda({
               type="button"
               onClick={() => onBlock?.(block)}
             >
-              <LockKeyhole size={16} />
+              <LockKey size={16} weight="duotone" />
               <div>
                 <strong>{block.reason}</strong>
                 <span>
@@ -154,7 +159,7 @@ export function MobileDayAgenda({
         <section className="calendar-list-slots">
           <header>
             <h2>
-              <Clock3 size={16} /> Janelas disponíveis
+              <Clock size={16} /> Janelas disponíveis
             </h2>
             <span>{service?.duration} min</span>
           </header>

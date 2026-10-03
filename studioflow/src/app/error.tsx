@@ -1,5 +1,5 @@
 "use client";
-import { RotateCcw } from "lucide-react";
+import { ArrowCounterClockwise } from "@phosphor-icons/react/dist/ssr";
 export default function ErrorPage({
   reset,
 }: {
@@ -13,7 +13,7 @@ export default function ErrorPage({
         Não conseguimos carregar esta página. Suas informações continuam salvas.
       </p>
       <button className="btn btn-primary" onClick={reset}>
-        <RotateCcw size={17} /> Tentar novamente
+        <ArrowCounterClockwise size={17} /> Tentar novamente
       </button>
     </div>
   );

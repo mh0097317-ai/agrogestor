@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           slug,
           name: input.name,
           category: input.category,
-          description: "Seu próximo momento de cuidado começa aqui.",
+          description: "",
           address: "",
           phone: "",
           instagram: "",

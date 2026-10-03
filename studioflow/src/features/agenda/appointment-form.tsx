@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { CalendarPlus, LockKeyhole } from "lucide-react";
+import { CalendarPlus, LockKey } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { DetailPanel, Button, Spinner, FormSection } from "@/components/ui";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -107,25 +107,24 @@ export function AppointmentForm({
       }
     >
       {!appointment && (
-        <div className="segmented" style={{ marginBottom: 22 }}>
+        <div
+          className="segmented appointment-kind"
+          style={{ marginBottom: 22 }}
+        >
           <button
+            type="button"
             className={kind === "appointment" ? "selected" : ""}
             onClick={() => setKind("appointment")}
           >
-            <CalendarPlus
-              size={13}
-              style={{ display: "inline", marginRight: 6 }}
-            />{" "}
+            <CalendarPlus size={16} weight="duotone" />
             Atendimento
           </button>
           <button
+            type="button"
             className={kind === "block" ? "selected" : ""}
             onClick={() => setKind("block")}
           >
-            <LockKeyhole
-              size={13}
-              style={{ display: "inline", marginRight: 6 }}
-            />{" "}
+            <LockKey size={16} weight="duotone" />
             Bloquear horário
           </button>
         </div>
@@ -145,7 +144,7 @@ export function AppointmentForm({
             }
             description={
               kind === "appointment"
-                ? "Quem será atendido e qual cuidado deseja realizar?"
+                ? "Quem será atendido e qual serviço será feito?"
                 : "O período será removido da disponibilidade pública."
             }
           >
@@ -177,7 +176,11 @@ export function AppointmentForm({
                       name="phone"
                       placeholder="(11) 99999-9999"
                       required
-                      defaultValue={appointment?.customerPhone}
+                      defaultValue={
+                        appointment
+                          ? formatPhone(appointment.customerPhone)
+                          : ""
+                      }
                     />
                   </label>
                   <label className="full">

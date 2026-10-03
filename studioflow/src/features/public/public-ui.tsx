@@ -7,10 +7,10 @@ import {
   CircleNotch,
   Scissors,
   ShieldCheck,
-  Sparkle,
 } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import { initials } from "@/lib/utils";
+import { SegmentIcon } from "@/lib/segments";
 
 export function PublicImage({
   src,
@@ -28,10 +28,9 @@ export function PublicImage({
   segment?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const FallbackIcon =
-    !segment || /barbe|cabelo|cabele|salão/i.test(segment) ? Scissors : Sparkle;
+  const [loaded, setLoaded] = useState(false);
   return (
-    <span className={`public-image ${className}`}>
+    <span className={`public-image ${loaded ? "is-loaded" : ""} ${className}`}>
       {src && !failed ? (
         <Image
           src={src}
@@ -40,11 +39,16 @@ export function PublicImage({
           sizes="(max-width: 640px) 100vw, 800px"
           unoptimized
           priority={priority}
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       ) : (
         <span className="public-image-fallback">
-          {fallbackName ? initials(fallbackName) : <FallbackIcon size={28} />}
+          {fallbackName ? (
+            initials(fallbackName)
+          ) : (
+            <SegmentIcon category={segment} size={28} weight="light" />
+          )}
         </span>
       )}
     </span>
@@ -97,12 +101,17 @@ export function PublicError({
 export function BookingHeader({
   slug,
   businessName,
+  photo,
+  category,
   onBack,
   canBack,
   busy = false,
 }: {
   slug: string;
   businessName: string;
+  /** Logo or cover shown next to the name. */
+  photo?: string;
+  category?: string;
   onBack?: () => void;
   canBack?: boolean;
   busy?: boolean;
@@ -129,16 +138,19 @@ export function BookingHeader({
           </Link>
         )}
         <Link href={`/${slug}`} className="booking-business-title">
-          <span className="booking-brand-mark">
-            <Scissors weight="duotone" size={19} />
-          </span>
+          <PublicImage
+            src={photo}
+            alt=""
+            className="booking-brand-mark"
+            segment={category}
+          />
           <span>
             {businessName}
             <small>Agendamento online</small>
           </span>
         </Link>
         <span className="booking-safe">
-          <ShieldCheck weight="duotone" size={16} /> Seguro e simples
+          <ShieldCheck weight="duotone" size={16} /> Sem cadastro e sem senha
         </span>
       </div>
     </header>

@@ -1,7 +1,7 @@
 "use client";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowUpRight, Plus } from "lucide-react";
+import { ArrowUpRight, Plus } from "@phosphor-icons/react/dist/ssr";
 import { dateLabel, localDay } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
 import { appointmentServices, appointmentsOn } from "./agenda-helpers";

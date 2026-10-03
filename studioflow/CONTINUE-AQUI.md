@@ -120,7 +120,7 @@ Verificado: lint, TypeScript, 26 testes, build, smoke HTTP e varredura sem overf
 ## Identidade, ícones e animações (3 de outubro de 2026)
 
 - Logo nova: "S" geométrico em dois tons com brilho. Fonte em `public/icon.svg` e no componente `src/components/brand.tsx` (`BrandLogo`, `Brand`); PNGs do PWA (192, 512, maskable e apple) gerados a partir do SVG.
-- Ícones: `@phosphor-icons/react` (duotone/fill) na página pública, agendamento, navegação e indicadores; logos reais de WhatsApp, Instagram e mapa em `src/components/brand-icons.tsx`. Telas administrativas secundárias ainda usam Lucide.
+- Ícones: `@phosphor-icons/react` (duotone/fill) na página pública, agendamento, navegação e indicadores; logos reais de WhatsApp, Instagram e mapa em `src/components/brand-icons.tsx`. Desde a rodada de fotos, todas as telas usam Phosphor (Lucide não é mais importado).
 - Animações: `src/styles/motion.css` (easing, keyframes, `.sf-stagger`, `.sf-sheen`, `.sf-press`) e `src/components/motion.tsx` (`MotionProvider` para `[data-reveal]` ao rolar e `CountUp`). Tudo respeita `prefers-reduced-motion`; o conteúdo só é escondido para revelar depois que o JS marca a página como `motion-ready`.
 - Confirmação com check desenhado, onda e confete apenas para agendamentos criados há menos de 10 minutos.
 - Não rode `npm run build` com o `npm run dev` ativo: os dois usam `.next` e o dev passa a falhar com "Manifest file is empty".
@@ -138,6 +138,32 @@ Dono:
 - Ação rápida por linha na agenda do dia; "Iniciar" só aparece até 1 hora antes.
 - Faturamento dos últimos 7 dias (recebido x agendado, comparação com a semana anterior), ocupação por profissional e "Precisa da sua atenção" (pendentes com Confirmar e clientes sumidos com WhatsApp e mensagem pronta). Cálculos em `src/features/dashboard/insights.ts`, com testes.
 - No celular os blocos são reordenados por urgência: Agora, Atenção, Próximos, Resumo, Semana, Ocupação.
+
+## Fotos, galeria e agendamento (3 de outubro de 2026)
+
+Fotos reais e textos:
+- Fotos de demonstração reais (sem imagens geradas) em `public/demo/`: capa do salão, serviços, seis trabalhos (`work-1..6`) e profissionais. Textos de serviços e telas reescritos sem frases genéricas.
+
+Envio de fotos no painel:
+- `src/components/image-upload.tsx`: `ImageUpload` (uma foto, com prévia, trocar/remover, arrastar e soltar; funciona controlado ou com `name` para formulários com `FormData`) e `GalleryUpload` (várias fotos de uma vez, até 12, reordenar e remover).
+- `src/lib/image.ts`: compressão no navegador (canvas para WebP, ou JPEG/PNG como alternativa) com presets por uso (capa 1600px, galeria 1200px, serviço 900px, profissional 480px, logo 512px). Uma foto de celular vira cerca de 100–250 KB.
+- Usado em Configurações → Identidade (capa, logo, galeria "Cortes, trabalhos e ambiente" e seletor de cor), Serviços (foto do serviço no topo do formulário), Equipe (foto redonda do profissional) e no cadastro inicial (capa).
+- As imagens continuam como data URL no registro (o servidor aceita `https://`, `/caminho` ou `data:image/(jpeg|png|webp);base64,`, até 3 MB cada). A migração para Supabase Storage segue pendente (item 5 abaixo).
+
+Página do cliente:
+- "Nossos trabalhos" em mosaico (`src/features/public/public-gallery.tsx`) com visualização em tela cheia: deslizar, setas do teclado, miniaturas e botão "Gostei, quero agendar". O banner do espaço saiu; a seção final virou "Horário e endereço".
+- Fotos aparecem com fade ao carregar; a capa tem parallax ao rolar (scroll timeline, só em navegadores compatíveis e sem `prefers-reduced-motion`).
+
+Agendamento:
+- Cabeçalho fixo com a logo ou a capa do estabelecimento.
+- Serviços com descrição, duração e preço; subtítulos das etapas mais úteis.
+- No celular, a etapa de horário usa uma faixa de dias com a quantidade de horários livres ("18 livres", "Fechado", "Sem vagas"), com opção "Ver mês" para o calendário completo.
+- Campos com ícones (WhatsApp real no telefone). Na confirmação, "Cancelar horário" virou uma ação discreta e o local mostra a foto do estabelecimento.
+
+Painel:
+- Sidebar e topo do celular mostram a foto do estabelecimento. Telefones formatados no detalhe do agendamento, na edição e em Configurações (salvo só com dígitos). Seletor "Atendimento / Bloquear horário" estilizado. Avatares usam `object-fit: cover`.
+
+Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio real de fotos (galeria, logo e serviço) até a página pública e varredura sem overflow horizontal em 14 rotas × 375/390/430/768/1024/1440px (mais a etapa de horário em 375/390/768/1024).
 
 ## Próximos passos para terminar o piloto
 

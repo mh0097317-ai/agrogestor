@@ -1,5 +1,6 @@
 .booking-scheduling-layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 28px;
 }
@@ -194,4 +195,132 @@
   font-size: 12px;
   color: #15803d;
   animation: sf-fade-in 300ms ease-out;
+}
+
+/* Day strip (phones) and month toggle */
+.booking-calendar-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #0d2847;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.booking-day-strip {
+  display: none;
+  position: relative;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 4px 20px 18px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 20px;
+  scrollbar-width: none;
+}
+.booking-day-strip::-webkit-scrollbar {
+  display: none;
+}
+.booking-day-strip button {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 66px;
+  padding: 10px 4px 9px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  color: #111827;
+  scroll-snap-align: start;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-base);
+}
+.booking-day-strip small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.booking-day-strip strong {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.booking-day-strip em {
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: #15803d;
+  white-space: nowrap;
+}
+.booking-day-strip button:disabled {
+  opacity: 1;
+  background: #f8fafc;
+  border-style: dashed;
+  color: #94a3b8;
+}
+.booking-day-strip button:disabled small,
+.booking-day-strip button:disabled em {
+  color: #94a3b8;
+}
+.booking-day-strip button.is-loading em {
+  color: #94a3b8;
+}
+.booking-day-strip button:not(:disabled):active {
+  transform: scale(0.96);
+}
+.booking-day-strip button.is-selected {
+  border-color: transparent;
+  background: var(--public-navy);
+  color: #fff;
+  box-shadow: 0 6px 14px #0d28472e;
+  animation: booking-select 360ms var(--ease-spring);
+}
+.booking-day-strip button.is-selected small,
+.booking-day-strip button.is-selected em {
+  color: #ffffffcc;
+}
+
+@media (max-width: 767px) {
+  .booking-calendar-heading strong {
+    order: -1;
+    flex: 1;
+    font-size: 15px;
+  }
+  .booking-calendar-heading {
+    gap: 2px;
+    margin-bottom: 12px;
+  }
+  .booking-calendar-toggle {
+    display: inline-flex;
+    margin-left: 6px;
+  }
+  .booking-calendar:not(.is-month) .booking-day-strip {
+    display: flex;
+  }
+  .booking-calendar:not(.is-month) .booking-calendar-grid,
+  .booking-calendar:not(.is-month) .booking-calendar-legend {
+    display: none;
+  }
+  .booking-calendar:not(.is-month) + * {
+    margin-top: 6px;
+  }
+}
+@media (max-width: 389px) {
+  .booking-day-strip {
+    margin: 0 -18px;
+    padding-inline: 18px;
+    scroll-padding-inline: 18px;
+  }
 }

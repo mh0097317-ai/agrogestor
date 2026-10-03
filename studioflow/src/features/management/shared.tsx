@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AlertCircle, Loader2, Search } from "lucide-react";
+import {
+  CircleNotch,
+  MagnifyingGlass,
+  WarningCircle,
+} from "@phosphor-icons/react/dist/ssr";
 import { Button, Card, EmptyState, MetricStrip } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import "./management.css";
@@ -19,7 +23,7 @@ export function ManagementBoundary({ children }: { children: ReactNode }) {
   if (error)
     return (
       <Card className="management-error">
-        <AlertCircle size={28} />
+        <WarningCircle size={30} weight="duotone" />
         <h2>Não foi possível carregar os dados</h2>
         <p>{error}</p>
         <Button onClick={() => void refresh()}>Tentar novamente</Button>
@@ -46,7 +50,7 @@ export function SearchField({
 }) {
   return (
     <label className="management-search">
-      <Search size={17} />
+      <MagnifyingGlass size={17} />
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -92,7 +96,7 @@ export function SubmitButton({
 }) {
   return (
     <Button type="submit" disabled={busy}>
-      {busy && <Loader2 size={16} className="management-spin" />}
+      {busy && <CircleNotch size={16} className="management-spin" />}
       {busy ? "Salvando..." : children}
     </Button>
   );
@@ -101,7 +105,7 @@ export function SubmitButton({
 export function FormError({ error }: { error: string }) {
   return error ? (
     <div className="management-form-error" role="alert">
-      <AlertCircle size={16} />
+      <WarningCircle size={16} />
       {error}
     </div>
   ) : null;

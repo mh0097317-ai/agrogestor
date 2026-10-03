@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { Plus, Scissors, Clock3, Pencil, Trash2, Power } from "lucide-react";
+import {
+  Clock,
+  PencilSimple,
+  Plus,
+  Power,
+  Scissors,
+  Trash,
+} from "@phosphor-icons/react/dist/ssr";
 import {
   Avatar,
   Button,
@@ -15,6 +22,7 @@ import {
 import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
+import { ImageUpload } from "@/components/image-upload";
 import { money } from "@/lib/utils";
 import type { Service } from "@/types";
 import {
@@ -37,6 +45,7 @@ export default function ServicesPage() {
   const [editing, setEditing] = useState<Service | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Service | null>(null);
   const [pendingId, setPendingId] = useState("");
+  const [uploading, setUploading] = useState(false);
   const action = useFormAction();
   const removal = useFormAction();
   const categories = [
@@ -65,7 +74,7 @@ export default function ServicesPage() {
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editable) return;
+    if (!editable || uploading) return;
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name")).trim();
     const serviceCategory = String(form.get("category")).trim();
@@ -164,7 +173,7 @@ export default function ServicesPage() {
     <ManagementBoundary>
       <PageHeader
         title="Serviços"
-        description="Seu catálogo, organizado para uma escolha simples."
+        description="Preço, duração, foto e quem faz cada serviço."
         actions={
           editable ? (
             <Button
@@ -173,7 +182,7 @@ export default function ServicesPage() {
                 setEditing(null);
               }}
             >
-              <Plus size={16} />
+              <Plus size={16} weight="bold" />
               Novo serviço
             </Button>
           ) : undefined
@@ -246,7 +255,7 @@ export default function ServicesPage() {
                           className={`catalog-row ${!service.active ? "management-inactive" : ""}`}
                         >
                           <div className="catalog-image">
-                            <Scissors size={23} strokeWidth={1.4} />
+                            <Scissors size={24} weight="light" />
                             {service.image && (
                               <img
                                 src={service.image}
@@ -298,7 +307,7 @@ export default function ServicesPage() {
                             </div>
                           </div>
                           <div className="catalog-duration">
-                            <Clock3 size={14} />
+                            <Clock size={15} weight="duotone" />
                             {service.duration} min
                           </div>
                           <strong className="catalog-price">
@@ -313,7 +322,7 @@ export default function ServicesPage() {
                                   setEditing(service);
                                 }}
                               >
-                                <Pencil size={14} />
+                                <PencilSimple size={15} weight="duotone" />
                                 Editar
                               </Button>
                               <button
@@ -327,7 +336,7 @@ export default function ServicesPage() {
                                 aria-label={`${service.active ? "Pausar" : "Publicar"} ${service.name}`}
                                 onClick={() => void toggle(service)}
                               >
-                                <Power size={16} />
+                                <Power size={17} weight="bold" />
                               </button>
                               <button
                                 className="management-icon-button danger"
@@ -338,7 +347,7 @@ export default function ServicesPage() {
                                   setDeleting(service);
                                 }}
                               >
-                                <Trash2 size={16} />
+                                <Trash size={17} weight="duotone" />
                               </button>
                             </div>
                           )}
@@ -366,6 +375,18 @@ export default function ServicesPage() {
       >
         <form className="management-form" onSubmit={save}>
           <FormSection title="Informações do serviço">
+            <ImageUpload
+              label="Foto do serviço (opcional)"
+              hint="Uma foto real do resultado, como um corte ou uma barba feita aqui."
+              name="image"
+              preset="service"
+              shape="card"
+              defaultValue={editing?.image ?? ""}
+              emptyTitle="Adicionar foto do serviço"
+              emptyText="Sem foto, o catálogo mostra um ícone discreto"
+              disabled={action.busy}
+              onBusy={setUploading}
+            />
             <FormField label="Nome do serviço">
               <input
                 name="name"
@@ -464,18 +485,7 @@ export default function ServicesPage() {
               </p>
             )}
           </FormSection>
-          <FormSection title="Apresentação e publicação">
-            <FormField
-              label="Imagem (URL, opcional)"
-              hint="Sem foto, o catálogo usa um ícone discreto."
-            >
-              <input
-                name="image"
-                type="url"
-                defaultValue={editing?.image}
-                placeholder="https://..."
-              />
-            </FormField>
+          <FormSection title="Publicação">
             <label className="management-check">
               <input
                 type="checkbox"

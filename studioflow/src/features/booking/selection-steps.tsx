@@ -1,6 +1,11 @@
 "use client";
 
-import { CaretRight, Check, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import {
+  CaretRight,
+  Check,
+  Clock,
+  UsersThree,
+} from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import type { Service } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
@@ -54,7 +59,9 @@ export function ServiceStep({
   return (
     <section className="booking-step">
       <h1 tabIndex={-1}>Qual serviço você deseja?</h1>
-      <p className="booking-subtitle">Escolha o serviço que deseja realizar.</p>
+      <p className="booking-subtitle">
+        O valor e o tempo aparecem em cada serviço.
+      </p>
       <div
         className="booking-filter-tabs"
         role="group"
@@ -87,8 +94,18 @@ export function ServiceStep({
             />
             <span className="booking-option-info">
               <strong>{service.name}</strong>
-              <span>{durationLabel(service.duration)}</span>
-              <b>{money(service.price)}</b>
+              {service.description && (
+                <span className="booking-option-description">
+                  {service.description}
+                </span>
+              )}
+              <span className="booking-option-meta">
+                <span>
+                  <Clock weight="duotone" size={14} />
+                  {durationLabel(service.duration)}
+                </span>
+                <b>{money(service.price)}</b>
+              </span>
             </span>
             {selectedId === service.id ? (
               <span className="booking-check">
@@ -145,7 +162,7 @@ export function ProfessionalStep({
     <section className="booking-step">
       <h1 tabIndex={-1}>Quem vai te atender?</h1>
       <p className="booking-subtitle">
-        Escolha o profissional de sua preferência.
+        Veja o próximo horário livre de cada profissional.
       </p>
       <div className="booking-selection-list sf-stagger">
         <button
@@ -158,7 +175,7 @@ export function ProfessionalStep({
           </span>
           <span className="booking-option-info">
             <strong>Qualquer profissional</strong>
-            <span>Primeiro horário disponível</span>
+            <span>Quem estiver livre primeiro</span>
             {availability(earliest)}
           </span>
           {selectedId === "any" ? (

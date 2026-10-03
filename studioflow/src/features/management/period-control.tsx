@@ -1,5 +1,5 @@
 "use client";
-import { CalendarDays } from "lucide-react";
+import { CalendarBlank } from "@phosphor-icons/react/dist/ssr";
 import { dateLabel } from "@/lib/utils";
 import {
   periodFor,
@@ -37,7 +37,7 @@ export function PeriodControl({
         ))}
       </div>
       <div className="management-period-dates">
-        <CalendarDays size={16} />
+        <CalendarBlank size={16} />
         <label>
           <span className="sr-only">Data inicial</span>
           <input

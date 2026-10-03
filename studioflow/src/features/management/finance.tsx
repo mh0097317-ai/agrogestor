@@ -1,6 +1,11 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { Plus, Download, ArrowUpRight, Wallet } from "lucide-react";
+import {
+  ArrowUpRight,
+  DownloadSimple,
+  Plus,
+  Wallet,
+} from "@phosphor-icons/react/dist/ssr";
 import {
   Avatar,
   Button,
@@ -139,7 +144,7 @@ export default function FinancePage() {
           <Card className="finance-overview">
             <div>
               <span className="management-eyebrow">
-                <Wallet size={16} />
+                <Wallet size={16} weight="duotone" />
                 Recebido no período
               </span>
               <strong>{money(reais(summary.revenueCents))}</strong>
@@ -264,7 +269,7 @@ export default function FinancePage() {
                 onClick={exportCsv}
                 disabled={!summary.payments.length}
               >
-                <Download size={16} />
+                <DownloadSimple size={16} />
                 Exportar CSV
               </Button>
             </div>

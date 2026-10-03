@@ -3,7 +3,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowRight,
+  EnvelopeSimple,
+  ShieldCheck,
+  User,
+} from "@phosphor-icons/react/dist/ssr";
+import { WhatsAppIcon } from "@/components/brand-icons";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
@@ -89,7 +95,9 @@ export function CustomerStep({
         {welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"}
       </h1>
       <p className="booking-subtitle">
-        Confirme seus dados para finalizar o agendamento.
+        {welcomeName
+          ? "Confira o resumo e confirme seu horário."
+          : "Só falta seu nome e WhatsApp."}
       </p>
       {welcomeName && (
         <div className="booking-welcome" role="status">
@@ -117,15 +125,18 @@ export function CustomerStep({
       >
         <label htmlFor="booking-name">
           Seu nome
-          <input
-            id="booking-name"
-            autoComplete="name"
-            placeholder="Como você se chama?"
-            maxLength={100}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "booking-name-error" : undefined}
-            {...register("name")}
-          />
+          <span className="booking-input">
+            <User weight="duotone" size={18} />
+            <input
+              id="booking-name"
+              autoComplete="name"
+              placeholder="Como você se chama?"
+              maxLength={100}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "booking-name-error" : undefined}
+              {...register("name")}
+            />
+          </span>
           {errors.name && (
             <span id="booking-name-error" className="booking-field-error">
               {errors.name.message}
@@ -134,19 +145,24 @@ export function CustomerStep({
         </label>
         <label htmlFor="booking-phone">
           WhatsApp
-          <input
-            id="booking-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder="(11) 99999-9999"
-            aria-invalid={!!errors.phone}
-            aria-describedby={errors.phone ? "booking-phone-error" : undefined}
-            {...register("phone", {
-              onChange: (event) =>
-                setValue("phone", phoneMask(event.target.value)),
-            })}
-          />
+          <span className="booking-input">
+            <WhatsAppIcon size={18} />
+            <input
+              id="booking-phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel-national"
+              placeholder="(11) 99999-9999"
+              aria-invalid={!!errors.phone}
+              aria-describedby={
+                errors.phone ? "booking-phone-error" : undefined
+              }
+              {...register("phone", {
+                onChange: (event) =>
+                  setValue("phone", phoneMask(event.target.value)),
+              })}
+            />
+          </span>
           {errors.phone && (
             <span id="booking-phone-error" className="booking-field-error">
               {errors.phone.message}
@@ -155,15 +171,20 @@ export function CustomerStep({
         </label>
         <label htmlFor="booking-email">
           E-mail <span className="booking-optional">opcional</span>
-          <input
-            id="booking-email"
-            type="email"
-            autoComplete="email"
-            placeholder="voce@email.com"
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? "booking-email-error" : undefined}
-            {...register("email")}
-          />
+          <span className="booking-input">
+            <EnvelopeSimple weight="duotone" size={18} />
+            <input
+              id="booking-email"
+              type="email"
+              autoComplete="email"
+              placeholder="voce@email.com"
+              aria-invalid={!!errors.email}
+              aria-describedby={
+                errors.email ? "booking-email-error" : undefined
+              }
+              {...register("email")}
+            />
+          </span>
           {errors.email && (
             <span id="booking-email-error" className="booking-field-error">
               {errors.email.message}
@@ -186,8 +207,8 @@ export function CustomerStep({
           Confirmar agendamento <ArrowRight weight="bold" size={18} />
         </BusyButton>
         <p className="booking-private-note">
-          <ShieldCheck weight="duotone" size={14} /> Seus dados estão seguros
-          conosco.
+          <ShieldCheck weight="duotone" size={14} /> Usamos seus dados só para
+          este agendamento.
         </p>
       </form>
     </section>

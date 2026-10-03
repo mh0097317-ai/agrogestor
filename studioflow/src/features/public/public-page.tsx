@@ -25,8 +25,8 @@ import {
 import { usePublicCatalog } from "./use-public-catalog";
 import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
+import { PublicWork } from "./public-gallery";
 import {
-  PublicAmbience,
   PublicAmenities,
   PublicTeam,
   PublicVisit,
@@ -90,7 +90,6 @@ export function PublicPage({ slug }: { slug: string }) {
     ? `Fecha às ${settings.openEnd}`
     : nextOpening(settings.openDays, weekday, time, settings.openStart);
   const bookHref = `/${slug}/agendar`;
-  const ambiencePhoto = business.photos?.find(Boolean) || business.cover;
 
   function notify(message: string) {
     setToast(message);
@@ -223,12 +222,11 @@ export function PublicPage({ slug }: { slug: string }) {
           </section>
 
           <PublicServices services={activeServices} slug={slug} />
-          {ambiencePhoto && (
-            <PublicAmbience
-              photo={ambiencePhoto}
-              businessName={business.name}
-            />
-          )}
+          <PublicWork
+            photos={(business.photos ?? []).filter(Boolean)}
+            businessName={business.name}
+            bookHref={bookHref}
+          />
           <PublicAmenities amenities={business.amenities} />
           <PublicTeam professionals={availableTeam} slug={slug} />
           <PublicVisit

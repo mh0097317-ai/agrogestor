@@ -276,6 +276,8 @@ function BookingWizard({
       <BookingHeader
         slug={business.slug}
         businessName={business.name}
+        photo={business.logo || business.cover}
+        category={business.category}
         canBack={step > 1}
         busy={busy}
         onBack={() => changeStep(step - 1)}
@@ -384,8 +386,8 @@ function BookingWizard({
                     </>
                   ) : (
                     <>
-                      <Clock weight="duotone" size={12} /> Rápido, simples e no
-                      seu tempo
+                      <Clock weight="duotone" size={12} /> Escolha um serviço
+                      para continuar
                     </>
                   )}
                 </span>

@@ -2,7 +2,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ShieldCheck, LoaderCircle } from "lucide-react";
+import {
+  ArrowRight,
+  CircleNotch,
+  ShieldCheck,
+} from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import "./login.css";
@@ -77,20 +81,20 @@ export function LoginForm() {
             <Brand tone="on-dark" size={40} animated />
           </Link>
           <div>
-            <p className="access-eyebrow">Seu negócio, no seu ritmo</p>
+            <p className="access-eyebrow">Para barbearias e salões</p>
             <h1>
-              Mais cuidado.
+              Agenda online
               <br />
-              Menos tarefas.
+              do seu salão.
             </h1>
             <p className="access-story-description">
-              Sua agenda, equipe e clientes em um lugar. Tempo de volta para o
-              que você faz de melhor.
+              Seus clientes marcam pelo link. Você acompanha horários, equipe e
+              caixa no painel, pelo celular ou computador.
             </p>
           </div>
           <p className="access-story-footer">
             <ShieldCheck size={16} />
-            Cada estabelecimento tem seu espaço.
+            Os dados de cada estabelecimento ficam separados e protegidos.
           </p>
         </aside>
         <section className="access-form-section">
@@ -102,7 +106,7 @@ export function LoginForm() {
             <Brand size={34} animated />
           </Link>
           <span className="access-form-eyebrow">
-            {signup ? "SEU PRÓXIMO CAPÍTULO" : "BEM-VINDO DE VOLTA"}
+            {signup ? "CRIAR CONTA" : "ENTRAR"}
           </span>
           <h2>{signup ? "Seu espaço começa aqui." : "Bom ter você aqui."}</h2>
           <p className="access-form-description">
@@ -169,7 +173,7 @@ export function LoginForm() {
             )}
             <button disabled={busy || !configured} className="access-submit">
               {busy ? (
-                <LoaderCircle size={18} className="animate-spin" />
+                <CircleNotch size={18} className="animate-spin" />
               ) : (
                 <ArrowRight size={18} />
               )}{" "}

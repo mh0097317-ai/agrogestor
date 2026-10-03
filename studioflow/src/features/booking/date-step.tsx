@@ -11,11 +11,13 @@ import {
 import { ptBR } from "date-fns/locale";
 import {
   CalendarBlank,
+  CalendarDots,
   CaretLeft,
   CaretRight,
   CircleNotch,
+  Rows,
 } from "@phosphor-icons/react/dist/ssr";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import { bookingDate } from "./date-format";
@@ -45,7 +47,11 @@ export function DateStep({
   const [month, setMonth] = useState(() =>
     startOfMonth(new Date(`${selectedDate || bookingDate()}T12:00:00`)),
   );
+  const [showMonth, setShowMonth] = useState(false);
+  const strip = useRef<HTMLDivElement>(null);
   const today = startOfDay(new Date(`${bookingDate()}T12:00:00`));
+  const todayKey = format(today, "yyyy-MM-dd");
+  const tomorrowKey = format(addDays(today, 1), "yyyy-MM-dd");
   const maxDate = addDays(today, settings.maxDays);
   const monthKey = format(month, "yyyy-MM");
   const calendarDays = useMemo(() => {
@@ -92,18 +98,35 @@ export function DateStep({
     { label: "Tarde", start: 12, end: 18 },
     { label: "Noite", start: 18, end: 24 },
   ];
+  const stripDays = calendarDays.filter(
+    (day): day is Date => !!day && day >= today && day <= maxDate,
+  );
+  const freeTimes = (key: string) =>
+    new Set((days[key] || []).map((slot) => slot.time)).size;
+
+  useEffect(() => {
+    const container = strip.current;
+    const active = container?.querySelector<HTMLElement>(".is-selected");
+    if (!container || !active) return;
+    container.scrollTo({
+      left:
+        active.offsetLeft - container.clientWidth / 2 + active.clientWidth / 2,
+      behavior: "smooth",
+    });
+  }, [activeDate, loading]);
+
   function chooseDate(date: Date) {
     onDate(format(date, "yyyy-MM-dd"));
     onSlot(undefined);
   }
   return (
     <section className="booking-step">
-      <h1 tabIndex={-1}>Quando você deseja agendar?</h1>
+      <h1 tabIndex={-1}>Quando fica melhor para você?</h1>
       <p className="booking-subtitle">
-        Selecione uma data e o horário disponível.
+        Só aparecem os horários que estão livres de verdade.
       </p>
       <div className="booking-scheduling-layout">
-        <div className="booking-calendar">
+        <div className={`booking-calendar ${showMonth ? "is-month" : ""}`}>
           <div className="booking-calendar-heading">
             <button
               onClick={() => setMonth(addMonths(month, -1))}
@@ -122,6 +145,59 @@ export function DateStep({
             >
               <CaretRight weight="bold" size={18} />
             </button>
+            <button
+              type="button"
+              className="booking-calendar-toggle"
+              onClick={() => setShowMonth((value) => !value)}
+              aria-pressed={showMonth}
+            >
+              {showMonth ? (
+                <Rows weight="bold" size={15} />
+              ) : (
+                <CalendarDots weight="duotone" size={16} />
+              )}
+              {showMonth ? "Ver dias" : "Ver mês"}
+            </button>
+          </div>
+          <div
+            className="booking-day-strip"
+            ref={strip}
+            role="group"
+            aria-label="Dias disponíveis"
+          >
+            {stripDays.map((day) => {
+              const key = format(day, "yyyy-MM-dd");
+              const count = loading ? 0 : freeTimes(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!loading && !count}
+                  className={`${activeDate === key ? "is-selected" : ""} ${loading ? "is-loading" : ""}`}
+                  onClick={() => chooseDate(day)}
+                  aria-pressed={activeDate === key}
+                  aria-label={`${format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}${count ? `, ${count} horários livres` : ", sem horários"}`}
+                >
+                  <small>
+                    {key === todayKey
+                      ? "Hoje"
+                      : key === tomorrowKey
+                        ? "Amanhã"
+                        : labels[day.getDay()]}
+                  </small>
+                  <strong>{format(day, "d")}</strong>
+                  <em>
+                    {loading
+                      ? "…"
+                      : count
+                        ? `${count} livres`
+                        : settings.openDays.includes(day.getDay())
+                          ? "Sem vagas"
+                          : "Fechado"}
+                  </em>
+                </button>
+              );
+            })}
           </div>
           <div className="booking-calendar-grid">
             {labels.map((label) => (

@@ -1,5 +1,5 @@
 "use client";
-import { Clock3, Pencil } from "lucide-react";
+import { Clock, PencilSimple } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import {
   Avatar,
@@ -39,7 +39,7 @@ export function CustomerProfile({
       open={!!customer}
       onClose={onClose}
       title="Perfil do cliente"
-      description="Cada visita faz parte da história."
+      description="Visitas, gastos e preferências."
     >
       {customer && (
         <div className="crm-profile">
@@ -59,7 +59,7 @@ export function CustomerProfile({
             ]}
           />
           <div className="crm-profile-last">
-            <Clock3 size={16} />
+            <Clock size={16} />
             <span>
               Última visita:{" "}
               {customerVisitLabel(customer).toLocaleLowerCase("pt-BR")}
@@ -67,7 +67,7 @@ export function CustomerProfile({
           </div>
           {customerNeedsReturn(customer) && (
             <div className="crm-return-note">
-              <Clock3 size={18} />
+              <Clock size={18} />
               <p>
                 {customer.name.split(" ")[0]} costuma retornar a cada{" "}
                 <strong>{customer.returnInterval} dias</strong> e está há{" "}
@@ -86,7 +86,7 @@ export function CustomerProfile({
             </WhatsAppLink>
             {canMutate("customers") && (
               <Button variant="secondary" onClick={() => onEdit(customer)}>
-                <Pencil size={16} />
+                <PencilSimple size={16} />
                 Editar cadastro
               </Button>
             )}

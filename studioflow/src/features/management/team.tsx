@@ -2,14 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Clock3,
-  CalendarDays,
   ArrowUpRight,
+  CalendarBlank,
+  Camera,
+  Clock,
+  PencilSimple,
+  Plus,
   Power,
-} from "lucide-react";
+  Trash,
+} from "@phosphor-icons/react/dist/ssr";
+import { ImageUpload } from "@/components/image-upload";
 import {
   Avatar,
   Button,
@@ -24,7 +26,7 @@ import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/use-permissions";
-import { businessDay, dateLabel } from "@/lib/utils";
+import { businessDay, dateLabel, formatPhone } from "@/lib/utils";
 import type { Professional } from "@/types";
 import {
   ManagementBoundary,
@@ -61,6 +63,7 @@ export default function TeamPage() {
   const [deleting, setDeleting] = useState<Professional | null>(null);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6]);
   const [pendingId, setPendingId] = useState("");
+  const [uploading, setUploading] = useState(false);
   const action = useFormAction();
   const removal = useFormAction();
   const professionals = (data?.professionals ?? []).filter((professional) =>
@@ -87,7 +90,7 @@ export default function TeamPage() {
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editable) return;
+    if (!editable || uploading) return;
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") ?? "").trim();
     const phone = String(form.get("phone") ?? "").trim();
@@ -213,7 +216,7 @@ export default function TeamPage() {
         actions={
           editable ? (
             <Button onClick={() => edit(null)}>
-              <Plus size={16} />
+              <Plus size={16} weight="bold" />
               Novo profissional
             </Button>
           ) : undefined
@@ -403,7 +406,7 @@ export default function TeamPage() {
                 <div className="team-next">
                   {nextAppointment ? (
                     <>
-                      <Clock3 size={15} />
+                      <Clock size={16} weight="duotone" />
                       <div>
                         <small>Próximo atendimento</small>
                         <strong>
@@ -414,7 +417,7 @@ export default function TeamPage() {
                     </>
                   ) : (
                     <>
-                      <CalendarDays size={15} />
+                      <CalendarBlank size={16} weight="duotone" />
                       <span>Sem próximos atendimentos hoje</span>
                     </>
                   )}
@@ -433,7 +436,7 @@ export default function TeamPage() {
                     }
                   >
                     Ver agenda
-                    <ArrowUpRight size={15} />
+                    <ArrowUpRight size={15} weight="bold" />
                   </Link>
                   {editable && (
                     <div className="management-row-actions">
@@ -443,7 +446,7 @@ export default function TeamPage() {
                         aria-label={"Editar " + professional.name}
                         onClick={() => edit(professional)}
                       >
-                        <Pencil size={16} />
+                        <PencilSimple size={17} weight="duotone" />
                       </button>
                       <button
                         className="management-icon-button"
@@ -456,7 +459,7 @@ export default function TeamPage() {
                         aria-label={`${professional.active ? "Pausar" : "Ativar"} ${professional.name}`}
                         onClick={() => void toggle(professional)}
                       >
-                        <Power size={16} />
+                        <Power size={17} weight="bold" />
                       </button>
                       <button
                         className="management-icon-button danger"
@@ -467,7 +470,7 @@ export default function TeamPage() {
                           setDeleting(professional);
                         }}
                       >
-                        <Trash2 size={16} />
+                        <Trash size={17} weight="duotone" />
                       </button>
                     </div>
                   )}
@@ -492,6 +495,21 @@ export default function TeamPage() {
       >
         <form className="management-form" onSubmit={save}>
           <FormSection title="Perfil">
+            <ImageUpload
+              label="Foto do profissional (opcional)"
+              hint="Rosto bem iluminado, de frente. Aparece na escolha do profissional."
+              name="photo"
+              preset="person"
+              shape="round"
+              defaultValue={editing?.photo ?? ""}
+              fallback={
+                <span className="team-photo-fallback">
+                  <Camera size={26} weight="duotone" />
+                </span>
+              }
+              disabled={action.busy}
+              onBusy={setUploading}
+            />
             <FormField label="Nome completo">
               <input
                 name="name"
@@ -505,7 +523,7 @@ export default function TeamPage() {
               <input
                 name="phone"
                 type="tel"
-                defaultValue={editing?.phone}
+                defaultValue={editing?.phone ? formatPhone(editing.phone) : ""}
                 placeholder="(11) 99999-9999"
               />
             </FormField>
@@ -514,14 +532,6 @@ export default function TeamPage() {
                 name="specialties"
                 defaultValue={editing?.specialties.join(", ")}
                 placeholder="Cortes, barba, visagismo"
-              />
-            </FormField>
-            <FormField label="Foto (URL, opcional)">
-              <input
-                name="photo"
-                type="url"
-                defaultValue={editing?.photo}
-                placeholder="https://..."
               />
             </FormField>
           </FormSection>

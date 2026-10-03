@@ -7,7 +7,7 @@ import {
   type ButtonHTMLAttributes,
   type HTMLAttributes,
 } from "react";
-import { X, Inbox, Loader2 } from "lucide-react";
+import { CircleNotch, Tray, X } from "@phosphor-icons/react/dist/ssr";
 import { createPortal } from "react-dom";
 import { initials, statusLabels } from "@/lib/utils";
 export function Button({
@@ -81,7 +81,7 @@ export function EmptyState({
 }) {
   return (
     <div className="empty-state">
-      <Inbox size={32} />
+      <Tray size={34} weight="duotone" />
       <h3>{title}</h3>
       {description && <p>{description}</p>}
       {action}
@@ -108,7 +108,7 @@ export function PageHeader({
   );
 }
 export function Spinner() {
-  return <Loader2 className="spin" size={20} />;
+  return <CircleNotch className="spin" size={20} />;
 }
 export function Modal({
   open,

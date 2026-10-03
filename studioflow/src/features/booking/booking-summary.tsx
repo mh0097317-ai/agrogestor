@@ -45,7 +45,7 @@ export function BookingSummary({
         </div>
       ) : (
         <p className="booking-summary-placeholder">
-          Seu próximo momento de cuidado começa com a escolha do serviço.
+          Escolha um serviço para começar.
         </p>
       )}
       <dl>
@@ -79,8 +79,7 @@ export function BookingSummary({
         </div>
       )}
       <p className="booking-summary-safe">
-        <ShieldCheck weight="duotone" size={15} /> Seus dados estão seguros
-        conosco.
+        <ShieldCheck weight="duotone" size={15} /> Sem cadastro e sem senha.
       </p>
     </div>
   );

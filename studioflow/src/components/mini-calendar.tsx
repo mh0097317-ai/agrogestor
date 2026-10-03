@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import {
   startOfMonth,
   endOfMonth,
@@ -38,14 +38,14 @@ export function MiniCalendar({
             onClick={() => setMonth(addMonths(month, -1))}
             aria-label="Mês anterior"
           >
-            <ChevronLeft size={14} />
+            <CaretLeft size={14} />
           </button>
           <button
             className="icon-button"
             onClick={() => setMonth(addMonths(month, 1))}
             aria-label="Próximo mês"
           >
-            <ChevronRight size={14} />
+            <CaretRight size={14} />
           </button>
         </div>
       </div>

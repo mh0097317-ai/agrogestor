@@ -25,5 +25,5 @@
   <rect width="512" height="512" rx="120" fill="url(#glow)"/>
   <path d="M160 316 A 96 96 0 0 0 352 316 A 96 96 0 0 0 256 220 L 256 276 A 40 40 0 0 1 296 316 A 40 40 0 0 1 216 316 Z" fill="url(#bottom)"/>
   <path filter="url(#lift)" d="M352 196 A 96 96 0 0 0 160 196 A 96 96 0 0 0 256 292 L 256 236 A 40 40 0 0 1 216 196 A 40 40 0 0 1 296 196 Z" fill="url(#top)"/>
-  <path d="M394 100 Q399 130 428 135 Q399 140 394 170 Q389 140 360 135 Q389 130 394 100Z" fill="#fff"/>
+  <circle cx="388" cy="138" r="20" fill="#8CBBEA"/>
 </svg>

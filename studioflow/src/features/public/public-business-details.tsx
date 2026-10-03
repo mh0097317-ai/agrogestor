@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowRight,
   ArrowUpRight,
   Car,
   CheckCircle,
@@ -28,26 +27,6 @@ function amenityIcon(amenity: string) {
   if (/bebida|café|cafe/i.test(amenity)) return Coffee;
   if (/climat|ar.condicionado/i.test(amenity)) return Snowflake;
   return CheckCircle;
-}
-
-export function PublicAmbience({
-  photo,
-  businessName,
-}: {
-  photo: string;
-  businessName: string;
-}) {
-  return (
-    <a href="#espaco" className="pp-ambience" data-reveal="scale">
-      <PublicImage src={photo} alt="" className="pp-ambience-photo" />
-      <span className="pp-ambience-shade" />
-      <span className="pp-ambience-text">
-        <strong>Conheça o espaço</strong>
-        <span>Fotos, horários e como chegar ao {businessName}.</span>
-      </span>
-      <ArrowRight size={20} weight="bold" className="pp-ambience-arrow" />
-    </a>
-  );
 }
 
 export function PublicAmenities({ amenities }: { amenities: string[] }) {
@@ -127,28 +106,11 @@ export function PublicVisit({
   weekday: number;
   location: string;
 }) {
-  const photos = (business.photos || []).filter(Boolean).slice(0, 4);
   return (
     <section id="espaco" className="pp-section">
       <div className="pp-section-head" data-reveal>
-        <h2>O espaço</h2>
+        <h2>Horário e endereço</h2>
       </div>
-      {photos.length > 0 && (
-        <div
-          className={`pp-gallery ${photos.length === 1 ? "is-single" : ""}`}
-          data-reveal="scale"
-        >
-          {photos.map((photo, index) => (
-            <PublicImage
-              src={photo}
-              alt={`${business.name}: foto do espaço ${index + 1}`}
-              className="pp-gallery-photo"
-              segment={business.category}
-              key={`${photo}-${index}`}
-            />
-          ))}
-        </div>
-      )}
       <div className="pp-visit">
         <div className="pp-hours" data-reveal>
           <h3>Horário de funcionamento</h3>

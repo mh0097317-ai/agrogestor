@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
-import { Download, CalendarCheck, ArrowUpRight } from "lucide-react";
+import {
+  ArrowUpRight,
+  CalendarCheck,
+  DownloadSimple,
+} from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import {
   Avatar,
@@ -60,14 +64,14 @@ export default function ReportsPage() {
     <ManagementBoundary>
       <PageHeader
         title="Relatórios"
-        description="Veja o que movimenta seu estabelecimento."
+        description="Faturamento, serviços e profissionais por período."
         actions={
           <Button
             variant="secondary"
             onClick={download}
             disabled={!summary || !validPeriod(period)}
           >
-            <Download size={16} />
+            <DownloadSimple size={16} />
             Exportar CSV
           </Button>
         }
@@ -153,7 +157,7 @@ export default function ReportsPage() {
                   <h2>Saúde da agenda</h2>
                   <p>{summary.appointments.length} agendamentos no período.</p>
                 </div>
-                <CalendarCheck size={20} />
+                <CalendarCheck size={20} weight="duotone" />
               </div>
               <div className="management-status-breakdown">
                 {(

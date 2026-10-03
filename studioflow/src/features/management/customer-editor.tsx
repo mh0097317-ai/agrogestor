@@ -63,7 +63,7 @@ export function CustomerEditor({
         if (!action.busy) onClose();
       }}
       title={customer ? "Editar cliente" : "Novo cliente"}
-      description="O primeiro passo para uma boa relação."
+      description="Cadastre o nome e o WhatsApp do cliente."
     >
       <form className="management-form" onSubmit={save} aria-busy={action.busy}>
         <FormSection

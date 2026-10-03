@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Clock3, Plus } from "lucide-react";
+import { ArrowUpRight, Clock, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -70,7 +70,7 @@ export default function CustomersPage() {
       <div className="crm-page">
         <PageHeader
           title="Clientes"
-          description="Boas relações merecem continuidade."
+          description="Histórico, frequência e contato de quem já agendou."
           actions={
             canMutate("customers") && (
               <Button onClick={() => setEditing(null)}>
@@ -86,7 +86,7 @@ export default function CustomersPage() {
           </span>
           {returnCount > 0 && (
             <button onClick={() => setFilter("return")}>
-              <Clock3 size={16} />
+              <Clock size={16} />
               <strong>{returnCount}</strong> demorando mais que o normal para
               voltar
               <ArrowUpRight size={16} />

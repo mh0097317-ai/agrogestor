@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
+  CalendarDots,
   Check,
+  Checks,
   Play,
-  CheckCheck,
-  CalendarClock,
-  UserRoundX,
+  UserMinus,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -19,7 +19,7 @@ import {
   Button,
   Spinner,
 } from "@/components/ui";
-import { money, dateLabel } from "@/lib/utils";
+import { money, dateLabel, formatPhone } from "@/lib/utils";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { AppointmentForm } from "./appointment-form";
 import { appointmentServices } from "./agenda-helpers";
@@ -77,7 +77,7 @@ export function AppointmentDetail({
           ? {
               status: "completed" as const,
               label: "Concluir atendimento",
-              Icon: CheckCheck,
+              Icon: Checks,
             }
           : null;
   async function update(status: AppointmentStatus) {
@@ -120,7 +120,7 @@ export function AppointmentDetail({
           <Avatar name={current.customerName} size={56} />
           <div>
             <h3>{current.customerName}</h3>
-            <p>{current.customerPhone}</p>
+            <p>{formatPhone(current.customerPhone)}</p>
           </div>
         </div>
         <div className="appointment-detail-main">
@@ -205,7 +205,7 @@ export function AppointmentDetail({
                     onClick={() => setEditing(true)}
                     disabled={busy}
                   >
-                    <CalendarClock size={17} />
+                    <CalendarDots size={17} />
                     Editar ou reagendar
                   </Button>
                   <Button
@@ -213,7 +213,7 @@ export function AppointmentDetail({
                     onClick={() => setConfirm("no_show")}
                     disabled={busy}
                   >
-                    <UserRoundX size={17} />
+                    <UserMinus size={17} />
                     Marcar falta
                   </Button>
                   <Button

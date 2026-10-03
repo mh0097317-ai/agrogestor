@@ -8,7 +8,6 @@ import {
   Check,
   Clock,
   Copy,
-  Scissors,
   X,
   XCircle,
 } from "@phosphor-icons/react/dist/ssr";
@@ -21,6 +20,7 @@ import {
   BookingHeader,
   BusyButton,
   PublicError,
+  PublicImage,
   PublicLoading,
   PublicRefreshNotice,
 } from "@/features/public/public-ui";
@@ -34,12 +34,7 @@ import { BookingProgress } from "./booking-flow";
 import { BookingSummary } from "./booking-summary";
 import { DateStep } from "./date-step";
 import { downloadCalendar } from "./calendar-export";
-import {
-  bookingDate,
-  bookingDateLabel,
-  bookingDateShort,
-  bookingTime,
-} from "./date-format";
+import { bookingDate, bookingDateShort, bookingTime } from "./date-format";
 import "@/features/public/public.css";
 
 export function BookingConfirmation({ token }: { token: string }) {
@@ -120,10 +115,10 @@ function ConfirmationContent({
     confirmed: `Tudo certo, ${appointment.customerName.split(" ")[0]}. Esperamos você em breve.`,
     pending:
       "Seu pedido está salvo e aguarda a confirmação do estabelecimento.",
-    in_progress: "Seu momento de cuidado está acontecendo agora.",
-    completed: "Obrigado pela visita. Será um prazer receber você novamente.",
+    in_progress: "Você já está sendo atendido.",
+    completed: "Obrigado pela visita! Quando quiser, é só agendar de novo.",
     cancelled:
-      "Seu horário foi liberado. Será um prazer receber você em outro momento.",
+      "Seu horário foi liberado. Você pode agendar outro quando quiser.",
     no_show: "Fale com o estabelecimento para combinar um novo horário.",
   }[appointment.status];
   const whatsapp = `https://wa.me/55${business.phone.replace(/\D/g, "").replace(/^55(?=\d{11}$)/, "")}`;
@@ -186,7 +181,12 @@ function ConfirmationContent({
   }
   return (
     <div className="booking-site">
-      <BookingHeader slug={business.slug} businessName={business.name} />
+      <BookingHeader
+        slug={business.slug}
+        businessName={business.name}
+        photo={business.logo || business.cover}
+        category={business.category}
+      />
       <main className="booking-confirmation-main">
         <BookingProgress step={5} />
         {rescheduling && service ? (
@@ -250,18 +250,6 @@ function ConfirmationContent({
                 <SuccessCheck celebrate={celebrate} />
               )}
             </div>
-            <span className="public-eyebrow">
-              {
-                {
-                  confirmed: "SEU MOMENTO ESTÁ RESERVADO",
-                  pending: "AGUARDANDO O ESTABELECIMENTO",
-                  in_progress: "ATENDIMENTO EM ANDAMENTO",
-                  completed: "OBRIGADO PELA VISITA",
-                  cancelled: "ATÉ A PRÓXIMA",
-                  no_show: "FALE COM O ESTABELECIMENTO",
-                }[appointment.status]
-              }
-            </span>
             <h1>{title}</h1>
             <p className="booking-subtitle">{message}</p>
             <div className="booking-confirmation-receipt">
@@ -273,7 +261,12 @@ function ConfirmationContent({
                 totalPrice={appointment.price}
               />
               <div className="booking-confirmation-place">
-                <Scissors weight="duotone" size={18} />
+                <PublicImage
+                  src={business.logo || business.cover}
+                  alt=""
+                  className="booking-confirmation-place-photo"
+                  segment={business.category}
+                />
                 <div>
                   <strong>{business.name}</strong>
                   <span>{business.address}</span>
@@ -356,8 +349,8 @@ function ConfirmationContent({
             </div>
             <p className="booking-confirmation-footnote">
               {cancelled
-                ? "A gente se vê em breve."
-                : `Guarde este link para gerenciar seu horário. ${bookingDateLabel(appointment.start)} já tem um momento reservado para você.`}
+                ? "Quando quiser, é só marcar um novo horário."
+                : "Guarde este link para remarcar ou cancelar quando precisar."}
             </p>
           </>
         )}

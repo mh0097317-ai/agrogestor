@@ -64,9 +64,9 @@
     font-size: 12px;
   }
   .booking-brand-mark {
-    height: 30px;
-    width: 30px;
-    border-radius: 8px;
+    height: 34px;
+    width: 34px;
+    border-radius: 10px;
   }
   .booking-safe {
     display: none;

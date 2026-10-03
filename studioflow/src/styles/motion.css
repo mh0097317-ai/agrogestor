@@ -254,7 +254,9 @@
 .brand-logo .brand-spark {
   transform-box: fill-box;
   transform-origin: center;
-  animation: sf-twinkle 3.6s ease-in-out infinite;
+}
+.brand-logo.is-animated .brand-spark {
+  animation: sf-pop 600ms var(--ease-spring) 500ms both;
 }
 .brand-logo.is-animated .brand-arch-top {
   animation: sf-arch-top 800ms var(--ease-out) both;

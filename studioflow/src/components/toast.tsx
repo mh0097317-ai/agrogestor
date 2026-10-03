@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle, X } from "@phosphor-icons/react/dist/ssr";
 const Context = createContext<{ toast: (message: string) => void }>({
   toast: () => {},
 });
@@ -21,7 +21,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {message && (
         <div role="status" className="toast">
-          <CheckCircle2 size={20} />
+          <CheckCircle size={20} weight="fill" />
           <span>{message}</span>
           <button onClick={() => setMessage("")} aria-label="Fechar aviso">
             <X size={16} />

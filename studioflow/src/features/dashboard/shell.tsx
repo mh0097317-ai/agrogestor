@@ -109,9 +109,9 @@ function Shell({ children }: { children: ReactNode }) {
       <aside className="sidebar">
         <Link className="sidebar-business" href="/dashboard">
           <span className="sidebar-business-mark">
-            {data?.business.logo ? (
+            {data?.business.logo || data?.business.cover ? (
               <Avatar
-                src={data.business.logo}
+                src={data.business.logo || data.business.cover}
                 name={data.business.name}
                 size={40}
               />
@@ -261,11 +261,19 @@ function Shell({ children }: { children: ReactNode }) {
         </header>
         <header className="mobile-top">
           <Link className="mobile-top-business" href="/dashboard">
-            <SegmentIcon
-              category={data?.business.category}
-              size={18}
-              weight="duotone"
-            />
+            {data?.business.logo || data?.business.cover ? (
+              <Avatar
+                src={data.business.logo || data.business.cover}
+                name={data.business.name}
+                size={30}
+              />
+            ) : (
+              <SegmentIcon
+                category={data?.business.category}
+                size={18}
+                weight="duotone"
+              />
+            )}
             <span>{data?.business.name || "Seu estabelecimento"}</span>
           </Link>
           <Link href={`/${slug}`}>

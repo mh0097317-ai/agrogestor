@@ -3,55 +3,47 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
-  ArrowRight,
   ArrowLeft,
-  Scissors,
-  Sparkles,
-  Hand,
-  Eye,
-  Heart,
-  UserRound,
+  ArrowRight,
+  ArrowSquareOut,
+  CalendarBlank,
   Check,
-  Plus,
-  Trash2,
+  CircleNotch,
   Copy,
-  ExternalLink,
-  CalendarDays,
-  Loader2,
-} from "lucide-react";
+  Plus,
+  Trash,
+} from "@phosphor-icons/react/dist/ssr";
 import { Button, Card } from "@/components/ui";
 import { Brand } from "@/components/brand";
 import { SegmentIcon } from "@/lib/segments";
 import { FormField, FormError, DayPicker, dayNames } from "./shared";
 import { OnboardingPreview } from "./onboarding-preview";
+import { ImageUpload } from "@/components/image-upload";
+import { storedImagePattern } from "@/lib/image";
 import "./onboarding.css";
 import "./onboarding-preview.css";
 
 const categories = [
-  { name: "Barbearia", description: "Cortes, barba e estilo", icon: Scissors },
+  { name: "Barbearia", description: "Corte, barba e sobrancelha" },
   {
     name: "Salão de beleza",
-    description: "Beleza em todas as formas",
-    icon: Sparkles,
+    description: "Cabelo, unhas e maquiagem",
   },
   {
     name: "Cabeleireiro",
-    description: "Cuidado e transformação",
-    icon: Scissors,
+    description: "Corte, cor e escova",
   },
   {
     name: "Nail designer",
-    description: "Arte nas pontas dos dedos",
-    icon: Hand,
+    description: "Gel, fibra e esmaltação",
   },
-  { name: "Lash designer", description: "Um olhar especial", icon: Eye },
-  { name: "Estética", description: "Bem-estar e autocuidado", icon: Heart },
+  { name: "Lash designer", description: "Extensão e lifting de cílios" },
+  { name: "Estética", description: "Limpeza de pele e massagem" },
   {
     name: "Profissional autônomo",
-    description: "Seu talento, seu negócio",
-    icon: UserRound,
+    description: "Atende sozinho, com agenda própria",
   },
-  { name: "Outro", description: "Um espaço para seu negócio", icon: Sparkles },
+  { name: "Outro", description: "Outro serviço com hora marcada" },
 ];
 const steps = ["Negócio", "Identidade", "Serviços", "Equipe", "Horários"];
 type DraftService = {
@@ -66,6 +58,7 @@ export default function OnboardingPage() {
   const [category, setCategory] = useState("Barbearia");
   const [name, setName] = useState("");
   const [cover, setCover] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [services, setServices] = useState<DraftService[]>([
     { id: "first", name: "", duration: "40", price: "" },
   ]);
@@ -81,11 +74,9 @@ export default function OnboardingPage() {
     setError("");
     if (
       step === 1 &&
-      (name.trim().length < 3 || (cover && !/^https?:\/\//.test(cover)))
+      (name.trim().length < 3 || (cover && !storedImagePattern.test(cover)))
     ) {
-      setError(
-        "Informe um nome com pelo menos 3 letras e uma URL de capa válida, se desejar.",
-      );
+      setError("Informe um nome com pelo menos 3 letras.");
       return;
     }
     if (
@@ -203,22 +194,24 @@ export default function OnboardingPage() {
                 {steps.map((label, index) => (
                   <div key={label} className={index <= step ? "active" : ""}>
                     <span>
-                      {index < step ? <Check size={13} /> : index + 1}
+                      {index < step ? (
+                        <Check size={13} weight="bold" />
+                      ) : (
+                        index + 1
+                      )}
                     </span>
                     <small>{label}</small>
                   </div>
                 ))}
               </div>
-              <div className="onboarding-step-label">
-                SEU NEGÓCIO COMEÇA AQUI • {step + 1} DE 5
-              </div>
+              <div className="onboarding-step-label">ETAPA {step + 1} DE 5</div>
             </>
           )}
           {step === 0 && (
             <>
               <h1>Qual é o seu negócio?</h1>
               <p className="onboarding-description">
-                Uma experiência feita para o seu segmento.
+                Usamos isso para montar sua página de agendamento.
               </p>
               <div className="onboarding-category-grid">
                 {categories.map((item) => (
@@ -234,7 +227,11 @@ export default function OnboardingPage() {
                     <strong>{item.name}</strong>
                     <small>{item.description}</small>
                     {category === item.name && (
-                      <Check size={15} className="onboarding-category-check" />
+                      <Check
+                        size={15}
+                        weight="bold"
+                        className="onboarding-category-check"
+                      />
                     )}
                   </button>
                 ))}
@@ -243,7 +240,7 @@ export default function OnboardingPage() {
           )}
           {step === 1 && (
             <>
-              <h1>Vamos dar nome à sua história.</h1>
+              <h1>Como se chama seu estabelecimento?</h1>
               <p className="onboarding-description">
                 Sua capa é o primeiro convite. A logo pode vir depois.
               </p>
@@ -258,30 +255,17 @@ export default function OnboardingPage() {
                       autoFocus
                     />
                   </FormField>
-                  <FormField
-                    label="Foto de capa (URL, opcional)"
-                    hint="Uma foto horizontal do espaço funciona muito bem. Você também poderá enviar uma foto nas configurações."
-                  >
-                    <input
-                      value={cover}
-                      onChange={(event) => setCover(event.target.value)}
-                      type="url"
-                      placeholder="https://..."
-                    />
-                  </FormField>
-                  {cover && /^https?:\/\//.test(cover) ? (
-                    <img
-                      className="onboarding-cover"
-                      src={cover}
-                      alt="Prévia da capa"
-                    />
-                  ) : (
-                    <div className="onboarding-cover-fallback">
-                      <Scissors size={30} strokeWidth={1.4} />
-                      <strong>{name || "Seu estabelecimento"}</strong>
-                      <span>{category}</span>
-                    </div>
-                  )}
+                  <ImageUpload
+                    label="Foto de capa (opcional)"
+                    hint="Uma foto horizontal do seu espaço funciona muito bem. Dá para trocar depois."
+                    preset="cover"
+                    shape="wide"
+                    value={cover}
+                    onChange={setCover}
+                    emptyTitle="Adicionar foto de capa"
+                    emptyText="A fachada, a recepção ou as cadeiras do seu espaço"
+                    onBusy={setUploading}
+                  />
                 </div>
               </Card>
             </>
@@ -308,7 +292,7 @@ export default function OnboardingPage() {
                           }
                           aria-label={`Remover serviço ${index + 1}`}
                         >
-                          <Trash2 size={16} />
+                          <Trash size={17} weight="duotone" />
                         </button>
                       )}
                     </div>
@@ -386,7 +370,7 @@ export default function OnboardingPage() {
                 }
                 disabled={services.length >= 30}
               >
-                <Plus size={16} />
+                <Plus size={16} weight="bold" />
                 Adicionar serviço
               </Button>
             </>
@@ -427,7 +411,7 @@ export default function OnboardingPage() {
                           }
                           aria-label={`Remover profissional ${index + 1}`}
                         >
-                          <Trash2 size={16} />
+                          <Trash size={17} weight="duotone" />
                         </button>
                       )}
                     </div>
@@ -439,7 +423,7 @@ export default function OnboardingPage() {
                     }
                     disabled={professionals.length >= 30}
                   >
-                    <Plus size={16} />
+                    <Plus size={16} weight="bold" />
                     Adicionar profissional
                   </Button>
                   <p className="management-info">
@@ -484,7 +468,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="onboarding-summary">
                     <span>
-                      <CalendarDays size={18} />
+                      <CalendarBlank size={19} weight="duotone" />
                     </span>
                     <div>
                       <strong>{name}</strong>
@@ -514,7 +498,7 @@ export default function OnboardingPage() {
                     setError("");
                   }}
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={16} weight="bold" />
                   Voltar
                 </Button>
               ) : (
@@ -523,16 +507,20 @@ export default function OnboardingPage() {
               {step === 4 ? (
                 <Button disabled={busy} onClick={() => void finish()}>
                   {busy ? (
-                    <Loader2 size={16} className="management-spin" />
+                    <CircleNotch
+                      size={16}
+                      weight="bold"
+                      className="management-spin"
+                    />
                   ) : (
-                    <Check size={16} />
+                    <Check size={16} weight="bold" />
                   )}
                   {busy ? "Preparando seu espaço..." : "Concluir configuração"}
                 </Button>
               ) : (
-                <Button onClick={continueStep}>
+                <Button onClick={continueStep} disabled={uploading}>
                   Continuar
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} weight="bold" />
                 </Button>
               )}
             </div>
@@ -540,7 +528,7 @@ export default function OnboardingPage() {
           {step === 5 && (
             <div className="onboarding-success">
               <div className="onboarding-success-icon">
-                <Check size={36} strokeWidth={1.7} />
+                <Check size={36} weight="bold" />
               </div>
               <span className="onboarding-step-label">
                 BEM-VINDO AO SEU PRÓXIMO CAPÍTULO
@@ -556,24 +544,24 @@ export default function OnboardingPage() {
                   onClick={() => void copy()}
                   className="management-link-button"
                 >
-                  <Copy size={15} />
+                  <Copy size={16} weight="duotone" />
                   {copied ? "Copiado!" : "Copiar link"}
                 </button>
               </Card>
               <div className="onboarding-success-actions">
                 <Link href={`/${slug}`} className="management-link-button">
-                  <ExternalLink size={16} />
+                  <ArrowSquareOut size={16} weight="bold" />
                   Ver página pública
                 </Link>
                 <Link href="/dashboard" className="onboarding-dashboard-link">
                   Ir para meu painel
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} weight="bold" />
                 </Link>
               </div>
             </div>
           )}
           <footer className="onboarding-footer">
-            Studioflow • Mais tempo para fazer o que você ama.
+            StudioFlow · agenda online para barbearias e salões
           </footer>
         </div>
         {step < 5 && (
