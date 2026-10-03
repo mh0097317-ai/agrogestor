@@ -1,0 +1,212 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Scissors, ShieldCheck, LoaderCircle } from "lucide-react";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
+import "./login.css";
+export function LoginForm() {
+  const router = useRouter();
+  const [signup, setSignup] = useState(false),
+    [email, setEmail] = useState(""),
+    [password, setPassword] = useState(""),
+    [name, setName] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState("");
+  const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    dev = process.env.NODE_ENV !== "production";
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const client = createSupabaseBrowser();
+      if (!client)
+        throw new Error(
+          "O acesso por conta está em preparação. Você já pode explorar a demonstração.",
+        );
+      if (signup) {
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) throw error;
+        if (data.session) router.push("/onboarding");
+        else
+          setMessage(
+            "Confira seu e-mail para confirmar a conta e criar seu estabelecimento.",
+          );
+      } else {
+        const { error } = await client.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        const {
+          data: { user },
+        } = await client.auth.getUser();
+        const { data } = await client
+          .from("business_members")
+          .select("business_id")
+          .eq("user_id", user!.id)
+          .eq("active", true)
+          .limit(1);
+        router.push(data?.length ? "/dashboard" : "/onboarding");
+        router.refresh();
+      }
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Não foi possível entrar.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="access-page">
+      <div className="access-layout">
+        <aside className="access-story">
+          <Link href="/" className="access-brand">
+            <Scissors />
+            studioflow
+          </Link>
+          <div>
+            <p className="access-eyebrow">Seu negócio, no seu ritmo</p>
+            <h1>
+              Mais cuidado.
+              <br />
+              Menos tarefas.
+            </h1>
+            <p className="access-story-description">
+              Sua agenda, equipe e clientes em um lugar. Tempo de volta para o
+              que você faz de melhor.
+            </p>
+          </div>
+          <p className="access-story-footer">
+            <ShieldCheck size={16} />
+            Cada estabelecimento tem seu espaço.
+          </p>
+        </aside>
+        <section className="access-form-section">
+          <Link href="/" className="access-mobile-brand">
+            <Scissors size={18} />
+            studioflow
+          </Link>
+          <span className="access-form-eyebrow">
+            {signup ? "SEU PRÓXIMO CAPÍTULO" : "BEM-VINDO DE VOLTA"}
+          </span>
+          <h2>{signup ? "Seu espaço começa aqui." : "Bom ter você aqui."}</h2>
+          <p className="access-form-description">
+            {signup
+              ? "Crie sua conta e organize seu próximo capítulo."
+              : "Entre para acompanhar o seu estabelecimento."}
+          </p>
+          <form onSubmit={submit} className="access-form" aria-busy={busy}>
+            {signup && (
+              <label className="block text-sm text-slate-700">
+                Seu nome
+                <input
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
+                  placeholder="Como podemos chamar você?"
+                />
+              </label>
+            )}
+            <label className="block text-sm text-slate-700">
+              E-mail
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
+                placeholder="voce@empresa.com"
+              />
+            </label>
+            <label className="block text-sm text-slate-700">
+              Senha
+              <input
+                required
+                type="password"
+                minLength={8}
+                autoComplete={signup ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
+                placeholder="Pelo menos 8 caracteres"
+              />
+            </label>
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl bg-red-50 text-red-700 p-3 text-sm"
+              >
+                {error}
+              </p>
+            )}
+            {message && (
+              <p
+                role="status"
+                className="rounded-xl bg-emerald-50 text-emerald-700 p-3 text-sm"
+              >
+                {message}
+              </p>
+            )}
+            <button disabled={busy || !configured} className="access-submit">
+              {busy ? (
+                <LoaderCircle size={18} className="animate-spin" />
+              ) : (
+                <ArrowRight size={18} />
+              )}{" "}
+              {signup ? "Criar minha conta" : "Entrar no painel"}
+            </button>
+          </form>
+          <p className="access-switch">
+            {signup ? "Já tem uma conta?" : "Primeira vez por aqui?"}{" "}
+            <button
+              className="access-link-button"
+              onClick={() => {
+                setSignup(!signup);
+                setError("");
+                setMessage("");
+              }}
+            >
+              {signup ? "Entrar" : "Criar conta"}
+            </button>
+          </p>
+          {!configured && (
+            <div className="access-demo">
+              <p>
+                O acesso por conta está em preparação.
+                {dev
+                  ? " Explore a demonstração para conhecer o painel."
+                  : " Entre em contato com o responsável pelo sistema para habilitar seu acesso."}
+              </p>
+              {dev && (
+                <Link href="/dashboard" className="access-demo-link">
+                  Explorar demonstração
+                  <ArrowRight size={16} />
+                </Link>
+              )}
+            </div>
+          )}
+          <Link href="/barber-011" className="access-customer-link">
+            Conhecer a experiência do cliente
+          </Link>
+        </section>
+      </div>
+    </main>
+  );
+}

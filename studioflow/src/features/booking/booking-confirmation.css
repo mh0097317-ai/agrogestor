@@ -1,0 +1,180 @@
+.booking-confirmation-main {
+  max-width: 680px;
+  margin: 35px auto 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 34px 48px 40px;
+  text-align: center;
+  box-shadow: 0 4px 20px #07111f03;
+}
+.booking-success-mark {
+  width: 72px;
+  height: 72px;
+  margin: 15px auto 22px;
+  border-radius: 50%;
+  background: var(--public-navy);
+  box-shadow: 0 0 0 9px #eff4f8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: public-fade 0.25s ease-out;
+}
+.booking-success-mark.is-cancelled {
+  background: #697d90;
+  box-shadow: 0 0 0 9px #f2f4f7;
+}
+.booking-confirmation-main > h1 {
+  font-size: 36px;
+  letter-spacing: -1.3px;
+  font-weight: 550;
+  margin-top: 9px;
+}
+.booking-confirmation-main > .booking-subtitle {
+  max-width: 350px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.booking-confirmation-receipt {
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 0 0 23px;
+}
+.booking-confirmation-receipt .booking-summary {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 24px 24px 18px;
+  background: #fff;
+}
+.booking-confirmation-receipt .booking-summary > .public-eyebrow,
+.booking-confirmation-receipt .booking-summary-safe {
+  display: none;
+}
+.booking-confirmation-receipt .booking-summary-service {
+  margin-top: 0;
+  padding-bottom: 15px;
+}
+.booking-confirmation-receipt .booking-summary dl {
+  gap: 13px;
+  margin: 15px 0 0;
+}
+.booking-confirmation-receipt .booking-summary dl > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+}
+.booking-confirmation-receipt .booking-summary dd {
+  margin-left: 0;
+  text-align: right;
+  font-size: 14px;
+}
+.booking-confirmation-receipt .booking-summary-total {
+  padding-top: 12px;
+  margin-top: 15px;
+}
+.booking-confirmation-receipt .booking-summary-total strong {
+  font-size: 26px;
+  font-weight: 550;
+}
+.booking-confirmation-place {
+  padding: 15px 21px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #edf0f4;
+  color: #6a8096;
+}
+.booking-confirmation-place strong {
+  display: block;
+  color: #3d546b;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.booking-confirmation-place span {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+  display: block;
+  margin-top: 3px;
+}
+.booking-confirmation-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 13px 3px 21px;
+  background: #f7f9fb;
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px solid #edf0f4;
+  letter-spacing: 0.4px;
+}
+.booking-confirmation-actions {
+  display: grid;
+  flex-direction: column;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.booking-confirmation-actions .public-button {
+  width: 100%;
+}
+.booking-confirmation-actions > .public-button:first-child {
+  grid-column: 1 / -1;
+}
+.booking-cancel-button {
+  font-size: 13px;
+}
+.booking-confirmation-social {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.booking-confirmation-social > a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  border: 1px solid #e6ebf0;
+  border-radius: 10px;
+  padding: 11px 7px;
+  font-size: 14px;
+  color: #64748b;
+  min-height: 48px;
+}
+.booking-confirmation-footnote {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.8;
+  margin: 22px auto 0 !important;
+  max-width: 365px;
+}
+.booking-reschedule {
+  text-align: left;
+}
+.booking-reschedule > .public-text-link {
+  margin-bottom: 23px;
+}
+.booking-reschedule > .public-button {
+  width: 100%;
+  margin-top: 25px;
+}
+.booking-cancel-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f4f8;
+  color: #456682;
+  margin: 0 auto 21px;
+}
+.booking-modal-policy {
+  font-size: 12px !important;
+  color: #64748b !important;
+}

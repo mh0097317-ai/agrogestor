@@ -1,0 +1,700 @@
+@media (min-width: 1600px) {
+  .dashboard-content {
+    padding: 40px 50px;
+  }
+  .topbar {
+    padding: 0 50px;
+  }
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+  .stat-card {
+    padding: 24px;
+  }
+  .agenda-table td {
+    height: 72px;
+  }
+  .calendar-days button {
+    width: 30px;
+    height: 30px;
+  }
+  .calendar-days {
+    row-gap: 11px;
+  }
+}
+@media (max-width: 1250px) {
+  .sidebar {
+    width: 200px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .brand {
+    font-size: 22px;
+    padding-left: 10px;
+  }
+  .main-shell {
+    width: calc(100% - 200px);
+    margin-left: 200px;
+  }
+  .topbar {
+    padding: 0 25px;
+  }
+  .top-search {
+    width: 180px;
+  }
+  .dashboard-content {
+    padding: 28px 25px;
+  }
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 18px;
+  }
+  .professional-cell .avatar {
+    display: none;
+  }
+  .agenda-table th,
+  .agenda-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .agenda-table th:first-child,
+  .agenda-table td:first-child {
+    padding-left: 18px;
+  }
+  .stat-card {
+    padding: 17px;
+  }
+  .stat-value {
+    font-size: 25px;
+  }
+  .stat-name {
+    font-size: 12px;
+    color: #617287;
+  }
+  .presence-list {
+    gap: 10px;
+  }
+  .home-bottom-grid {
+    gap: 18px;
+  }
+  .professional-filter {
+    width: 140px;
+  }
+  .topbar-right {
+    gap: 12px;
+  }
+  .topbar .my-page {
+    display: none;
+  }
+  .live-tag {
+    display: none;
+  }
+  .calendar-card {
+    padding: 17px;
+  }
+  .calendar-days button {
+    width: 25px;
+    height: 25px;
+  }
+  .section-header {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .agenda-toolbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+@media (max-width: 1020px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .right-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .booking-link-card {
+    display: none;
+  }
+  .home-bottom-grid {
+    margin-top: 20px;
+  }
+  .agenda-card .professional-cell .avatar {
+    display: inline-flex;
+  }
+  .top-search {
+    width: 160px;
+  }
+  .breadcrumb {
+    display: none;
+  }
+  .topbar {
+    justify-content: flex-end;
+  }
+  .stat-grid {
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 16px 13px;
+  }
+  .stat-name {
+    font-size: 12px;
+    color: #617287;
+  }
+  .stat-bottom {
+    font-size: 12px;
+  }
+  .stat-value {
+    font-size: 23px;
+  }
+  .greeting-heading .btn {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+  .greeting-title h1 {
+    font-size: 24px;
+  }
+  .page-heading {
+    flex-wrap: wrap;
+  }
+  .calendar-days button {
+    width: 28px;
+    height: 28px;
+  }
+  .daily-summary .summary-line {
+    margin: 19px 0;
+  }
+  .home-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+  .quick-insights {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  body {
+    font-size: 13px;
+  }
+  .sidebar,
+  .topbar {
+    display: none;
+  }
+  .main-shell {
+    margin-left: 0;
+    width: 100%;
+  }
+  .mobile-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gradient);
+    color: white;
+    padding: 22px 22px 15px;
+    position: relative;
+  }
+  .mobile-top .brand {
+    font-size: 21px;
+    padding: 0;
+  }
+  .mobile-top .brand-mark {
+    width: 26px;
+    height: 29px;
+    font-size: 24px;
+  }
+  .mobile-top .brand-wordmark {
+    display: inline-block;
+  }
+  .mobile-top .icon-button {
+    color: #d8e4ef;
+  }
+  .mobile-top a {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #b1c6da;
+  }
+  .dashboard-content {
+    padding: 25px 20px 110px;
+  }
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 75px;
+    padding: 8px 15px max(8px, env(safe-area-inset-bottom));
+    justify-content: space-around;
+    background: #fffffffa;
+    border-top: 1px solid #e7edf3;
+    z-index: 60;
+    box-shadow: 0 -3px 15px #07111f04;
+  }
+  .bottom-nav > a,
+  .bottom-nav > button {
+    border: 0;
+    background: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #94a2b5;
+    min-width: 48px;
+  }
+  .bottom-nav svg {
+    width: 20px;
+    height: 20px;
+  }
+  .bottom-nav a.active {
+    color: #173b5f;
+  }
+  .bottom-nav .mobile-add {
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    color: #fff;
+    background: var(--gradient);
+    margin-top: -19px;
+    border: 5px solid #f8fafc;
+    box-shadow: 0 3px 10px #0b1b3014;
+  }
+  .bottom-nav .mobile-add svg {
+    width: 22px;
+    height: 22px;
+  }
+  .mobile-more {
+    position: fixed;
+    bottom: 85px;
+    right: 15px;
+    z-index: 55;
+    box-shadow: 0 4px 30px #0b1b3017;
+    width: 205px;
+    padding: 10px;
+  }
+  .mobile-more a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px;
+    color: #5a6f85;
+    font-size: 12px;
+    border-radius: 7px;
+  }
+  .mobile-more a:hover {
+    background: #f2f6fa;
+  }
+  .greeting-heading {
+    margin-bottom: 22px;
+  }
+  .greeting-title h1 {
+    font-size: 25px;
+  }
+  .greeting-title .wave {
+    font-size: 23px;
+  }
+  .greeting-heading .date-today {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .greeting-heading .page-actions {
+    display: none;
+  }
+  .greeting-heading p {
+    font-size: 12px;
+  }
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    padding: 17px 15px;
+    border-radius: 12px;
+  }
+  .stat-value {
+    font-size: 25px;
+    margin-top: 9px;
+  }
+  .stat-icon {
+    width: 29px;
+    height: 29px;
+  }
+  .stat-name {
+    font-size: 12px;
+    letter-spacing: 0;
+    color: #617287;
+  }
+  .stat-bottom {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .stat-bottom strong {
+    font-size: 12px;
+    color: #728399;
+  }
+  .home-grid {
+    display: block;
+  }
+  .agenda-card {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .agenda-card .section-header {
+    padding: 0 0 16px;
+  }
+  .section-title h2 {
+    font-size: 14px;
+  }
+  .agenda-card .agenda-toolbar {
+    padding: 9px 0 14px;
+    border-top: 0;
+  }
+  .agenda-card .segmented {
+    display: none;
+  }
+  .agenda-card .professional-filter {
+    width: 145px;
+    font-size: 12px;
+  }
+  .agenda-card .agenda-table {
+    display: none;
+  }
+  .mobile-appt {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 17px 15px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+  }
+  .mobile-appt-time {
+    font-size: 12px;
+    color: #33526f;
+    font-weight: 650;
+    width: 38px;
+  }
+  .mobile-appt-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .mobile-appt-info strong {
+    font-size: 12px;
+    font-weight: 550;
+    display: block;
+  }
+  .mobile-appt-info p {
+    font-size: 12px;
+    color: #8595a8;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mobile-appt > svg {
+    color: #9babbc;
+  }
+  .mobile-appt .mobile-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #8fb29d;
+  }
+  .mobile-appt .mobile-status-dot.pending {
+    background: #caa370;
+  }
+  .agenda-card-foot {
+    border: 0;
+    padding: 10px 0;
+    font-size: 12px;
+  }
+  .right-column {
+    display: none;
+  }
+  .home-bottom-grid {
+    display: block;
+    margin-top: 25px;
+  }
+  .team-presence {
+    padding: 20px;
+  }
+  .presence-list {
+    justify-content: space-around;
+  }
+  .presence-item strong {
+    font-size: 12px;
+  }
+  .presence-item small {
+    font-size: 12px;
+  }
+  .dashboard-footer {
+    font-size: 12px;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .dashboard-footer > span:last-child {
+    display: none;
+  }
+  .page-heading h1 {
+    font-size: 28px;
+  }
+  .page-actions {
+    flex-wrap: wrap;
+  }
+  .page-heading {
+    margin-bottom: 24px;
+  }
+  .page-heading p {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .agenda-full-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  .agenda-full-controls {
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .agenda-full-controls select {
+    width: 155px;
+    font-size: 12px;
+  }
+  .agenda-full-toolbar .segmented {
+    align-self: flex-start;
+  }
+  .day-grid {
+    grid-template-columns: 45px repeat(var(--columns), minmax(135px, 1fr));
+    max-height: 650px;
+  }
+  .day-grid .time-label {
+    padding-left: 2px;
+    padding-right: 2px;
+    font-size: 12px;
+  }
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(130px, 1fr));
+  }
+  .month-cell {
+    min-height: 88px;
+    padding: 5px;
+  }
+  .month-event {
+    font-size: 12px;
+    padding: 3px;
+  }
+  .month-cell > strong {
+    font-size: 12px;
+  }
+  .month-weekdays {
+    font-size: 12px;
+  }
+  .modal-backdrop {
+    padding: 14px;
+  }
+  .modal {
+    max-height: 92dvh;
+    border-radius: 15px;
+  }
+  .modal > header {
+    padding: 18px;
+  }
+  .modal-body {
+    padding: 19px;
+  }
+  .form-grid {
+    gap: 15px;
+  }
+  .toast {
+    bottom: 90px;
+    padding: 14px 16px;
+    font-size: 12px;
+  }
+  .notification-panel {
+    right: 20px;
+    top: 62px;
+  }
+  .detail-actions .btn {
+    font-size: 12px;
+    padding: 10px;
+  }
+  .screen-error {
+    padding: 40px 16px;
+  }
+  .screen-loader .skeleton {
+    height: 95px;
+  }
+}
+@media (max-width: 389px) {
+  .dashboard-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .stat-card {
+    padding: 15px 12px;
+  }
+  .stat-name {
+    font-size: 12px;
+    color: #617287;
+  }
+  .stat-value {
+    font-size: 24px;
+  }
+  .stat-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .stat-bottom {
+    font-size: 12px;
+  }
+  .stat-bottom strong {
+    font-size: 12px;
+    color: #728399;
+  }
+  .mobile-appt {
+    gap: 10px;
+    padding: 15px 12px;
+  }
+  .mobile-appt-info strong {
+    font-size: 12px;
+  }
+  .mobile-appt-info p {
+    font-size: 12px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-grid .full {
+    grid-column: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *:before,
+  *:after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (max-width: 1020px) and (min-width: 768px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat-card {
+    padding: 20px;
+  }
+  .stat-value {
+    font-size: 28px;
+  }
+}
+@media (max-width: 767px) {
+  .mobile-top {
+    padding: 18px 20px;
+  }
+  .mobile-top .brand-wordmark small {
+    display: none;
+  }
+  .mobile-top .brand-mark {
+    display: flex;
+    width: 30px;
+    height: 32px;
+  }
+  .mobile-top > a:last-child {
+    min-height: 38px;
+    font-size: 12px;
+    padding: 0 10px;
+    border: 1px solid #ffffff20;
+    border-radius: 9px;
+  }
+  .greeting-title h1 {
+    font-size: 29px;
+  }
+  .greeting-heading p {
+    font-size: 13px;
+  }
+  .greeting-heading .date-today {
+    flex-wrap: wrap;
+    row-gap: 7px;
+  }
+  .date-today .live-tag {
+    display: none;
+  }
+  .stat-card {
+    padding: 18px 16px 15px;
+    border-radius: 15px;
+  }
+  .stat-name {
+    font-size: 12px;
+  }
+  .stat-value {
+    font-size: 28px;
+    margin-top: 13px;
+  }
+  .stat-bottom {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+  .stat-icon {
+    width: 31px;
+    height: 31px;
+  }
+  .mobile-appt {
+    padding: 18px 15px;
+    border-radius: 14px;
+  }
+  .mobile-appt-info strong {
+    font-size: 13px;
+  }
+  .mobile-appt-info p {
+    font-size: 12px;
+  }
+  .mobile-appt-time {
+    font-size: 13px;
+  }
+  .bottom-nav {
+    height: 78px;
+  }
+  .bottom-nav > a,
+  .bottom-nav > button {
+    font-size: 12px;
+  }
+  .bottom-nav .mobile-add {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+  }
+  .presence-item strong {
+    font-size: 12px;
+  }
+  .presence-item small {
+    font-size: 12px;
+  }
+}
+@media (max-width: 389px) {
+  .stat-card {
+    padding: 16px 13px 14px;
+  }
+  .stat-name {
+    font-size: 12px;
+  }
+  .stat-value {
+    font-size: 27px;
+  }
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+  }
+}

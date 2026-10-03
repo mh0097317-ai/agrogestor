@@ -1,0 +1,228 @@
+/* Settings with section drafts */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 195px minmax(0, 1fr);
+  gap: 25px;
+  align-items: start;
+}
+.settings-section-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.settings-section-nav button {
+  min-height: 45px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-radius: 9px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.settings-section-nav button:hover {
+  background: #eff3f7;
+  color: #123e69;
+}
+.settings-section-nav button.selected,
+.settings-section-nav button[aria-current="page"],
+.settings-section-nav button[aria-selected="true"] {
+  background: #edf3f8;
+  color: #0d2847;
+  font-weight: 600;
+}
+.settings-section-nav button svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.settings-section-nav .management-pill {
+  margin-left: auto;
+}
+.settings-layout .management-settings-card {
+  padding: 30px;
+  min-width: 0;
+}
+.settings-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.settings-section-heading h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.settings-section-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.settings-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.settings-fields:disabled {
+  opacity: 0.75;
+}
+.settings-preview {
+  border: 1px solid #e5eaf0;
+  border-radius: 14px;
+  overflow: hidden;
+  max-width: 370px;
+  background: #fff;
+  margin-top: 8px;
+}
+.settings-preview-cover {
+  height: 170px;
+  background: linear-gradient(135deg, #07111f, #123e69);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+.settings-preview-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.settings-preview-cover::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 0;
+  background: linear-gradient(transparent, #07111f99);
+  pointer-events: none;
+}
+.settings-preview-cover > span {
+  position: absolute;
+  left: 19px;
+  right: 19px;
+  bottom: 17px;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+}
+.settings-preview-body {
+  padding: 21px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-preview-body h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #111827;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.settings-preview-body p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.settings-preview-body .management-person strong {
+  font-size: 17px;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.settings-preview-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-preview-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #07111f, #0d2847 55%, #123e69);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 5px;
+}
+.settings-savebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  border-top: 1px solid #edf1f5;
+  padding-top: 22px;
+  margin-top: 25px;
+}
+.settings-savebar > span {
+  font-size: 12px;
+  color: #64748b;
+}
+.settings-savebar .management-form-actions {
+  padding-top: 0;
+}
+.management-settings-card .form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+@media (max-width: 1000px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .settings-section-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .settings-section-nav button {
+    padding: 11px 13px;
+    min-height: 42px;
+  }
+}
+@media (max-width: 767px) {
+  .settings-layout .management-settings-card {
+    padding: 21px;
+  }
+  .settings-section-nav {
+    gap: 4px;
+  }
+  .settings-section-nav button {
+    font-size: 12px;
+    padding: 10px 11px;
+  }
+  .settings-section-heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .settings-savebar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .settings-savebar .management-form-actions {
+    justify-content: flex-end;
+  }
+  .settings-preview {
+    max-width: 100%;
+  }
+}
