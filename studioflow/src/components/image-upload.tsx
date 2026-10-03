@@ -10,7 +10,7 @@ import {
   Plus,
   Trash,
 } from "@phosphor-icons/react/dist/ssr";
-import { compressImage, imagePresets, imageTypes } from "@/lib/image";
+import { imagePresets, imageTypes, uploadImage } from "@/lib/image";
 import "./image-upload.css";
 
 type Preset = keyof typeof imagePresets;
@@ -72,7 +72,7 @@ export function ImageUpload({
     setBusy(true);
     onBusy?.(true);
     try {
-      update(await compressImage(file, imagePresets[preset]));
+      update(await uploadImage(file, imagePresets[preset]));
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -232,7 +232,7 @@ export function GalleryUpload({
     for (const [index, file] of accepted.entries()) {
       setProgress({ done: index, total: accepted.length });
       try {
-        added.push(await compressImage(file, imagePresets.gallery));
+        added.push(await uploadImage(file, imagePresets.gallery));
       } catch {
         failures.push(file.name);
       }

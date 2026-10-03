@@ -73,3 +73,28 @@ export async function compressImage(file: File, preset: ImagePreset) {
     throw new Error("A foto ficou grande demais. Tente outra imagem.");
   return value;
 }
+
+/**
+ * Sends a resized photo to the server, which stores it in Supabase Storage
+ * and answers with its public URL. In the local demo the server returns the
+ * inline photo unchanged.
+ */
+export async function storeImage(value: string) {
+  const response = await fetch("/api/uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: value }),
+  });
+  const body = (await response.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+  };
+  if (!response.ok || !body.url)
+    throw new Error(body.error || "Não foi possível salvar a foto.");
+  return body.url;
+}
+
+/** Resize in the browser, then store. */
+export async function uploadImage(file: File, preset: ImagePreset) {
+  return storeImage(await compressImage(file, preset));
+}

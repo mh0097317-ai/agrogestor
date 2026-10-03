@@ -49,5 +49,6 @@ export const config = {
     "/auth/:path*",
     "/api/workspace",
     "/api/onboarding",
+    "/api/uploads",
   ],
 };

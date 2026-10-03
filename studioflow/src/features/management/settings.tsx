@@ -86,6 +86,19 @@ const tabs = [
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
 ];
+// Empty value keeps the StudioFlow navy gradient.
+const colorPresets = [
+  {
+    label: "Marinho",
+    value: "",
+    swatch: "linear-gradient(135deg, #07111f, #0d2847 55%, #123e69)",
+  },
+  { label: "Preto", value: "#111111", swatch: "#111111" },
+  { label: "Grafite", value: "#374151", swatch: "#374151" },
+  { label: "Vinho", value: "#6b1f2e", swatch: "#6b1f2e" },
+  { label: "Verde-escuro", value: "#1f4d3a", swatch: "#1f4d3a" },
+  { label: "Café", value: "#5b3a29", swatch: "#5b3a29" },
+];
 const segments = [
   "Barbearia",
   "Salão de beleza",
@@ -728,8 +741,32 @@ function SettingsContent({ store }: { store: Store }) {
                   title="Cor dos botões"
                   description="Usada nos botões e destaques da sua página."
                 >
+                  <div
+                    className="settings-swatches"
+                    role="group"
+                    aria-label="Cores prontas"
+                  >
+                    {colorPresets.map((preset) => {
+                      const selected =
+                        identity.color.trim().toLowerCase() === preset.value;
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          aria-pressed={selected}
+                          className={selected ? "is-selected" : ""}
+                          onClick={() =>
+                            updateDraft("identity", { color: preset.value })
+                          }
+                        >
+                          <i style={{ background: preset.swatch }} />
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <FormField
-                    label="Cor personalizada (opcional)"
+                    label="Outra cor (opcional)"
                     hint="Prefira uma cor escura para manter contraste nos botões."
                   >
                     <span className="settings-color">
