@@ -1,6 +1,11 @@
 "use client";
 
-import { CalendarDays, Clock3, ShieldCheck, UserRound } from "lucide-react";
+import {
+  CalendarBlank,
+  Clock,
+  ShieldCheck,
+  User,
+} from "@phosphor-icons/react/dist/ssr";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
@@ -46,19 +51,19 @@ export function BookingSummary({
       <dl>
         <div>
           <dt>
-            <UserRound size={16} /> Profissional
+            <User weight="duotone" size={16} /> Profissional
           </dt>
           <dd>{professional?.name || "Primeiro disponível"}</dd>
         </div>
         <div>
           <dt>
-            <CalendarDays size={16} /> Data
+            <CalendarBlank weight="duotone" size={16} /> Data
           </dt>
           <dd>{slot ? bookingDateLabel(slot.start, true) : "A escolher"}</dd>
         </div>
         <div>
           <dt>
-            <Clock3 size={16} /> Horário
+            <Clock weight="duotone" size={16} /> Horário
           </dt>
           <dd>
             {slot
@@ -74,7 +79,8 @@ export function BookingSummary({
         </div>
       )}
       <p className="booking-summary-safe">
-        <ShieldCheck size={15} /> Seus dados estão seguros conosco.
+        <ShieldCheck weight="duotone" size={15} /> Seus dados estão seguros
+        conosco.
       </p>
     </div>
   );

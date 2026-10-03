@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import {
-  CalendarDays,
-  Clock3,
+  ArrowsClockwise,
+  CalendarBlank,
+  CaretLeft,
   Check,
-  ChevronLeft,
+  Clock,
   Copy,
-  MapPin,
-  MessageCircle,
-  RefreshCw,
   Scissors,
   X,
   XCircle,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
+import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
+import { SuccessCheck } from "./celebration";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { ManagedBooking } from "@/features/public/types";
@@ -98,6 +98,10 @@ function ConfirmationContent({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  // Celebrate only a booking made a moment ago, not every later visit.
+  const [celebrate] = useState(
+    () => Date.now() - Date.parse(appointment.createdAt) < 10 * 60 * 1000,
+  );
   const service = services.find((item) =>
     appointment.serviceIds.includes(item.id),
   );
@@ -195,7 +199,7 @@ function ConfirmationContent({
                 setError("");
               }}
             >
-              <ChevronLeft size={15} /> Voltar ao agendamento
+              <CaretLeft weight="bold" size={15} /> Voltar ao agendamento
             </button>
             {catalog ? (
               <DateStep
@@ -228,22 +232,22 @@ function ConfirmationContent({
               busy={busy}
               onClick={() => void update("reschedule")}
             >
-              Confirmar novo horário <Check size={16} />
+              Confirmar novo horário <Check weight="bold" size={16} />
             </BusyButton>
           </div>
         ) : (
           <>
             <div
-              className={`booking-success-mark ${cancelled ? "is-cancelled" : ""}`}
+              className={`booking-success-mark ${cancelled ? "is-cancelled" : ""} ${isPending || cancelled || appointment.status === "no_show" ? "" : "is-success"}`}
             >
               {cancelled ? (
-                <X size={32} />
+                <X weight="bold" size={32} />
               ) : isPending ? (
-                <Clock3 size={32} />
+                <Clock weight="duotone" size={32} />
               ) : appointment.status === "no_show" ? (
-                <XCircle size={32} />
+                <XCircle weight="duotone" size={32} />
               ) : (
-                <Check size={34} />
+                <SuccessCheck celebrate={celebrate} />
               )}
             </div>
             <span className="public-eyebrow">
@@ -269,7 +273,7 @@ function ConfirmationContent({
                 totalPrice={appointment.price}
               />
               <div className="booking-confirmation-place">
-                <Scissors size={18} />
+                <Scissors weight="duotone" size={18} />
                 <div>
                   <strong>{business.name}</strong>
                   <span>{business.address}</span>
@@ -284,7 +288,7 @@ function ConfirmationContent({
                   onClick={copyLink}
                   aria-label="Copiar link do agendamento"
                 >
-                  <Copy size={15} />
+                  <Copy weight="duotone" size={15} />
                 </button>
               </div>
             </div>
@@ -296,7 +300,8 @@ function ConfirmationContent({
                     downloadCalendar(appointment, business, services)
                   }
                 >
-                  <CalendarDays size={18} /> Adicionar ao calendário
+                  <CalendarBlank weight="duotone" size={18} /> Adicionar ao
+                  calendário
                 </button>
                 {canManage && (
                   <>
@@ -307,7 +312,8 @@ function ConfirmationContent({
                         setError("");
                       }}
                     >
-                      <RefreshCw size={16} /> Reagendar horário
+                      <ArrowsClockwise weight="duotone" size={16} /> Reagendar
+                      horário
                     </button>
                     <button
                       className="public-button public-button-outline booking-cancel-button"
@@ -316,7 +322,7 @@ function ConfirmationContent({
                         setError("");
                       }}
                     >
-                      <XCircle size={16} /> Cancelar horário
+                      <XCircle weight="duotone" size={16} /> Cancelar horário
                     </button>
                   </>
                 )}
@@ -327,7 +333,8 @@ function ConfirmationContent({
                 className="public-button"
                 href={`/${business.slug}/agendar${service ? `?service=${service.id}` : ""}`}
               >
-                Agendar um novo horário <CalendarDays size={17} />
+                Agendar um novo horário{" "}
+                <CalendarBlank weight="duotone" size={17} />
               </Link>
             )}
             {error && !cancelOpen && (
@@ -338,12 +345,12 @@ function ConfirmationContent({
             <div className="booking-confirmation-social">
               {business.address.trim() && (
                 <a href={location} target="_blank" rel="noreferrer">
-                  <MapPin size={17} /> Ver localização
+                  <MapPinIcon size={18} /> Ver localização
                 </a>
               )}
               {business.phone.replace(/\D/g, "").length >= 10 && (
                 <a href={whatsapp} target="_blank" rel="noreferrer">
-                  <MessageCircle size={17} /> Falar no WhatsApp
+                  <WhatsAppIcon size={18} /> Falar no WhatsApp
                 </a>
               )}
             </div>
@@ -367,10 +374,10 @@ function ConfirmationContent({
             disabled={busy}
             aria-label="Fechar"
           >
-            <X size={18} />
+            <X weight="bold" size={18} />
           </button>
           <span className="booking-cancel-icon">
-            <CalendarDays size={28} />
+            <CalendarBlank weight="duotone" size={28} />
           </span>
           <h2 id="cancel-title">Cancelar seu horário?</h2>
           <p>
@@ -402,7 +409,7 @@ function ConfirmationContent({
       )}
       {toast && (
         <div className="public-toast" role="status">
-          <Check size={18} />
+          <Check weight="bold" size={18} />
           {toast}
         </div>
       )}

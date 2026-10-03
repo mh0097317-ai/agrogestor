@@ -255,3 +255,49 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Motion */
+.booking-screen.is-forward {
+  animation: sf-slide-from-right 380ms var(--ease-out) both;
+}
+.booking-screen.is-back {
+  animation: sf-slide-from-left 380ms var(--ease-out) both;
+}
+.booking-progress li:after {
+  transition: background 400ms var(--ease-out);
+}
+.booking-progress button > span {
+  transition:
+    background var(--motion-base),
+    color var(--motion-base),
+    transform var(--motion-base) var(--ease-spring);
+}
+.booking-progress .is-current button > span {
+  animation:
+    sf-pop 420ms var(--ease-spring) both,
+    booking-step-ring 2.4s ease-out 500ms infinite;
+}
+.booking-progress .is-done button > span svg {
+  animation: sf-pop 380ms var(--ease-spring) both;
+}
+@keyframes booking-step-ring {
+  0% {
+    box-shadow: 0 0 0 0 #0d284740;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px #0d284700;
+  }
+}
+.booking-bottom-bar {
+  animation: sf-slide-up-sheet 460ms var(--ease-out) both;
+}
+.booking-bottom-selection {
+  animation: sf-fade-up 360ms var(--ease-out) both;
+}
+.booking-bottom-inner .public-button:not(:disabled) svg {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.booking-bottom-inner .public-button:not(:disabled):hover svg {
+  transform: translateX(4px);
+}

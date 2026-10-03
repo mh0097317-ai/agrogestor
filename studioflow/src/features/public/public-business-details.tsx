@@ -3,11 +3,11 @@ import {
   ArrowRight,
   ArrowUpRight,
   Car,
-  Check,
+  CheckCircle,
   Coffee,
   Snowflake,
-  Wifi,
-} from "lucide-react";
+  WifiHigh,
+} from "@phosphor-icons/react/dist/ssr";
 import type { Business, Settings } from "@/types";
 import type { PublicProfessional } from "./types";
 import { PublicImage } from "./public-ui";
@@ -23,11 +23,11 @@ const weekDays = [
 ];
 
 function amenityIcon(amenity: string) {
-  if (/wi.?fi/i.test(amenity)) return Wifi;
+  if (/wi.?fi/i.test(amenity)) return WifiHigh;
   if (/estacion/i.test(amenity)) return Car;
   if (/bebida|café|cafe/i.test(amenity)) return Coffee;
   if (/climat|ar.condicionado/i.test(amenity)) return Snowflake;
-  return Check;
+  return CheckCircle;
 }
 
 export function PublicAmbience({
@@ -38,14 +38,14 @@ export function PublicAmbience({
   businessName: string;
 }) {
   return (
-    <a href="#espaco" className="pp-ambience">
+    <a href="#espaco" className="pp-ambience" data-reveal="scale">
       <PublicImage src={photo} alt="" className="pp-ambience-photo" />
       <span className="pp-ambience-shade" />
       <span className="pp-ambience-text">
         <strong>Conheça o espaço</strong>
         <span>Fotos, horários e como chegar ao {businessName}.</span>
       </span>
-      <ArrowRight size={18} className="pp-ambience-arrow" />
+      <ArrowRight size={20} weight="bold" className="pp-ambience-arrow" />
     </a>
   );
 }
@@ -54,11 +54,15 @@ export function PublicAmenities({ amenities }: { amenities: string[] }) {
   if (!amenities.length) return null;
   return (
     <ul className="pp-amenities" aria-label="Comodidades" role="list">
-      {amenities.map((amenity) => {
+      {amenities.map((amenity, index) => {
         const Icon = amenityIcon(amenity);
         return (
-          <li key={amenity}>
-            <Icon size={19} strokeWidth={1.7} />
+          <li
+            key={amenity}
+            data-reveal
+            style={{ "--reveal-i": index } as React.CSSProperties}
+          >
+            <Icon size={24} weight="duotone" />
             <span>{amenity}</span>
           </li>
         );
@@ -77,12 +81,16 @@ export function PublicTeam({
   if (!professionals.length) return null;
   return (
     <section id="equipe" className="pp-section">
-      <div className="pp-section-head">
+      <div className="pp-section-head" data-reveal>
         <h2>Profissionais</h2>
       </div>
       <ul className="pp-team" role="list">
-        {professionals.map((person) => (
-          <li key={person.id}>
+        {professionals.map((person, index) => (
+          <li
+            key={person.id}
+            data-reveal
+            style={{ "--reveal-i": index } as React.CSSProperties}
+          >
             <Link
               href={`/${slug}/agendar?professional=${person.id}`}
               className="pp-person"
@@ -98,7 +106,7 @@ export function PublicTeam({
                 {person.specialties.slice(0, 2).join(" · ") || "Profissional"}
               </span>
               <em>
-                Agendar <ArrowUpRight size={13} />
+                Agendar <ArrowUpRight size={13} weight="bold" />
               </em>
             </Link>
           </li>
@@ -122,11 +130,14 @@ export function PublicVisit({
   const photos = (business.photos || []).filter(Boolean).slice(0, 4);
   return (
     <section id="espaco" className="pp-section">
-      <div className="pp-section-head">
+      <div className="pp-section-head" data-reveal>
         <h2>O espaço</h2>
       </div>
       {photos.length > 0 && (
-        <div className={`pp-gallery ${photos.length === 1 ? "is-single" : ""}`}>
+        <div
+          className={`pp-gallery ${photos.length === 1 ? "is-single" : ""}`}
+          data-reveal="scale"
+        >
           {photos.map((photo, index) => (
             <PublicImage
               src={photo}
@@ -139,7 +150,7 @@ export function PublicVisit({
         </div>
       )}
       <div className="pp-visit">
-        <div className="pp-hours">
+        <div className="pp-hours" data-reveal>
           <h3>Horário de funcionamento</h3>
           <dl>
             {weekDays.map((day, index) => (
@@ -158,7 +169,7 @@ export function PublicVisit({
           </dl>
         </div>
         {business.address && (
-          <div className="pp-address">
+          <div className="pp-address" data-reveal>
             <h3>Como chegar</h3>
             <p>{business.address}</p>
             <iframe
@@ -174,7 +185,7 @@ export function PublicVisit({
               rel="noreferrer"
               className="public-text-link"
             >
-              Abrir no mapa <ArrowUpRight size={15} />
+              Abrir no mapa <ArrowUpRight size={15} weight="bold" />
             </a>
           </div>
         )}

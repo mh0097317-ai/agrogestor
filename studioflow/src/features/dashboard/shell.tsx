@@ -3,29 +3,29 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
+  House,
+  CalendarBlank,
+  UsersThree,
   Scissors,
-  UserRound,
+  IdentificationBadge,
   Wallet,
-  ChartNoAxesCombined,
-  Settings,
-  ChevronDown,
-  ChevronRight,
-  Search,
+  ChartLineUp,
+  GearSix,
+  CaretDown,
+  CaretRight,
+  MagnifyingGlass,
   Bell,
-  ExternalLink,
+  ArrowSquareOut,
   Plus,
-  Ellipsis,
-  HelpCircle,
-  Link2,
+  DotsThree,
+  Question,
+  LinkSimple,
   Copy,
-  Store as StoreIcon,
-  LogOut,
+  Storefront,
+  SignOut,
   ArrowUpRight,
   ShieldCheck,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, Card, Modal } from "@/components/ui";
@@ -33,34 +33,21 @@ import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { businessDay } from "@/lib/utils";
 import { useToast } from "@/components/toast";
 import { SegmentIcon } from "@/lib/segments";
+import { Brand } from "@/components/brand";
 const links = [
-  { path: "/dashboard", label: "Início", icon: LayoutDashboard },
-  { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
-  { path: "/dashboard/clientes", label: "Clientes", icon: Users },
+  { path: "/dashboard", label: "Início", icon: House },
+  { path: "/dashboard/agenda", label: "Agenda", icon: CalendarBlank },
+  { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
   { path: "/dashboard/servicos", label: "Serviços", icon: Scissors },
-  { path: "/dashboard/equipe", label: "Equipe", icon: UserRound },
+  { path: "/dashboard/equipe", label: "Equipe", icon: IdentificationBadge },
   { path: "/dashboard/financeiro", label: "Financeiro", icon: Wallet },
   {
     path: "/dashboard/relatorios",
     label: "Relatórios",
-    icon: ChartNoAxesCombined,
+    icon: ChartLineUp,
   },
-  { path: "/dashboard/configuracoes", label: "Configurações", icon: Settings },
+  { path: "/dashboard/configuracoes", label: "Configurações", icon: GearSix },
 ];
-function BrandMark() {
-  return (
-    <span className="brand-mark" aria-hidden="true">
-      <svg width="23" height="25" viewBox="0 0 24 26" fill="none">
-        <path
-          d="M18 5H10a4 4 0 0 0 0 8h4a4 4 0 0 1 0 8H6"
-          stroke="currentColor"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </span>
-  );
-}
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
@@ -132,7 +119,7 @@ function Shell({ children }: { children: ReactNode }) {
               <SegmentIcon
                 category={data?.business.category}
                 size={22}
-                strokeWidth={1.6}
+                weight="duotone"
               />
             )}
           </span>
@@ -148,7 +135,10 @@ function Shell({ children }: { children: ReactNode }) {
               href={link.path}
               className={`nav-link ${active(link.path) ? "active" : ""}`}
             >
-              <link.icon strokeWidth={1.7} />
+              <link.icon
+                size={20}
+                weight={active(link.path) ? "fill" : "duotone"}
+              />
               {link.label}
               {link.label === "Agenda" && data && (
                 <span className="nav-badge">
@@ -167,7 +157,7 @@ function Shell({ children }: { children: ReactNode }) {
         <div className="sidebar-bottom">
           <div className="sidebar-plan">
             <div className="sidebar-plan-title">
-              <Link2 size={14} /> Seu link de agendamento
+              <LinkSimple size={14} /> Seu link de agendamento
             </div>
             <p>Divulgue para seus clientes marcarem sozinhos.</p>
             <div className="sidebar-plan-actions">
@@ -180,20 +170,19 @@ function Shell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <button className="sidebar-support" onClick={() => setHelp(true)}>
-            <HelpCircle size={16} /> Central de ajuda
+            <Question size={16} /> Central de ajuda
           </button>
           <div className="sidebar-foot">
-            <BrandMark />
-            <span>StudioFlow</span>
+            <Brand tone="on-dark" size={26} />
           </div>
         </div>
       </aside>
       <div className="main-shell">
         <header className="topbar">
           <div className="breadcrumb">
-            <StoreIcon size={13} />
+            <Storefront size={13} />
             <span>{data?.mode === "demo" ? "Demonstração" : "Seu espaço"}</span>
-            <ChevronRight size={11} />
+            <CaretRight size={11} />
             <strong>{page}</strong>
           </div>
           <div className="topbar-right">
@@ -206,7 +195,7 @@ function Shell({ children }: { children: ReactNode }) {
                 );
               }}
             >
-              <Search size={14} />
+              <MagnifyingGlass size={14} />
               <input
                 aria-label="Pesquisar cliente"
                 placeholder="Buscar cliente..."
@@ -216,14 +205,14 @@ function Shell({ children }: { children: ReactNode }) {
               <kbd>↵</kbd>
             </form>
             <Link href={`/${slug}`} target="_blank" className="my-page">
-              <ExternalLink size={13} /> Minha página
+              <ArrowSquareOut size={13} /> Minha página
             </Link>
             <button
               className="icon-button notification-toggle"
               aria-label="Notificações"
               onClick={() => setNotifications(!notifications)}
             >
-              <Bell size={17} />
+              <Bell size={19} weight="duotone" />
             </button>
             <span className="topbar-separator" />
             <Link className="top-profile" href="/dashboard/configuracoes">
@@ -240,11 +229,7 @@ function Shell({ children }: { children: ReactNode }) {
                 <strong>{ownerName}</strong>
                 <small>{ownerRole}</small>
               </div>
-              <ChevronDown
-                size={12}
-                color="#99a7b8"
-                style={{ marginLeft: 6 }}
-              />
+              <CaretDown size={12} color="#99a7b8" style={{ marginLeft: 6 }} />
             </Link>
           </div>
           {notifications && (
@@ -269,7 +254,7 @@ function Shell({ children }: { children: ReactNode }) {
                 className="quiet-link"
                 onClick={() => setNotifications(false)}
               >
-                Ver agenda <ChevronRight size={12} />
+                Ver agenda <CaretRight size={12} />
               </Link>
             </Card>
           )}
@@ -279,15 +264,15 @@ function Shell({ children }: { children: ReactNode }) {
             <SegmentIcon
               category={data?.business.category}
               size={18}
-              strokeWidth={1.7}
+              weight="duotone"
             />
             <span>{data?.business.name || "Seu estabelecimento"}</span>
           </Link>
           <Link href={`/${slug}`}>
-            <ExternalLink size={13} /> Sua página
+            <ArrowSquareOut size={13} /> Sua página
           </Link>
         </header>
-        <main className="dashboard-content">
+        <main className="dashboard-content" key={pathname}>
           {refreshError && (
             <div className="workspace-refresh-message" role="status">
               <span>{refreshError} Seus últimos dados continuam visíveis.</span>
@@ -304,14 +289,17 @@ function Shell({ children }: { children: ReactNode }) {
           href="/dashboard"
           className={active("/dashboard") ? "active" : ""}
         >
-          <LayoutDashboard />
+          <House size={24} weight={active("/dashboard") ? "fill" : "regular"} />
           Início
         </Link>
         <Link
           href="/dashboard/agenda"
           className={active("/dashboard/agenda") ? "active" : ""}
         >
-          <CalendarDays />
+          <CalendarBlank
+            size={24}
+            weight={active("/dashboard/agenda") ? "fill" : "regular"}
+          />
           Agenda
         </Link>
         {canMutate("appointments") && (
@@ -320,18 +308,21 @@ function Shell({ children }: { children: ReactNode }) {
             onClick={() => setCreate(true)}
             aria-label="Novo agendamento"
           >
-            <Plus />
+            <Plus size={24} weight="bold" />
           </button>
         )}
         <Link
           href="/dashboard/clientes"
           className={active("/dashboard/clientes") ? "active" : ""}
         >
-          <Users />
+          <UsersThree
+            size={24}
+            weight={active("/dashboard/clientes") ? "fill" : "regular"}
+          />
           Clientes
         </Link>
         <button onClick={() => setMore(!more)} aria-label="Mais opções">
-          <Ellipsis />
+          <DotsThree size={24} weight="bold" />
           Mais
         </button>
       </nav>
@@ -343,12 +334,12 @@ function Shell({ children }: { children: ReactNode }) {
               href={link.path}
               onClick={() => setMore(false)}
             >
-              <link.icon size={17} />
+              <link.icon size={19} weight="duotone" />
               {link.label}
             </Link>
           ))}
           <Link href="/login" onClick={() => setMore(false)}>
-            <LogOut size={17} /> Conta
+            <SignOut size={17} /> Conta
           </Link>
           {data?.mode === "live" && (
             <button
@@ -356,7 +347,7 @@ function Shell({ children }: { children: ReactNode }) {
               disabled={signingOut}
               onClick={() => void signOut()}
             >
-              <LogOut size={17} />
+              <SignOut size={17} />
               {signingOut ? "Saindo…" : "Sair da conta"}
             </button>
           )}

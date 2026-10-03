@@ -20,6 +20,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button, Card } from "@/components/ui";
+import { Brand } from "@/components/brand";
+import { SegmentIcon } from "@/lib/segments";
 import { FormField, FormError, DayPicker, dayNames } from "./shared";
 import { OnboardingPreview } from "./onboarding-preview";
 import "./onboarding.css";
@@ -183,11 +185,8 @@ export default function OnboardingPage() {
   return (
     <main className="onboarding-page">
       <header className="onboarding-header">
-        <Link href="/" className="onboarding-brand">
-          <span>
-            <Scissors size={19} />
-          </span>
-          Studioflow
+        <Link href="/" className="onboarding-brand" aria-label="StudioFlow">
+          <Brand size={34} animated />
         </Link>
         <span className="onboarding-header-note">
           Cada detalhe, do seu jeito.
@@ -230,7 +229,7 @@ export default function OnboardingPage() {
                     aria-pressed={category === item.name}
                   >
                     <span className="onboarding-category-icon">
-                      <item.icon size={23} strokeWidth={1.5} />
+                      <SegmentIcon category={item.name} size={26} />
                     </span>
                     <strong>{item.name}</strong>
                     <small>{item.description}</small>

@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
@@ -166,11 +166,12 @@ export function CustomerStep({
             {error}
           </div>
         )}
-        <BusyButton type="submit" busy={busy}>
-          Confirmar agendamento <ArrowRight size={18} />
+        <BusyButton type="submit" busy={busy} className="sf-sheen">
+          Confirmar agendamento <ArrowRight weight="bold" size={18} />
         </BusyButton>
         <p className="booking-private-note">
-          <ShieldCheck size={14} /> Seus dados estão seguros conosco.
+          <ShieldCheck weight="duotone" size={14} /> Seus dados estão seguros
+          conosco.
         </p>
       </form>
     </section>

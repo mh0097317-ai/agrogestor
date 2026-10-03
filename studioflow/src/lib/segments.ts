@@ -1,29 +1,35 @@
 import { createElement } from "react";
 import {
   Eye,
-  Hand,
+  HandPalm,
   Heart,
   Scissors,
-  Sparkles,
-  UserRound,
-  type LucideIcon,
-  type LucideProps,
-} from "lucide-react";
+  Sparkle,
+  User,
+} from "@phosphor-icons/react/dist/ssr";
+import type { Icon, IconWeight } from "@phosphor-icons/react";
 
 /** Icon that represents a business segment when there is no logo or photo. */
-export function segmentIcon(category = ""): LucideIcon {
-  if (/nail|unha|manicure/i.test(category)) return Hand;
+export function segmentIcon(category = ""): Icon {
+  if (/nail|unha|manicure/i.test(category)) return HandPalm;
   if (/lash|cílio|cilio|sobrancelha/i.test(category)) return Eye;
   if (/estética|estetica/i.test(category)) return Heart;
-  if (/autônomo|autonomo/i.test(category)) return UserRound;
+  if (/autônomo|autonomo/i.test(category)) return User;
   if (/barbe|cabele|cabelo/i.test(category)) return Scissors;
-  return Sparkles;
+  return Sparkle;
 }
 
 /** Renders the segment icon; avoids creating component types during render. */
 export function SegmentIcon({
   category,
-  ...props
-}: LucideProps & { category?: string }) {
-  return createElement(segmentIcon(category), props);
+  size = 24,
+  weight = "duotone",
+  className,
+}: {
+  category?: string;
+  size?: number;
+  weight?: IconWeight;
+  className?: string;
+}) {
+  return createElement(segmentIcon(category), { size, weight, className });
 }

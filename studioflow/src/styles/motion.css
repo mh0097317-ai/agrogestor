@@ -1,0 +1,411 @@
+/* Motion system: shared easing, keyframes, reveal-on-scroll and brand. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-fast: 160ms;
+  --motion-base: 240ms;
+  --motion-slow: 520ms;
+}
+
+@keyframes sf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sf-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sf-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sf-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes sf-kenburns {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes sf-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 #22c55e8c;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px #22c55e00;
+  }
+}
+@keyframes sf-sheen {
+  0% {
+    transform: translateX(-130%) skewX(-20deg);
+  }
+  55%,
+  100% {
+    transform: translateX(330%) skewX(-20deg);
+  }
+}
+@keyframes sf-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.65) rotate(45deg);
+  }
+}
+@keyframes sf-slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sf-slide-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sf-slide-up-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes sf-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sf-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6);
+  }
+}
+@keyframes sf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes sf-gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes sf-arch-top {
+  from {
+    opacity: 0;
+    transform: translate(-24px, -36px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sf-arch-bottom {
+  from {
+    opacity: 0;
+    transform: translate(24px, 36px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reveal on scroll. Only hidden once JS marks the page as motion-ready,
+   so content is never lost if scripts fail. */
+.motion-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 600ms var(--ease-out),
+    transform 600ms var(--ease-out);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+.motion-ready [data-reveal="scale"] {
+  transform: scale(0.96);
+}
+.motion-ready [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Staggered entrance for direct children. */
+.sf-stagger > * {
+  animation: sf-fade-up 520ms var(--ease-out) both;
+}
+.sf-stagger > :nth-child(1) {
+  animation-delay: 0ms;
+}
+.sf-stagger > :nth-child(2) {
+  animation-delay: 60ms;
+}
+.sf-stagger > :nth-child(3) {
+  animation-delay: 120ms;
+}
+.sf-stagger > :nth-child(4) {
+  animation-delay: 180ms;
+}
+.sf-stagger > :nth-child(5) {
+  animation-delay: 240ms;
+}
+.sf-stagger > :nth-child(6) {
+  animation-delay: 300ms;
+}
+.sf-stagger > :nth-child(7) {
+  animation-delay: 360ms;
+}
+.sf-stagger > :nth-child(8) {
+  animation-delay: 420ms;
+}
+.sf-stagger > :nth-child(n + 9) {
+  animation-delay: 460ms;
+}
+
+/* Primary buttons get a periodic light sweep. */
+.sf-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sf-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    #ffffff00 0%,
+    #ffffff38 50%,
+    #ffffff00 100%
+  );
+  animation: sf-sheen 4.2s var(--ease-out) 1.2s infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Brand */
+.brand-logo {
+  flex-shrink: 0;
+  border-radius: 23%;
+  overflow: visible;
+}
+/* Small sizes drop the shadow so the mark stays crisp. */
+.brand-logo.is-small .brand-arch-top {
+  filter: none;
+}
+.brand-logo .brand-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sf-twinkle 3.6s ease-in-out infinite;
+}
+.brand-logo.is-animated .brand-arch-top {
+  animation: sf-arch-top 800ms var(--ease-out) both;
+}
+.brand-logo.is-animated .brand-arch-bottom {
+  animation: sf-arch-bottom 800ms var(--ease-out) 80ms both;
+}
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.brand-lockup .brand-lockup-text {
+  display: inline;
+}
+.brand-lockup b {
+  font-weight: 650;
+}
+.brand-lockup.on-light {
+  color: #0b1b30;
+}
+.brand-lockup.on-light b {
+  color: #2d6aa8;
+}
+.brand-lockup.on-dark {
+  color: #fff;
+}
+.brand-lockup.on-dark b {
+  color: #8cbbea;
+}
+
+/* Press feedback for touch targets. */
+.sf-press {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.sf-press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .motion-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+  .sf-sheen::after {
+    display: none;
+  }
+}
+
+/* Shared component polish */
+html {
+  scroll-behavior: smooth;
+}
+::selection {
+  background: #cfe0f3;
+  color: #0b1b30;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.btn {
+  transition:
+    background var(--motion-base),
+    border-color var(--motion-base),
+    color var(--motion-base),
+    box-shadow var(--motion-base) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg, #fff0, #ffffff30, #fff0);
+  transform: translateX(-130%) skewX(-20deg);
+  pointer-events: none;
+  z-index: -1;
+}
+.btn-primary:hover::after {
+  animation: sf-sheen 900ms var(--ease-out) 1;
+}
+.btn-primary:hover {
+  box-shadow: 0 10px 24px #0d28472e;
+}
+.public-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.modal-backdrop {
+  backdrop-filter: blur(3px);
+}
+.modal:not(.detail-panel) {
+  animation: sf-scale-in 280ms var(--ease-out) both;
+}
+.modal.detail-panel {
+  animation: panel-in 340ms var(--ease-out) both;
+}
+.public-modal {
+  animation: sf-scale-in 280ms var(--ease-out) both;
+}
+.toast,
+.public-toast {
+  animation: sf-toast 420ms var(--ease-spring) both;
+}
+@keyframes sf-toast {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+.status-in_progress i {
+  animation: sf-status-live 1.8s ease-in-out infinite;
+}
+@keyframes sf-status-live {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 3px #4376b500;
+  }
+}
+.skeleton,
+.public-skeleton {
+  background-size: 200% 100% !important;
+}

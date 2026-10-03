@@ -3,11 +3,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { addDays } from "date-fns";
 import {
-  ChevronLeft,
-  ChevronRight,
-  EllipsisVertical,
+  CaretLeft,
+  CaretRight,
+  DotsThreeVertical,
   Plus,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Button, EmptyState, StatusBadge } from "@/components/ui";
 import { businessDay, dateLabel, localDay } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
@@ -46,14 +46,14 @@ export function OverviewAgenda({
       <div className="ov-agenda-tools">
         <div className="ov-day-nav">
           <button aria-label="Dia anterior" onClick={() => move(-1)}>
-            <ChevronLeft size={17} />
+            <CaretLeft size={17} />
           </button>
           <h2 id="ov-agenda-title">
             {isToday ? "Hoje, " : ""}
             {dateLabel(date, isToday ? "d 'de' MMMM" : "EEE, d 'de' MMMM")}
           </h2>
           <button aria-label="Próximo dia" onClick={() => move(1)}>
-            <ChevronRight size={17} />
+            <CaretRight size={17} />
           </button>
         </div>
         <nav className="ov-views" aria-label="Abrir agenda">
@@ -70,12 +70,17 @@ export function OverviewAgenda({
         </nav>
         {onCreate && (
           <Button onClick={onCreate}>
-            <Plus size={16} /> Novo agendamento
+            <Plus size={16} weight="bold" /> Novo agendamento
           </Button>
         )}
       </div>
       {rows.length ? (
-        <div className="ov-table" role="table" aria-label="Agendamentos do dia">
+        <div
+          className="ov-table sf-stagger"
+          role="table"
+          aria-label="Agendamentos do dia"
+          key={day}
+        >
           <div className="ov-table-head" role="row">
             <span role="columnheader">Horário</span>
             <span role="columnheader">Cliente</span>
@@ -123,14 +128,14 @@ export function OverviewAgenda({
                   <StatusBadge status={a.status} />
                 </span>
                 <span role="cell" className="ov-table-actions">
-                  <EllipsisVertical size={17} />
+                  <DotsThreeVertical size={20} weight="bold" />
                 </span>
               </button>
             );
           })}
           {rows.length > visible.length && (
             <button className="ov-show-all" onClick={() => setAll(true)}>
-              Ver os {rows.length} agendamentos <ChevronRight size={16} />
+              Ver os {rows.length} agendamentos <CaretRight size={16} />
             </button>
           )}
         </div>
@@ -141,7 +146,7 @@ export function OverviewAgenda({
           action={
             onCreate && (
               <Button variant="secondary" onClick={onCreate}>
-                <Plus size={16} /> Novo agendamento
+                <Plus size={16} weight="bold" /> Novo agendamento
               </Button>
             )
           }

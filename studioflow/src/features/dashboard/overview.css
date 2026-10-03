@@ -606,3 +606,129 @@
     padding-inline: 16px;
   }
 }
+
+/* Motion */
+.ov-head {
+  animation: sf-fade-up 520ms var(--ease-out) both;
+}
+.ov-kpi {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out);
+}
+.ov-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px #0b1b3012;
+}
+.ov-kpi-icon {
+  transition: transform 360ms var(--ease-spring);
+}
+.ov-kpi:hover .ov-kpi-icon {
+  transform: scale(1.1) rotate(-6deg);
+}
+.ov-main > *,
+.ov-aside > * {
+  animation: sf-fade-up 600ms var(--ease-out) both;
+}
+.ov-main > :nth-child(1) {
+  animation-delay: 180ms;
+}
+.ov-aside > :nth-child(1) {
+  animation-delay: 260ms;
+}
+.ov-aside > :nth-child(2) {
+  animation-delay: 340ms;
+}
+.ov-table-row {
+  transition:
+    background var(--motion-fast),
+    transform var(--motion-fast) var(--ease-out);
+}
+.ov-table-row:active {
+  transform: scale(0.995);
+}
+.ov-table-row .ov-table-actions svg {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.ov-table-row:hover .ov-table-actions svg {
+  transform: scale(1.2);
+  color: #0d2847;
+}
+.ov-row {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.ov-row:active {
+  transform: scale(0.98);
+}
+.ov-row-flag.status-in_progress {
+  animation: ov-live 2s ease-in-out infinite;
+}
+@keyframes ov-live {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #4376b540;
+  }
+  50% {
+    box-shadow: 0 0 0 4px #4376b500;
+  }
+}
+@media (max-width: 767px) {
+  .ov-hero {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+      120deg,
+      #07111f 0%,
+      #0d2847 40%,
+      #1b5288 70%,
+      #0d2847 100%
+    );
+    background-size: 220% 220%;
+    animation: sf-gradient-pan 14s ease-in-out infinite;
+  }
+  .ov-hero::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    right: -60px;
+    top: -90px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #8cbbea33 0%, #8cbbea00 70%);
+    animation: sf-float 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .ov-hero > * {
+    position: relative;
+    z-index: 1;
+    animation: sf-fade-up 520ms var(--ease-out) both;
+  }
+  .ov-hero-bell {
+    transition: transform var(--motion-base) var(--ease-spring);
+  }
+  .ov-hero-bell:hover svg,
+  .ov-hero-bell:focus-visible svg {
+    animation: ov-ring 700ms ease-in-out;
+  }
+  .ov-hero-bell span {
+    animation: sf-pop 500ms var(--ease-spring) 600ms both;
+  }
+}
+@keyframes ov-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(-12deg);
+  }
+  60% {
+    transform: rotate(8deg);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+}

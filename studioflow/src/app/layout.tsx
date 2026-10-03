@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/toast";
 import { PwaRegister } from "@/components/pwa-register";
+import { MotionProvider } from "@/components/motion";
 import "./globals.css";
 import "@/features/dashboard/shell.css";
 import "@/features/dashboard/overview.css";
 import "@/features/agenda/agenda.css";
 import "@/styles/responsive.css";
+import "@/styles/motion.css";
 const geist = localFont({
   src: [
     { path: "./fonts/geist-regular.ttf", weight: "400" },
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "StudioFlow",
   },
-  icons: { icon: "/icon.svg", apple: "/icon-192.png" },
+  icons: { icon: "/icon.svg", apple: "/apple-icon.png" },
 };
 export const viewport: Viewport = {
   width: "device-width",
@@ -48,6 +50,7 @@ export default function RootLayout({
         <ToastProvider>
           {children}
           <PwaRegister />
+          <MotionProvider />
         </ToastProvider>
       </body>
     </html>

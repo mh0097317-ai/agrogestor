@@ -117,6 +117,14 @@ O visual foi reaproximado da referência `docs/reference/Foto-1.jpg` (as captura
 
 Verificado: lint, TypeScript, 26 testes, build, smoke HTTP e varredura sem overflow horizontal em 14 rotas × 375/390/430/768/1024/1440px.
 
+## Identidade, ícones e animações (3 de outubro de 2026)
+
+- Logo nova: "S" geométrico em dois tons com brilho. Fonte em `public/icon.svg` e no componente `src/components/brand.tsx` (`BrandLogo`, `Brand`); PNGs do PWA (192, 512, maskable e apple) gerados a partir do SVG.
+- Ícones: `@phosphor-icons/react` (duotone/fill) na página pública, agendamento, navegação e indicadores; logos reais de WhatsApp, Instagram e mapa em `src/components/brand-icons.tsx`. Telas administrativas secundárias ainda usam Lucide.
+- Animações: `src/styles/motion.css` (easing, keyframes, `.sf-stagger`, `.sf-sheen`, `.sf-press`) e `src/components/motion.tsx` (`MotionProvider` para `[data-reveal]` ao rolar e `CountUp`). Tudo respeita `prefers-reduced-motion`; o conteúdo só é escondido para revelar depois que o JS marca a página como `motion-ready`.
+- Confirmação com check desenhado, onda e confete apenas para agendamentos criados há menos de 10 minutos.
+- Não rode `npm run build` com o `npm run dev` ativo: os dois usam `.next` e o dev passa a falhar com "Manifest file is empty".
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

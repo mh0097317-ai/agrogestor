@@ -10,11 +10,11 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  LoaderCircle,
-} from "lucide-react";
+  CalendarBlank,
+  CaretLeft,
+  CaretRight,
+  CircleNotch,
+} from "@phosphor-icons/react/dist/ssr";
 import { useMemo, useState } from "react";
 import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
@@ -100,7 +100,7 @@ export function DateStep({
               className="public-icon-button"
               aria-label="Mês anterior"
             >
-              <ChevronLeft size={18} />
+              <CaretLeft weight="bold" size={18} />
             </button>
             <strong>{format(month, "MMMM 'de' yyyy", { locale: ptBR })}</strong>
             <button
@@ -109,7 +109,7 @@ export function DateStep({
               className="public-icon-button"
               aria-label="Próximo mês"
             >
-              <ChevronRight size={18} />
+              <CaretRight weight="bold" size={18} />
             </button>
           </div>
           <div className="booking-calendar-grid">
@@ -139,7 +139,9 @@ export function DateStep({
           </div>
           <div className="booking-calendar-legend">
             <i /> Datas com horários disponíveis{" "}
-            {loading && <LoaderCircle size={13} className="public-spin" />}
+            {loading && (
+              <CircleNotch weight="bold" size={13} className="public-spin" />
+            )}
           </div>
         </div>
         {error ? (
@@ -162,7 +164,7 @@ export function DateStep({
             </div>
           </div>
         ) : selectedDate ? (
-          <div className="booking-times">
+          <div className="booking-times" key={selectedDate}>
             <h2>
               {format(
                 new Date(`${selectedDate}T12:00:00`),
@@ -182,7 +184,7 @@ export function DateStep({
                 slots.length > 0 && (
                   <div className="booking-time-period" key={period.label}>
                     <h3>{period.label}</h3>
-                    <div className="booking-slot-grid">
+                    <div className="booking-slot-grid sf-stagger">
                       {slots.map((slot) => (
                         <button
                           key={`${slot.time}-${slot.professionalId}`}
@@ -204,7 +206,7 @@ export function DateStep({
             })}
             {uniqueSlots.length === 0 && (
               <div className="booking-empty">
-                <CalendarDays size={24} />
+                <CalendarBlank weight="duotone" size={24} />
                 <p>
                   Esta data não tem horários disponíveis. Escolha outro dia.
                 </p>
@@ -213,7 +215,7 @@ export function DateStep({
           </div>
         ) : (
           <div className="booking-empty booking-date-hint">
-            <CalendarDays size={22} />
+            <CalendarBlank weight="duotone" size={22} />
             <p>
               {Object.values(days).some((slots) => slots.length)
                 ? "Escolha uma data no calendário para ver os horários."

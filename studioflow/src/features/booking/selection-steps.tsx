@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, UsersRound } from "lucide-react";
+import { CaretRight, Check, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import type { Service } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
@@ -49,7 +49,7 @@ export function ServiceStep({
           </button>
         ))}
       </div>
-      <div className="booking-selection-list">
+      <div className="booking-selection-list sf-stagger">
         {visible.map((service) => (
           <button
             className={`booking-service-option ${selectedId === service.id ? "is-selected" : ""}`}
@@ -70,10 +70,10 @@ export function ServiceStep({
             </span>
             {selectedId === service.id ? (
               <span className="booking-check">
-                <Check size={13} />
+                <Check weight="bold" size={13} />
               </span>
             ) : (
-              <ChevronRight size={18} className="booking-muted" />
+              <CaretRight weight="bold" size={18} className="booking-muted" />
             )}
           </button>
         ))}
@@ -107,14 +107,14 @@ export function ProfessionalStep({
       <p className="booking-subtitle">
         Escolha o profissional de sua preferência.
       </p>
-      <div className="booking-selection-list">
+      <div className="booking-selection-list sf-stagger">
         <button
           className={`booking-professional-option booking-any ${selectedId === "any" ? "is-selected" : ""}`}
           onClick={() => onSelect("any")}
           aria-pressed={selectedId === "any"}
         >
           <span className="booking-any-icon">
-            <UsersRound size={23} />
+            <UsersThree weight="duotone" size={23} />
           </span>
           <span className="booking-option-info">
             <strong>Qualquer profissional</strong>
@@ -122,7 +122,7 @@ export function ProfessionalStep({
           </span>
           {selectedId === "any" ? (
             <span className="booking-check">
-              <Check size={13} />
+              <Check weight="bold" size={13} />
             </span>
           ) : (
             <span className="booking-unchecked" />
@@ -150,7 +150,7 @@ export function ProfessionalStep({
             </span>
             {selectedId === person.id ? (
               <span className="booking-check">
-                <Check size={13} />
+                <Check weight="bold" size={13} />
               </span>
             ) : (
               <span className="booking-unchecked" />

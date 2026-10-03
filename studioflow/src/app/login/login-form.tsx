@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Scissors, ShieldCheck, LoaderCircle } from "lucide-react";
+import { ArrowRight, ShieldCheck, LoaderCircle } from "lucide-react";
+import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import "./login.css";
 export function LoginForm() {
@@ -72,9 +73,8 @@ export function LoginForm() {
     <main className="access-page">
       <div className="access-layout">
         <aside className="access-story">
-          <Link href="/" className="access-brand">
-            <Scissors />
-            studioflow
+          <Link href="/" className="access-brand" aria-label="StudioFlow">
+            <Brand tone="on-dark" size={40} animated />
           </Link>
           <div>
             <p className="access-eyebrow">Seu negócio, no seu ritmo</p>
@@ -94,9 +94,12 @@ export function LoginForm() {
           </p>
         </aside>
         <section className="access-form-section">
-          <Link href="/" className="access-mobile-brand">
-            <Scissors size={18} />
-            studioflow
+          <Link
+            href="/"
+            className="access-mobile-brand"
+            aria-label="StudioFlow"
+          >
+            <Brand size={34} animated />
           </Link>
           <span className="access-form-eyebrow">
             {signup ? "SEU PRÓXIMO CAPÍTULO" : "BEM-VINDO DE VOLTA"}

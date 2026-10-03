@@ -7,8 +7,8 @@ import {
   CalendarClock,
   UserRoundX,
   X,
-  MessageCircle,
 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/brand-icons";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/components/toast";
@@ -233,7 +233,7 @@ export function AppointmentDetail({
                 target="_blank"
                 rel="noreferrer"
               >
-                <MessageCircle size={17} />
+                <WhatsAppIcon size={18} />
                 Conversar no WhatsApp
               </a>
             </div>

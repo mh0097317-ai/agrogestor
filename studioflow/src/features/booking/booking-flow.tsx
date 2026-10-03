@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, Clock3 } from "lucide-react";
+import { ArrowRight, Check, Clock } from "@phosphor-icons/react/dist/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Appointment, Slot } from "@/types";
@@ -57,7 +57,13 @@ export function BookingProgress({
               disabled={!onBack || index + 1 >= step}
               aria-current={index + 1 === step ? "step" : undefined}
             >
-              <span>{index + 1 < step ? <Check size={12} /> : index + 1}</span>
+              <span>
+                {index + 1 < step ? (
+                  <Check weight="bold" size={12} />
+                ) : (
+                  index + 1
+                )}
+              </span>
               <small>{label}</small>
             </button>
           </li>
@@ -105,6 +111,7 @@ function BookingWizard({
     (service) => service.id === initialService && service.active,
   );
   const [step, setStep] = useState(validInitialService ? 2 : 1);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [serviceId, setServiceId] = useState(validInitialService?.id || "");
   const [professionalId, setProfessionalId] = useState(
     professionals.some(
@@ -141,6 +148,7 @@ function BookingWizard({
     (person) => person.id === (slot?.professionalId || professionalId),
   );
   function changeStep(next: number) {
+    setDirection(next > step ? "forward" : "back");
     setStep(next);
     setError("");
     window.scrollTo({
@@ -233,7 +241,11 @@ function BookingWizard({
       <div className="booking-layout">
         <main className="booking-main">
           <BookingProgress step={step} onBack={busy ? undefined : changeStep} />
-          <div key={step} className="booking-screen" ref={stepHeading}>
+          <div
+            key={step}
+            className={`booking-screen is-${direction}`}
+            ref={stepHeading}
+          >
             {step === 1 && (
               <ServiceStep
                 services={services}
@@ -291,7 +303,10 @@ function BookingWizard({
       {step < 4 && (
         <footer className="booking-bottom-bar">
           <div className="booking-bottom-inner">
-            <div className="booking-bottom-selection">
+            <div
+              className="booking-bottom-selection"
+              key={service?.id || "none"}
+            >
               {service && (
                 <PublicImage
                   src={service.image}
@@ -309,7 +324,8 @@ function BookingWizard({
                     </>
                   ) : (
                     <>
-                      <Clock3 size={12} /> Rápido, simples e no seu tempo
+                      <Clock weight="duotone" size={12} /> Rápido, simples e no
+                      seu tempo
                     </>
                   )}
                 </span>
@@ -319,7 +335,7 @@ function BookingWizard({
               disabled={!canContinue}
               onClick={() => changeStep(step + 1)}
             >
-              Continuar <ArrowRight size={17} />
+              Continuar <ArrowRight weight="bold" size={17} />
             </BusyButton>
           </div>
         </footer>

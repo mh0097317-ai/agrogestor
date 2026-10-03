@@ -386,14 +386,9 @@
   letter-spacing: 1.75px;
   color: #7b93ac;
 }
-.sidebar-foot .brand-mark {
-  width: 24px;
-  height: 26px;
-  border-radius: 7px;
-}
-.sidebar-foot .brand-mark svg {
-  width: 15px;
-  height: 16px;
+.sidebar-foot .brand-lockup {
+  font-size: 15px;
+  gap: 8px;
 }
 .mobile-top-business {
   display: flex;
@@ -411,4 +406,70 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Motion */
+.dashboard-content {
+  animation: sf-fade-up 420ms var(--ease-out) both;
+}
+.nav-link {
+  transition:
+    background var(--motion-base),
+    color var(--motion-base);
+}
+.nav-link svg {
+  transition: transform 320ms var(--ease-spring);
+}
+.nav-link:hover svg {
+  transform: translateX(2px) scale(1.08);
+}
+.nav-link.active svg {
+  animation: sf-pop 420ms var(--ease-spring);
+}
+.sidebar-business-mark {
+  transition: transform 360ms var(--ease-spring);
+}
+.sidebar-business:hover .sidebar-business-mark {
+  transform: rotate(-6deg) scale(1.05);
+}
+.bottom-nav > a,
+.bottom-nav > button {
+  position: relative;
+  transition:
+    color var(--motion-base),
+    transform var(--motion-fast) var(--ease-out);
+}
+.bottom-nav > a:active,
+.bottom-nav > button:active {
+  transform: scale(0.92);
+}
+.bottom-nav > a.active svg {
+  animation: sf-pop 420ms var(--ease-spring);
+}
+.bottom-nav > a.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: #0d2847;
+  animation: sf-pop 420ms var(--ease-spring);
+}
+.bottom-nav .mobile-add {
+  transition:
+    transform var(--motion-base) var(--ease-spring),
+    box-shadow var(--motion-base);
+}
+.bottom-nav .mobile-add:hover {
+  transform: translateY(-2px) rotate(90deg);
+}
+.bottom-nav .mobile-add:active {
+  transform: scale(0.9);
+}
+.mobile-more {
+  animation: sf-scale-in 220ms var(--ease-out) both;
+  transform-origin: bottom right;
 }

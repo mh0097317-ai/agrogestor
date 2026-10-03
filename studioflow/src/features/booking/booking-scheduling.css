@@ -151,3 +151,40 @@
 .booking-date-hint {
   margin-top: 24px;
 }
+
+/* Motion */
+@keyframes booking-select {
+  0% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.booking-calendar-grid > button.is-selected,
+.booking-slot-grid > button.is-selected {
+  animation: booking-select 360ms var(--ease-spring);
+}
+.booking-slot-grid > button {
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-base);
+}
+.booking-slot-grid > button:hover:not(.is-selected) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px #07111f10;
+}
+.booking-slot-grid > button.is-selected {
+  box-shadow: 0 8px 18px #0d284733;
+}
+.booking-calendar-grid {
+  animation: sf-fade-in 300ms ease-out;
+}
+.booking-times > h2 {
+  animation: sf-fade-up 360ms var(--ease-out) both;
+}

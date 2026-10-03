@@ -1,15 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  CalendarDays,
-  Scissors,
-  Sparkles,
-  Hand,
-  Eye,
-  Heart,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import { SegmentIcon } from "@/lib/segments";
 import { money } from "@/lib/utils";
 
 type PreviewProps = {
@@ -27,18 +20,6 @@ export function OnboardingPreview(props: PreviewProps) {
   const [failedCover, setFailedCover] = useState("");
   const services = props.services.filter((service) => service.name.trim());
   const professionals = props.professionals.filter((name) => name.trim());
-  const Icon =
-    props.category === "Nail designer"
-      ? Hand
-      : props.category === "Lash designer"
-        ? Eye
-        : props.category === "Estética"
-          ? Heart
-          : props.category === "Profissional autônomo"
-            ? UserRound
-            : ["Barbearia", "Cabeleireiro"].includes(props.category)
-              ? Scissors
-              : Sparkles;
   const hasCover =
     /^https?:\/\//.test(props.cover) && failedCover !== props.cover;
 
@@ -60,7 +41,7 @@ export function OnboardingPreview(props: PreviewProps) {
               onError={() => setFailedCover(props.cover)}
             />
           ) : (
-            <Icon size={56} strokeWidth={1} />
+            <SegmentIcon category={props.category} size={60} weight="thin" />
           )}
           <span>{props.category}</span>
         </div>

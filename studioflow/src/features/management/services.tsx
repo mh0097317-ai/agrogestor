@@ -269,7 +269,7 @@ export default function ServicesPage() {
                             </div>
                             <p>
                               {service.description ||
-                            "Sem descrição cadastrada."}
+                                "Sem descrição cadastrada."}
                             </p>
                             <div className="catalog-assigned">
                               <div className="management-avatar-stack">

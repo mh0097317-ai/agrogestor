@@ -22,16 +22,6 @@
   text-decoration: none;
   color: #0b1b30;
 }
-.onboarding-brand > span {
-  width: 33px;
-  height: 33px;
-  background: linear-gradient(135deg, #07111f, #123e69);
-  border-radius: 9px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .onboarding-header-note {
   color: #64748b;
   font-size: 12px;
@@ -384,4 +374,38 @@
   .onboarding-header .onboarding-brand {
     font-size: 17px;
   }
+}
+
+/* Motion */
+.onboarding-container > * {
+  animation: sf-fade-up 520ms var(--ease-out) both;
+}
+.onboarding-container > :nth-child(2) {
+  animation-delay: 60ms;
+}
+.onboarding-container > :nth-child(3) {
+  animation-delay: 120ms;
+}
+.onboarding-container > :nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+.onboarding-category {
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base) var(--ease-out);
+}
+.onboarding-category:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px #0b1b3010;
+}
+.onboarding-category-icon {
+  transition: transform 360ms var(--ease-spring);
+}
+.onboarding-category:hover .onboarding-category-icon,
+.onboarding-category.selected .onboarding-category-icon {
+  transform: scale(1.1) rotate(-6deg);
+}
+.onboarding-category-check {
+  animation: sf-pop 420ms var(--ease-spring) both;
 }

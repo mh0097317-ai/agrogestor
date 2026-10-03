@@ -155,3 +155,41 @@
 .booking-professional-image img {
   object-position: 50% 26%;
 }
+
+/* Motion */
+.booking-service-option,
+.booking-professional-option {
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s,
+    transform var(--motion-base) var(--ease-out);
+}
+.booking-service-option:hover,
+.booking-professional-option:hover {
+  transform: translateY(-1px);
+}
+.booking-service-option:active,
+.booking-professional-option:active {
+  transform: scale(0.985);
+}
+.booking-check {
+  animation: sf-pop 420ms var(--ease-spring) both;
+}
+.booking-service-image img,
+.booking-professional-image img {
+  transition: transform 500ms var(--ease-out) !important;
+}
+.booking-service-option:hover .booking-service-image img,
+.booking-professional-option:hover .booking-professional-image img {
+  transform: scale(1.08);
+}
+.booking-filter-tabs button {
+  transition:
+    background var(--motion-base),
+    color var(--motion-base),
+    border-color var(--motion-base),
+    transform var(--motion-fast) var(--ease-out);
+}
+.booking-filter-tabs button:active {
+  transform: scale(0.95);
+}

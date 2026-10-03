@@ -274,6 +274,11 @@
   font-weight: 600;
   line-height: 1.3;
 }
+.pp-service b {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--pp-navy);
+}
 .pp-service span {
   font-size: 12px;
   color: var(--pp-muted);
@@ -517,6 +522,15 @@
   font-size: 12px;
   color: var(--pp-muted);
 }
+.pp-powered {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pp-powered strong {
+  color: var(--pp-ink);
+  font-weight: 650;
+}
 .pp-footer a {
   display: inline-flex;
   align-items: center;
@@ -747,4 +761,153 @@
   .pp-dock {
     display: none;
   }
+}
+
+/* Motion */
+.pp-cover-photo img {
+  animation: sf-kenburns 2.6s var(--ease-out) both;
+}
+.pp-identity > * {
+  animation: sf-fade-up 700ms var(--ease-out) both;
+}
+.pp-identity > :nth-child(1) {
+  animation-delay: 120ms;
+}
+.pp-identity > :nth-child(2) {
+  animation-delay: 220ms;
+}
+.pp-identity > :nth-child(3) {
+  animation-delay: 320ms;
+}
+.pp-cover-share {
+  animation: sf-fade-in 600ms 400ms both;
+  transition: background var(--motion-base);
+}
+.pp-cover-share svg {
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+.pp-cover-share:hover svg {
+  transform: rotate(-14deg) scale(1.08);
+}
+.pp-sheet {
+  animation: sf-fade-up 700ms var(--ease-out) 120ms both;
+}
+.pp-sheet > * {
+  animation: sf-fade-up 600ms var(--ease-out) both;
+}
+.pp-sheet > :nth-child(1) {
+  animation-delay: 260ms;
+}
+.pp-sheet > :nth-child(2) {
+  animation-delay: 330ms;
+}
+.pp-sheet > :nth-child(3) {
+  animation-delay: 400ms;
+}
+.pp-sheet > :nth-child(4) {
+  animation-delay: 470ms;
+}
+.pp-status.is-open i {
+  animation: sf-pulse-ring 2s ease-out infinite;
+}
+.pp-actions a {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out),
+    border-color var(--motion-base),
+    background var(--motion-base);
+}
+.pp-actions a svg {
+  transition: transform 320ms var(--ease-spring);
+}
+.pp-actions a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px #07111f12;
+}
+.pp-actions a:hover svg {
+  transform: scale(1.14) rotate(-4deg);
+}
+.pp-cta {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out) !important;
+}
+.pp-cta:hover {
+  box-shadow: 0 14px 30px #0d284738 !important;
+}
+.pp-cta svg {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.pp-cta:hover svg {
+  transform: translateX(4px);
+}
+.pp-service {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.pp-service:hover {
+  transform: translateY(-3px);
+}
+.pp-service-photo {
+  transition: box-shadow var(--motion-base) var(--ease-out);
+}
+.pp-service:hover .pp-service-photo {
+  box-shadow: 0 12px 24px #07111f24;
+}
+.pp-service-photo img {
+  transition: transform 700ms var(--ease-out) !important;
+}
+.pp-service:hover .pp-service-photo img {
+  transform: scale(1.08);
+}
+.pp-ambience-photo img {
+  transition: transform 1.2s var(--ease-out) !important;
+}
+.pp-ambience:hover .pp-ambience-photo img {
+  transform: scale(1.07);
+}
+.pp-ambience-arrow {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.pp-ambience:hover .pp-ambience-arrow {
+  transform: translate(4px, -50%);
+}
+.pp-amenities svg {
+  animation: sf-float 4.5s ease-in-out infinite;
+}
+.pp-amenities li:nth-child(2) svg {
+  animation-delay: -1.1s;
+}
+.pp-amenities li:nth-child(3) svg {
+  animation-delay: -2.2s;
+}
+.pp-amenities li:nth-child(4) svg {
+  animation-delay: -3.3s;
+}
+.pp-person {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out),
+    border-color var(--motion-base),
+    background var(--motion-base);
+}
+.pp-person:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px #07111f10;
+}
+.pp-person-photo {
+  transition: box-shadow var(--motion-base) var(--ease-out);
+}
+.pp-person:hover .pp-person-photo {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 5px #0d2847;
+}
+.pp-person em svg {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.pp-person:hover em svg {
+  transform: translate(2px, -2px);
+}
+.pp-book-card {
+  animation: sf-fade-up 700ms var(--ease-out) 300ms both;
 }

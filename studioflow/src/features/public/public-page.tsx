@@ -3,15 +3,19 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Camera,
-  Check,
-  Clock3,
+  CheckCircle,
+  Clock,
   MapPin,
-  MessageCircle,
-  Share2,
-} from "lucide-react";
+  ShareNetwork,
+} from "@phosphor-icons/react/dist/ssr";
+import {
+  InstagramIcon,
+  MapPinIcon,
+  WhatsAppIcon,
+} from "@/components/brand-icons";
 import { useEffect, useRef, useState } from "react";
 import { SegmentIcon } from "@/lib/segments";
+import { BrandLogo } from "@/components/brand";
 import {
   PublicError,
   PublicImage,
@@ -112,10 +116,14 @@ export function PublicPage({ slug }: { slug: string }) {
   }
 
   const actions = [
-    location && { href: location, label: "Localização", icon: MapPin },
-    whatsapp && { href: whatsapp, label: "WhatsApp", icon: MessageCircle },
-    instagram && { href: instagram, label: "Instagram", icon: Camera },
-  ].filter(Boolean) as { href: string; label: string; icon: typeof MapPin }[];
+    location && { href: location, label: "Localização", icon: MapPinIcon },
+    whatsapp && { href: whatsapp, label: "WhatsApp", icon: WhatsAppIcon },
+    instagram && { href: instagram, label: "Instagram", icon: InstagramIcon },
+  ].filter(Boolean) as {
+    href: string;
+    label: string;
+    icon: typeof WhatsAppIcon;
+  }[];
 
   return (
     <div className="public-site pp" style={publicAccentStyle(business.color)}>
@@ -138,7 +146,7 @@ export function PublicPage({ slug }: { slug: string }) {
             <SegmentIcon
               category={business.category}
               size={220}
-              strokeWidth={0.6}
+              weight="thin"
             />
           </div>
         )}
@@ -148,7 +156,7 @@ export function PublicPage({ slug }: { slug: string }) {
           aria-label="Compartilhar estabelecimento"
           onClick={shareBusiness}
         >
-          <Share2 size={18} />
+          <ShareNetwork size={19} weight="bold" />
         </button>
         <div className="pp-identity">
           {business.logo ? (
@@ -162,8 +170,8 @@ export function PublicPage({ slug }: { slug: string }) {
             <SegmentIcon
               category={business.category}
               className="pp-identity-icon"
-              size={34}
-              strokeWidth={1.4}
+              size={38}
+              weight="light"
             />
           )}
           <h1>{business.name}</h1>
@@ -192,8 +200,14 @@ export function PublicPage({ slug }: { slug: string }) {
                 style={{ "--cols": actions.length } as React.CSSProperties}
               >
                 {actions.map(({ href, label, icon: Icon }) => (
-                  <a key={label} href={href} target="_blank" rel="noreferrer">
-                    <Icon size={20} strokeWidth={1.7} />
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="sf-press"
+                  >
+                    <Icon size={24} />
                     <span>{label}</span>
                   </a>
                 ))}
@@ -202,9 +216,9 @@ export function PublicPage({ slug }: { slug: string }) {
             <Link
               ref={mainCta}
               href={bookHref}
-              className="public-button pp-cta"
+              className="public-button pp-cta sf-sheen"
             >
-              Agendar horário <ArrowRight size={19} />
+              Agendar horário <ArrowRight size={19} weight="bold" />
             </Link>
           </section>
 
@@ -239,7 +253,7 @@ export function PublicPage({ slug }: { slug: string }) {
             <dl>
               <div>
                 <dt>
-                  <Clock3 size={15} /> Hoje
+                  <Clock size={16} weight="duotone" /> Hoje
                 </dt>
                 <dd>
                   {openToday
@@ -250,14 +264,14 @@ export function PublicPage({ slug }: { slug: string }) {
               {business.address && (
                 <div>
                   <dt>
-                    <MapPin size={15} /> Endereço
+                    <MapPin size={16} weight="duotone" /> Endereço
                   </dt>
                   <dd>{business.address}</dd>
                 </div>
               )}
             </dl>
             <Link href={bookHref} className="public-button">
-              Agendar horário <ArrowRight size={18} />
+              Agendar horário <ArrowRight size={18} weight="bold" />
             </Link>
             {whatsapp && (
               <a
@@ -266,7 +280,7 @@ export function PublicPage({ slug }: { slug: string }) {
                 rel="noreferrer"
                 className="pp-book-help"
               >
-                <MessageCircle size={16} /> Falar no WhatsApp
+                <WhatsAppIcon size={18} /> Falar no WhatsApp
               </a>
             )}
           </div>
@@ -274,11 +288,11 @@ export function PublicPage({ slug }: { slug: string }) {
       </div>
 
       <footer className="pp-footer">
-        <span>
-          {business.name} · agenda online por <strong>StudioFlow</strong>
+        <span className="pp-powered">
+          Agenda online por <BrandLogo size={18} /> <strong>StudioFlow</strong>
         </span>
         <Link href="/login">
-          Acesso do estabelecimento <ArrowRight size={14} />
+          Acesso do estabelecimento <ArrowRight size={14} weight="bold" />
         </Link>
       </footer>
 
@@ -295,12 +309,12 @@ export function PublicPage({ slug }: { slug: string }) {
           className="public-button"
           tabIndex={showDock ? 0 : -1}
         >
-          Agendar <ArrowRight size={17} />
+          Agendar <ArrowRight size={17} weight="bold" />
         </Link>
       </div>
       {toast && (
         <div className="public-toast" role="status">
-          <Check size={18} />
+          <CheckCircle size={18} weight="fill" />
           {toast}
         </div>
       )}

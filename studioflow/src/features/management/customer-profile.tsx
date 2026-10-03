@@ -1,5 +1,6 @@
 "use client";
-import { Clock3, MessageCircle, Pencil } from "lucide-react";
+import { Clock3, Pencil } from "lucide-react";
+import { WhatsAppIcon } from "@/components/brand-icons";
 import {
   Avatar,
   Button,
@@ -80,7 +81,7 @@ export function CustomerProfile({
               phone={customer.phone}
               message={`Olá, ${customer.name.split(" ")[0]}! Aqui é da ${data?.business.name}. Vamos agendar seu próximo horário?`}
             >
-              <MessageCircle size={16} />
+              <WhatsAppIcon size={18} />
               Chamar no WhatsApp
             </WhatsAppLink>
             {canMutate("customers") && (

@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
-  LoaderCircle,
+  CircleNotch,
   Scissors,
   ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+  Sparkle,
+} from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import { initials } from "@/lib/utils";
 
@@ -29,9 +29,7 @@ export function PublicImage({
 }) {
   const [failed, setFailed] = useState(false);
   const FallbackIcon =
-    !segment || /barbe|cabelo|cabele|salão/i.test(segment)
-      ? Scissors
-      : Sparkles;
+    !segment || /barbe|cabelo|cabele|salão/i.test(segment) ? Scissors : Sparkle;
   return (
     <span className={`public-image ${className}`}>
       {src && !failed ? (
@@ -83,7 +81,7 @@ export function PublicError({
 }) {
   return (
     <main className="public-error-page">
-      <Scissors size={36} />
+      <Scissors weight="duotone" size={36} />
       <h1>Vamos tentar de novo?</h1>
       <p>{message}</p>
       <button className="public-button" onClick={retry}>
@@ -119,7 +117,7 @@ export function BookingHeader({
             disabled={busy}
             aria-label="Voltar uma etapa"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft weight="bold" size={20} />
           </button>
         ) : (
           <Link
@@ -127,12 +125,12 @@ export function BookingHeader({
             className="public-icon-button"
             aria-label="Voltar ao estabelecimento"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft weight="bold" size={20} />
           </Link>
         )}
         <Link href={`/${slug}`} className="booking-business-title">
           <span className="booking-brand-mark">
-            <Scissors size={19} />
+            <Scissors weight="duotone" size={19} />
           </span>
           <span>
             {businessName}
@@ -140,7 +138,7 @@ export function BookingHeader({
           </span>
         </Link>
         <span className="booking-safe">
-          <ShieldCheck size={16} /> Seguro e simples
+          <ShieldCheck weight="duotone" size={16} /> Seguro e simples
         </span>
       </div>
     </header>
@@ -161,7 +159,7 @@ export function PublicRefreshNotice({
     <div className="public-refresh-notice" role={error ? "alert" : "status"}>
       {refreshing ? (
         <>
-          <LoaderCircle size={16} className="public-spin" />
+          <CircleNotch weight="bold" size={16} className="public-spin" />
           <span>Atualizando informações…</span>
         </>
       ) : (
@@ -198,7 +196,11 @@ export function BusyButton({
       onClick={onClick}
       className={`public-button ${className}`}
     >
-      {busy ? <LoaderCircle size={18} className="public-spin" /> : children}
+      {busy ? (
+        <CircleNotch weight="bold" size={18} className="public-spin" />
+      ) : (
+        children
+      )}
     </button>
   );
 }

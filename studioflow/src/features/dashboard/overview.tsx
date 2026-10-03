@@ -3,17 +3,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
-  CalendarCheck2,
-  ChevronRight,
-  CircleDollarSign,
-  Clock3,
+  CalendarCheck,
+  CaretRight,
+  CurrencyCircleDollar,
+  Clock,
   Plus,
   UserPlus,
-} from "lucide-react";
+} from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, Button } from "@/components/ui";
 import { MiniCalendar } from "@/components/mini-calendar";
+import { CountUp } from "@/components/motion";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { AppointmentDetail } from "@/features/agenda/appointment-detail";
 import {
@@ -71,16 +72,24 @@ export function Overview() {
   const kpis = [
     {
       label: today ? "Agendamentos hoje" : "Agendamentos no dia",
-      value: model.appointments.length,
-      icon: CalendarCheck2,
+      value: <CountUp value={model.appointments.length} />,
+      icon: CalendarCheck,
     },
     {
       label: "Receita prevista",
-      value: money(model.revenue),
-      icon: CircleDollarSign,
+      value: <CountUp value={model.revenue} format={money} />,
+      icon: CurrencyCircleDollar,
     },
-    { label: "Horários livres", value: model.freeSlots, icon: Clock3 },
-    { label: "Novos clientes", value: model.newCustomers, icon: UserPlus },
+    {
+      label: "Horários livres",
+      value: <CountUp value={model.freeSlots} />,
+      icon: Clock,
+    },
+    {
+      label: "Novos clientes",
+      value: <CountUp value={model.newCustomers} />,
+      icon: UserPlus,
+    },
   ];
   const upcoming = model.upcoming.slice(0, 5);
 
@@ -98,7 +107,7 @@ export function Overview() {
           className="ov-hero-bell"
           aria-label={`${model.pending.length} agendamentos aguardando confirmação`}
         >
-          <Bell size={20} />
+          <Bell size={21} weight="duotone" />
           {model.pending.length > 0 && <span>{model.pending.length}</span>}
         </Link>
       </section>
@@ -114,11 +123,11 @@ export function Overview() {
         </p>
       </header>
 
-      <div className="ov-kpis">
+      <div className="ov-kpis sf-stagger">
         {kpis.map(({ label, value, icon: Icon }) => (
           <div className="ov-kpi" key={label}>
             <span className="ov-kpi-icon">
-              <Icon size={19} strokeWidth={1.8} />
+              <Icon size={22} weight="duotone" />
             </span>
             <div>
               <strong>{value}</strong>
@@ -148,7 +157,7 @@ export function Overview() {
               <Link href={`/dashboard/agenda?date=${day}`}>Ver todos</Link>
             </div>
             {upcoming.length ? (
-              <ul role="list">
+              <ul role="list" className="sf-stagger">
                 {upcoming.map((a) => (
                   <li key={a.id}>
                     <UpcomingRow
@@ -168,7 +177,7 @@ export function Overview() {
                 </p>
                 {canMutate("appointments") && (
                   <Button variant="secondary" onClick={() => setCreate(true)}>
-                    <Plus size={16} /> Novo agendamento
+                    <Plus size={16} weight="bold" /> Novo agendamento
                   </Button>
                 )}
               </div>
@@ -258,7 +267,7 @@ function UpcomingRow({
           {a.status === "pending" ? "Aguardando" : "Agora"}
         </span>
       )}
-      <ChevronRight size={16} className="ov-row-chevron" />
+      <CaretRight size={16} weight="bold" className="ov-row-chevron" />
     </button>
   );
 }
