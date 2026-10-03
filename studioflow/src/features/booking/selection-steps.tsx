@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, ChevronRight, Clock3, UsersRound } from "lucide-react";
+import { Check, ChevronRight, UsersRound } from "lucide-react";
 import { useState } from "react";
 import type { Service } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
-import { money } from "@/lib/utils";
+import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
 
 export function ServiceStep({
@@ -31,7 +31,6 @@ export function ServiceStep({
   );
   return (
     <section className="booking-step">
-      <span className="public-eyebrow">01 / O QUE VAMOS FAZER?</span>
       <h1 tabIndex={-1}>Qual serviço você deseja?</h1>
       <p className="booking-subtitle">Escolha o serviço que deseja realizar.</p>
       <div
@@ -66,20 +65,16 @@ export function ServiceStep({
             />
             <span className="booking-option-info">
               <strong>{service.name}</strong>
-              <span>
-                <Clock3 size={12} /> {service.duration} minutos
-              </span>
-            </span>
-            <span className="booking-option-price">
+              <span>{durationLabel(service.duration)}</span>
               <b>{money(service.price)}</b>
-              {selectedId === service.id ? (
-                <span className="booking-check">
-                  <Check size={13} />
-                </span>
-              ) : (
-                <ChevronRight size={18} className="booking-muted" />
-              )}
             </span>
+            {selectedId === service.id ? (
+              <span className="booking-check">
+                <Check size={13} />
+              </span>
+            ) : (
+              <ChevronRight size={18} className="booking-muted" />
+            )}
           </button>
         ))}
       </div>
@@ -108,7 +103,6 @@ export function ProfessionalStep({
   );
   return (
     <section className="booking-step">
-      <span className="public-eyebrow">02 / COM QUEM VOCÊ PREFERE?</span>
       <h1 tabIndex={-1}>Quem vai te atender?</h1>
       <p className="booking-subtitle">
         Escolha o profissional de sua preferência.
@@ -131,7 +125,7 @@ export function ProfessionalStep({
               <Check size={13} />
             </span>
           ) : (
-            <ChevronRight size={18} />
+            <span className="booking-unchecked" />
           )}
         </button>
         {available.map((person) => (
@@ -149,8 +143,10 @@ export function ProfessionalStep({
             />
             <span className="booking-option-info">
               <strong>{person.name}</strong>
-              <span>{person.specialties.join(" · ")}</span>
-              <small>Realiza {service.name.toLocaleLowerCase("pt-BR")}</small>
+              <span>
+                {person.specialties.join(" · ") ||
+                  `Realiza ${service.name.toLocaleLowerCase("pt-BR")}`}
+              </span>
             </span>
             {selectedId === person.id ? (
               <span className="booking-check">

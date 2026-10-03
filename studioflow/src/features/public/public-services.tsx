@@ -1,8 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { ArrowUpRight, Clock3, Scissors } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, Scissors } from "lucide-react";
 import type { Service } from "@/types";
 import { money } from "@/lib/utils";
 import { PublicImage } from "./public-ui";
@@ -14,100 +11,44 @@ export function PublicServices({
   services: Service[];
   slug: string;
 }) {
-  const [category, setCategory] = useState("Todos");
-  const categories = [
-    ...new Set(services.map((service) => service.category || "Serviços")),
-  ];
-  const visibleCategories =
-    category === "Todos"
-      ? categories
-      : categories.filter((item) => item === category);
   return (
-    <section id="servicos" className="public-section public-catalog">
-      <div className="public-section-heading">
-        <div>
-          <span className="public-eyebrow">01 / ESCOLHA SEU CUIDADO</span>
-          <h2>Serviços & experiências</h2>
-        </div>
-        <span className="public-section-count">{services.length} serviços</span>
+    <section id="servicos" className="pp-section">
+      <div className="pp-section-head">
+        <h2>Nossos serviços</h2>
+        {services.length > 0 && (
+          <Link href={`/${slug}/agendar`} className="pp-see-all">
+            Ver todos <ChevronRight size={15} />
+          </Link>
+        )}
       </div>
       {services.length ? (
-        <>
-          <div
-            className="public-category-tabs"
-            aria-label="Filtrar categoria de serviços"
-          >
-            {["Todos", ...categories].map((item) => (
-              <button
-                key={item}
-                onClick={() => setCategory(item)}
-                className={category === item ? "is-active" : ""}
-                aria-pressed={category === item}
+        <ul className="pp-services" role="list">
+          {services.map((service) => (
+            <li key={service.id}>
+              <Link
+                href={`/${slug}/agendar?service=${service.id}`}
+                className="pp-service"
+                aria-label={`${service.name}, ${service.duration} minutos, ${money(service.price)}. Agendar`}
               >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="public-service-groups">
-            {visibleCategories.map((item) => (
-              <div className="public-service-group" key={item}>
-                <h3 className="public-category-heading">
-                  {item}
-                  <span>
-                    {services
-                      .filter(
-                        (service) => (service.category || "Serviços") === item,
-                      )
-                      .length.toString()
-                      .padStart(2, "0")}
-                  </span>
-                </h3>
-                <div className="public-services-list">
-                  {services
-                    .filter(
-                      (service) => (service.category || "Serviços") === item,
-                    )
-                    .map((service) => (
-                      <Link
-                        key={service.id}
-                        href={`/${slug}/agendar?service=${service.id}`}
-                        className="public-service-card"
-                      >
-                        <PublicImage
-                          src={service.image}
-                          alt={service.name}
-                          className="public-service-photo"
-                          segment={service.category}
-                        />
-                        <div className="public-service-card-info">
-                          <h4>{service.name}</h4>
-                          {service.description && <p>{service.description}</p>}
-                          <span>
-                            <Clock3 size={13} />
-                            {service.duration} minutos
-                          </span>
-                        </div>
-                        <div className="public-service-price">
-                          <strong>{money(service.price)}</strong>
-                          <span>
-                            Selecionar <ArrowUpRight size={14} />
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+                <PublicImage
+                  src={service.image}
+                  alt=""
+                  className="pp-service-photo"
+                  segment={service.category}
+                />
+                <strong>{service.name}</strong>
+                <span>
+                  {service.duration} min · {money(service.price)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <div className="public-inline-empty">
-          <Scissors size={24} />
-          <strong>Novos cuidados em breve</strong>
-          <p>
-            Estamos preparando nossos serviços. Entre em contato com o
-            estabelecimento para saber mais.
-          </p>
+        <div className="pp-empty">
+          <Scissors size={22} />
+          <strong>Serviços em breve</strong>
+          <p>Fale com o estabelecimento para saber mais.</p>
         </div>
       )}
     </section>

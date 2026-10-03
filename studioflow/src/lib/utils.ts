@@ -1,5 +1,13 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+/** Human duration for clients: "40 minutos", "1 hora", "1h30". */
+export function durationLabel(minutes: number) {
+  if (minutes < 60) return `${minutes} minutos`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (rest) return `${hours}h${String(rest).padStart(2, "0")}`;
+  return hours === 1 ? "1 hora" : `${hours} horas`;
+}
 export const money = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export function businessDay(value: string | Date = new Date()) {

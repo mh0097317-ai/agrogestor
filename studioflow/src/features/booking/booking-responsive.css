@@ -23,8 +23,8 @@
     padding: 28px 25px 32px;
   }
   .booking-step h1 {
-    font-size: 30px;
-    letter-spacing: -1.1px;
+    font-size: 26px;
+    letter-spacing: -0.7px;
   }
   .booking-calendar {
     border: 0;
@@ -83,62 +83,57 @@
     box-shadow: none;
   }
   .booking-progress {
-    margin-bottom: 28px;
-    padding-bottom: 23px;
+    margin-bottom: 24px;
   }
   .booking-progress button > span {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
   }
   .booking-progress button > small {
-    font-size: 12px;
+    font-size: 11px;
   }
   .booking-progress li:after {
-    top: 14px;
-    left: calc(50% + 18px);
-    right: calc(-50% + 18px);
+    top: 12px;
+    left: calc(50% + 16px);
+    right: calc(-50% + 16px);
   }
   .booking-aside {
     display: none;
   }
   .booking-step h1 {
-    font-size: 30px;
-    margin-top: 7px;
-    letter-spacing: -1.1px;
+    font-size: 22px;
+    letter-spacing: -0.5px;
   }
   .booking-subtitle {
     font-size: 14px;
-    margin-bottom: 24px !important;
+    margin-bottom: 18px !important;
   }
   .booking-selection-list {
     gap: 11px;
   }
   .booking-service-option,
   .booking-professional-option {
-    padding: 11px 14px 11px 10px;
-    gap: 13px;
-    min-height: 92px;
+    padding: 10px 14px 10px 10px;
+    gap: 12px;
+    min-height: 80px;
   }
   .booking-service-image {
-    height: 65px;
-    width: 65px;
+    height: 58px;
+    width: 58px;
   }
   .booking-option-info strong {
-    font-size: 16px;
+    font-size: 15px;
   }
   .booking-option-info > span {
-    font-size: 14px;
-  }
-  .booking-option-info b {
-    font-size: 14px;
+    font-size: 13px;
   }
   .booking-professional-image {
-    height: 60px;
-    width: 60px;
+    height: 56px;
+    width: 56px;
   }
   .booking-professional-option {
-    min-height: 92px;
+    min-height: 80px;
   }
   .booking-any {
     padding: 14px;
@@ -303,7 +298,7 @@
     margin-bottom: 24px;
   }
   .booking-confirmation-main > h1 {
-    font-size: 32px;
+    font-size: 24px;
     margin-top: 8px;
   }
   .booking-confirmation-main > .booking-subtitle {
@@ -356,8 +351,7 @@
     padding-right: 18px;
   }
   .booking-step h1 {
-    font-size: 30px;
-    letter-spacing: -1.1px;
+    font-size: 21px;
   }
   .booking-bottom-inner {
     padding-left: 13px;

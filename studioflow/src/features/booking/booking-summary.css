@@ -55,8 +55,10 @@
   font-size: 14px;
   font-weight: 500;
   color: #334155;
-  text-transform: capitalize;
   line-height: 1.6;
+}
+.booking-summary dd::first-letter {
+  text-transform: uppercase;
 }
 .booking-summary-total {
   display: flex;
@@ -142,6 +144,7 @@
 }
 .booking-checkbox {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
   gap: 10px;
   font-size: 14px;

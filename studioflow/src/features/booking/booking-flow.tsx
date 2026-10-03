@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight, Check, Clock3, Scissors } from "lucide-react";
+import { ArrowRight, Check, Clock3 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { PublicCatalog } from "@/features/public/types";
-import { money } from "@/lib/utils";
+import { durationLabel, money } from "@/lib/utils";
 import {
   BookingHeader,
   BusyButton,
@@ -286,16 +286,6 @@ function BookingWizard({
             professional={professional}
             slot={slot}
           />
-          <div className="booking-aside-message">
-            <span>
-              <Scissors size={24} />
-            </span>
-            <p>
-              Você cuida do seu tempo.
-              <br />
-              <strong>A gente cuida de você.</strong>
-            </p>
-          </div>
         </aside>
       </div>
       {step < 4 && (
@@ -314,7 +304,8 @@ function BookingWizard({
                 <span>
                   {service ? (
                     <>
-                      {service.duration} min <i>·</i> {money(service.price)}
+                      {durationLabel(service.duration)} <i>·</i>{" "}
+                      {money(service.price)}
                     </>
                   ) : (
                     <>

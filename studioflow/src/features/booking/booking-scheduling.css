@@ -17,8 +17,11 @@
   justify-content: space-between;
   margin-bottom: 17px;
 }
+.booking-calendar-heading strong::first-letter,
+.booking-times > h2::first-letter {
+  text-transform: uppercase;
+}
 .booking-calendar-heading strong {
-  text-transform: capitalize;
   color: #111827;
   font-size: 14px;
   font-weight: 600;
@@ -35,19 +38,21 @@
   height: 44px;
   margin: 0 auto;
   border: 0;
-  background: #f8fafc;
-  color: #334155;
-  border-radius: 12px;
+  background: none;
+  color: #111827;
+  border-radius: 50%;
   font-size: 14px;
+  font-weight: 600;
   position: relative;
 }
 .booking-calendar-grid > button:hover:not(:disabled) {
-  background: #e4edf5;
+  background: #eef2f7;
 }
 .booking-calendar-grid > button:disabled {
   opacity: 1;
   background: none;
-  color: #c2cbd5;
+  color: #cbd5e1;
+  font-weight: 400;
 }
 .booking-calendar-grid > button.is-selected {
   background: var(--public-navy);
@@ -87,8 +92,7 @@
 .booking-times > h2 {
   font-size: 18px;
   color: #111827;
-  text-transform: capitalize;
-  font-weight: 550;
+  font-weight: 600;
   margin-bottom: 20px;
 }
 .booking-time-period {

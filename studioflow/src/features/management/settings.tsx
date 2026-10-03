@@ -385,7 +385,7 @@ function SettingsContent({ store }: { store: Store }) {
       }
       if (
         photos.length > 12 ||
-        photos.some((value) => !/^https?:\/\//.test(value))
+        photos.some((value) => !/^(https?:\/\/|\/[^/])/.test(value))
       ) {
         action.setError(
           "Adicione até 12 fotos, com uma URL que começa com https:// por linha.",

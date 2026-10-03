@@ -1,13 +1,12 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowUpRight,
+  Car,
   Check,
-  Clock3,
   Coffee,
-  MapPin,
   Snowflake,
   Wifi,
-  Car,
 } from "lucide-react";
 import type { Business, Settings } from "@/types";
 import type { PublicProfessional } from "./types";
@@ -23,6 +22,51 @@ const weekDays = [
   "Sábado",
 ];
 
+function amenityIcon(amenity: string) {
+  if (/wi.?fi/i.test(amenity)) return Wifi;
+  if (/estacion/i.test(amenity)) return Car;
+  if (/bebida|café|cafe/i.test(amenity)) return Coffee;
+  if (/climat|ar.condicionado/i.test(amenity)) return Snowflake;
+  return Check;
+}
+
+export function PublicAmbience({
+  photo,
+  businessName,
+}: {
+  photo: string;
+  businessName: string;
+}) {
+  return (
+    <a href="#espaco" className="pp-ambience">
+      <PublicImage src={photo} alt="" className="pp-ambience-photo" />
+      <span className="pp-ambience-shade" />
+      <span className="pp-ambience-text">
+        <strong>Conheça o espaço</strong>
+        <span>Fotos, horários e como chegar ao {businessName}.</span>
+      </span>
+      <ArrowRight size={18} className="pp-ambience-arrow" />
+    </a>
+  );
+}
+
+export function PublicAmenities({ amenities }: { amenities: string[] }) {
+  if (!amenities.length) return null;
+  return (
+    <ul className="pp-amenities" aria-label="Comodidades" role="list">
+      {amenities.map((amenity) => {
+        const Icon = amenityIcon(amenity);
+        return (
+          <li key={amenity}>
+            <Icon size={19} strokeWidth={1.7} />
+            <span>{amenity}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function PublicTeam({
   professionals,
   slug,
@@ -30,53 +74,41 @@ export function PublicTeam({
   professionals: PublicProfessional[];
   slug: string;
 }) {
+  if (!professionals.length) return null;
   return (
-    <section id="equipe" className="public-section">
-      <div className="public-section-heading">
-        <div>
-          <span className="public-eyebrow">
-            02 / PESSOAS QUE CUIDAM DE VOCÊ
-          </span>
-          <h2>Nas melhores mãos.</h2>
-        </div>
+    <section id="equipe" className="pp-section">
+      <div className="pp-section-head">
+        <h2>Profissionais</h2>
       </div>
-      <div className="public-team-grid">
+      <ul className="pp-team" role="list">
         {professionals.map((person) => (
-          <Link
-            href={`/${slug}/agendar?professional=${person.id}`}
-            className="public-person-card"
-            key={person.id}
-          >
-            <PublicImage
-              src={person.photo}
-              alt={person.name}
-              className="public-person-photo"
-              fallbackName={person.name}
-            />
-            <div>
-              <h3>{person.name}</h3>
-              <p>
-                {person.specialties.join(" · ") ||
-                  "Profissional do estabelecimento"}
-              </p>
+          <li key={person.id}>
+            <Link
+              href={`/${slug}/agendar?professional=${person.id}`}
+              className="pp-person"
+            >
+              <PublicImage
+                src={person.photo}
+                alt=""
+                className="pp-person-photo"
+                fallbackName={person.name}
+              />
+              <strong>{person.name}</strong>
               <span>
-                Agendar com {person.name.split(" ")[0]}{" "}
-                <ArrowUpRight size={14} />
+                {person.specialties.slice(0, 2).join(" · ") || "Profissional"}
               </span>
-            </div>
-          </Link>
+              <em>
+                Agendar <ArrowUpRight size={13} />
+              </em>
+            </Link>
+          </li>
         ))}
-      </div>
-      {!professionals.length && (
-        <p className="public-inline-empty">
-          Nossa equipe está sendo preparada. Consulte os serviços disponíveis.
-        </p>
-      )}
+      </ul>
     </section>
   );
 }
 
-export function PublicBusinessDetails({
+export function PublicVisit({
   business,
   settings,
   weekday,
@@ -89,87 +121,63 @@ export function PublicBusinessDetails({
 }) {
   const photos = (business.photos || []).filter(Boolean).slice(0, 4);
   return (
-    <section id="sobre" className="public-section public-about">
-      <div className="public-section-heading">
-        <div>
-          <span className="public-eyebrow">03 / O NOSSO ESPAÇO</span>
-          <h2>Chegue. Sinta-se em casa.</h2>
-        </div>
+    <section id="espaco" className="pp-section">
+      <div className="pp-section-head">
+        <h2>O espaço</h2>
       </div>
-      <p>{business.description}</p>
       {photos.length > 0 && (
-        <div className="public-photo-gallery">
+        <div className={`pp-gallery ${photos.length === 1 ? "is-single" : ""}`}>
           {photos.map((photo, index) => (
             <PublicImage
               src={photo}
               alt={`${business.name}: foto do espaço ${index + 1}`}
-              className="public-gallery-photo"
+              className="pp-gallery-photo"
               segment={business.category}
               key={`${photo}-${index}`}
             />
           ))}
         </div>
       )}
-      {business.amenities.length > 0 && (
-        <div className="public-amenities">
-          {business.amenities.map((amenity) => {
-            const Icon = /wi.fi/i.test(amenity)
-              ? Wifi
-              : /estacion/i.test(amenity)
-                ? Car
-                : /bebida|café/i.test(amenity)
-                  ? Coffee
-                  : /climat/i.test(amenity)
-                    ? Snowflake
-                    : Check;
-            return (
-              <div key={amenity}>
-                <Icon size={19} />
-                <span>{amenity}</span>
+      <div className="pp-visit">
+        <div className="pp-hours">
+          <h3>Horário de funcionamento</h3>
+          <dl>
+            {weekDays.map((day, index) => (
+              <div key={day} className={index === weekday ? "is-today" : ""}>
+                <dt>
+                  {day}
+                  {index === weekday && <small>Hoje</small>}
+                </dt>
+                <dd>
+                  {settings.openDays.includes(index)
+                    ? `${settings.openStart} – ${settings.openEnd}`
+                    : "Fechado"}
+                </dd>
               </div>
-            );
-          })}
+            ))}
+          </dl>
         </div>
-      )}
-      <div className="public-visit-grid">
-        <div className="public-address">
-          <span className="public-detail-icon">
-            <MapPin size={23} />
-          </span>
-          <h3>Estamos aqui.</h3>
-          <p>
-            {business.address || "Consulte o endereço com o estabelecimento."}
-          </p>
-          {business.address && (
+        {business.address && (
+          <div className="pp-address">
+            <h3>Como chegar</h3>
+            <p>{business.address}</p>
+            <iframe
+              className="pp-map"
+              title={`Mapa: ${business.address}`}
+              src={`https://www.google.com/maps?q=${encodeURIComponent(business.address)}&output=embed`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
             <a
-              className="public-text-link"
               href={location}
               target="_blank"
               rel="noreferrer"
+              className="public-text-link"
             >
-              Abrir localização <ArrowUpRight size={15} />
+              Abrir no mapa <ArrowUpRight size={15} />
             </a>
-          )}
-        </div>
-        <div className="public-hours">
-          <h3>
-            <Clock3 size={17} />
-            Horário de funcionamento
-          </h3>
-          {weekDays.map((day, index) => (
-            <div key={day} className={index === weekday ? "is-today" : ""}>
-              <span>
-                {day}
-                {index === weekday && <small>Hoje</small>}
-              </span>
-              <strong>
-                {settings.openDays.includes(index)
-                  ? `${settings.openStart} – ${settings.openEnd}`
-                  : "Fechado"}
-              </strong>
-            </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );

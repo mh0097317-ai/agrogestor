@@ -3,7 +3,7 @@
 import { CalendarDays, Clock3, ShieldCheck, UserRound } from "lucide-react";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
-import { money } from "@/lib/utils";
+import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
 import { bookingDateLabel, bookingTime } from "./date-format";
 
@@ -33,7 +33,8 @@ export function BookingSummary({
           <div>
             <h3>{service.name}</h3>
             <span>
-              {service.duration} minutos · {money(totalPrice ?? service.price)}
+              {durationLabel(service.duration)} ·{" "}
+              {money(totalPrice ?? service.price)}
             </span>
           </div>
         </div>

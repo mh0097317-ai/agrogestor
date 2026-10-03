@@ -87,7 +87,6 @@ export function DateStep({
   }
   return (
     <section className="booking-step">
-      <span className="public-eyebrow">03 / UM TEMPO NA SUA AGENDA</span>
       <h1 tabIndex={-1}>Quando você deseja agendar?</h1>
       <p className="booking-subtitle">
         Selecione uma data e o horário disponível.

@@ -81,10 +81,9 @@ export function CustomerStep({
   });
   return (
     <section className="booking-step">
-      <span className="public-eyebrow">04 / SÓ FALTAM SEUS DADOS</span>
       <h1 tabIndex={-1}>Quase pronto!</h1>
       <p className="booking-subtitle">
-        Confira seu horário e conte como podemos te chamar.
+        Confirme seus dados para finalizar o agendamento.
       </p>
       <div className="booking-mobile-summary">
         <BookingSummary
@@ -159,10 +158,7 @@ export function CustomerStep({
           <input type="checkbox" {...register("reminder")} />
           <span>
             Quero receber lembretes do meu agendamento pelo WhatsApp.
-            <small>
-              Sua autorização de contato será salva. Guarde também seu link de
-              confirmação.
-            </small>
+            <small>O estabelecimento poderá te avisar antes do horário.</small>
           </span>
         </label>
         {error && (
@@ -174,8 +170,7 @@ export function CustomerStep({
           Confirmar agendamento <ArrowRight size={18} />
         </BusyButton>
         <p className="booking-private-note">
-          <ShieldCheck size={14} /> Seus dados serão usados para cuidar do seu
-          agendamento.
+          <ShieldCheck size={14} /> Seus dados estão seguros conosco.
         </p>
       </form>
     </section>

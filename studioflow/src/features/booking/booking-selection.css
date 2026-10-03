@@ -1,21 +1,26 @@
 .booking-filter-tabs {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.booking-filter-tabs::-webkit-scrollbar {
+  display: none;
 }
 .booking-filter-tabs button {
+  flex-shrink: 0;
   border: 1px solid #e5e7eb;
   border-radius: 100px;
-  font-size: 14px;
-  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
   background: #fff;
-  padding: 10px 17px;
-  min-height: 44px;
+  padding: 0 16px;
+  min-height: 40px;
   transition:
     background 0.18s,
     color 0.18s;
-  border-color: transparent;
 }
 .booking-filter-tabs .is-active {
   border-color: #0d2847;
@@ -32,16 +37,16 @@
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 12px 16px 12px 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 14px;
   text-align: left;
   transition:
     border-color 0.18s,
-    background 0.18s;
-  min-height: 104px;
+    box-shadow 0.18s;
+  min-height: 88px;
 }
 .booking-service-option:hover,
 .booking-professional-option:hover {
@@ -50,30 +55,35 @@
 .booking-service-option.is-selected,
 .booking-professional-option.is-selected {
   border-color: #0d2847;
-  box-shadow: inset 3px 0 0 #0d2847;
-  background: #f4f8fb;
+  box-shadow: 0 0 0 1px #0d2847;
 }
 .booking-service-image {
-  height: 70px;
-  width: 70px;
-  border-radius: 10px;
+  height: 64px;
+  width: 64px;
+  border-radius: 12px;
 }
 .booking-option-info {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 5px;
+  gap: 1px;
+}
+.booking-option-info b {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 650;
+  color: #111827;
 }
 .booking-option-info strong {
   overflow-wrap: anywhere;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
   line-height: 1.35;
 }
 .booking-option-info > span {
-  font-size: 14px;
+  font-size: 13px;
   color: #64748b;
   display: flex;
   align-items: center;
@@ -122,9 +132,9 @@
   border-color: #cbd5e1;
 }
 .booking-professional-image {
-  height: 64px;
-  width: 64px;
-  border-radius: 10px;
+  height: 60px;
+  width: 60px;
+  border-radius: 12px;
 }
 .booking-any {
   padding: 15px;

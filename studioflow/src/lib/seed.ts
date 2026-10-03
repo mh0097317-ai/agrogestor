@@ -2,19 +2,20 @@ import type { Store } from "@/types";
 import { format, addDays } from "date-fns";
 export const DEMO_BUSINESS_ID = "11111111-1111-4111-8111-111111111111";
 export const DEMO_TENANT_ID = "22222222-2222-4222-8222-222222222222";
-const photo = (id: string, w = 500) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=85`;
+// Demo photos are served from public/demo so the demo works offline and in production.
+const photo = (name: string) => `/demo/${name}.jpg`;
 export const images = {
-  cover: photo("photo-1503951914875-452162b0f3f1", 1600),
-  cut: photo("photo-1621605815971-fbc98d665033"),
-  beard: photo("photo-1622287162716-f311baa1a2b8"),
-  combo: photo("photo-1599351431202-1e0f0137899a"),
-  brows: photo("photo-1516975080664-ed2fc6a32937"),
-  child: photo("photo-1590540179852-2110a54f813a"),
-  lucas: photo("photo-1500648767791-00dcc994a43e", 200),
-  joao: photo("photo-1506794778202-cad84cf45f1d", 200),
-  rafael: photo("photo-1535713875002-d1d0cf377fde", 200),
-  ana: photo("photo-1580489944761-15a19d654956", 200),
+  cover: photo("cover"),
+  ambience: photo("ambiente"),
+  cut: photo("cut"),
+  beard: photo("beard"),
+  combo: photo("combo"),
+  brows: photo("brows"),
+  child: photo("child"),
+  lucas: photo("lucas"),
+  joao: photo("joao"),
+  rafael: photo("rafael"),
+  ana: photo("ana"),
 };
 export function createSeed(): Store {
   const businessId = DEMO_BUSINESS_ID;
@@ -277,11 +278,12 @@ export function createSeed(): Store {
       name: "BARBER 011",
       category: "Barbearia",
       description:
-        "Mais que um corte. Um momento só seu. Estilo, cuidado e boas conversas no coração de São Paulo.",
+        "Corte, barba e cuidado sem pressa, no coração da Consolação.",
       address: "Rua Augusta, 1.420 · Consolação, São Paulo – SP",
       phone: "11987654321",
       instagram: "barber011",
       cover: images.cover,
+      photos: [images.ambience, images.cover],
       amenities: ["Wi-Fi", "Bebidas", "Estacionamento", "Climatizado"],
     },
     professionals,
