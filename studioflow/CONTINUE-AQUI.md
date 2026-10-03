@@ -165,6 +165,12 @@ Painel:
 
 Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio real de fotos (galeria, logo e serviço) até a página pública e varredura sem overflow horizontal em 14 rotas × 375/390/430/768/1024/1440px (mais a etapa de horário em 375/390/768/1024).
 
+## Agendamento v2 e painel com mais movimento (3 de outubro de 2026)
+
+- Produção: a Vercel publica o repositório `mh0097317-ai/studioflow` (branch `main`), que agora espelha esta pasta. Para publicar, copie os arquivos versionados desta pasta para lá e envie para `main`.
+- Agendamento reconstruído como fluxo focado (`booking-chrome.tsx`, `booking-v2.css`): capa do estabelecimento no topo, cartão branco sobreposto, barra de progresso fina (4 etapas), avanço automático ao escolher serviço e profissional (pula o profissional quando só há um), chips das escolhas para editar, faixa de dias em todas as larguras e barra "Continuar" que só aparece com horário escolhido. Revisão final e recibo usam o ticket (`BookingTicket`).
+- Painel: indicador que desliza no menu lateral, ondulação ao tocar (`PointerEffects` em `components/motion.tsx`), luz que segue o mouse nos cartões, relógio ao vivo no início, indicadores com cor própria, aurora no cartão "Agora", destaque lateral nas linhas da agenda e entrada em cascata nas telas de gestão.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

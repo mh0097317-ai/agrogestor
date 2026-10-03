@@ -120,11 +120,11 @@ export function DateStep({
     onSlot(undefined);
   }
   return (
-    <section className="booking-step">
-      <h1 tabIndex={-1}>Quando fica melhor para você?</h1>
-      <p className="booking-subtitle">
-        Só aparecem os horários que estão livres de verdade.
-      </p>
+    <section className="booking-step bk-step">
+      <header className="bk-step-head">
+        <h1 tabIndex={-1}>Quando?</h1>
+        <p>Só aparecem horários livres de verdade.</p>
+      </header>
       <div className="booking-scheduling-layout">
         <div className={`booking-calendar ${showMonth ? "is-month" : ""}`}>
           <div className="booking-calendar-heading">

@@ -72,6 +72,11 @@ export function Overview() {
       hourCycle: "h23",
     }).format(now),
   );
+  const clock = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(now);
   const greeting =
     hours < 12 ? "Bom dia" : hours < 18 ? "Boa tarde" : "Boa noite";
   const dayName = dateLabel(date, "d 'de' MMMM");
@@ -123,14 +128,23 @@ export function Overview() {
       </section>
 
       <header className="ov-head">
-        <h1>
-          {greeting}, {firstName}
-        </h1>
-        <p>
-          {today
-            ? "Aqui está o movimento de hoje."
-            : `Aqui está o movimento de ${dayName}.`}
-        </p>
+        <div>
+          <h1>
+            {greeting}, {firstName}
+          </h1>
+          <p>
+            {today
+              ? "Aqui está o movimento de hoje."
+              : `Aqui está o movimento de ${dayName}.`}
+          </p>
+        </div>
+        <span className="ov-clock" aria-label="Horário de Brasília">
+          <i />
+          {clock.split(":")[0]}
+          <b>:</b>
+          {clock.split(":")[1]}
+          <small>{dateLabel(new Date(now), "EEE, d MMM")}</small>
+        </span>
       </header>
 
       <div className="ov-kpis sf-stagger">

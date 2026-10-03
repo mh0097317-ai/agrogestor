@@ -13,7 +13,7 @@ import { WhatsAppIcon } from "@/components/brand-icons";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
-import { BookingSummary } from "./booking-summary";
+import { BookingTicket } from "./booking-summary";
 
 const validDdds = new Set([
   11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35,
@@ -67,6 +67,7 @@ export function CustomerStep({
   error,
   onSubmit,
   onChange,
+  onEdit,
 }: {
   welcomeName?: string;
   onForget?: () => void;
@@ -78,6 +79,7 @@ export function CustomerStep({
   error: string;
   onSubmit: (values: CustomerFields) => void;
   onChange: (values: CustomerFields) => void;
+  onEdit?: (step: number) => void;
 }) {
   const {
     register,
@@ -90,15 +92,23 @@ export function CustomerStep({
     defaultValues: defaults,
   });
   return (
-    <section className="booking-step">
-      <h1 tabIndex={-1}>
-        {welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"}
-      </h1>
-      <p className="booking-subtitle">
-        {welcomeName
-          ? "Confira o resumo e confirme seu horário."
-          : "Só falta seu nome e WhatsApp."}
-      </p>
+    <section className="booking-step bk-step">
+      <header className="bk-step-head">
+        <h1 tabIndex={-1}>
+          {welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase lá"}
+        </h1>
+        <p>
+          {welcomeName
+            ? "Confira e confirme seu horário."
+            : "Confira o horário e diga como te chamar."}
+        </p>
+      </header>
+      <BookingTicket
+        service={service}
+        professional={professional}
+        slot={slot}
+        onEdit={onEdit}
+      />
       {welcomeName && (
         <div className="booking-welcome" role="status">
           <span>
@@ -109,14 +119,6 @@ export function CustomerStep({
           </button>
         </div>
       )}
-      <div className="booking-mobile-summary">
-        <BookingSummary
-          service={service}
-          professional={professional}
-          slot={slot}
-          compact
-        />
-      </div>
       <form
         className="booking-customer-form"
         onSubmit={handleSubmit(onSubmit)}

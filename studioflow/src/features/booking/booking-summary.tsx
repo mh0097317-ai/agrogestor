@@ -84,3 +84,85 @@ export function BookingSummary({
     </div>
   );
 }
+
+/** Boarding-pass style recap: service on top, when and who below. */
+export function BookingTicket({
+  service,
+  professional,
+  slot,
+  totalPrice,
+  onEdit,
+}: {
+  service: Service;
+  professional?: PublicProfessional;
+  slot: Slot;
+  totalPrice?: number;
+  onEdit?: (step: number) => void;
+}) {
+  return (
+    <div className="bk-ticket">
+      <div className="bk-ticket-top">
+        <PublicImage
+          src={service.image}
+          alt=""
+          className="bk-ticket-photo"
+          segment={service.category}
+        />
+        <div>
+          <strong>{service.name}</strong>
+          <span>
+            {durationLabel(service.duration)}
+            {onEdit && (
+              <button type="button" onClick={() => onEdit(1)}>
+                Trocar
+              </button>
+            )}
+          </span>
+        </div>
+        <b>{money(totalPrice ?? service.price)}</b>
+      </div>
+      <div className="bk-ticket-cut" aria-hidden="true" />
+      <dl className="bk-ticket-rows">
+        <div>
+          <dt>
+            <CalendarBlank weight="duotone" size={16} /> Quando
+          </dt>
+          <dd>
+            <span className="bk-ticket-date">
+              {bookingDateLabel(slot.start, true)}
+            </span>
+            <strong>
+              {bookingTime(slot.start)} – {bookingTime(slot.end)}
+            </strong>
+          </dd>
+          {onEdit && (
+            <button type="button" onClick={() => onEdit(3)}>
+              Alterar
+            </button>
+          )}
+        </div>
+        <div>
+          <dt>
+            <User weight="duotone" size={16} /> Com
+          </dt>
+          <dd>
+            {professional && (
+              <PublicImage
+                src={professional.photo}
+                alt=""
+                className="bk-ticket-avatar"
+                fallbackName={professional.name}
+              />
+            )}
+            <strong>{professional?.name || "Primeiro disponível"}</strong>
+          </dd>
+          {onEdit && (
+            <button type="button" onClick={() => onEdit(2)}>
+              Alterar
+            </button>
+          )}
+        </div>
+      </dl>
+    </div>
+  );
+}

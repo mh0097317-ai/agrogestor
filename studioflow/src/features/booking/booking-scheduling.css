@@ -292,30 +292,29 @@
   color: #ffffffcc;
 }
 
-@media (max-width: 767px) {
-  .booking-calendar-heading strong {
-    order: -1;
-    flex: 1;
-    font-size: 15px;
-  }
-  .booking-calendar-heading {
-    gap: 2px;
-    margin-bottom: 12px;
-  }
-  .booking-calendar-toggle {
-    display: inline-flex;
-    margin-left: 6px;
-  }
-  .booking-calendar:not(.is-month) .booking-day-strip {
-    display: flex;
-  }
-  .booking-calendar:not(.is-month) .booking-calendar-grid,
-  .booking-calendar:not(.is-month) .booking-calendar-legend {
-    display: none;
-  }
-  .booking-calendar:not(.is-month) + * {
-    margin-top: 6px;
-  }
+/* Day strip by default; the month grid is one tap away. */
+.booking-calendar-heading strong {
+  order: -1;
+  flex: 1;
+  font-size: 15px;
+}
+.booking-calendar-heading {
+  gap: 2px;
+  margin-bottom: 12px;
+}
+.booking-calendar-toggle {
+  display: inline-flex;
+  margin-left: 6px;
+}
+.booking-calendar:not(.is-month) .booking-day-strip {
+  display: flex;
+}
+.booking-calendar:not(.is-month) .booking-calendar-grid,
+.booking-calendar:not(.is-month) .booking-calendar-legend {
+  display: none;
+}
+.booking-calendar:not(.is-month) + * {
+  margin-top: 6px;
 }
 @media (max-width: 389px) {
   .booking-day-strip {

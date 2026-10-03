@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   House,
   CalendarBlank,
@@ -57,6 +57,27 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 }
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  // Slide one highlight between menu items instead of swapping backgrounds.
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const measure = () => {
+      const current = nav.querySelector<HTMLElement>(".nav-link.active");
+      if (!current) {
+        nav.removeAttribute("data-indicator");
+        return;
+      }
+      nav.style.setProperty("--ind-y", `${current.offsetTop}px`);
+      nav.style.setProperty("--ind-h", `${current.offsetHeight}px`);
+      nav.setAttribute("data-indicator", "");
+    };
+    measure();
+    // Badges load later and change item heights; keep the highlight aligned.
+    const observer = new ResizeObserver(measure);
+    nav.querySelectorAll(".nav-link").forEach((link) => observer.observe(link));
+    return () => observer.disconnect();
+  }, [pathname]);
   const router = useRouter();
   const [now] = useState(() => Date.now());
   const { data, refresh, refreshing, refreshError } = useWorkspace();
@@ -128,7 +149,7 @@ function Shell({ children }: { children: ReactNode }) {
             <small>{data?.business.category || "Agenda e gestão"}</small>
           </span>
         </Link>
-        <nav aria-label="Navegação principal">
+        <nav aria-label="Navegação principal" ref={navRef} className="side-nav">
           {links.map((link) => (
             <Link
               key={link.path}

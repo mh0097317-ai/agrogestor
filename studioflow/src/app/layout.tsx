@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/toast";
 import { PwaRegister } from "@/components/pwa-register";
-import { MotionProvider } from "@/components/motion";
+import { MotionProvider, PointerEffects } from "@/components/motion";
 import "./globals.css";
 import "@/features/dashboard/shell.css";
 import "@/features/dashboard/overview.css";
@@ -51,6 +51,7 @@ export default function RootLayout({
           {children}
           <PwaRegister />
           <MotionProvider />
+          <PointerEffects />
         </ToastProvider>
       </body>
     </html>

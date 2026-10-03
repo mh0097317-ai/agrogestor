@@ -411,3 +411,130 @@ html {
 .public-skeleton {
   background-size: 200% 100% !important;
 }
+@keyframes sf-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Ripple from the pressed point */
+.sf-ripple-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sf-ripple {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.16;
+  pointer-events: none;
+  transform: scale(0);
+  animation: sf-ripple 620ms var(--ease-out) forwards;
+}
+@keyframes sf-ripple {
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* Light that follows the pointer on panel cards */
+.ov-card,
+.ov-kpi,
+.metric-item,
+.team-card,
+.catalog-list {
+  position: relative;
+  isolation: isolate;
+}
+.ov-card::after,
+.ov-kpi::after,
+.metric-item::after,
+.team-card::after,
+.catalog-list::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    #3f7dc014,
+    transparent 45%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms var(--ease-out);
+}
+@media (hover: hover) {
+  .ov-card:hover::after,
+  .ov-kpi:hover::after,
+  .metric-item:hover::after,
+  .team-card:hover::after,
+  .catalog-list:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Panel pages: content arrives in a short cascade */
+.management-page > *,
+.agenda-page > * {
+  animation: sf-fade-up 520ms var(--ease-out) both;
+}
+.management-page > :nth-child(2),
+.agenda-page > :nth-child(2) {
+  animation-delay: 60ms;
+}
+.management-page > :nth-child(3),
+.agenda-page > :nth-child(3) {
+  animation-delay: 120ms;
+}
+.management-page > :nth-child(4),
+.agenda-page > :nth-child(4) {
+  animation-delay: 180ms;
+}
+.management-page > :nth-child(n + 5),
+.agenda-page > :nth-child(n + 5) {
+  animation-delay: 240ms;
+}
+.catalog-row,
+.crm-row,
+.team-card,
+.finance-row {
+  animation: sf-fade-up 460ms var(--ease-out) both;
+}
+.catalog-row:nth-child(2),
+.crm-row:nth-child(2),
+.team-card:nth-child(2) {
+  animation-delay: 50ms;
+}
+.catalog-row:nth-child(3),
+.crm-row:nth-child(3),
+.team-card:nth-child(3) {
+  animation-delay: 100ms;
+}
+.catalog-row:nth-child(4),
+.crm-row:nth-child(4),
+.team-card:nth-child(4) {
+  animation-delay: 150ms;
+}
+.catalog-row:nth-child(n + 5),
+.crm-row:nth-child(n + 5),
+.team-card:nth-child(n + 5) {
+  animation-delay: 200ms;
+}
+.team-card,
+.catalog-row {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out);
+}
+.team-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px #0b1b3012;
+}
+.catalog-row:hover {
+  background: #fafbfd;
+}

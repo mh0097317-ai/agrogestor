@@ -480,3 +480,56 @@
   border-radius: 9px;
   box-shadow: 0 0 0 1px #ffffff2e;
 }
+
+/* Sliding highlight for the active menu item */
+.side-nav {
+  position: relative;
+}
+.side-nav[data-indicator]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--ind-h, 0);
+  border-radius: 10px;
+  background: linear-gradient(100deg, #1d3d5f 0%, #112941 100%);
+  box-shadow:
+    inset 0 0 0 1px #87acd41f,
+    0 8px 20px #00000033;
+  transform: translateY(var(--ind-y, 0));
+  transition:
+    transform 460ms var(--ease-spring),
+    height 300ms var(--ease-out);
+}
+.side-nav[data-indicator]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: calc(var(--ind-h, 0px) - 26px);
+  margin-top: 13px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #a4c2df, #5b8fc4);
+  box-shadow: 0 0 12px #8cbbea99;
+  transform: translateY(var(--ind-y, 0));
+  transition: transform 460ms var(--ease-spring);
+}
+.side-nav[data-indicator] .nav-link {
+  position: relative;
+  z-index: 1;
+}
+.side-nav[data-indicator] .nav-link.active {
+  background: transparent;
+  box-shadow: none;
+}
+.side-nav[data-indicator] .nav-link.active::before {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-nav[data-indicator]::before,
+  .side-nav[data-indicator]::after {
+    transition: none;
+  }
+}

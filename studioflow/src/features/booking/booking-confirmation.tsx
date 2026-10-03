@@ -17,7 +17,6 @@ import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { ManagedBooking } from "@/features/public/types";
 import {
-  BookingHeader,
   BusyButton,
   PublicError,
   PublicImage,
@@ -31,7 +30,8 @@ import {
   usePublicData,
 } from "@/features/public/use-public-catalog";
 import { BookingProgress } from "./booking-flow";
-import { BookingSummary } from "./booking-summary";
+import { BookingTicket } from "./booking-summary";
+import { BookingChrome } from "./booking-chrome";
 import { DateStep } from "./date-step";
 import { downloadCalendar } from "./calendar-export";
 import { bookingDate, bookingDateShort, bookingTime } from "./date-format";
@@ -180,14 +180,8 @@ function ConfirmationContent({
     }
   }
   return (
-    <div className="booking-site">
-      <BookingHeader
-        slug={business.slug}
-        businessName={business.name}
-        photo={business.logo || business.cover}
-        category={business.category}
-      />
-      <main className="booking-confirmation-main">
+    <BookingChrome business={business}>
+      <div className="booking-confirmation-main">
         <BookingProgress step={5} />
         {rescheduling && service ? (
           <div className="booking-reschedule">
@@ -253,13 +247,14 @@ function ConfirmationContent({
             <h1>{title}</h1>
             <p className="booking-subtitle">{message}</p>
             <div className="booking-confirmation-receipt">
-              <BookingSummary
-                service={service}
-                professional={professional}
-                slot={bookedSlot}
-                compact
-                totalPrice={appointment.price}
-              />
+              {service && (
+                <BookingTicket
+                  service={service}
+                  professional={professional}
+                  slot={bookedSlot}
+                  totalPrice={appointment.price}
+                />
+              )}
               <div className="booking-confirmation-place">
                 <PublicImage
                   src={business.logo || business.cover}
@@ -354,7 +349,7 @@ function ConfirmationContent({
             </p>
           </>
         )}
-      </main>
+      </div>
       {cancelOpen && (
         <PublicModal
           labelId="cancel-title"
@@ -406,6 +401,6 @@ function ConfirmationContent({
           {toast}
         </div>
       )}
-    </div>
+    </BookingChrome>
   );
 }
