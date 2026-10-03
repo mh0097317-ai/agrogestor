@@ -11,6 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, Button } from "@/components/ui";
 import { MiniCalendar } from "@/components/mini-calendar";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
@@ -28,6 +29,7 @@ import { OverviewAgenda } from "./overview-agenda";
 
 export function Overview() {
   const { data, loading, error, refresh } = useWorkspace();
+  const { canMutate } = usePermissions();
   const [now, setNow] = useState(() => Date.now());
   const [date, setDate] = useState(businessToday);
   const [create, setCreate] = useState(false);
@@ -134,7 +136,9 @@ export function Overview() {
             date={date}
             onDate={setDate}
             onSelect={setDetail}
-            onCreate={() => setCreate(true)}
+            onCreate={
+              canMutate("appointments") ? () => setCreate(true) : undefined
+            }
           />
           <section className="ov-upcoming ov-card">
             <div className="ov-card-head">
@@ -162,9 +166,11 @@ export function Overview() {
                     ? "Nenhum próximo agendamento para hoje."
                     : "Nenhum agendamento nesta data."}
                 </p>
-                <Button variant="secondary" onClick={() => setCreate(true)}>
-                  <Plus size={16} /> Novo agendamento
-                </Button>
+                {canMutate("appointments") && (
+                  <Button variant="secondary" onClick={() => setCreate(true)}>
+                    <Plus size={16} /> Novo agendamento
+                  </Button>
+                )}
               </div>
             )}
           </section>

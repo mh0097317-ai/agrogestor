@@ -187,10 +187,7 @@ export function createSeed(): Store {
     favoriteService: services[i % 6].name,
     favoriteProfessional: professionals[i % 4].name,
     returnInterval: 20,
-    createdAt: format(
-      addDays(today, i === 15 ? 0 : -90 - i),
-      "yyyy-MM-dd",
-    ),
+    createdAt: format(addDays(today, i === 15 ? 0 : -90 - i), "yyyy-MM-dd"),
   }));
   const times = [
     "09:00",
@@ -238,8 +235,10 @@ export function createSeed(): Store {
     };
   });
   const history = Array.from({ length: 50 }, (_, i) => {
+    // Customer 14 is kept out of recent history: they are the demo's
+    // "late to return" example below.
     const service = services[i % 6],
-      customer = customers[i % 16];
+      customer = customers[i % 16 === 14 ? 12 : i % 16];
     const start = new Date(
       `${format(addDays(today, -(1 + Math.floor(i / 3))), "yyyy-MM-dd")}T${9 + (i % 8)}:00:00-03:00`.replace(
         /T(\d):/,
@@ -262,6 +261,29 @@ export function createSeed(): Store {
       createdAt: start.toISOString(),
     };
   });
+  // A regular who came every 20 days and has been away for 36 days.
+  const lapsed = [96, 76, 56, 36].map((daysAgo, i) => {
+    const customer = customers[14];
+    const start = new Date(
+      `${format(addDays(today, -daysAgo), "yyyy-MM-dd")}T10:00:00-03:00`,
+    );
+    return {
+      ...history[0],
+      id: uid(400 + i),
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      serviceIds: [services[2].id],
+      professionalId: professionals[0].id,
+      start: start.toISOString(),
+      end: new Date(
+        start.getTime() + services[2].duration * 60000,
+      ).toISOString(),
+      price: services[2].price,
+      createdAt: start.toISOString(),
+    };
+  });
+  history.push(...lapsed);
   const payments = [
     ...appointments.filter((a) => a.status === "completed"),
     ...history,

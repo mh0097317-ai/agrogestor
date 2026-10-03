@@ -5,7 +5,7 @@ import { ArrowUpRight, Clock3, Plus } from "lucide-react";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
-import { money } from "@/lib/utils";
+import { formatPhone, money } from "@/lib/utils";
 import type { Customer } from "@/types";
 import { ManagementBoundary, SearchField } from "./shared";
 import { CustomerProfile } from "./customer-profile";
@@ -20,7 +20,7 @@ import "./customers.css";
 type Filter = "all" | "new" | "active" | "inactive" | "return";
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "Todos" },
-  { id: "return", label: "À retornar" },
+  { id: "return", label: "Em atraso" },
   { id: "new", label: "Novos" },
   { id: "active", label: "Ativos" },
   { id: "inactive", label: "Inativos" },
@@ -48,7 +48,8 @@ export default function CustomersPage() {
             matches &&
             (filter === "all" ||
               (filter === "return" && customerNeedsReturn(customer)) ||
-              (filter === "new" && customerDays(customer.createdAt)! <= 30) ||
+              (filter === "new" &&
+                (customerDays(customer.createdAt) ?? Infinity) <= 30) ||
               (filter === "active" && days !== undefined && days <= 45) ||
               (filter === "inactive" && (days === undefined || days > 45)))
           );
@@ -58,6 +59,9 @@ export default function CustomersPage() {
   );
   const returnCount = (data?.customers ?? []).filter((customer) =>
     customerNeedsReturn(customer),
+  ).length;
+  const newCount = (data?.customers ?? []).filter(
+    (customer) => (customerDays(customer.createdAt) ?? Infinity) <= 30,
   ).length;
   const current = data?.customers.find((customer) => customer.id === selected);
 
@@ -78,13 +82,13 @@ export default function CustomersPage() {
         />
         <div className="crm-context">
           <span>
-            <strong>{data?.customers.length ?? 0}</strong> pessoas fazem parte
-            da sua história
+            <strong>{data?.customers.length ?? 0}</strong> clientes cadastrados
           </span>
           {returnCount > 0 && (
             <button onClick={() => setFilter("return")}>
               <Clock3 size={16} />
-              <strong>{returnCount}</strong> na hora de voltar
+              <strong>{returnCount}</strong> demorando mais que o normal para
+              voltar
               <ArrowUpRight size={16} />
             </button>
           )}
@@ -108,6 +112,7 @@ export default function CustomersPage() {
                   <span>{data?.customers.length ?? 0}</span>
                 )}
                 {item.id === "return" && <span>{returnCount}</span>}
+                {item.id === "new" && <span>{newCount}</span>}
               </button>
             ))}
           </div>
@@ -137,10 +142,19 @@ export default function CustomersPage() {
                         <Avatar name={customer.name} size={42} />
                         <div>
                           <strong>{customer.name}</strong>
-                          <span className="crm-phone">{customer.phone}</span>
+                          <span className="crm-phone">
+                            {formatPhone(customer.phone)}
+                          </span>
                           <span className="crm-mobile-visit">
-                            {customer.visits} atendimentos ·{" "}
-                            {customerVisitLabel(customer)}
+                            {customer.visits}{" "}
+                            {customer.visits === 1
+                              ? "atendimento"
+                              : "atendimentos"}
+                            <br />
+                            Última visita:{" "}
+                            {customerVisitLabel(customer).toLocaleLowerCase(
+                              "pt-BR",
+                            )}
                           </span>
                         </div>
                       </div>
@@ -152,13 +166,13 @@ export default function CustomersPage() {
                         {money(customer.totalSpent)}
                       </strong>
                       <span
-                        className={`crm-relationship ${overdue ? "is-due" : ""}`}
+                        className={`crm-relationship ${overdue ? "is-due" : days !== undefined && days <= 45 ? "" : "is-inactive"}`}
                       >
                         {overdue
-                          ? "Hora de retornar"
+                          ? "Em atraso"
                           : days !== undefined && days <= 45
-                            ? "Cliente ativo"
-                            : "Sem visita recente"}
+                            ? "Ativo"
+                            : "Inativo"}
                       </span>
                       <ArrowUpRight className="crm-row-arrow" size={18} />
                     </button>

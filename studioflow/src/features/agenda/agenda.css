@@ -28,7 +28,6 @@
 .calendar-date-navigation > strong {
   font-size: 16px;
   font-weight: 550;
-  text-transform: capitalize;
   white-space: nowrap;
 }
 .calendar-date-navigation .icon-button {
@@ -86,7 +85,6 @@
   font-size: 24px;
   letter-spacing: -0.7px;
   font-weight: 550;
-  text-transform: capitalize;
 }
 .calendar-legend {
   display: flex;
@@ -1048,7 +1046,9 @@
     border-top: 0;
     border-right: 1px solid #edf0f4;
   }
-  .calendar-day-metrics .metric-item:last-child { border-right: 0; }
+  .calendar-day-metrics .metric-item:last-child {
+    border-right: 0;
+  }
   .calendar-day-metrics .metric-item > span {
     font-size: 12px;
   }
@@ -1148,4 +1148,10 @@
   .calendar-appointment {
     transition: none;
   }
+}
+
+.calendar-date-navigation > strong::first-letter,
+.calendar-card-heading h2::first-letter,
+.calendar-selected-day h2::first-letter {
+  text-transform: uppercase;
 }

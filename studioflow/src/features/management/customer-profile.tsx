@@ -10,7 +10,7 @@ import {
 } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
-import { dateLabel, money } from "@/lib/utils";
+import { dateLabel, formatPhone, money } from "@/lib/utils";
 import type { Customer } from "@/types";
 import { WhatsAppLink } from "./shared";
 import {
@@ -46,7 +46,7 @@ export function CustomerProfile({
             <Avatar name={customer.name} size={64} />
             <div>
               <h3>{customer.name}</h3>
-              <p>{customer.phone}</p>
+              <p>{formatPhone(customer.phone)}</p>
               {customer.email && <p>{customer.email}</p>}
             </div>
           </div>

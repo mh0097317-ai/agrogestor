@@ -600,3 +600,9 @@
     padding: 8px 16px 6px;
   }
 }
+@media (max-width: 389px) {
+  .ov-hero {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+}

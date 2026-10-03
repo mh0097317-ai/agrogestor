@@ -31,7 +31,7 @@ export function OverviewAgenda({
   date: Date;
   onDate: (date: Date) => void;
   onSelect: (a: Appointment) => void;
-  onCreate: () => void;
+  onCreate?: () => void;
 }) {
   const [all, setAll] = useState(false);
   const day = localDay(date);
@@ -68,9 +68,11 @@ export function OverviewAgenda({
             </Link>
           ))}
         </nav>
-        <Button onClick={onCreate}>
-          <Plus size={16} /> Novo agendamento
-        </Button>
+        {onCreate && (
+          <Button onClick={onCreate}>
+            <Plus size={16} /> Novo agendamento
+          </Button>
+        )}
       </div>
       {rows.length ? (
         <div className="ov-table" role="table" aria-label="Agendamentos do dia">
@@ -137,9 +139,11 @@ export function OverviewAgenda({
           title="Nenhum agendamento neste dia."
           description="Crie um agendamento ou compartilhe sua página com os clientes."
           action={
-            <Button variant="secondary" onClick={onCreate}>
-              <Plus size={16} /> Novo agendamento
-            </Button>
+            onCreate && (
+              <Button variant="secondary" onClick={onCreate}>
+                <Plus size={16} /> Novo agendamento
+              </Button>
+            )
           }
         />
       )}

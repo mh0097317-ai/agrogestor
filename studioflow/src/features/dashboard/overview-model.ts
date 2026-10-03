@@ -62,11 +62,7 @@ export function overviewModel(data: Store, day: string, now: number) {
     freeSlots,
     revenue,
     ticket: expected.length ? revenue / expected.length : 0,
-    // Date-only values are already business days; timestamps are converted.
-    newCustomers: data.customers.filter(
-      (c) =>
-        (c.createdAt.length === 10 ? c.createdAt : businessDay(c.createdAt)) ===
-        day,
-    ).length,
+    newCustomers: data.customers.filter((c) => businessDay(c.createdAt) === day)
+      .length,
   };
 }

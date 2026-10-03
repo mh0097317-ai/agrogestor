@@ -35,6 +35,10 @@ test("controles de gestão seguem os papéis autorizados pelo servidor", () => {
   assert.equal(canMutateEntity("staff","appointments"),true);
   assert.equal(canMutateEntity("staff","customers"),true);
   assert.equal(canMutateEntity(undefined,"appointments"),false);
+  assert.equal(canMutateEntity("receptionist","appointments"),true);
+  assert.equal(canMutateEntity("receptionist","payments"),false);
+  // workspace_mutation rejects every mutation from the professional role.
+  for(const entity of ["appointments","customers","blockedTimes","services","payments"]) assert.equal(canMutateEntity("professional",entity),false);
 });
 test("painel conta cliente novo cadastrado no próprio dia, com data simples ou horário", () => {
   const store = createSeed();

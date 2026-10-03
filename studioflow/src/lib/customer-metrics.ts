@@ -30,5 +30,7 @@ export function customerVisitLabel(customer: Customer) {
     ? "Sem visita concluída"
     : days === 0
       ? "Hoje"
-      : `Há ${days} dias`;
+      : days === 1
+        ? "Há 1 dia"
+        : `Há ${days} dias`;
 }

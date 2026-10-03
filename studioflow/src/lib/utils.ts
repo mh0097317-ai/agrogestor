@@ -8,9 +8,22 @@ export function durationLabel(minutes: number) {
   if (rest) return `${hours}h${String(rest).padStart(2, "0")}`;
   return hours === 1 ? "1 hora" : `${hours} horas`;
 }
+/** Brazilian phone for display: (11) 98765-4321. */
+export function formatPhone(value: string) {
+  const d = value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  if (d.length === 11)
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10)
+    return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return value;
+}
 export const money = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export function businessDay(value: string | Date = new Date()) {
+  // A plain calendar date already is a business day; parsing it as UTC
+  // midnight would shift it to the previous day in São Paulo.
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value))
+    return value;
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",

@@ -103,17 +103,27 @@ npm run test:smoke
 
 O smoke cria e remove seu próprio estabelecimento fictício. PGlite executa a migration e RPCs PostgreSQL nos testes e não é o banco do aplicativo. Nenhum Supabase remoto foi modificado ou validado nesta entrega. Teclado virtual e instalação PWA em dispositivos físicos seguem pendentes.
 
-## Pendência encontrada na auditoria do pacote
+## Refinamento visual de 3 de outubro de 2026
 
-Alinhar a permissão visual do papel `professional`: `src/lib/permissions.ts` atualmente permite ações de agenda/clientes/bloqueios para esse papel, enquanto a RPC `workspace_mutation` na migration rejeita todas as suas mutações. A proteção do banco existe. Ocultar/desabilitar as ações incompatíveis e acrescentar regressão específica; a suíte atual não cobre essa divergência.
+O visual foi reaproximado da referência `docs/reference/Foto-1.jpg` (as capturas anteriores estão em `docs/capturas-antes/`, as novas em `docs/capturas-depois/`):
+
+- Página pública: capa com identidade centralizada (logo pequena ou ícone do segmento via `src/lib/segments.ts`), card sobreposto com aberto/fechado e próxima abertura, ações, CTA, serviços em miniaturas, banner do espaço, comodidades, profissionais, fotos, horários e mapa. Desktop com card de agendamento fixo.
+- Agendamento: etapas sem etiquetas extras, fotos nos serviços, duração humana (`durationLabel`), calendário limpo, checkbox de lembrete corrigido.
+- Painel: início com 4 indicadores com ícone, tabela do dia, mini calendário e resumo (receita prevista/realizada, ticket, atendidos, comparecimento); no celular, cabeçalho navy com indicadores 2x2 e próximos agendamentos. Sidebar mostra a identidade do estabelecimento.
+- Clientes: abas Todos/Em atraso/Novos/Ativos/Inativos, linhas compactas no celular, selo "Em atraso", telefone formatado.
+- Fotos de demonstração em `public/demo/`; seed usa a data de São Paulo e inclui um cliente "em atraso".
+- `businessDay` trata datas simples (`yyyy-MM-dd`) como dia do estabelecimento.
+- Permissões: o papel `professional` agora é somente leitura no cliente, igual à RPC `workspace_mutation`, com teste.
+
+Verificado: lint, TypeScript, 26 testes, build, smoke HTTP e varredura sem overflow horizontal em 14 rotas × 375/390/430/768/1024/1440px.
 
 ## Próximos passos para terminar o piloto
 
-1. Corrigir a divergência de permissões descrita acima, preservando a regra mais restrita do servidor.
+1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).
 2. Escolher Supabase dedicado, revisar/aplicar a migration e configurar URL do app, callback de Auth e SMTP. Validar contas e sessões reais.
 3. Implementar convites e seleção de empresa usando os vínculos existentes.
 4. Validar remotamente isolamento entre empresas, concorrência, permissões e pagamentos.
-5. Migrar imagens para Supabase Storage; hoje são URLs ou imagens de até 2 MB no registro. Fotos de demonstração dependem de URLs externas.
+5. Migrar imagens para Supabase Storage; hoje são URLs ou imagens de até 2 MB no registro. As fotos de demonstração já são locais (`public/demo/`).
 6. Adicionar consultas paginadas e rate limit com armazenamento compartilhado para múltiplos servidores.
 7. Testar teclado virtual, instalação, navegação e PWA em celulares físicos com HTTPS.
 8. Revisar backups, retenção, logs e proteção contra abuso antes do piloto.

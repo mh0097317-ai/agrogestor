@@ -81,10 +81,9 @@
 .crm-list-head,
 .crm-row {
   display: grid;
-  grid-template-columns: minmax(200px, 1.8fr) minmax(85px, 0.7fr) minmax(
-      110px,
-      1fr
-    ) minmax(115px, 1fr) minmax(130px, 1fr) 24px;
+  grid-template-columns:
+    minmax(200px, 1.8fr) minmax(85px, 0.7fr) minmax(110px, 1fr)
+    minmax(115px, 1fr) minmax(130px, 1fr) 24px;
   gap: 16px;
   align-items: center;
   padding: 20px 24px;
@@ -156,11 +155,20 @@
   font-size: 12px;
   color: #64748b;
 }
+.crm-relationship {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #eaf6ef;
+  color: #2f7a55;
+  font-weight: 500;
+}
 .crm-relationship.is-due {
-  background: #fff6e8;
-  color: #86551e;
-  border-radius: 6px;
-  padding: 5px 8px;
+  background: #fdecec;
+  color: #b42318;
+}
+.crm-relationship.is-inactive {
+  background: #f1f5f9;
+  color: #64748b;
 }
 .crm-row-arrow {
   color: #64748b;
@@ -351,9 +359,16 @@
   .crm-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    padding: 20px 16px;
+    grid-template-areas:
+      "person spent"
+      "person relation";
+    gap: 4px 12px;
+    min-height: 76px;
+    padding: 14px 16px;
     position: relative;
+  }
+  .crm-person {
+    grid-area: person;
   }
   .crm-person {
     gap: 12px;
@@ -369,19 +384,27 @@
   }
   .crm-mobile-visit {
     display: block;
-    margin-top: 7px;
+    margin-top: 2px;
     font-size: 12px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: #64748b;
   }
   .crm-spent {
+    grid-area: spent;
+    justify-self: end;
+    align-self: end;
     font-size: 13px;
-    align-self: start;
-    padding-top: 4px;
+    font-weight: 600;
   }
   .crm-relationship {
-    grid-column: 1/-1;
-    margin-left: 54px;
+    grid-area: relation;
+    justify-self: end;
+    align-self: start;
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+  .crm-relationship:not(.is-due) {
+    display: none;
   }
   .crm-profile-metrics.metric-strip {
     padding: 18px 0;

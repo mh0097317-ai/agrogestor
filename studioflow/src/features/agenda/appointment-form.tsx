@@ -5,7 +5,7 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { DetailPanel, Button, Spinner, FormSection } from "@/components/ui";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/components/toast";
-import { money, localDay, businessDay } from "@/lib/utils";
+import { money, localDay, businessDay, formatPhone } from "@/lib/utils";
 import type { Appointment } from "@/types";
 import { normalizePhone } from "@/lib/availability";
 import { minuteOf, timeOf } from "./agenda-helpers";
@@ -165,7 +165,7 @@ export function AppointmentForm({
                     <datalist id="existing-customers">
                       {data.customers.map((c) => (
                         <option key={c.id} value={c.name}>
-                          {c.phone}
+                          {formatPhone(c.phone)}
                         </option>
                       ))}
                     </datalist>

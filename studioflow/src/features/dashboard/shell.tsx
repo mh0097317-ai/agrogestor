@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, Card, Modal } from "@/components/ui";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { businessDay } from "@/lib/utils";
@@ -73,6 +74,7 @@ function Shell({ children }: { children: ReactNode }) {
   const [now] = useState(() => Date.now());
   const { data, refresh, refreshing, refreshError } = useWorkspace();
   const { toast } = useToast();
+  const { canMutate } = usePermissions();
   const [search, setSearch] = useState("");
   const [notifications, setNotifications] = useState(false);
   const [help, setHelp] = useState(false);
@@ -273,9 +275,13 @@ function Shell({ children }: { children: ReactNode }) {
           )}
         </header>
         <header className="mobile-top">
-          <Link className="brand" href="/dashboard">
-            <BrandMark />
-            <span className="brand-wordmark">studioflow</span>
+          <Link className="mobile-top-business" href="/dashboard">
+            <SegmentIcon
+              category={data?.business.category}
+              size={18}
+              strokeWidth={1.7}
+            />
+            <span>{data?.business.name || "Seu estabelecimento"}</span>
           </Link>
           <Link href={`/${slug}`}>
             <ExternalLink size={13} /> Sua página
@@ -308,13 +314,15 @@ function Shell({ children }: { children: ReactNode }) {
           <CalendarDays />
           Agenda
         </Link>
-        <button
-          className="mobile-add"
-          onClick={() => setCreate(true)}
-          aria-label="Novo agendamento"
-        >
-          <Plus />
-        </button>
+        {canMutate("appointments") && (
+          <button
+            className="mobile-add"
+            onClick={() => setCreate(true)}
+            aria-label="Novo agendamento"
+          >
+            <Plus />
+          </button>
+        )}
         <Link
           href="/dashboard/clientes"
           className={active("/dashboard/clientes") ? "active" : ""}
