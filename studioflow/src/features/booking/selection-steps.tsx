@@ -6,6 +6,28 @@ import type { Service } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
+import { usePublicData } from "@/features/public/use-public-catalog";
+import type { Slot } from "@/types";
+import { bookingDate, bookingTime } from "./date-format";
+
+/** "hoje às 14:30", "amanhã às 09:00" or "sáb., 04/10 às 09:00". */
+export function freeLabel(slot: Slot, now = new Date()) {
+  const day = bookingDate(slot.start);
+  const today = bookingDate(now);
+  const tomorrow = bookingDate(new Date(now.getTime() + 86_400_000));
+  const when =
+    day === today
+      ? "hoje"
+      : day === tomorrow
+        ? "amanhã"
+        : new Intl.DateTimeFormat("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+          }).format(new Date(slot.start));
+  return `${when} às ${bookingTime(slot.start)}`;
+}
 
 export function ServiceStep({
   services,
@@ -88,11 +110,13 @@ export function ServiceStep({
 }
 
 export function ProfessionalStep({
+  slug,
   professionals,
   service,
   selectedId,
   onSelect,
 }: {
+  slug: string;
   professionals: PublicProfessional[];
   service: Service;
   selectedId: string;
@@ -101,6 +125,22 @@ export function ProfessionalStep({
   const available = professionals.filter(
     (person) => person.active && service.professionalIds.includes(person.id),
   );
+  const { data: nextFree, loading } = usePublicData<Record<string, Slot>>(
+    `/api/public/${encodeURIComponent(slug)}/next-free?serviceId=${service.id}`,
+  );
+  const earliest = Object.values(nextFree || {}).sort((a, b) =>
+    a.start.localeCompare(b.start),
+  )[0];
+  const availability = (slot?: Slot) =>
+    loading && !nextFree ? (
+      <em className="booking-free is-loading">Consultando a agenda…</em>
+    ) : slot ? (
+      <em className="booking-free">
+        <i /> Livre {freeLabel(slot)}
+      </em>
+    ) : nextFree ? (
+      <em className="booking-free is-busy">Sem horários nos próximos dias</em>
+    ) : null;
   return (
     <section className="booking-step">
       <h1 tabIndex={-1}>Quem vai te atender?</h1>
@@ -119,6 +159,7 @@ export function ProfessionalStep({
           <span className="booking-option-info">
             <strong>Qualquer profissional</strong>
             <span>Primeiro horário disponível</span>
+            {availability(earliest)}
           </span>
           {selectedId === "any" ? (
             <span className="booking-check">
@@ -147,6 +188,7 @@ export function ProfessionalStep({
                 {person.specialties.join(" · ") ||
                   `Realiza ${service.name.toLocaleLowerCase("pt-BR")}`}
               </span>
+              {availability(nextFree?.[person.id])}
             </span>
             {selectedId === person.id ? (
               <span className="booking-check">

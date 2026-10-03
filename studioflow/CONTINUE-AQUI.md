@@ -125,6 +125,20 @@ Verificado: lint, TypeScript, 26 testes, build, smoke HTTP e varredura sem overf
 - Confirmação com check desenhado, onda e confete apenas para agendamentos criados há menos de 10 minutos.
 - Não rode `npm run build` com o `npm run dev` ativo: os dois usam `.next` e o dev passa a falhar com "Manifest file is empty".
 
+## Refinamentos de uso (3 de outubro de 2026)
+
+Cliente:
+- Etapa de horário abre com o primeiro dia livre já selecionado (`date-step.tsx`, sem efeito colateral: data ativa derivada).
+- Cada profissional mostra o próximo horário livre ("Livre hoje às 14:30"), via `GET /api/public/[slug]/next-free?serviceId=` e `nextFreeByProfessional` em `src/lib/availability.ts` (projeção pública só com id do profissional e o horário).
+- Cliente lembrado no aparelho (`localStorage` `studioflow:customer`) com "Que bom te ver" e "Não é você?" para apagar.
+- Barra inferior acumula serviço → profissional → dia e hora; vibração curta ao escolher (`src/lib/haptic.ts`).
+
+Dono:
+- Card "Agora" (em atendimento ou próximo) com ação direta (Confirmar/Iniciar/Concluir) e WhatsApp.
+- Ação rápida por linha na agenda do dia; "Iniciar" só aparece até 1 hora antes.
+- Faturamento dos últimos 7 dias (recebido x agendado, comparação com a semana anterior), ocupação por profissional e "Precisa da sua atenção" (pendentes com Confirmar e clientes sumidos com WhatsApp e mensagem pronta). Cálculos em `src/features/dashboard/insights.ts`, com testes.
+- No celular os blocos são reordenados por urgência: Agora, Atenção, Próximos, Resumo, Semana, Ocupação.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

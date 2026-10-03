@@ -188,3 +188,10 @@
 .booking-times > h2 {
   animation: sf-fade-up 360ms var(--ease-out) both;
 }
+.booking-auto-date {
+  margin: -6px 0 10px !important;
+  line-height: 1.5;
+  font-size: 12px;
+  color: #15803d;
+  animation: sf-fade-in 300ms ease-out;
+}

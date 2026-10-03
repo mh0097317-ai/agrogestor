@@ -71,7 +71,18 @@ export function DateStep({
     [data],
   );
 
-  const availableSlots = days[selectedDate] || [];
+  // Until the person picks a day, show the first day with free times so
+  // the slots are visible right away.
+  const firstAvailable = useMemo(
+    () =>
+      Object.keys(days)
+        .sort()
+        .find((day) => days[day].length > 0),
+    [days],
+  );
+  const activeDate = selectedDate || firstAvailable || "";
+  const autoPicked = !selectedDate && !!firstAvailable;
+  const availableSlots = days[activeDate] || [];
   const uniqueSlots = availableSlots.filter(
     (slot, index, list) =>
       list.findIndex((other) => other.time === slot.time) === index,
@@ -126,9 +137,9 @@ export function DateStep({
                 <button
                   key={key}
                   disabled={!available}
-                  className={`${selectedDate === key ? "is-selected" : ""} ${format(today, "yyyy-MM-dd") === key ? "is-today" : ""}`}
+                  className={`${activeDate === key ? "is-selected" : ""} ${format(today, "yyyy-MM-dd") === key ? "is-today" : ""}`}
                   onClick={() => chooseDate(day)}
-                  aria-pressed={selectedDate === key}
+                  aria-pressed={activeDate === key}
                   aria-label={`${format(day, "d 'de' MMMM", { locale: ptBR })}${available ? ", com horários disponíveis" : ", indisponível"}`}
                 >
                   {format(day, "d")}
@@ -163,17 +174,18 @@ export function DateStep({
               ))}
             </div>
           </div>
-        ) : selectedDate ? (
-          <div className="booking-times" key={selectedDate}>
+        ) : activeDate ? (
+          <div className="booking-times" key={activeDate}>
             <h2>
-              {format(
-                new Date(`${selectedDate}T12:00:00`),
-                "EEEE, d 'de' MMMM",
-                {
-                  locale: ptBR,
-                },
-              )}
+              {format(new Date(`${activeDate}T12:00:00`), "EEEE, d 'de' MMMM", {
+                locale: ptBR,
+              })}
             </h2>
+            {autoPicked && (
+              <p className="booking-auto-date">
+                Primeiro dia com horário livre. Toque em outra data se preferir.
+              </p>
+            )}
             {periods.map((period) => {
               const slots = uniqueSlots.filter(
                 (slot) =>
@@ -194,7 +206,10 @@ export function DateStep({
                               : ""
                           }
                           aria-pressed={selectedSlot?.start === slot.start}
-                          onClick={() => onSlot(slot)}
+                          onClick={() => {
+                            if (!selectedDate) onDate(activeDate);
+                            onSlot(slot);
+                          }}
                         >
                           {slot.time}
                         </button>

@@ -198,3 +198,28 @@
 .booking-summary-service > div {
   min-width: 0;
 }
+
+.booking-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: -6px 0 18px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #eef5ff;
+  color: #1e3a5f;
+  font-size: 13px;
+  animation: sf-fade-up 420ms var(--ease-out) both;
+}
+.booking-welcome button {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #123e69;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

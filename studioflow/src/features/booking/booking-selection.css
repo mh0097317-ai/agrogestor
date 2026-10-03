@@ -193,3 +193,30 @@
 .booking-filter-tabs button:active {
   transform: scale(0.95);
 }
+
+.booking-free {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  animation: sf-fade-in 300ms ease-out;
+}
+.booking-free i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: sf-pulse-ring 2s ease-out infinite;
+}
+.booking-free.is-loading {
+  color: #94a3b8;
+  font-weight: 500;
+}
+.booking-free.is-busy {
+  color: #94a3b8;
+  font-weight: 500;
+}

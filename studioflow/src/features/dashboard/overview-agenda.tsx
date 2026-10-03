@@ -11,6 +11,7 @@ import {
 import { Avatar, Button, EmptyState, StatusBadge } from "@/components/ui";
 import { businessDay, dateLabel, localDay } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
+import { nextStep, useQuickStatus } from "./overview-widgets";
 
 const views = [
   { id: "day", label: "Dia" },
@@ -25,6 +26,8 @@ export function OverviewAgenda({
   onDate,
   onSelect,
   onCreate,
+  canEdit = false,
+  now,
 }: {
   data: Store;
   rows: Appointment[];
@@ -32,8 +35,11 @@ export function OverviewAgenda({
   onDate: (date: Date) => void;
   onSelect: (a: Appointment) => void;
   onCreate?: () => void;
+  canEdit?: boolean;
+  now: number;
 }) {
   const [all, setAll] = useState(false);
+  const { run, busyId } = useQuickStatus();
   const day = localDay(date);
   const isToday = day === businessDay();
   const visible = all ? rows : rows.slice(0, 8);
@@ -95,20 +101,34 @@ export function OverviewAgenda({
             const person = data.professionals.find(
               (p) => p.id === a.professionalId,
             );
+            const candidate = canEdit ? nextStep(a.status) : null;
+            // Offer "Iniciar" only close to the start; others always apply.
+            const step =
+              candidate?.status === "in_progress" &&
+              new Date(a.start).getTime() - now > 60 * 60 * 1000
+                ? null
+                : candidate;
             return (
-              <button
+              <div
                 key={a.id}
                 className="ov-table-row"
                 role="row"
                 onClick={() => onSelect(a)}
-                aria-label={`${dateLabel(a.start, "HH:mm")}, ${a.customerName}. Abrir agendamento`}
               >
                 <span role="cell" className="ov-cell-time">
                   {dateLabel(a.start, "HH:mm")}
                 </span>
                 <span role="cell" className="ov-cell-customer">
                   <Avatar name={a.customerName} size={30} />
-                  <strong>{a.customerName}</strong>
+                  <button
+                    className="ov-row-open"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect(a);
+                    }}
+                  >
+                    {a.customerName}
+                  </button>
                 </span>
                 <span role="cell" className="ov-cell-muted">
                   {a.serviceIds
@@ -128,9 +148,31 @@ export function OverviewAgenda({
                   <StatusBadge status={a.status} />
                 </span>
                 <span role="cell" className="ov-table-actions">
-                  <DotsThreeVertical size={20} weight="bold" />
+                  {step && (
+                    <button
+                      className={`ov-quick is-${step.status}`}
+                      disabled={busyId === a.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void run(a, step.status);
+                      }}
+                    >
+                      <step.Icon size={15} weight="bold" />
+                      {busyId === a.id ? "…" : step.label}
+                    </button>
+                  )}
+                  <button
+                    className="ov-more"
+                    aria-label={`Detalhes de ${a.customerName}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect(a);
+                    }}
+                  >
+                    <DotsThreeVertical size={20} weight="bold" />
+                  </button>
                 </span>
-              </button>
+              </div>
             );
           })}
           {rows.length > visible.length && (

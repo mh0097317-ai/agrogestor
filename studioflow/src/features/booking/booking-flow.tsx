@@ -22,6 +22,8 @@ import { ServiceStep, ProfessionalStep } from "./selection-steps";
 import { DateStep } from "./date-step";
 import { BookingSummary } from "./booking-summary";
 import { CustomerStep, type CustomerFields } from "./customer-step";
+import { bookingDateLabel, bookingTime } from "./date-format";
+import { haptic } from "@/lib/haptic";
 import "@/features/public/public.css";
 import "./booking-layout.css";
 import "./booking-selection.css";
@@ -29,6 +31,19 @@ import "./booking-scheduling.css";
 import "./booking-summary.css";
 import "./booking-confirmation.css";
 import "./booking-responsive.css";
+
+const rememberKey = "studioflow:customer";
+type RememberedCustomer = Omit<CustomerFields, "reminder"> & {
+  reminder?: boolean;
+};
+function readRememberedCustomer(): RememberedCustomer | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(rememberKey) || "null");
+    return value && typeof value.name === "string" && value.name ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 export const bookingSteps = [
   "Serviço",
@@ -126,12 +141,24 @@ function BookingWizard({
   );
   const [date, setDate] = useState("");
   const [slot, setSlot] = useState<Slot>();
+  // The wizard only renders on the client (after the catalog loads), so
+  // reading the device-stored customer here is safe.
+  const [remembered, setRemembered] = useState(readRememberedCustomer);
   const [customer, setCustomer] = useState<CustomerFields>({
-    name: "",
-    phone: "",
-    email: "",
-    reminder: false,
+    name: remembered?.name || "",
+    phone: remembered?.phone || "",
+    email: remembered?.email || "",
+    reminder: remembered?.reminder ?? false,
   });
+  function forgetCustomer() {
+    try {
+      localStorage.removeItem(rememberKey);
+    } catch {
+      // Storage unavailable: nothing to forget.
+    }
+    setRemembered(null);
+    setCustomer({ name: "", phone: "", email: "", reminder: false });
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const stepHeading = useRef<HTMLDivElement>(null);
@@ -159,6 +186,7 @@ function BookingWizard({
     });
   }
   function selectService(id: string) {
+    haptic();
     if (id !== serviceId) {
       setServiceId(id);
       setSlot(undefined);
@@ -172,6 +200,7 @@ function BookingWizard({
     }
   }
   function selectProfessional(id: string) {
+    haptic();
     if (id !== professionalId) {
       setProfessionalId(id);
       setSlot(undefined);
@@ -200,6 +229,19 @@ function BookingWizard({
         throw new Error(
           "Seu agendamento foi recebido, mas o link de confirmação não está disponível. Entre em contato com o estabelecimento.",
         );
+      try {
+        localStorage.setItem(
+          rememberKey,
+          JSON.stringify({
+            name: values.name,
+            phone: values.phone,
+            email: values.email,
+            reminder: values.reminder,
+          }),
+        );
+      } catch {
+        // Remembering is optional.
+      }
       router.replace(`/booking/${appointment.token}`);
     } catch (cause) {
       const message =
@@ -255,6 +297,7 @@ function BookingWizard({
             )}
             {step === 2 && service && (
               <ProfessionalStep
+                slug={business.slug}
                 professionals={professionals}
                 service={service}
                 selectedId={professionalId}
@@ -270,11 +313,17 @@ function BookingWizard({
                 selectedDate={date}
                 selectedSlot={slot}
                 onDate={setDate}
-                onSlot={setSlot}
+                onSlot={(value) => {
+                  if (value) haptic();
+                  setSlot(value);
+                }}
               />
             )}
             {step === 4 && service && slot && (
               <CustomerStep
+                key={remembered ? "remembered" : "new"}
+                welcomeName={remembered?.name.split(" ")[0]}
+                onForget={forgetCustomer}
                 service={service}
                 professional={professional}
                 slot={slot}
@@ -305,7 +354,7 @@ function BookingWizard({
           <div className="booking-bottom-inner">
             <div
               className="booking-bottom-selection"
-              key={service?.id || "none"}
+              key={`${service?.id}-${step >= 3 ? professionalId : ""}-${slot?.start}`}
             >
               {service && (
                 <PublicImage
@@ -317,7 +366,18 @@ function BookingWizard({
               <div>
                 <strong>{service?.name || "Escolha seu serviço"}</strong>
                 <span>
-                  {service ? (
+                  {service && slot ? (
+                    <>
+                      {professional?.name.split(" ")[0]} <i>·</i>{" "}
+                      {bookingDateLabel(slot.start, true).split(",")[0]},{" "}
+                      {bookingTime(slot.start)}
+                    </>
+                  ) : service && step >= 3 && professional ? (
+                    <>
+                      com {professional.name.split(" ")[0]} <i>·</i>{" "}
+                      {money(service.price)}
+                    </>
+                  ) : service ? (
                     <>
                       {durationLabel(service.duration)} <i>·</i>{" "}
                       {money(service.price)}

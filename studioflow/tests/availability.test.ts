@@ -4,6 +4,7 @@ import { createSeed } from "../src/lib/seed";
 import {
   availableSlots,
   isAvailable,
+  nextFreeByProfessional,
   normalizePhone,
 } from "../src/lib/availability";
 
@@ -124,4 +125,30 @@ test("WhatsApp brasileiro exige DDD válido, nono dígito e aceita +55", () => {
     "11111111111",
   ])
     assert.throws(() => normalizePhone(value));
+});
+test("próximo horário livre por profissional respeita agenda e quem faz o serviço", () => {
+  const store = fixture(),
+    combo = store.services[2],
+    lucas = store.professionals[0];
+  const monday = new Date("2026-10-05T11:00:00Z"); // 08:00 em São Paulo
+  store.appointments.push({
+    id: "busy",
+    businessId: store.business.id,
+    customerId: store.customers[0].id,
+    customerName: "Teste",
+    customerPhone: "11987654321",
+    serviceIds: [combo.id],
+    professionalId: lucas.id,
+    start: "2026-10-05T12:00:00Z",
+    end: "2026-10-05T13:00:00Z",
+    price: combo.price,
+    status: "confirmed",
+    reminder: false,
+    createdAt: "2026-10-01T12:00:00Z",
+  });
+  const next = nextFreeByProfessional(store, [combo.id], monday);
+  assert.equal(next[lucas.id]?.time, "10:00");
+  assert.equal(next[store.professionals[1].id]?.time, "09:00");
+  // Ana Clara não faz corte + barba no seed.
+  assert.equal(next[store.professionals[3].id], undefined);
 });

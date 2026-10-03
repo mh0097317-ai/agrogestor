@@ -27,6 +27,12 @@ import {
 import type { Appointment, Store } from "@/types";
 import { overviewModel } from "./overview-model";
 import { OverviewAgenda } from "./overview-agenda";
+import {
+  AttentionCard,
+  NowCard,
+  OccupancyCard,
+  WeekRevenueCard,
+} from "./overview-widgets";
 
 export function Overview() {
   const { data, loading, error, refresh } = useWorkspace();
@@ -91,7 +97,11 @@ export function Overview() {
       icon: UserPlus,
     },
   ];
-  const upcoming = model.upcoming.slice(0, 5);
+  const nowCard = today ? model.next : undefined;
+  const upcoming = model.upcoming
+    .filter((a) => a.id !== nowCard?.id)
+    .slice(0, 5);
+  const canEdit = canMutate("appointments");
 
   return (
     <div className="ov">
@@ -139,16 +149,31 @@ export function Overview() {
 
       <div className="ov-body">
         <div className="ov-main">
+          {nowCard && (
+            <NowCard
+              appointment={nowCard}
+              data={data}
+              now={now}
+              canEdit={canEdit}
+              onOpen={setDetail}
+            />
+          )}
           <OverviewAgenda
             data={data}
             rows={model.appointments}
             date={date}
             onDate={setDate}
             onSelect={setDetail}
+            canEdit={canEdit}
+            now={now}
             onCreate={
               canMutate("appointments") ? () => setCreate(true) : undefined
             }
           />
+          <div className="ov-insights">
+            <WeekRevenueCard data={data} day={day} />
+            <OccupancyCard data={data} day={day} />
+          </div>
           <section className="ov-upcoming ov-card">
             <div className="ov-card-head">
               <h2>
@@ -223,6 +248,12 @@ export function Overview() {
               </div>
             </dl>
           </section>
+          <AttentionCard
+            data={data}
+            now={now}
+            canEdit={canEdit}
+            onOpen={setDetail}
+          />
         </aside>
       </div>
       <AppointmentForm

@@ -51,6 +51,8 @@ export function phoneMask(value: string) {
 }
 
 export function CustomerStep({
+  welcomeName,
+  onForget,
   service,
   professional,
   slot,
@@ -60,6 +62,8 @@ export function CustomerStep({
   onSubmit,
   onChange,
 }: {
+  welcomeName?: string;
+  onForget?: () => void;
   service: Service;
   professional?: PublicProfessional;
   slot: Slot;
@@ -81,10 +85,22 @@ export function CustomerStep({
   });
   return (
     <section className="booking-step">
-      <h1 tabIndex={-1}>Quase pronto!</h1>
+      <h1 tabIndex={-1}>
+        {welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"}
+      </h1>
       <p className="booking-subtitle">
         Confirme seus dados para finalizar o agendamento.
       </p>
+      {welcomeName && (
+        <div className="booking-welcome" role="status">
+          <span>
+            Seus dados já estão preenchidos e ficam só neste aparelho.
+          </span>
+          <button type="button" onClick={onForget}>
+            Não é você?
+          </button>
+        </div>
+      )}
       <div className="booking-mobile-summary">
         <BookingSummary
           service={service}

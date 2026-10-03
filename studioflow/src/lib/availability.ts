@@ -275,6 +275,34 @@ export function availableSlots(
   return slots;
 }
 
+/**
+ * Earliest bookable slot of each professional able to perform the services,
+ * scanning day by day from today; stops at the first free day per person.
+ */
+export function nextFreeByProfessional(
+  store: Store,
+  serviceIds: string[],
+  now = new Date(),
+  horizonDays = 14,
+) {
+  const result: Record<string, Slot> = {};
+  const people = store.professionals.filter(
+    (person) => person.active && canAttend(store, person, serviceIds),
+  );
+  const days = Math.min(horizonDays, store.settings.maxDays);
+  for (const person of people) {
+    for (let offset = 0; offset <= days; offset++) {
+      const date = localDate(new Date(now.getTime() + offset * 86_400_000));
+      const [slot] = availableSlots(store, serviceIds, person.id, date, now);
+      if (slot) {
+        result[person.id] = slot;
+        break;
+      }
+    }
+  }
+  return result;
+}
+
 export function chooseProfessional(
   store: Store,
   serviceIds: string[],
