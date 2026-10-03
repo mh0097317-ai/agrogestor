@@ -41,52 +41,46 @@
   position: relative;
   border: 1px solid #ffffff18;
 }
-.business-switch {
-  margin: 31px 6px 30px;
-  border: 1px solid #ffffff13;
-  padding: 14px 12px;
-  border-radius: 12px;
+.sidebar-business {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
-  background: #ffffff03;
+  padding: 0 8px;
+  margin-bottom: 30px;
+  color: #fff;
 }
-.business-icon {
-  width: 34px;
-  height: 34px;
+.sidebar-business-mark {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  color: #d6e5f4;
-  border-radius: 8px;
-  background: #ffffff0b;
-  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid #ffffff1f;
+  background: #ffffff0a;
+  color: #e6eef7;
+  overflow: hidden;
 }
-.business-switch strong {
-  color: #e7edf5;
-  font-size: 12px;
-  letter-spacing: 0.8px;
-  display: block;
+.sidebar-business-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-business-name strong {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
   overflow-wrap: anywhere;
+  line-height: 1.25;
 }
-.business-switch small {
-  color: #8a9eb3;
-  font-size: 12px;
-  display: block;
-  margin-top: 3px;
-}
-.business-switch > svg {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-.sidebar-caption {
-  font-size: 12px;
-  letter-spacing: 1.8px;
-  font-weight: 550;
-  color: #7288a0;
-  padding: 0 14px;
-  margin: 0 0 10px;
-  margin-bottom: 14px;
+.sidebar-business-name small {
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #8ea3b9;
 }
 .nav-link {
   display: flex;
@@ -158,13 +152,28 @@
   line-height: 1.8;
   margin: 7px 0 13px;
 }
-.sidebar-plan a {
-  font-size: 12px;
+.sidebar-plan-actions {
+  display: flex;
+  gap: 8px;
+}
+.sidebar-plan-actions button,
+.sidebar-plan-actions a {
+  flex: 1;
+  min-height: 36px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: #c2d7ea;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #ffffff1a;
+  border-radius: 9px;
+  background: #ffffff0a;
+  color: #dbe7f3;
+  font-size: 12px;
   font-weight: 500;
+}
+.sidebar-plan-actions button:hover,
+.sidebar-plan-actions a:hover {
+  background: #ffffff14;
 }
 .sidebar-support {
   display: flex;
@@ -184,7 +193,7 @@
 .sidebar-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   border-top: 1px solid #ffffff0b;
   padding: 17px 14px 0;
   margin-top: 12px;
@@ -376,4 +385,13 @@
   font-weight: 500;
   letter-spacing: 1.75px;
   color: #7b93ac;
+}
+.sidebar-foot .brand-mark {
+  width: 24px;
+  height: 26px;
+  border-radius: 7px;
+}
+.sidebar-foot .brand-mark svg {
+  width: 15px;
+  height: 16px;
 }

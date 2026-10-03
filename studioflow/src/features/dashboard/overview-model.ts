@@ -19,13 +19,17 @@ export function overviewModel(data: Store, day: string, now: number) {
       (a) =>
         day !== businessDay(new Date(now)) || new Date(a.end).getTime() > now,
     );
-  const service = data.services.find(
-    (s) =>
-      s.active &&
-      s.professionalIds.some((id) =>
-        data.professionals.some((p) => p.id === id && p.active),
-      ),
-  );
+  // Free slots are counted for the shortest bookable service, the most
+  // permissive measure of how much room is left in the day.
+  const service = data.services
+    .filter(
+      (s) =>
+        s.active &&
+        s.professionalIds.some((id) =>
+          data.professionals.some((p) => p.id === id && p.active),
+        ),
+    )
+    .sort((a, b) => a.duration - b.duration)[0];
   const freeSlots = service
     ? availableSlots(data, [service.id], "any", day, new Date(now)).length
     : 0;
@@ -33,9 +37,23 @@ export function overviewModel(data: Store, day: string, now: number) {
     customerNeedsReturn(c, new Date(now)),
   );
   const revenue = expected.reduce((sum, a) => sum + a.price, 0);
+  const attended = appointments.filter(
+    (a) => a.status === "completed" || a.status === "in_progress",
+  ).length;
+  const noShows = appointments.filter((a) => a.status === "no_show").length;
+  const upcoming =
+    day === businessDay(new Date(now))
+      ? unfinished.filter(
+          (a) => a.status === "in_progress" || new Date(a.end).getTime() > now,
+        )
+      : unfinished;
   return {
     appointments,
     next,
+    upcoming,
+    attended,
+    attendanceRate:
+      attended + noShows ? attended / (attended + noShows) : undefined,
     pending,
     overdue,
     completed,
@@ -44,7 +62,11 @@ export function overviewModel(data: Store, day: string, now: number) {
     freeSlots,
     revenue,
     ticket: expected.length ? revenue / expected.length : 0,
-    newCustomers: data.customers.filter((c) => businessDay(c.createdAt) === day)
-      .length,
+    // Date-only values are already business days; timestamps are converted.
+    newCustomers: data.customers.filter(
+      (c) =>
+        (c.createdAt.length === 10 ? c.createdAt : businessDay(c.createdAt)) ===
+        day,
+    ).length,
   };
 }

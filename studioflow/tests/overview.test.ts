@@ -36,3 +36,14 @@ test("controles de gestão seguem os papéis autorizados pelo servidor", () => {
   assert.equal(canMutateEntity("staff","customers"),true);
   assert.equal(canMutateEntity(undefined,"appointments"),false);
 });
+test("painel conta cliente novo cadastrado no próprio dia, com data simples ou horário", () => {
+  const store = createSeed();
+  store.appointments = [];
+  store.customers = [
+    {...store.customers[0], id:"date-only", createdAt:"2026-10-02"},
+    {...store.customers[1], id:"late-night", createdAt:"2026-10-03T01:30:00Z"},
+    {...store.customers[2], id:"yesterday", createdAt:"2026-10-01"},
+  ];
+  const model = overviewModel(store,"2026-10-02",Date.parse("2026-10-02T22:00:00-03:00"));
+  assert.equal(model.newCustomers,2);
+});

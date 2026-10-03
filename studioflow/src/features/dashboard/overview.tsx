@@ -2,19 +2,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowUpRight,
-  ArrowRight,
-  CalendarDays,
+  Bell,
+  CalendarCheck2,
   ChevronRight,
+  CircleDollarSign,
   Clock3,
-  Copy,
   Plus,
-  Check,
-  Users,
+  UserPlus,
 } from "lucide-react";
 import { useWorkspace } from "@/hooks/use-workspace";
-import { useToast } from "@/components/toast";
-import { Avatar, Button, MetricStrip } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
 import { MiniCalendar } from "@/components/mini-calendar";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { AppointmentDetail } from "@/features/agenda/appointment-detail";
@@ -28,12 +25,11 @@ import {
 import type { Appointment, Store } from "@/types";
 import { overviewModel } from "./overview-model";
 import { OverviewAgenda } from "./overview-agenda";
+
 export function Overview() {
   const { data, loading, error, refresh } = useWorkspace();
-  const { toast } = useToast();
   const [now, setNow] = useState(() => Date.now());
   const [date, setDate] = useState(businessToday);
-  const [professional, setProfessional] = useState("all");
   const [create, setCreate] = useState(false);
   const [detail, setDetail] = useState<Appointment | null>(null);
   useEffect(() => {
@@ -59,184 +55,122 @@ export function Overview() {
   const day = localDay(date);
   const today = day === businessDay(new Date(now));
   const model = overviewModel(data, day, now);
-  const rows = model.appointments.filter(
-    (a) => professional === "all" || a.professionalId === professional,
+  const firstName = data.viewer?.name.split(" ")[0] || "bem-vindo";
+  const hours = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(now),
   );
-  const nextProfessional = data.professionals.find(
-    (p) => p.id === model.next?.professionalId,
-  );
-  const hours = Number(dateLabel(new Date(now), "HH"));
   const greeting =
     hours < 12 ? "Bom dia" : hours < 18 ? "Boa tarde" : "Boa noite";
-  async function share() {
-    try {
-      await navigator.clipboard.writeText(
-        `${location.origin}/${data!.business.slug}`,
-      );
-      toast("Link da sua página copiado.");
-    } catch {
-      toast(`Sua página: ${location.origin}/${data!.business.slug}`);
-    }
-  }
+  const dayName = dateLabel(date, "d 'de' MMMM");
+  const kpis = [
+    {
+      label: today ? "Agendamentos hoje" : "Agendamentos no dia",
+      value: model.appointments.length,
+      icon: CalendarCheck2,
+    },
+    {
+      label: "Receita prevista",
+      value: money(model.revenue),
+      icon: CircleDollarSign,
+    },
+    { label: "Horários livres", value: model.freeSlots, icon: Clock3 },
+    { label: "Novos clientes", value: model.newCustomers, icon: UserPlus },
+  ];
+  const upcoming = model.upcoming.slice(0, 5);
+
   return (
-    <div className="overview-page">
-      <header className="overview-heading">
+    <div className="ov">
+      <section className="ov-hero" aria-label="Resumo de hoje">
         <div>
-          <div className="overview-eyebrow">
-            <span className="overview-day-dot" /> {data.business.name}{" "}
-            <span className="overview-demo">
-              {data.mode === "demo" ? "Demonstração" : "Seu espaço"}
-            </span>
-          </div>
-          <h1>
-            {greeting}, {data.viewer?.name.split(" ")[0] || "bem-vindo"}
-            <span>.</span>
-          </h1>
+          <h1>Olá, {firstName}</h1>
           <p>
-            {dateLabel(new Date(now), "EEEE, d 'de' MMMM")} <span>•</span> Seu
-            dia, com tudo no lugar.
+            {today ? "Hoje" : dateLabel(date, "EEEE")}, {dayName}
           </p>
         </div>
-        <Button onClick={() => setCreate(true)}>
-          <Plus size={17} /> Novo agendamento
-        </Button>
+        <Link
+          href={`/dashboard/agenda?date=${day}`}
+          className="ov-hero-bell"
+          aria-label={`${model.pending.length} agendamentos aguardando confirmação`}
+        >
+          <Bell size={20} />
+          {model.pending.length > 0 && <span>{model.pending.length}</span>}
+        </Link>
+      </section>
+
+      <header className="ov-head">
+        <h1>
+          {greeting}, {firstName}
+        </h1>
+        <p>
+          {today
+            ? "Aqui está o movimento de hoje."
+            : `Aqui está o movimento de ${dayName}.`}
+        </p>
       </header>
-      <MetricStrip
-        className="overview-metrics"
-        items={[
-          {
-            label: today ? "Agendamentos hoje" : "Agendamentos no dia",
-            value: model.appointments.length,
-            detail: `${model.completed} concluídos`,
-          },
-          {
-            label: "Receita prevista",
-            value: money(model.revenue),
-            detail: `${money(model.collected)} recebido`,
-          },
-          {
-            label: "Horários disponíveis",
-            value: model.freeSlots,
-            detail: model.service
-              ? `Para ${model.service.name}`
-              : "Cadastre um serviço",
-          },
-          {
-            label: "Novos clientes",
-            value: model.newCustomers,
-            detail: "Neste dia",
-          },
-        ]}
-      />
-      <div className="overview-body">
-        <div className="overview-main">
-          {model.next ? (
-            <section className="next-appointment" aria-labelledby="next-title">
-              <div className="next-appointment-heading">
-                <span>
-                  <span className="next-dot" />
-                  {model.next.status === "in_progress"
-                    ? "EM ATENDIMENTO"
-                    : "PRÓXIMO ATENDIMENTO"}
-                </span>
-                <span>
-                  {dateLabel(model.next.start, "HH:mm")} —{" "}
-                  {dateLabel(model.next.end, "HH:mm")}
-                </span>
-              </div>
-              <div className="next-appointment-content">
-                <Avatar name={model.next.customerName} size={52} />
-                <div>
-                  <h2 id="next-title">{model.next.customerName}</h2>
-                  <p>
-                    {model.next.serviceIds
-                      .map((id) => data.services.find((s) => s.id === id)?.name)
-                      .join(" + ")}
-                  </p>
-                  <span>
-                    {nextProfessional?.name} <span>•</span>{" "}
-                    {money(model.next.price)}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setDetail(model.next!)}
-                  className="next-action"
-                >
-                  {model.next.status === "in_progress"
-                    ? "Gerenciar atendimento"
-                    : model.next.status === "pending"
-                      ? "Revisar agendamento"
-                      : "Ver atendimento"}
-                  <ArrowRight size={17} />
-                </button>
-              </div>
-            </section>
-          ) : (
-            <div className="next-empty">
-              <Check size={22} />
-              <div>
-                <h2>
-                  {today ? "Tudo em dia por aqui." : "Seu dia está livre."}
-                </h2>
-                <p>
-                  {today
-                    ? "Nenhum próximo atendimento previsto para hoje."
-                    : "Adicione um agendamento para esta data."}
-                </p>
-              </div>
-              <Button variant="secondary" onClick={() => setCreate(true)}>
-                <Plus size={16} /> Agendar
-              </Button>
+
+      <div className="ov-kpis">
+        {kpis.map(({ label, value, icon: Icon }) => (
+          <div className="ov-kpi" key={label}>
+            <span className="ov-kpi-icon">
+              <Icon size={19} strokeWidth={1.8} />
+            </span>
+            <div>
+              <strong>{value}</strong>
+              <span>{label}</span>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
+
+      <div className="ov-body">
+        <div className="ov-main">
           <OverviewAgenda
             data={data}
-            rows={rows}
+            rows={model.appointments}
             date={date}
-            professional={professional}
-            onProfessional={setProfessional}
             onDate={setDate}
             onSelect={setDetail}
+            onCreate={() => setCreate(true)}
           />
-          <section className="overview-team">
-            <div className="overview-section-title">
-              <div>
-                <span className="overview-eyebrow">QUEM FAZ ACONTECER</span>
-                <h2>Sua equipe, em movimento.</h2>
-              </div>
-              <Link href="/dashboard/equipe">
-                Ver equipe <ArrowUpRight size={16} />
-              </Link>
+          <section className="ov-upcoming ov-card">
+            <div className="ov-card-head">
+              <h2>
+                {today ? "Próximos agendamentos" : `Agenda de ${dayName}`}
+              </h2>
+              <Link href={`/dashboard/agenda?date=${day}`}>Ver todos</Link>
             </div>
-            <div className="overview-team-list">
-              {data.professionals
-                .filter((p) => p.active)
-                .map((p) => (
-                  <Link
-                    href={`/dashboard/agenda?professional=${p.id}&date=${day}`}
-                    key={p.id}
-                  >
-                    <Avatar name={p.name} src={p.photo} size={40} />
-                    <div>
-                      <strong>{p.name.split(" ")[0]}</strong>
-                      <span>
-                        {
-                          model.appointments.filter(
-                            (a) => a.professionalId === p.id,
-                          ).length
-                        }{" "}
-                        atendimentos
-                      </span>
-                    </div>
-                    <ArrowUpRight size={15} />
-                  </Link>
+            {upcoming.length ? (
+              <ul role="list">
+                {upcoming.map((a) => (
+                  <li key={a.id}>
+                    <UpcomingRow
+                      appointment={a}
+                      data={data}
+                      onClick={() => setDetail(a)}
+                    />
+                  </li>
                 ))}
-            </div>
+              </ul>
+            ) : (
+              <div className="ov-empty">
+                <p>
+                  {today
+                    ? "Nenhum próximo agendamento para hoje."
+                    : "Nenhum agendamento nesta data."}
+                </p>
+                <Button variant="secondary" onClick={() => setCreate(true)}>
+                  <Plus size={16} /> Novo agendamento
+                </Button>
+              </div>
+            )}
           </section>
         </div>
-        <aside className="overview-aside">
-          <section className="overview-calendar">
-            <span className="overview-eyebrow">UM OLHAR NA AGENDA</span>
+        <aside className="ov-aside">
+          <section className="ov-card ov-calendar" aria-label="Calendário">
             <MiniCalendar
               selected={date}
               onSelect={setDate}
@@ -245,71 +179,34 @@ export function Overview() {
                 .map((a) => businessDay(a.start))}
             />
           </section>
-          <section className="overview-day-summary">
-            <div className="overview-section-title">
-              <h2>Resumo do dia</h2>
-              <Clock3 size={18} />
-            </div>
+          <section className="ov-card ov-summary">
+            <h2>Resumo do dia</h2>
             <dl>
               <div>
-                <dt>Recebido</dt>
+                <dt>Receita prevista</dt>
+                <dd>{money(model.revenue)}</dd>
+              </div>
+              <div>
+                <dt>Receita realizada</dt>
                 <dd>{money(model.collected)}</dd>
               </div>
               <div>
-                <dt>Ticket previsto</dt>
+                <dt>Ticket médio</dt>
                 <dd>{money(model.ticket)}</dd>
               </div>
               <div>
-                <dt>Atendimentos concluídos</dt>
+                <dt>Clientes atendidos</dt>
+                <dd>{model.attended}</dd>
+              </div>
+              <div>
+                <dt>Taxa de comparecimento</dt>
                 <dd>
-                  {model.completed} de {model.appointments.length}
+                  {model.attendanceRate === undefined
+                    ? "—"
+                    : `${Math.round(model.attendanceRate * 100)}%`}
                 </dd>
               </div>
             </dl>
-            <div className="overview-completion">
-              <span
-                style={{
-                  width: `${model.appointments.length ? (model.completed / model.appointments.length) * 100 : 0}%`,
-                }}
-              />
-            </div>
-          </section>
-          <section className="overview-pending">
-            <span className="overview-eyebrow">MERECE SUA ATENÇÃO</span>
-            <Link href={`/dashboard/agenda?date=${day}`}>
-              <CalendarDays size={20} />
-              <div>
-                <strong>{model.pending.length} aguardando confirmação</strong>
-                <span>Revise os horários do dia</span>
-              </div>
-              <ChevronRight size={16} />
-            </Link>
-            <Link href="/dashboard/clientes">
-              <Users size={20} />
-              <div>
-                <strong>
-                  {model.overdue.length} clientes na hora de voltar
-                </strong>
-                <span>Continue boas histórias</span>
-              </div>
-              <ChevronRight size={16} />
-            </Link>
-          </section>
-          <section className="overview-share">
-            <span className="overview-eyebrow">SEU ESPAÇO, SEMPRE ABERTO</span>
-            <h2>
-              O próximo cliente
-              <br />
-              começa com um link.
-            </h2>
-            <p>Compartilhe sua página e facilite o próximo agendamento.</p>
-            <button onClick={share}>
-              <Copy size={16} /> Copiar link público
-              <ArrowUpRight size={16} />
-            </button>
-            <Link href={`/${data.business.slug}`}>
-              Ver minha página <ArrowUpRight size={15} />
-            </Link>
           </section>
         </aside>
       </div>
@@ -322,7 +219,8 @@ export function Overview() {
     </div>
   );
 }
-export function MobileAppointment({
+
+function UpcomingRow({
   appointment: a,
   data,
   onClick,
@@ -334,21 +232,27 @@ export function MobileAppointment({
   const professional = data.professionals.find(
     (p) => p.id === a.professionalId,
   );
+  const services = a.serviceIds
+    .map((id) => data.services.find((s) => s.id === id)?.name)
+    .filter(Boolean)
+    .join(" + ");
   return (
-    <button className="mobile-appt" onClick={onClick}>
-      <span className="mobile-appt-time">{dateLabel(a.start, "HH:mm")}</span>
+    <button className="ov-row" onClick={onClick}>
+      <span className="ov-row-time">{dateLabel(a.start, "HH:mm")}</span>
       <Avatar name={a.customerName} size={36} />
-      <div className="mobile-appt-info">
+      <span className="ov-row-info">
         <strong>{a.customerName}</strong>
-        <p>
-          {a.serviceIds
-            .map((id) => data.services.find((s) => s.id === id)?.name)
-            .join(" + ")}{" "}
-          · {professional?.name.split(" ")[0]}
-        </p>
-      </div>
-      <span className={`mobile-status-dot ${a.status}`} />
-      <ChevronRight size={16} />
+        <span>
+          {services}
+          {professional && ` • ${professional.name.split(" ")[0]}`}
+        </span>
+      </span>
+      {(a.status === "pending" || a.status === "in_progress") && (
+        <span className={`ov-row-flag status-${a.status}`}>
+          {a.status === "pending" ? "Aguardando" : "Agora"}
+        </span>
+      )}
+      <ChevronRight size={16} className="ov-row-chevron" />
     </button>
   );
 }

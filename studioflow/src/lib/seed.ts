@@ -1,5 +1,6 @@
 import type { Store } from "@/types";
 import { format, addDays } from "date-fns";
+import { businessToday } from "@/lib/utils";
 export const DEMO_BUSINESS_ID = "11111111-1111-4111-8111-111111111111";
 export const DEMO_TENANT_ID = "22222222-2222-4222-8222-222222222222";
 // Demo photos are served from public/demo so the demo works offline and in production.
@@ -19,7 +20,9 @@ export const images = {
 };
 export function createSeed(): Store {
   const businessId = DEMO_BUSINESS_ID;
-  const day = format(new Date(), "yyyy-MM-dd");
+  // Demo dates follow the business calendar (São Paulo), not the server clock.
+  const today = businessToday();
+  const day = format(today, "yyyy-MM-dd");
   const uid = (n: number) =>
     `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   const professionals = [
@@ -178,14 +181,14 @@ export function createSeed(): Store {
     visits: i === 15 ? 1 : 3 + ((i * 7) % 18),
     totalSpent: 180 + ((i * 95) % 1300),
     lastVisit: format(
-      addDays(new Date(), -(i === 7 ? 38 : 3 + i * 2)),
+      addDays(today, -(i === 7 ? 38 : 3 + i * 2)),
       "yyyy-MM-dd",
     ),
     favoriteService: services[i % 6].name,
     favoriteProfessional: professionals[i % 4].name,
     returnInterval: 20,
     createdAt: format(
-      addDays(new Date(), i === 15 ? 0 : -90 - i),
+      addDays(today, i === 15 ? 0 : -90 - i),
       "yyyy-MM-dd",
     ),
   }));
@@ -238,7 +241,7 @@ export function createSeed(): Store {
     const service = services[i % 6],
       customer = customers[i % 16];
     const start = new Date(
-      `${format(addDays(new Date(), -(1 + Math.floor(i / 3))), "yyyy-MM-dd")}T${9 + (i % 8)}:00:00-03:00`.replace(
+      `${format(addDays(today, -(1 + Math.floor(i / 3))), "yyyy-MM-dd")}T${9 + (i % 8)}:00:00-03:00`.replace(
         /T(\d):/,
         "T0$1:",
       ),

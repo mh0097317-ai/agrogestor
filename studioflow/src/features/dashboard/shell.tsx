@@ -19,7 +19,8 @@ import {
   Plus,
   Ellipsis,
   HelpCircle,
-  Sparkles,
+  Link2,
+  Copy,
   Store as StoreIcon,
   LogOut,
   ArrowUpRight,
@@ -30,6 +31,7 @@ import { Avatar, Card, Modal } from "@/components/ui";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { businessDay } from "@/lib/utils";
 import { useToast } from "@/components/toast";
+import { SegmentIcon } from "@/lib/segments";
 const links = [
   { path: "/dashboard", label: "Início", icon: LayoutDashboard },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
@@ -99,28 +101,44 @@ function Shell({ children }: { children: ReactNode }) {
         ? "Administrador"
         : "Equipe";
   const slug = data?.business.slug || "barber-011";
+  async function copyLink() {
+    const url = `${location.origin}/${slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Link da sua página copiado.");
+    } catch {
+      toast(`Sua página: ${url}`);
+    }
+  }
   const active = (path: string) =>
     path === "/dashboard" ? pathname === path : pathname.startsWith(path);
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      data-home={pathname === "/dashboard" ? "" : undefined}
+    >
       <aside className="sidebar">
-        <Link className="brand" href="/dashboard">
-          <BrandMark />
-          <span className="brand-wordmark">
-            studioflow<small>GESTÃO PARA BELEZA</small>
+        <Link className="sidebar-business" href="/dashboard">
+          <span className="sidebar-business-mark">
+            {data?.business.logo ? (
+              <Avatar
+                src={data.business.logo}
+                name={data.business.name}
+                size={40}
+              />
+            ) : (
+              <SegmentIcon
+                category={data?.business.category}
+                size={22}
+                strokeWidth={1.6}
+              />
+            )}
+          </span>
+          <span className="sidebar-business-name">
+            <strong>{data?.business.name || "Seu estabelecimento"}</strong>
+            <small>{data?.business.category || "Agenda e gestão"}</small>
           </span>
         </Link>
-        <Link href="/dashboard/configuracoes" className="business-switch">
-          <div className="business-icon">
-            <StoreIcon size={17} />
-          </div>
-          <div>
-            <strong>{data?.business.name || "SEU ESTABELECIMENTO"}</strong>
-            <small>{data?.business.category || "Seu espaço de beleza"}</small>
-          </div>
-          <ChevronRight size={13} />
-        </Link>
-        <p className="sidebar-caption">SEU NEGÓCIO</p>
         <nav aria-label="Navegação principal">
           {links.map((link) => (
             <Link
@@ -147,22 +165,23 @@ function Shell({ children }: { children: ReactNode }) {
         <div className="sidebar-bottom">
           <div className="sidebar-plan">
             <div className="sidebar-plan-title">
-              <Sparkles size={13} /> Seu negócio em boa fase
+              <Link2 size={14} /> Seu link de agendamento
             </div>
-            <p>
-              Mais organização. Mais tempo
-              <br />
-              para fazer o que você ama.
-            </p>
-            <Link href={`/${slug}`} target="_blank">
-              Conheça sua página <ArrowUpRight size={12} />
-            </Link>
+            <p>Divulgue para seus clientes marcarem sozinhos.</p>
+            <div className="sidebar-plan-actions">
+              <button onClick={() => void copyLink()}>
+                <Copy size={13} /> Copiar
+              </button>
+              <Link href={`/${slug}`} target="_blank">
+                Abrir <ArrowUpRight size={12} />
+              </Link>
+            </div>
           </div>
           <button className="sidebar-support" onClick={() => setHelp(true)}>
             <HelpCircle size={16} /> Central de ajuda
           </button>
           <div className="sidebar-foot">
-            <span>Agenda e gestão</span>
+            <BrandMark />
             <span>StudioFlow</span>
           </div>
         </div>
