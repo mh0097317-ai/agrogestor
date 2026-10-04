@@ -19,6 +19,7 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { SegmentIcon } from "@/lib/segments";
 import type { Store } from "@/types";
 import { ManagementBoundary } from "./shared";
+import { SlotsStory } from "./story-slots";
 import "./share.css";
 
 export default function SharePage() {
@@ -312,6 +313,8 @@ function ShareContent({ store }: { store: Store }) {
               : "Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a câmera cai direto na sua agenda."}
           </p>
         </Card>
+
+        <SlotsStory store={store} url={url} />
 
         <Card className="share-card share-tv">
           <h2>

@@ -244,3 +244,78 @@
     display: none !important;
   }
 }
+
+/* Story das vagas */
+.share-story p,
+.share-tv p {
+  margin: 0 0 14px;
+  color: #6e655b;
+  font-size: 14px;
+}
+.share-story h2,
+.share-tv h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.story-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.story-controls .share-switch {
+  margin-bottom: 0;
+}
+.story-controls select {
+  width: auto;
+  min-width: 180px;
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 40px;
+}
+.story-preview {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+.story-preview img,
+.story-preview > span {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border: 1px solid #dcd2c2;
+  border-radius: 4px;
+  background: #ebe4d6;
+  object-fit: cover;
+}
+.story-side {
+  display: grid;
+  gap: 8px;
+}
+.story-side strong {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.story-side span {
+  color: #6e655b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.story-empty {
+  padding: 18px;
+  border: 1px dashed #dcd2c2;
+  border-radius: 4px;
+  color: #6e655b;
+}
+@media (max-width: 560px) {
+  .story-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .story-preview img {
+    max-width: 240px;
+  }
+}
