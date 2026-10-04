@@ -1235,3 +1235,30 @@
 .appointment-payment.is-alert svg {
   color: #8a2c14;
 }
+
+/* Cliente na recepção (check-in pelo QR Code). */
+.arrived-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #2f6b45;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: sf-pop 320ms var(--ease-spring, ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrived-tag {
+    animation: none;
+  }
+}
+
+.ov-cell-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}

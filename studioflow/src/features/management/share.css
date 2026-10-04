@@ -214,3 +214,33 @@
     font-size: 22px;
   }
 }
+
+/* Cartaz: agendar ou check-in. */
+.share-switch {
+  display: inline-flex;
+  align-self: start;
+  margin-bottom: 14px;
+  padding: 3px;
+  border: 1px solid #dcd2c2;
+  border-radius: 3px;
+  background: #f7f3ec;
+}
+.share-switch button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: #6e655b;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.share-switch button.is-on {
+  background: #16130f;
+  color: #f4f0e8;
+}
+@media print {
+  .share-switch {
+    display: none !important;
+  }
+}

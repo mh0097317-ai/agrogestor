@@ -12,6 +12,7 @@ import { Avatar, Button, EmptyState, StatusBadge } from "@/components/ui";
 import { businessDay, dateLabel, localDay } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
 import { nextStep, useQuickStatus } from "./overview-widgets";
+import { ArrivedTag } from "@/features/agenda/arrived-tag";
 
 const views = [
   { id: "day", label: "Dia" },
@@ -144,8 +145,9 @@ export function OverviewAgenda({
                     </>
                   )}
                 </span>
-                <span role="cell">
+                <span role="cell" className="ov-cell-status">
                   <StatusBadge status={a.status} />
+                  <ArrivedTag appointment={a} compact />
                 </span>
                 <span role="cell" className="ov-table-actions">
                   {step && (

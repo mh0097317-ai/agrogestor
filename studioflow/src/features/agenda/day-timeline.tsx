@@ -11,6 +11,7 @@ import {
   timeOf,
   workingRange,
 } from "./agenda-helpers";
+import { ArrivedTag } from "@/features/agenda/arrived-tag";
 
 export function DayTimeline({
   data,
@@ -284,6 +285,7 @@ export function DayTimeline({
                         <i aria-hidden="true" />
                       </span>
                       <strong>{appointment.customerName}</strong>
+                      <ArrivedTag appointment={appointment} compact />
                       {duration >= 35 && (
                         <span className="calendar-event-service">
                           {appointmentServices(data, appointment)}

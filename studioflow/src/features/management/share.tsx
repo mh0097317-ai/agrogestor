@@ -125,10 +125,13 @@ function ShareContent({ store }: { store: Store }) {
     typeof window === "undefined" ? "" : window.location.origin,
   );
   const url = `${origin}/${business.slug}`;
+  // The poster has two jobs: book online, or check in at the counter.
+  const [poster, setPoster] = useState<"book" | "checkin">("book");
+  const posterUrl = poster === "checkin" ? `${url}/checkin` : url;
   const [qr, setQr] = useState("");
   useEffect(() => {
     let alive = true;
-    void QRCode.toDataURL(url, {
+    void QRCode.toDataURL(posterUrl, {
       width: 1024,
       margin: 1,
       errorCorrectionLevel: "M",
@@ -139,7 +142,7 @@ function ShareContent({ store }: { store: Store }) {
     return () => {
       alive = false;
     };
-  }, [url]);
+  }, [posterUrl]);
 
   async function copy(text: string, message: string) {
     try {
@@ -211,6 +214,30 @@ function ShareContent({ store }: { store: Store }) {
         </Card>
 
         <Card className="share-card share-qr">
+          <div
+            className="share-switch"
+            role="tablist"
+            aria-label="Tipo de cartaz"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={poster === "book"}
+              className={poster === "book" ? "is-on" : ""}
+              onClick={() => setPoster("book")}
+            >
+              Agendar
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={poster === "checkin"}
+              className={poster === "checkin" ? "is-on" : ""}
+              onClick={() => setPoster("checkin")}
+            >
+              Check-in na recepção
+            </button>
+          </div>
           <div className="share-poster" id="share-poster">
             <div className="share-poster-brand">
               {business.logo ? (
@@ -228,18 +255,20 @@ function ShareContent({ store }: { store: Store }) {
               <small>{business.category}</small>
             </div>
             <p className="share-poster-title">
-              Agende seu horário pelo celular
+              {poster === "checkin"
+                ? "Chegou? Avise a equipe por aqui"
+                : "Agende seu horário pelo celular"}
             </p>
             <div className="share-poster-code">
               {qr ? (
-                <img src={qr} alt={`QR Code para ${url}`} />
+                <img src={qr} alt={`QR Code para ${posterUrl}`} />
               ) : (
                 <QrCode size={64} weight="thin" />
               )}
             </div>
             <p className="share-poster-hint">Aponte a câmera do celular</p>
             <p className="share-poster-url">
-              {url.replace(/^https?:\/\//, "")}
+              {posterUrl.replace(/^https?:\/\//, "")}
             </p>
           </div>
           <div className="share-actions">
@@ -249,29 +278,37 @@ function ShareContent({ store }: { store: Store }) {
             <Button
               variant="secondary"
               disabled={!qr}
-              onClick={() => download(qr, `qrcode-${business.slug}.png`)}
+              onClick={() =>
+                download(
+                  qr,
+                  `qrcode-${poster === "checkin" ? "checkin-" : ""}${business.slug}.png`,
+                )
+              }
             >
               <DownloadSimple size={16} /> Baixar QR Code
             </Button>
-            <Button
-              variant="secondary"
-              disabled={!qr}
-              onClick={() =>
-                void storyImage(store, url, qr)
-                  .then((image) =>
-                    download(image, `stories-${business.slug}.png`),
-                  )
-                  .catch(() =>
-                    toast("Não foi possível gerar a imagem. Tente de novo."),
-                  )
-              }
-            >
-              <InstagramLogo size={16} /> Imagem para Stories
-            </Button>
+            {poster === "book" && (
+              <Button
+                variant="secondary"
+                disabled={!qr}
+                onClick={() =>
+                  void storyImage(store, url, qr)
+                    .then((image) =>
+                      download(image, `stories-${business.slug}.png`),
+                    )
+                    .catch(() =>
+                      toast("Não foi possível gerar a imagem. Tente de novo."),
+                    )
+                }
+              >
+                <InstagramLogo size={16} /> Imagem para Stories
+              </Button>
+            )}
           </div>
           <p className="share-tip">
-            Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a
-            câmera cai direto na sua agenda.
+            {poster === "checkin"
+              ? 'Deixe no balcão da recepção. O cliente avisa que chegou e aparece "Chegou" na sua agenda e na TV.'
+              : "Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a câmera cai direto na sua agenda."}
           </p>
         </Card>
 

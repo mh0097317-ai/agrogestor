@@ -10,6 +10,7 @@ import { businessDay, dateLabel, localDay, money } from "@/lib/utils";
 import { Avatar, EmptyState, StatusBadge } from "@/components/ui";
 import type { Store, Appointment, BlockedTime } from "@/types";
 import { appointmentMinute, appointmentServices } from "./agenda-helpers";
+import { ArrivedTag } from "@/features/agenda/arrived-tag";
 
 export function MobileDayAgenda({
   data,
@@ -108,6 +109,7 @@ export function MobileDayAgenda({
                         </small>
                       </div>
                       <StatusBadge status={appointment.status} />
+                      <ArrivedTag appointment={appointment} />
                     </div>
                     <ArrowUpRight size={17} className="calendar-list-arrow" />
                   </button>

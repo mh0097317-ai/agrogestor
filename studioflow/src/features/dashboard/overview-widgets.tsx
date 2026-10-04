@@ -20,6 +20,7 @@ import { dateLabel, money } from "@/lib/utils";
 import type { Appointment, AppointmentStatus, Store } from "@/types";
 import { attention, occupancy, weekRevenue } from "./insights";
 import { ratingLabel, ratingSummary } from "@/lib/reviews";
+import { ArrivedTag } from "@/features/agenda/arrived-tag";
 
 /** The single next step for an appointment, if there is one. */
 export function nextStep(status: AppointmentStatus) {
@@ -124,7 +125,9 @@ export function NowCard({
       <button className="ov-now-body" onClick={() => onOpen(a)}>
         <Avatar name={a.customerName} size={52} />
         <span className="ov-now-info">
-          <strong>{a.customerName}</strong>
+          <strong>
+            {a.customerName} <ArrivedTag appointment={a} />
+          </strong>
           <span>
             {services}
             {professional && ` · com ${professional.name.split(" ")[0]}`}

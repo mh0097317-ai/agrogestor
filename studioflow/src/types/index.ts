@@ -87,6 +87,8 @@ export interface Appointment {
   depositExpiresAt?: string | null;
   /** Booked through the club: price 0, counted in the plan's month. */
   membershipId?: string | null;
+  /** O cliente avisou que chegou (check-in pelo QR Code da recepção). */
+  checkedInAt?: string | null;
 }
 export type DepositStatus = "pending" | "paid" | "expired";
 export type DepositMode = "off" | "fixed" | "percent";

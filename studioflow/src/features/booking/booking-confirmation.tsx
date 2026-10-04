@@ -15,7 +15,9 @@ import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { ConfirmStamp } from "./confirm-stamp";
 import { DepositPanel } from "./deposit-panel";
 import { Countdown } from "./countdown";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckInButton } from "@/features/public/check-in-button";
+import { checkInOpen, saveVisit } from "@/features/public/visit";
 import type { Appointment, Slot } from "@/types";
 import type { CustomerReview, ManagedBooking } from "@/features/public/types";
 import {
@@ -104,6 +106,7 @@ function ConfirmationContent({
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [savedReview, setSavedReview] = useState<CustomerReview>();
+  const [now] = useState(() => Date.now());
   // Celebrate only a booking made a moment ago, not every later visit.
   const [celebrate] = useState(
     () => Date.now() - Date.parse(appointment.createdAt) < 10 * 60 * 1000,
@@ -120,6 +123,15 @@ function ConfirmationContent({
   const upcoming = ["confirmed", "pending", "in_progress"].includes(
     appointment.status,
   );
+  // Kept on the phone so the reception QR Code checks in with one tap.
+  useEffect(() => {
+    if (upcoming)
+      saveVisit(business.slug, {
+        token,
+        start: appointment.start,
+        end: appointment.end,
+      });
+  }, [upcoming, business.slug, token, appointment.start, appointment.end]);
   const awaitingPix =
     appointment.status === "pending" && appointment.depositStatus === "pending";
   // Paid after the deadline and the slot was taken: the owner refunds.
@@ -362,8 +374,17 @@ function ConfirmationContent({
               <h1 tabIndex={-1}>{title}</h1>
               <p>{message}</p>
             </header>
-            {["confirmed", "pending"].includes(appointment.status) && (
-              <Countdown start={appointment.start} />
+            {upcoming && checkInOpen(appointment, now) ? (
+              <CheckInButton
+                slug={business.slug}
+                token={token}
+                checkedInAt={appointment.checkedInAt}
+                professional={professional?.name}
+              />
+            ) : (
+              ["confirmed", "pending"].includes(appointment.status) && (
+                <Countdown start={appointment.start} />
+              )
             )}
             {review}
             {service && (

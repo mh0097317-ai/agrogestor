@@ -29,6 +29,7 @@ import { AppointmentForm } from "./appointment-form";
 import { appointmentServices } from "./agenda-helpers";
 import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
 import { SaleSheet } from "@/features/management/sale-sheet";
+import { ArrivedTag } from "@/features/agenda/arrived-tag";
 
 export function AppointmentDetail({
   appointment,
@@ -176,6 +177,7 @@ export function AppointmentDetail({
           <div>
             <h3>{current.customerName}</h3>
             <p>{formatPhone(current.customerPhone)}</p>
+            <ArrivedTag appointment={current} />
           </div>
         </div>
         {loyalty && (
