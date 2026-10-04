@@ -229,7 +229,7 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 
 ## Transição com barbeiro de verdade (4 de outubro de 2026)
 
-- Na primeira ida à etapa de Horário em cada visita, uma cena curta (2,6 s) com vídeo real de um barbeiro passando a máquina na nuca, faixas pretas de cinema, legenda "Separando a sua cadeira" com o nome do estabelecimento e uma linha latão; depois a cena sobe como cortina e revela o calendário (`src/features/media/barber-cut.tsx`, estilos no fim de `booking.css`). Toque para pular, nunca com movimento reduzido, uma vez por visita (`sessionStorage` `studioflow:cut:<slug>`), vídeo pré-carregado nas etapas anteriores. No celular o vídeo ocupa uma faixa 4:5 e a legenda vai na barra de baixo.
+- Na primeira ida à etapa de Horário em cada visita, uma cena curta (2,6 s) com vídeo real de um barbeiro passando a máquina na nuca, faixas pretas de cinema, legenda "Separando a sua cadeira" com o nome do estabelecimento e uma linha latão; depois a cena sobe como cortina e revela o calendário (`src/features/booking/barber-cut.tsx`, estilos no fim de `booking.css`). Toque para pular, nunca com movimento reduzido, uma vez por visita (`sessionStorage` `studioflow:cut:<slug>`), vídeo pré-carregado nas etapas anteriores. No celular o vídeo ocupa uma faixa 4:5 e a legenda vai na barra de baixo.
 - Arquivos: `public/media/barber-cut.mp4` (167 KB), `.webm` (133 KB) e `.jpg` (pôster). Origem: Mixkit, vídeo 47845 ("Close up of a trimmer shaving a man's hair"), Mixkit Stock Video Free License (uso comercial, sem atribuição obrigatória).
 
 ## Recepcionista com IA (4 de outubro de 2026)
