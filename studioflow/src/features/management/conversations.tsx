@@ -10,7 +10,7 @@ import {
   UserCircle,
   Warning,
 } from "@phosphor-icons/react/dist/ssr";
-import { WhatsAppIcon } from "@/components/brand-icons";
+import { InstagramIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -50,7 +50,13 @@ const time = (iso: string) => {
 };
 const who = (item: Pick<ConversationSummary, "contactName" | "contactPhone" | "channel">) =>
   item.contactName ||
-  (item.contactPhone ? formatPhone(item.contactPhone) : item.channel === "web" ? "Visitante do site" : "Cliente");
+  (item.contactPhone
+    ? formatPhone(item.contactPhone)
+    : item.channel === "web"
+      ? "Visitante do site"
+      : item.channel === "instagram"
+        ? "Cliente do Instagram"
+        : "Cliente");
 
 export default function ConversationsPage() {
   const { data } = useWorkspace();
@@ -125,6 +131,8 @@ function ConversationsContent({ store }: { store: Store }) {
                     {who(item)}
                     {item.channel === "whatsapp" ? (
                       <WhatsAppIcon size={13} />
+                    ) : item.channel === "instagram" ? (
+                      <InstagramIcon size={13} />
                     ) : (
                       <ChatCircleText size={13} weight="duotone" />
                     )}
@@ -234,7 +242,11 @@ function Thread({
         <div>
           <strong>{who(summary)}</strong>
           <small>
-            {summary.channel === "whatsapp" ? "WhatsApp" : "Chat do site"}
+            {summary.channel === "whatsapp"
+              ? "WhatsApp"
+              : summary.channel === "instagram"
+                ? "Instagram Direct"
+                : "Chat do site"}
             {summary.contactPhone && ` · ${formatPhone(summary.contactPhone)}`}
           </small>
         </div>

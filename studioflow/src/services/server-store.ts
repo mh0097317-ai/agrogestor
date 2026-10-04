@@ -20,6 +20,7 @@ import {
   servicesFor,
 } from "@/lib/availability";
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
+import { transcriptionReady } from "./assistant/transcribe";
 import {
   createSupabaseAdmin,
   isPlatformAdmin,
@@ -374,6 +375,7 @@ export async function getWorkspace() {
       access: demoWorkspaceAccess(store),
       viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
       aiReady: aiReady(),
+      transcriptionReady: transcriptionReady(),
       mode: "demo",
     } as Store;
   }
@@ -382,6 +384,8 @@ export async function getWorkspace() {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
+    instagram: await readInstagramAccount(businessId),
+    transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,
     viewer: await viewerOf(client, user, role),
@@ -417,6 +421,17 @@ export async function readWhatsAppAccount(businessId: string) {
         displayPhone: data.display_phone as string,
         phoneNumberId: data.phone_number_id as string,
       }
+    : null;
+}
+/** Instagram connection (never the token); a project without the table loads. */
+export async function readInstagramAccount(businessId: string) {
+  const { data, error } = await createSupabaseAdmin()
+    .from("instagram_accounts")
+    .select("username,ig_user_id")
+    .eq("business_id", businessId)
+    .maybeSingle();
+  return !error && data
+    ? { username: data.username as string, igUserId: data.ig_user_id as string }
     : null;
 }
 /** Connection state (never the key), read with the server key. */
@@ -814,6 +829,8 @@ export async function mutateWorkspace(
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
+    instagram: await readInstagramAccount(businessId),
+    transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,
     viewer: await viewerOf(client, user, role),

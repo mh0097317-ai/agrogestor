@@ -6,8 +6,9 @@ import type { ConversationMessage, ConversationSummary } from "@/types";
 import { isDemo, mutateDemo, readDemo } from "../server-demo";
 import { encryptSecret, sha256 } from "../server-secrets";
 import { camel, demoWorkspaceSlug } from "../server-store";
-import { demoRepo, liveRepo, whatsappAccount } from "./conversations";
+import { demoRepo, instagramAccount, liveRepo, whatsappAccount } from "./conversations";
 import { checkWhatsApp, sendWhatsApp } from "./whatsapp";
+import { checkInstagram, sendInstagram } from "./instagram";
 
 const editors = ["owner", "admin", "manager"];
 const staff = [...editors, "receptionist"];
@@ -21,6 +22,10 @@ export const assistantSchema = z.object({
 export const whatsappSchema = z.object({
   phoneNumberId: z.string().trim().regex(/^\d{5,30}$/, "O ID do número tem só dígitos."),
   token: z.string().trim().min(20, "Cole o token de acesso completo.").max(1000),
+  appSecret: z.string().trim().min(16, "Cole a chave secreta do app.").max(200),
+});
+export const instagramSchema = z.object({
+  token: z.string().trim().min(20, "Cole o token de acesso do Instagram completo.").max(1000),
   appSecret: z.string().trim().min(16, "Cole a chave secreta do app.").max(200),
 });
 export const conversationActionSchema = z.discriminatedUnion("action", [
@@ -100,6 +105,47 @@ export async function connectWhatsApp(
     webhookUrl: `${origin}/api/whatsapp/${businessId}`,
     verifyToken,
   };
+}
+
+export async function connectInstagram(
+  input: z.infer<typeof instagramSchema>,
+  origin: string,
+) {
+  if (isDemo())
+    throw new DomainError("O Instagram funciona só no ambiente de produção.", 400);
+  const { businessId } = await member(editors);
+  const { igUserId, username } = await checkInstagram(input.token);
+  const admin = createSupabaseAdmin();
+  const { data: business } = await admin
+    .from("businesses")
+    .select("tenant_id")
+    .eq("id", businessId)
+    .single();
+  const verifyToken = randomBytes(24).toString("base64url");
+  const { error } = await admin.from("instagram_accounts").upsert({
+    business_id: businessId,
+    tenant_id: business!.tenant_id,
+    ig_user_id: igUserId,
+    username,
+    access_token_enc: encryptSecret(input.token),
+    app_secret_enc: encryptSecret(input.appSecret),
+    verify_token_hash: `\\x${sha256(verifyToken).toString("hex")}`,
+  });
+  if (error?.code === "23505")
+    throw new DomainError("Esta conta do Instagram já está ligada a outro estabelecimento.", 409);
+  if (error) throw new DomainError("Não foi possível salvar a conexão.", 503);
+  return {
+    username,
+    webhookUrl: `${origin}/api/instagram/${businessId}`,
+    verifyToken,
+  };
+}
+
+export async function disconnectInstagram() {
+  if (isDemo()) return { ok: true };
+  const { businessId } = await member(editors);
+  await createSupabaseAdmin().from("instagram_accounts").delete().eq("business_id", businessId);
+  return { ok: true };
 }
 
 export async function disconnectWhatsApp() {
@@ -191,6 +237,7 @@ export async function conversationAction(
   const demo = isDemo();
   let repo;
   let whatsapp: Awaited<ReturnType<typeof whatsappAccount>> = null;
+  let instagram: Awaited<ReturnType<typeof instagramAccount>> = null;
   if (demo) {
     const slug = await demoWorkspaceSlug();
     const store = await readDemo(slug);
@@ -203,7 +250,10 @@ export async function conversationAction(
       .eq("id", businessId)
       .single();
     repo = liveRepo(businessId, business!.tenant_id);
-    whatsapp = await whatsappAccount(businessId);
+    [whatsapp, instagram] = await Promise.all([
+      whatsappAccount(businessId),
+      instagramAccount(businessId).catch(() => null),
+    ]);
   }
   const conversation = await repo.get(id);
   if (!conversation) throw new DomainError("Conversa não encontrada.", 404);
@@ -226,6 +276,16 @@ export async function conversationAction(
       phoneNumberId: whatsapp.phoneNumberId,
       token: whatsapp.token,
       to: `55${conversation.contactPhone}`,
+      body: input.body,
+    });
+  }
+  if (conversation.channel === "instagram" && !demo) {
+    if (!instagram || !conversation.contactRef)
+      throw new DomainError("Conecte o Instagram para responder por ele.", 409);
+    await sendInstagram({
+      igUserId: instagram.igUserId,
+      token: instagram.token,
+      to: conversation.contactRef,
       body: input.body,
     });
   }

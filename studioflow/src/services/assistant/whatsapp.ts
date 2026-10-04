@@ -11,6 +11,8 @@ export interface InboundMessage {
   name: string;
   id: string;
   text: string;
+  /** Voice note: transcribed before it is stored, when the server can. */
+  audioId?: string;
 }
 
 /**
@@ -68,12 +70,15 @@ export function inboundMessages(body: unknown): InboundMessage[] {
                   )
                 : `[O cliente enviou ${type === "audio" ? "um áudio" : type === "image" ? "uma imagem" : "uma mensagem que não é texto"}.]`;
         if (!from || !message.id || !text.trim()) continue;
+        const audioId =
+          type === "audio" ? String((message.audio as { id?: string })?.id || "") : "";
         found.push({
           phoneNumberId,
           from,
           name: contacts.find((contact) => contact.wa_id === from)?.profile?.name || "",
           id: String(message.id),
           text: text.slice(0, 2000),
+          ...(audioId ? { audioId } : {}),
         });
       }
     }

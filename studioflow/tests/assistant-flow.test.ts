@@ -21,6 +21,7 @@ function memoryRepo() {
     businessId: "b1",
     byToken: async () => null,
     byPhone: async () => null,
+    byRef: async () => null,
     get: async (id) => {
       const item = conversations.get(id);
       return item ? structuredClone(item) : null;

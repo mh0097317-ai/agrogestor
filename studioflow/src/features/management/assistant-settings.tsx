@@ -6,10 +6,11 @@ import {
   CheckCircle,
   Copy,
   LockSimple,
+  Microphone,
   Robot,
   Warning,
 } from "@phosphor-icons/react/dist/ssr";
-import { WhatsAppIcon } from "@/components/brand-icons";
+import { InstagramIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { Button, FormSection } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import type { Store } from "@/types";
@@ -49,6 +50,9 @@ export function AssistantSettings({
   const [token, setToken] = useState("");
   const [appSecret, setAppSecret] = useState("");
   const [webhook, setWebhook] = useState<{ webhookUrl: string; verifyToken: string } | null>(null);
+  const [igToken, setIgToken] = useState("");
+  const [igSecret, setIgSecret] = useState("");
+  const [igWebhook, setIgWebhook] = useState<{ webhookUrl: string; verifyToken: string } | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
@@ -88,6 +92,19 @@ export function AssistantSettings({
       setAppSecret("");
       setWebhook(result);
       toast(`WhatsApp ${result.displayPhone || ""} conectado.`);
+    });
+  }
+  function connectInstagram(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void run("instagram", async () => {
+      const result = await send("/api/workspace/assistant/instagram", "POST", {
+        token: igToken,
+        appSecret: igSecret,
+      });
+      setIgToken("");
+      setIgSecret("");
+      setIgWebhook(result);
+      toast(`Instagram @${result.username || ""} conectado.`);
     });
   }
   async function copy(text: string) {
@@ -270,6 +287,107 @@ export function AssistantSettings({
         )}
         <FormError error={error} />
       </FormSection>
+      <FormSection
+        title="Instagram Direct"
+        description="A atendente também responde quem chama no Direct da casa e pede o WhatsApp para marcar. A equipe responde pelo painel, dentro de 24 horas da última mensagem do cliente."
+      >
+        {store.instagram ? (
+          <div className="payment-account">
+            <CheckCircle weight="fill" size={22} />
+            <div>
+              <strong>
+                <InstagramIcon size={15} /> @{store.instagram.username || "conta conectada"}
+              </strong>
+              <span>ID da conta {store.instagram.igUserId}</span>
+            </div>
+            {canManage && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!!busy}
+                onClick={() =>
+                  void run("ig-off", async () => {
+                    await send("/api/workspace/assistant/instagram", "DELETE");
+                    setIgWebhook(null);
+                    toast("Instagram desconectado.");
+                  })
+                }
+              >
+                Desconectar
+              </Button>
+            )}
+          </div>
+        ) : store.mode === "demo" ? (
+          <p className="payment-copy">
+            Na demonstração o Instagram não é conectado: use o chat da página para testar a
+            atendente.
+          </p>
+        ) : (
+          <form className="management-form" onSubmit={connectInstagram}>
+            <ol className="payment-steps">
+              <li>
+                A conta do Instagram da casa precisa ser profissional (Empresa ou Criador de
+                conteúdo).
+              </li>
+              <li>
+                No mesmo app da Meta, adicione o produto Instagram e gere o token de acesso da
+                conta (API do Instagram com login do Instagram).
+              </li>
+              <li>Cole o token e a chave secreta do app (Configurações do app → Básico).</li>
+            </ol>
+            <div className="management-form-grid">
+              <FormField label="Token de acesso do Instagram" hint="Fica guardado cifrado no servidor.">
+                <input
+                  type="password"
+                  value={igToken}
+                  autoComplete="off"
+                  onChange={(event) => setIgToken(event.target.value)}
+                  disabled={!canManage}
+                  required
+                />
+              </FormField>
+              <FormField label="Chave secreta do app">
+                <input
+                  type="password"
+                  value={igSecret}
+                  autoComplete="off"
+                  onChange={(event) => setIgSecret(event.target.value)}
+                  disabled={!canManage}
+                  required
+                />
+              </FormField>
+            </div>
+            {canManage && (
+              <div className="management-form-actions">
+                <Button type="submit" disabled={!!busy}>
+                  <LockSimple size={16} />
+                  {busy === "instagram" ? "Conferindo com a Meta…" : "Conectar Instagram"}
+                </Button>
+              </div>
+            )}
+          </form>
+        )}
+        {igWebhook && (
+          <div className="assistant-webhook">
+            <strong>Último passo, na Meta: Instagram → Webhooks</strong>
+            <span>URL de retorno</span>
+            <button type="button" onClick={() => void copy(igWebhook.webhookUrl)}>
+              <code>{igWebhook.webhookUrl}</code> <Copy size={14} />
+            </button>
+            <span>Token de verificação (aparece só agora)</span>
+            <button type="button" onClick={() => void copy(igWebhook.verifyToken)}>
+              <code>{igWebhook.verifyToken}</code> <Copy size={14} />
+            </button>
+            <small>Depois de verificar, assine o campo “messages”.</small>
+          </div>
+        )}
+      </FormSection>
+      <div className={`management-info ${store.transcriptionReady ? "" : "payment-warning-box"}`}>
+        <Microphone size={16} />
+        {store.transcriptionReady
+          ? "Áudios do WhatsApp e do Instagram viram texto: a atendente entende e responde, e a equipe lê a transcrição em Conversas."
+          : "Áudios ainda não são transcritos: a atendente pede para o cliente escrever. Para ligar, defina TRANSCRIBE_API_KEY no servidor."}
+      </div>
       <div className="management-info">
         <Robot size={16} /> A atendente usa a IA Claude, da Anthropic. Ela só marca por
         dentro das regras da sua agenda e nunca mostra dados de outros clientes. Cancelar

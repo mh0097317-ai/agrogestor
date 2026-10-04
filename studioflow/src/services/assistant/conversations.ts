@@ -16,6 +16,8 @@ import { camel, getPublicStore } from "../server-store";
 import { accessOpen } from "@/lib/access";
 import { claudeCreate, runAssistant, type CreateMessage } from "./agent";
 import { sendWhatsApp } from "./whatsapp";
+import { sendInstagram, type InstagramMessage } from "./instagram";
+import { audioText, downloadUrl, downloadWhatsAppMedia } from "./transcribe";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 export interface Conversation {
@@ -23,6 +25,8 @@ export interface Conversation {
   channel: ConversationChannel;
   contactPhone: string;
   contactName: string;
+  /** Instagram: id de quem escreveu. */
+  contactRef?: string;
   status: ConversationStatus;
   unread: number;
   history: History;
@@ -35,11 +39,14 @@ export interface ConversationRepo {
   businessId: string;
   byToken(tokenHash: string): Promise<Conversation | null>;
   byPhone(channel: ConversationChannel, phone: string): Promise<Conversation | null>;
+  /** Instagram: a conversa de quem escreveu. */
+  byRef(channel: ConversationChannel, ref: string): Promise<Conversation | null>;
   get(id: string): Promise<Conversation | null>;
   create(input: {
     channel: ConversationChannel;
     contactPhone: string;
     contactName: string;
+    contactRef?: string;
     tokenHash?: string;
   }): Promise<Conversation>;
   /** False when this provider message was already stored. */
@@ -64,7 +71,7 @@ const toBytea = (value: string) => `\\x${value}`;
 export function liveRepo(businessId: string, tenantId: string): ConversationRepo {
   const admin = createSupabaseAdmin();
   const columns =
-    "id,channel,contact_phone,contact_name,status,unread,history,ai_cursor";
+    "id,channel,contact_phone,contact_name,contact_ref,status,unread,history,ai_cursor";
   const one = async (query: PromiseLike<{ data: unknown }>) => {
     const { data } = await query;
     return data ? (camel(data) as Conversation) : null;
@@ -92,6 +99,17 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
           .limit(1)
           .maybeSingle(),
       ),
+    byRef: (channel, ref) =>
+      one(
+        admin
+          .from("conversations")
+          .select(columns)
+          .eq("business_id", businessId)
+          .eq("channel", channel)
+          .eq("contact_ref", ref)
+          .limit(1)
+          .maybeSingle(),
+      ),
     get: (id) =>
       one(
         admin
@@ -110,12 +128,17 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
           channel: input.channel,
           contact_phone: input.contactPhone,
           contact_name: input.contactName.slice(0, 100),
+          contact_ref: input.contactRef || "",
           token_hash: input.tokenHash ? toBytea(input.tokenHash) : null,
         })
         .select(columns)
         .single();
       if (error?.code === "23505" && input.channel === "whatsapp") {
         const existing = await this.byPhone("whatsapp", input.contactPhone);
+        if (existing) return existing;
+      }
+      if (error?.code === "23505" && input.channel === "instagram" && input.contactRef) {
+        const existing = await this.byRef("instagram", input.contactRef);
         if (existing) return existing;
       }
       if (error || !data) throw new DomainError("Não foi possível abrir a conversa.", 503);
@@ -205,6 +228,7 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
           channel: item.channel,
           contactPhone: item.contactPhone,
           contactName: item.contactName,
+          contactRef: item.contactRef,
           status: item.status,
           unread: item.unread,
           history: item.history as History,
@@ -224,6 +248,14 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
           ),
         ),
       ),
+    byRef: (channel, ref) =>
+      read((store) =>
+        view(
+          store.conversations?.find(
+            (item) => item.channel === channel && item.contactRef === ref,
+          ),
+        ),
+      ),
     get: (id) => read((store) => view(pick(store, id))),
     create: (input) =>
       mutateDemo((store) => {
@@ -235,6 +267,7 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
           channel: input.channel,
           contactPhone: input.contactPhone,
           contactName: input.contactName,
+          contactRef: input.contactRef,
           status: "ai",
           unread: 0,
           lastMessageAt: now,
@@ -396,7 +429,7 @@ async function answerPending(
     ...(result.booked && !conversation.contactName
       ? { contactName: result.booked.customerName || "" }
       : {}),
-    ...(result.booked && conversation.channel === "web"
+    ...(result.booked && conversation.channel !== "whatsapp"
       ? { contactPhone: result.booked.customerPhone || "" }
       : {}),
   });
@@ -556,7 +589,10 @@ export async function receiveWhatsApp(
         contactPhone: phone,
         contactName: message.name,
       }));
-    if (!(await repo.addMessage(conversation.id, "customer", message.text, message.id))) continue;
+    const body = message.audioId
+      ? await audioText(() => downloadWhatsAppMedia(message.audioId!, account.token))
+      : message.text;
+    if (!(await repo.addMessage(conversation.id, "customer", body, message.id))) continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
     if (conversation.status === "closed")
@@ -580,6 +616,89 @@ export async function receiveWhatsApp(
             to: waId,
             body,
           }),
+      });
+    }
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Instagram Direct                                                    */
+/* ------------------------------------------------------------------ */
+
+export interface InstagramAccount {
+  businessId: string;
+  tenantId: string;
+  igUserId: string;
+  token: string;
+  appSecret: string;
+  verifyTokenHash: Buffer;
+}
+
+export async function instagramAccount(businessId: string): Promise<InstagramAccount | null> {
+  const { data } = await createSupabaseAdmin()
+    .from("instagram_accounts")
+    .select("business_id,tenant_id,ig_user_id,access_token_enc,app_secret_enc,verify_token_hash")
+    .eq("business_id", businessId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    businessId: data.business_id,
+    tenantId: data.tenant_id,
+    igUserId: data.ig_user_id,
+    token: decryptSecret(data.access_token_enc),
+    appSecret: decryptSecret(data.app_secret_enc),
+    verifyTokenHash: Buffer.from(String(data.verify_token_hash).replace(/^\\x/, ""), "hex"),
+  };
+}
+
+/**
+ * A delivery from Instagram for one business, already authenticated by the
+ * signature. Same flow as WhatsApp; the AI asks for the WhatsApp to book.
+ */
+export async function receiveInstagram(
+  account: InstagramAccount,
+  messages: InstagramMessage[],
+  origin: string,
+) {
+  const slug = await slugOf(account.businessId);
+  if (!accessOpen(await readBusinessAccess(account.businessId))) return async () => {};
+  const repo = liveRepo(account.businessId, account.tenantId);
+  const { data: settings } = await createSupabaseAdmin()
+    .from("business_settings")
+    .select("assistant_enabled")
+    .eq("business_id", account.businessId)
+    .maybeSingle();
+  const touched = new Map<string, string>();
+  for (const message of messages) {
+    if (message.recipient && message.recipient !== account.igUserId) continue;
+    const conversation =
+      (await repo.byRef("instagram", message.from)) ||
+      (await repo.create({
+        channel: "instagram",
+        contactPhone: "",
+        contactName: "",
+        contactRef: message.from,
+      }));
+    const body = message.audioUrl
+      ? await audioText(() => downloadUrl(message.audioUrl!))
+      : message.text;
+    if (!(await repo.addMessage(conversation.id, "customer", body, message.id))) continue;
+    if (conversation.status === "closed")
+      await repo.update(conversation.id, { status: settings?.assistant_enabled ? "ai" : "human" });
+    if (conversation.status !== "ai" || !settings?.assistant_enabled)
+      await repo.update(conversation.id, { unreadDelta: 1 });
+    touched.set(conversation.id, message.from);
+  }
+  return async () => {
+    if (!settings?.assistant_enabled) return;
+    for (const [id, to] of touched) {
+      const conversation = await repo.get(id);
+      if (!conversation || conversation.status !== "ai") continue;
+      await processConversation(repo, id, {
+        origin,
+        slug,
+        send: (body) =>
+          sendInstagram({ igUserId: account.igUserId, token: account.token, to, body }),
       });
     }
   };

@@ -241,7 +241,7 @@ export interface Review {
   comment: string;
   createdAt: string;
 }
-export type ConversationChannel = "web" | "whatsapp";
+export type ConversationChannel = "web" | "whatsapp" | "instagram";
 export type ConversationStatus = "ai" | "human" | "closed";
 export interface ConversationMessage {
   id: string;
@@ -262,6 +262,8 @@ export interface ConversationSummary {
 /** Demo only: the live database keeps these in their own tables. */
 export interface DemoConversation extends ConversationSummary {
   tokenHash?: string;
+  /** Instagram: id de quem escreveu. */
+  contactRef?: string;
   history: unknown[];
   aiCursor: string;
   messages: ConversationMessage[];
@@ -288,6 +290,10 @@ export interface Store {
   conversations?: DemoConversation[];
   /** WhatsApp connection (never the token). */
   whatsapp?: { displayPhone: string; phoneNumberId: string } | null;
+  /** Instagram Direct connection (never the token). */
+  instagram?: { username: string; igUserId: string } | null;
+  /** Áudios do WhatsApp/Instagram viram texto (serviço de transcrição configurado). */
+  transcriptionReady?: boolean;
   /** The server has Claude credentials for the AI receptionist. */
   aiReady?: boolean;
   viewer?: { name: string; role: string; platformAdmin?: boolean };
