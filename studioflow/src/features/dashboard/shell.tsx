@@ -25,6 +25,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   QrCode,
+  Seal,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -41,6 +42,7 @@ const links = [
   { path: "/dashboard/servicos", label: "Serviços", icon: Scissors },
   { path: "/dashboard/equipe", label: "Equipe", icon: IdentificationBadge },
   { path: "/dashboard/financeiro", label: "Financeiro", icon: Wallet },
+  { path: "/dashboard/clube", label: "Clube", icon: Seal },
   {
     path: "/dashboard/relatorios",
     label: "Relatórios",

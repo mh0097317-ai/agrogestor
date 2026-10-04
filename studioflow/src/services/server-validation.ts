@@ -25,6 +25,17 @@ export const bookSchema = z.object({
   phone,
   email: z.union([z.string().email(), z.literal("")]).optional(),
   reminder: z.boolean().default(false),
+  /** Only for the Pix deposit; sent to the provider, never stored here. */
+  cpf: z
+    .string()
+    .max(20)
+    .transform((value) => value.replace(/\D/g, ""))
+    .optional(),
+  /** Club subscription token kept on the customer's device. */
+  membershipToken: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
 });
 export const serviceSchema = z.object({
   id: id.optional(),

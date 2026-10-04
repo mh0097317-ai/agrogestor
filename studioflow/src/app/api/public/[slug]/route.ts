@@ -1,4 +1,6 @@
 import { getPublicStore, publicProfessional } from "@/services/server-store";
+import { getPaymentAccount, publicPlans } from "@/services/server-payments";
+import { isDemo } from "@/services/server-demo";
 import { failure, respond } from "@/services/server-http";
 import { ratingSummary } from "@/lib/reviews";
 export const dynamic = "force-dynamic";
@@ -8,7 +10,11 @@ export async function GET(
 ) {
   try {
     const store = await getPublicStore((await params).slug);
-    // Only averages leave the server: no names or comments.
+    const payments = isDemo()
+      ? !!store.paymentAccount
+      : !!(await getPaymentAccount(store.business.id));
+    // Only averages leave the server: no names or comments. The payment
+    // account is reduced to "online payments on/off".
     return respond({
       business: store.business,
       services: store.services.filter((service) => service.active),
@@ -20,6 +26,8 @@ export async function GET(
         })),
       settings: store.settings,
       rating: ratingSummary(store.reviews),
+      onlinePayments: payments,
+      plans: payments ? publicPlans(store) : [],
     });
   } catch (error) {
     return failure(error);

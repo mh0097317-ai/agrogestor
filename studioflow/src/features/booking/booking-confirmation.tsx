@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { ConfirmStamp } from "./confirm-stamp";
+import { DepositPanel } from "./deposit-panel";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { CustomerReview, ManagedBooking } from "@/features/public/types";
@@ -36,6 +37,7 @@ import { BookingChrome } from "./booking-chrome";
 import { DateStep } from "./date-step";
 import { downloadCalendar } from "./calendar-export";
 import { bookingDate, bookingDateShort, bookingTime } from "./date-format";
+import { money } from "@/lib/utils";
 
 export function BookingConfirmation({ token }: { token: string }) {
   const { data, loading, error, reload } = usePublicData<ManagedBooking>(
@@ -66,6 +68,10 @@ export function BookingConfirmation({ token }: { token: string }) {
         booking={booking}
         token={token}
         onUpdate={(appointment) => setUpdated({ token, appointment })}
+        onRefresh={() => {
+          setUpdated(undefined);
+          reload();
+        }}
       />
     </>
   );
@@ -75,10 +81,12 @@ function ConfirmationContent({
   booking,
   token,
   onUpdate,
+  onRefresh,
 }: {
   booking: ManagedBooking;
   token: string;
   onUpdate: (appointment: Appointment) => void;
+  onRefresh: () => void;
 }) {
   const { appointment, business, services, professional } = booking;
   const {
@@ -109,7 +117,14 @@ function ConfirmationContent({
   const upcoming = ["confirmed", "pending", "in_progress"].includes(
     appointment.status,
   );
-  const canManage = ["confirmed", "pending"].includes(appointment.status);
+  const awaitingPix =
+    appointment.status === "pending" && appointment.depositStatus === "pending";
+  // Paid after the deadline and the slot was taken: the owner refunds.
+  const lateDeposit = cancelled && appointment.depositStatus === "paid";
+  const expiredDeposit =
+    cancelled && appointment.depositStatus === "expired";
+  const canManage =
+    ["confirmed", "pending"].includes(appointment.status) && !awaitingPix;
   const title = {
     confirmed: "Horário confirmado!",
     pending: "Agendamento recebido",
@@ -124,10 +139,19 @@ function ConfirmationContent({
       "Seu pedido está salvo e aguarda a confirmação do estabelecimento.",
     in_progress: "Você já está sendo atendido.",
     completed: "Obrigado pela visita! Quando quiser, é só agendar de novo.",
-    cancelled:
-      "Seu horário foi liberado. Você pode agendar outro quando quiser.",
+    cancelled: lateDeposit
+      ? "Seu Pix chegou depois do prazo e o horário já tinha sido ocupado. O estabelecimento vai devolver o valor; se preferir, fale com eles pelo WhatsApp."
+      : expiredDeposit
+        ? "O prazo do Pix acabou e o horário foi liberado. Você pode agendar de novo quando quiser."
+        : "Seu horário foi liberado. Você pode agendar outro quando quiser.",
     no_show: "Fale com o estabelecimento para combinar um novo horário.",
   }[appointment.status];
+  const paidNote =
+    appointment.depositStatus === "paid" &&
+    !cancelled &&
+    appointment.depositAmount
+      ? `Sinal de ${money(Number(appointment.depositAmount))} pago no Pix. Ele é descontado do valor no dia.`
+      : "";
   const whatsapp = `https://wa.me/55${business.phone.replace(/\D/g, "").replace(/^55(?=\d{11}$)/, "")}`;
   const location = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
   const bookedSlot = {
@@ -200,7 +224,7 @@ function ConfirmationContent({
   return (
     <BookingChrome
       business={business}
-      step={6}
+      step={awaitingPix ? 5 : 6}
       onBack={
         rescheduling
           ? () => {
@@ -269,6 +293,28 @@ function ConfirmationContent({
               </button>
             </div>
           </section>
+        ) : awaitingPix && appointment.depositExpiresAt ? (
+          <>
+            <DepositPanel
+              token={token}
+              amount={Number(appointment.depositAmount || 0)}
+              expiresAt={appointment.depositExpiresAt}
+              chargeId={appointment.depositChargeId}
+              onSettled={onRefresh}
+            />
+            {service && (
+              <BookingRecap
+                service={service}
+                professional={professional}
+                slot={bookedSlot}
+                totalPrice={appointment.price}
+              />
+            )}
+            <p className="bk-footnote">
+              Sem o Pix no prazo, o horário volta a ficar livre e nada é
+              cobrado.
+            </p>
+          </>
         ) : (
           <>
             {stamped ? (
@@ -309,6 +355,12 @@ function ConfirmationContent({
                 totalPrice={appointment.price}
               />
             )}
+            {booking.membershipPlan && (
+              <p className="bk-paid-note">
+                Incluso no {booking.membershipPlan}.
+              </p>
+            )}
+            {paidNote && <p className="bk-paid-note">{paidNote}</p>}
             {catalog?.settings.loyaltyEnabled &&
               catalog.settings.loyaltyReward && (
                 <LoyaltyCard

@@ -21,6 +21,7 @@ try {
   assert.equal(catalog.response.status, 200);
   assert(!("customers" in catalog.body));
   assert(!("payments" in catalog.body));
+  assert(!("paymentAccount" in catalog.body) && !("memberships" in catalog.body));
   assert(
     catalog.body.professionals.every(
       (p) => !("phone" in p) && !("commission" in p),

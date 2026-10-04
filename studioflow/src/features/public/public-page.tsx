@@ -23,6 +23,7 @@ import {
   PublicRefreshNotice,
 } from "./public-ui";
 import { usePublicCatalog } from "./use-public-catalog";
+import { money } from "@/lib/utils";
 import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
@@ -238,6 +239,28 @@ export function PublicPage({ slug }: { slug: string }) {
                       />
                     ),
                   )}
+                </span>
+              </Link>
+            </section>
+          )}
+          {catalog.onlinePayments && !!catalog.plans?.length && (
+            <section className="pp-section" aria-label="Clube de assinatura">
+              <Link href={`/${slug}/clube`} className="pp-club" data-reveal>
+                <span className="pp-eyebrow">Clube de assinatura</span>
+                <ul>
+                  {catalog.plans.slice(0, 3).map((plan) => (
+                    <li key={plan.id}>
+                      <strong>{plan.name}</strong>
+                      <i aria-hidden="true" />
+                      <b>
+                        {money(plan.price)}
+                        <small>/mês</small>
+                      </b>
+                    </li>
+                  ))}
+                </ul>
+                <span className="pp-club-cta">
+                  Assine e agende sem pagar na hora →
                 </span>
               </Link>
             </section>

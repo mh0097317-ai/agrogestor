@@ -57,6 +57,7 @@ export function usePublicData<T>(url: string) {
   const key = `${url}:${revision}`;
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   useEffect(() => {
+    if (!url) return;
     const controller = new AbortController();
     publicRequest<T>(url, { signal: controller.signal }).then(
       (data) => {
@@ -81,7 +82,7 @@ export function usePublicData<T>(url: string) {
   return {
     data: result.url === url ? result.data : null,
     error: result.key === key ? result.error : "",
-    loading: result.key !== key,
+    loading: !!url && result.key !== key,
     reload,
   };
 }

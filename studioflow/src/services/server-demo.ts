@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { Store } from "@/types";
 import { createSeed } from "@/lib/seed";
 import { DomainError } from "@/lib/availability";
+import { expireHolds } from "@/lib/payments";
 
 export function isDemo() {
   return (
@@ -88,6 +89,10 @@ async function transaction<T>(
     store.settings.loyaltyEnabled ??= false;
     store.settings.loyaltyGoal ??= 10;
     store.settings.loyaltyReward ??= "";
+    store.settings.depositMode ??= "off";
+    store.settings.depositValue ??= 0;
+    store.settings.depositHold ??= 15;
+    expireHolds(store);
     const result = await operation(store);
     if (persist) {
       const temporary = `${filename}.${randomUUID()}.tmp`;

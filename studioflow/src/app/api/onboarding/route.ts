@@ -82,6 +82,9 @@ export async function POST(request: Request) {
           loyaltyEnabled: false,
           loyaltyGoal: 10,
           loyaltyReward: "",
+          depositMode: "off",
+          depositValue: 0,
+          depositHold: 15,
         },
       };
       await createDemoBusiness(store);

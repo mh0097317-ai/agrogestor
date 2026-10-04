@@ -3,13 +3,22 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, LockSimple, User } from "@phosphor-icons/react/dist/ssr";
+import {
+  Check,
+  IdentificationCard,
+  LockSimple,
+  Seal,
+  User,
+} from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
 import { BookingRecap } from "./booking-summary";
 import { StepHead } from "./selection-steps";
+import { coverageMessages, formatCpf, isValidCpf } from "@/lib/payments";
+import type { CoverageResult } from "@/lib/payments";
+import { money } from "@/lib/utils";
 
 const validDdds = new Set([
   11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35,
@@ -40,8 +49,19 @@ const customerSchema = z.object({
     ),
   email: z.union([z.literal(""), z.email("Informe um e-mail válido.")]),
   reminder: z.boolean(),
+  cpf: z.string().optional(),
 });
 export type CustomerFields = z.infer<typeof customerSchema>;
+/** The CPF is asked only when a Pix deposit will be charged. */
+const withCpf = customerSchema.refine((value) => isValidCpf(value.cpf || ""), {
+  path: ["cpf"],
+  message: "Informe um CPF válido. Ele é exigido para emitir o Pix.",
+});
+
+export interface ClubNotice {
+  planName: string;
+  result: CoverageResult;
+}
 export function phoneMask(value: string) {
   const digits = value
     .replace(/\D/g, "")
@@ -64,7 +84,14 @@ export function CustomerStep({
   onSubmit,
   onChange,
   onEdit,
+  deposit = 0,
+  holdMinutes = 15,
+  club,
 }: {
+  /** Pix deposit charged now (0 when none). */
+  deposit?: number;
+  holdMinutes?: number;
+  club?: ClubNotice | null;
   welcomeName?: string;
   onForget?: () => void;
   service: Service;
@@ -84,7 +111,7 @@ export function CustomerStep({
     getValues,
     setValue,
   } = useForm<CustomerFields>({
-    resolver: zodResolver(customerSchema),
+    resolver: zodResolver(deposit > 0 ? withCpf : customerSchema),
     defaultValues: defaults,
   });
   return (
@@ -100,7 +127,26 @@ export function CustomerStep({
         professional={professional}
         slot={slot}
         onEdit={onEdit}
+        totalPrice={club?.result === "covered" ? 0 : undefined}
       />
+      {club && (
+        <div
+          className={`bk-club-note ${club.result === "covered" ? "is-covered" : ""}`}
+          role="status"
+        >
+          <Seal weight="duotone" size={20} />
+          <span>
+            <strong>
+              {club.result === "covered"
+                ? `Incluso no ${club.planName}`
+                : club.planName}
+            </strong>
+            {club.result === "covered"
+              ? "Este horário entra no seu clube e não tem custo agora."
+              : coverageMessages[club.result]}
+          </span>
+        </div>
+      )}
       {welcomeName && (
         <div className="bk-welcome" role="status">
           <span>
@@ -164,6 +210,46 @@ export function CustomerStep({
             </span>
           )}
         </label>
+        {deposit > 0 && (
+          <div className="bk-deposit-field">
+            <div className="bk-deposit-note">
+              <span>
+                <strong>Sinal de {money(deposit)} via Pix</strong>O valor é
+                descontado no dia. Seu horário fica guardado por{" "}
+                {holdMinutes} minutos enquanto você paga.
+              </span>
+            </div>
+            <label htmlFor="booking-cpf">
+              <span className="bk-label">CPF</span>
+              <span className="bk-input">
+                <IdentificationCard weight="duotone" size={18} />
+                <input
+                  id="booking-cpf"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="000.000.000-00"
+                  aria-invalid={!!errors.cpf}
+                  aria-describedby={
+                    errors.cpf ? "booking-cpf-error" : "booking-cpf-help"
+                  }
+                  {...register("cpf", {
+                    onChange: (event) =>
+                      setValue("cpf", formatCpf(event.target.value)),
+                  })}
+                />
+              </span>
+              {errors.cpf ? (
+                <span id="booking-cpf-error" className="bk-field-error">
+                  {errors.cpf.message}
+                </span>
+              ) : (
+                <span id="booking-cpf-help" className="bk-field-help">
+                  Vai só para o Asaas emitir o Pix. Não fica salvo aqui.
+                </span>
+              )}
+            </label>
+          </div>
+        )}
         <label className="bk-check">
           <input type="checkbox" {...register("reminder")} />
           <span className="bk-check-box" aria-hidden="true">
@@ -177,7 +263,9 @@ export function CustomerStep({
           </div>
         )}
         <BusyButton type="submit" busy={busy} className="bk-primary sf-sheen">
-          Confirmar agendamento
+          {deposit > 0
+            ? `Reservar e pagar ${money(deposit)}`
+            : "Confirmar agendamento"}
         </BusyButton>
         <p className="bk-safe">
           <LockSimple weight="duotone" size={14} /> Seus dados são usados só

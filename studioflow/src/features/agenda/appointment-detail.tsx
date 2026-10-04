@@ -6,6 +6,8 @@ import {
   Checks,
   Gift,
   Play,
+  Seal,
+  Wallet,
   UserMinus,
   X,
 } from "@phosphor-icons/react/dist/ssr";
@@ -113,6 +115,38 @@ export function AppointmentDetail({
           data.settings.loyaltyGoal,
         )
       : null;
+  const deposit = Number(current.depositAmount || 0);
+  const planName = current.membershipId
+    ? data?.plans?.find(
+        (plan) =>
+          plan.id ===
+          data.memberships?.find((item) => item.id === current.membershipId)
+            ?.planId,
+      )?.name || "clube"
+    : "";
+  const paymentNote = current.membershipId
+    ? { tone: "", text: `Pelo ${planName}: sem cobrança neste atendimento.` }
+    : current.depositStatus === "pending" && current.status === "pending"
+      ? {
+          tone: "is-waiting",
+          text: `Aguardando o sinal de ${money(deposit)} no Pix até ${dateLabel(current.depositExpiresAt || current.start, "HH:mm")}.`,
+        }
+      : current.depositStatus === "paid" && current.status === "cancelled"
+        ? {
+            tone: "is-alert",
+            text: `Sinal de ${money(deposit)} pago depois do prazo, com o horário já ocupado. Devolva o valor pelo Asaas.`,
+          }
+        : current.depositStatus === "paid"
+          ? {
+              tone: "",
+              text: `Sinal de ${money(deposit)} pago no Pix. Falta ${money(Math.max(0, current.price - deposit))} no dia.`,
+            }
+          : current.depositStatus === "expired"
+            ? {
+                tone: "",
+                text: "O sinal não foi pago no prazo e o horário foi liberado.",
+              }
+            : null;
   return (
     <>
       <DetailPanel
@@ -153,6 +187,16 @@ export function AppointmentDetail({
                 </>
               )}
             </span>
+          </div>
+        )}
+        {paymentNote && (
+          <div className={`appointment-loyalty appointment-payment ${paymentNote.tone}`}>
+            {current.membershipId ? (
+              <Seal size={18} weight="duotone" />
+            ) : (
+              <Wallet size={18} weight="duotone" />
+            )}
+            <span>{paymentNote.text}</span>
           </div>
         )}
         <div className="appointment-detail-main">

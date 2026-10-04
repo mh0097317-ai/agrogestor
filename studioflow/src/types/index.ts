@@ -79,7 +79,16 @@ export interface Appointment {
   reminder: boolean;
   token?: string;
   createdAt: string;
+  /** Pix deposit held at booking; `expired` frees the slot. */
+  depositAmount?: number | null;
+  depositStatus?: DepositStatus | null;
+  depositChargeId?: string | null;
+  depositExpiresAt?: string | null;
+  /** Booked through the club: price 0, counted in the plan's month. */
+  membershipId?: string | null;
 }
+export type DepositStatus = "pending" | "paid" | "expired";
+export type DepositMode = "off" | "fixed" | "percent";
 export interface Payment {
   id: string;
   businessId: string;
@@ -87,6 +96,8 @@ export interface Payment {
   amount: number;
   method: PaymentMethod;
   createdAt: string;
+  /** Set when the payment came from the provider (Pix deposit). */
+  providerChargeId?: string | null;
 }
 export interface BlockedTime {
   id: string;
@@ -110,6 +121,57 @@ export interface Settings {
   loyaltyEnabled: boolean;
   loyaltyGoal: number;
   loyaltyReward: string;
+  /** Pix deposit at booking: fixed value or percent of the price. */
+  depositMode: DepositMode;
+  depositValue: number;
+  /** Minutes the slot waits for the Pix. */
+  depositHold: number;
+}
+export interface MembershipPlan {
+  id: string;
+  businessId: string;
+  name: string;
+  description: string;
+  price: number;
+  serviceIds: string[];
+  /** Visits per month; null means unlimited. */
+  monthlyLimit: number | null;
+  active: boolean;
+  createdAt: string;
+}
+export type MembershipStatus = "pending" | "active" | "overdue" | "cancelled";
+export interface Membership {
+  id: string;
+  businessId: string;
+  planId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  price: number;
+  status: MembershipStatus;
+  providerSubscriptionId?: string | null;
+  invoiceUrl?: string | null;
+  nextDueDate?: string | null;
+  createdAt: string;
+  /** Demo only: the live database keeps just the hash. */
+  token?: string;
+}
+/** Connection to the business's own payment account (never the key). */
+export interface PaymentAccount {
+  provider: "asaas";
+  environment: "sandbox" | "production" | "demo";
+  hint: string;
+  webhook: boolean;
+  createdAt: string;
+}
+/** Demo only: simulated provider charges. */
+export interface DemoCharge {
+  id: string;
+  kind: "deposit" | "membership";
+  value: number;
+  status: "PENDING" | "RECEIVED" | "OVERDUE";
+  reference: string;
+  createdAt: string;
 }
 export type WaitlistPeriod = "any" | "morning" | "afternoon" | "evening";
 export interface WaitlistEntry {
@@ -149,6 +211,10 @@ export interface Store {
   reviews?: Review[];
   /** Customers waiting for a spot on a full day. */
   waitlist?: WaitlistEntry[];
+  plans?: MembershipPlan[];
+  memberships?: Membership[];
+  paymentAccount?: PaymentAccount | null;
+  demoCharges?: DemoCharge[];
   viewer?: { name: string; role: string };
   mode?: "demo" | "live";
 }

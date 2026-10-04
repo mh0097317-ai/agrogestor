@@ -310,3 +310,130 @@
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px #ffffff26;
 }
+
+/* Pagamentos */
+.payment-account {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
+  background: #fffdf9;
+}
+.payment-account > svg {
+  flex: none;
+  color: #2f6b45;
+}
+.payment-account > div {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+}
+.payment-account strong {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+}
+.payment-account span {
+  color: #6e655b;
+  font-size: 13px;
+}
+.payment-copy {
+  margin: 0;
+  color: #433a31;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.payment-copy b {
+  color: #16130f;
+}
+.payment-warning {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: #8a4b12 !important;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.payment-warning > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.payment-warning-box {
+  margin-top: 12px;
+}
+.payment-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: #433a31;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.payment-steps li::marker {
+  color: #8a6430;
+  font-family: var(--serif);
+}
+.payment-steps a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #16130f;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.payment-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid #dcd2c2;
+  border-radius: 3px;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+}
+.payment-modes label {
+  position: relative;
+  padding: 9px 16px;
+  color: #6e655b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.payment-modes label + label {
+  border-left: 1px solid #dcd2c2;
+}
+.payment-modes label.is-on {
+  background: #16130f;
+  color: #f4f0e8;
+}
+.payment-modes input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.payment-modes label:has(input:focus-visible) {
+  outline: 2px solid #a47a3c;
+  outline-offset: -2px;
+}
+@media (max-width: 420px) {
+  .payment-account {
+    flex-wrap: wrap;
+  }
+  .payment-account > .button,
+  .payment-account > button {
+    width: 100%;
+  }
+  .payment-modes label {
+    padding: 9px 12px;
+  }
+}

@@ -64,7 +64,7 @@ A referência original está em `docs/reference/Foto-1.jpg`. Capturas reais da i
 - Agendamento em cinco etapas separadas; preservar escolhas e dados ao voltar ou recuperar um conflito.
 - Agenda com duração proporcional, expediente, pausas e bloqueios. Criação e reagendamento têm confirmação explícita.
 - Indicadores e rankings derivados dos dados e do período escolhido. Não inventar avaliações, crescimento ou disponibilidade.
-- Não criar ERP, landing page institucional como foco, IA complexa, envio de WhatsApp simulado ou cobrança fictícia.
+- Não criar ERP, landing page institucional como foco, IA complexa, envio de WhatsApp simulado ou cobrança fictícia (o pagamento simulado existe só no modo demonstração, identificado como tal).
 - Manter APIs e banco atuais; parâmetros opcionais da agenda são `view`, `date` e `professional`.
 - Próxima fase: piloto de produção. Cobrança e WhatsApp automático ficam para uma etapa comercial posterior.
 
@@ -204,6 +204,19 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Página pública: a capa assenta com leve zoom, a etiqueta de horário entra pela esquerda e o nome é revelado de baixo para cima.
 - Tudo respeita `prefers-reduced-motion`.
 
+## Pagamentos: sinal via Pix e Clube de assinatura (4 de outubro de 2026)
+
+Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto com o dono e o StudioFlow nunca recebe, segura ou repassa valores.
+
+- Conexão: Configurações → Pagamentos (`payment-settings.tsx`, `POST/PATCH/DELETE /api/workspace/payments`). A chave de API é conferida no Asaas, guardada cifrada (AES-256-GCM, `src/services/server-secrets.ts`) na tabela `payment_accounts`, que só o servidor lê (RLS sem políticas, sem grant para `authenticated`). A chave de cifra é `PAYMENTS_ENCRYPTION_KEY` (32 bytes em base64) ou, sem ela, derivada da chave secreta do Supabase; trocar a origem exige reconectar as contas. Ao conectar, o webhook do Asaas é criado com um token aleatório (só o hash fica no banco) para `/api/payments/asaas/[businessId]`, conferido pelo cabeçalho `asaas-access-token`.
+- Cliente Asaas: `src/services/payments/asaas.ts` (clientes por CPF, cobrança Pix, QR Code, assinatura mensal com `billingType UNDEFINED`, webhooks). O CPF vai só para o Asaas e não é salvo no StudioFlow.
+- Sinal: modo sem sinal / valor fixo / percentual e prazo em minutos (`deposit_mode`, `deposit_value`, `deposit_hold`). Mínimo de R$ 5 (regra em `src/lib/payments.ts`). No agendamento aparece o campo CPF e o botão "Reservar e pagar"; a reserva fica `pending` com prazo (`hold_for_deposit`), o comprovante mostra QR Code, copia e cola e contagem (`deposit-panel.tsx`, `GET /api/booking/[token]/deposit`). Confirmação pelo webhook ou, se ele falhar, consultando o Asaas (`confirm_deposit`, idempotente). Reserva vencida libera o horário (`private.expire_holds`, chamada sob o lock em `book_appointment`, `manage_booking` e antes das mutações do painel). Pix pago depois do prazo volta a confirmar se o horário estiver livre; senão fica cancelado com aviso de devolução no painel. O sinal entra uma vez no financeiro como pagamento Pix (`payments.provider_charge_id`).
+- Clube: planos com mensalidade, serviços inclusos e limite por mês (`membership_plans`), assinaturas (`memberships`, token do aparelho só como hash). Página do dono `/dashboard/clube` (planos, assinantes, receita mensal, "Enviar acesso" pelo WhatsApp que gera um link novo, cancelamento que encerra a assinatura no Asaas). Página do cliente `/[slug]/clube` (escolher plano, assinar, pagar a fatura do Asaas, "Já paguei, conferir"). No agendamento, quem assina vê "Incluso no clube" e o servidor aplica `apply_membership` (assinatura ativa, mesmo WhatsApp, serviços do plano, limite do mês no calendário de São Paulo); preço zerado também no histórico de serviços. A página pública ganha um quadro com os planos.
+- Demonstração: "Ativar pagamento simulado" e botões "Simular pagamento" (`POST /api/demo/charges/[id]`, bloqueado fora da demonstração).
+- Migration `20261005120000_studioflow_payments.sql`. Testes: `tests/payments.test.ts` e `tests/payments-db.test.ts`; o smoke agora também garante que o catálogo público não traz conta de pagamento nem assinaturas.
+- Para testar com dinheiro de verdade fora da demonstração: crie uma conta no Asaas (ou no sandbox, `https://sandbox.asaas.com`), gere a chave em Integrações e cole em Configurações → Pagamentos escolhendo o ambiente certo.
+- Pendências: renovação automática no cartão (hoje cada mensalidade é paga pela fatura, com Pix, boleto ou cartão), devolução do sinal pelo próprio painel e lembrete automático da mensalidade.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).
@@ -214,7 +227,7 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 6. Adicionar consultas paginadas e rate limit com armazenamento compartilhado para múltiplos servidores.
 7. Testar teclado virtual, instalação, navegação e PWA em celulares físicos com HTTPS.
 8. Revisar backups, retenção, logs e proteção contra abuso antes do piloto.
-9. Planejar cobrança e WhatsApp automático posteriormente; hoje existem consentimento e links de contato, sem integrações comerciais conectadas.
+9. Cobrança dos clientes (sinal e clube) via Asaas do próprio estabelecimento está feita; falta WhatsApp automático e a cobrança da assinatura do StudioFlow.
 
 Comissões usam o percentual atual do profissional e são estimativas. Repasse e histórico de percentuais exigem evolução própria. Os horários seguem `America/Sao_Paulo`; outros fusos precisam de evolução conjunta no cadastro, disponibilidade, RPC e calendário.
 

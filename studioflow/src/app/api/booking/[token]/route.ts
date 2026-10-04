@@ -7,7 +7,8 @@ import {
 import { isDemo, findDemoToken, mutateDemo } from "@/services/server-demo";
 import { camel, publicProfessional } from "@/services/server-store";
 import { randomUUID } from "node:crypto";
-import type { Professional, Review } from "@/types";
+import type { Appointment, Professional, Review } from "@/types";
+import { dropPendingCharge } from "@/services/server-payments";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { tokenSchema } from "@/services/server-validation";
 import {
@@ -78,6 +79,15 @@ export async function GET(
             item.customerId === appointment.customerId &&
             item.status === "completed",
         ).length,
+        membershipPlan: appointment.membershipId
+          ? store.plans?.find(
+              (plan) =>
+                plan.id ===
+                store.memberships?.find(
+                  (item) => item.id === appointment.membershipId,
+                )?.planId,
+            )?.name || null
+          : null,
       });
     }
     const { data, error } = await createSupabaseAdmin().rpc("get_booking", {
@@ -154,6 +164,11 @@ export async function PATCH(
             appointment.status = "cancelled";
             return appointment;
           }
+          if (appointment.depositStatus === "pending")
+            throw new DomainError(
+              "Pague o sinal antes de reagendar, ou cancele e agende de novo.",
+              409,
+            );
           const professional = chooseProfessional(
             store,
             appointment.serviceIds,
@@ -206,10 +221,14 @@ export async function PATCH(
     });
     if (error)
       throw new DomainError(
-        "Não foi possível alterar este agendamento. Confira a política de cancelamento e a disponibilidade.",
+        error.message.includes("deposit pending")
+          ? "Pague o sinal antes de reagendar, ou cancele e agende de novo."
+          : "Não foi possível alterar este agendamento. Confira a política de cancelamento e a disponibilidade.",
         409,
       );
-    return respond(camel(data));
+    const appointment = camel(data) as Appointment;
+    if (payload.action === "cancel") await dropPendingCharge(appointment);
+    return respond(appointment);
   } catch (error) {
     return failure(error);
   }

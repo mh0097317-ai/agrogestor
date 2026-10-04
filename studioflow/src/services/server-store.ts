@@ -2,11 +2,14 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import type {
   Appointment,
+  Membership,
+  MembershipPlan,
   Professional,
   Review,
   Store,
   WaitlistEntry,
 } from "@/types";
+import { expireHolds } from "@/lib/payments";
 import {
   chooseProfessional,
   DomainError,
@@ -68,6 +71,12 @@ export function normalizeStoreTimes(store: Store): Store {
   store.settings.loyaltyEnabled ??= false;
   store.settings.loyaltyGoal ??= 10;
   store.settings.loyaltyReward ??= "";
+  store.settings.depositMode ??= "off";
+  store.settings.depositValue = Number(store.settings.depositValue ?? 0);
+  store.settings.depositHold ??= 15;
+  // A Pix hold past its deadline frees the slot right away; the database
+  // catches up under the business lock on the next write.
+  expireHolds(store);
   store.settings.openStart = store.settings.openStart.slice(0, 5);
   store.settings.openEnd = store.settings.openEnd.slice(0, 5);
   return store;
@@ -208,6 +217,7 @@ export async function loadSupabaseStore(
     .eq("business_id", businessId)
     .gte("desired_date", businessDayKey(-1))
     .order("desired_date");
+  const club = await loadClub(client, businessId);
   for (const service of services)
     service.professionalIds = relations
       .filter((relation) => relation.serviceId === service.id)
@@ -235,8 +245,35 @@ export async function loadSupabaseStore(
       settings: settings[0],
       reviews: reviews.error ? [] : (camel(reviews.data) as Review[]),
       waitlist: waitlist.error ? [] : (camel(waitlist.data) as WaitlistEntry[]),
+      plans: club.plans,
+      memberships: club.memberships,
     }),
   );
+}
+/** Club plans and subscribers; a project without them still loads. */
+async function loadClub(client: SupabaseClient, businessId: string) {
+  const [plans, memberships] = await Promise.all([
+    client
+      .from("membership_plans")
+      .select(
+        "id,business_id,name,description,price,service_ids,monthly_limit,active,created_at",
+      )
+      .eq("business_id", businessId)
+      .order("created_at"),
+    client
+      .from("memberships")
+      .select(
+        "id,business_id,plan_id,customer_id,customer_name,customer_phone,price,status,provider_subscription_id,invoice_url,next_due_date,created_at",
+      )
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false }),
+  ]);
+  return {
+    plans: plans.error ? [] : (camel(plans.data) as MembershipPlan[]),
+    memberships: memberships.error
+      ? []
+      : (camel(memberships.data) as Membership[]),
+  };
 }
 export async function getPublicStore(slug: string) {
   if (isDemo()) return readDemo(slug);
@@ -250,10 +287,23 @@ export async function getPublicStore(slug: string) {
     throw new DomainError("Estabelecimento não encontrado.", 404);
   return loadSupabaseStore(client, data.id);
 }
+/** Demo files keep club tokens and simulated charges: never sent out. */
+function withoutSecrets(store: Store): Store {
+  return {
+    ...store,
+    memberships: store.memberships?.map((member) => ({
+      ...member,
+      token: undefined,
+    })),
+    demoCharges: undefined,
+  };
+}
 export async function getWorkspace() {
   if (isDemo())
     return {
-      ...withCustomerMetrics(await readDemo(await demoWorkspaceSlug())),
+      ...withoutSecrets(
+        withCustomerMetrics(await readDemo(await demoWorkspaceSlug())),
+      ),
       viewer: { name: "João Pedro", role: "owner" },
       mode: "demo",
     } as Store;
@@ -265,9 +315,29 @@ export async function getWorkspace() {
     .maybeSingle();
   return {
     ...(await loadSupabaseStore(client, businessId)),
+    paymentAccount: await readPaymentAccount(businessId),
     viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
     mode: "live",
   } as Store;
+}
+/** Connection state (never the key), read with the server key. */
+export async function readPaymentAccount(
+  businessId: string,
+): Promise<Store["paymentAccount"]> {
+  const { data } = await createSupabaseAdmin()
+    .from("payment_accounts")
+    .select("environment,api_key_hint,webhook_id,created_at")
+    .eq("business_id", businessId)
+    .maybeSingle();
+  return data
+    ? {
+        provider: "asaas",
+        environment: data.environment,
+        hint: data.api_key_hint,
+        webhook: !!data.webhook_id,
+        createdAt: data.created_at,
+      }
+    : null;
 }
 export function createBooking(
   store: Store,
@@ -322,32 +392,6 @@ export function createBooking(
   };
   store.appointments.push(appointment);
   return appointment;
-}
-export async function bookPublic(
-  slug: string,
-  input: z.infer<typeof bookSchema>,
-) {
-  if (isDemo()) return mutateDemo((store) => createBooking(store, input), slug);
-  const store = await getPublicStore(slug);
-  const { data, error } = await createSupabaseAdmin().rpc("book_appointment", {
-    p_business_id: store.business.id,
-    p_service_ids: input.serviceIds,
-    p_professional_id:
-      input.professionalId === "any" ? null : input.professionalId,
-    p_start: input.start,
-    p_name: input.name,
-    p_phone: input.phone,
-    p_email: input.email || null,
-    p_reminder: input.reminder,
-  });
-  if (error)
-    throw new DomainError(
-      error.message.includes("unavailable")
-        ? "Este horário acabou de ficar indisponível. Escolha outro horário."
-        : "Não foi possível confirmar. Confira os dados e tente novamente.",
-      409,
-    );
-  return camel(data) as Appointment;
 }
 export function mutateStore(
   store: Store,
@@ -601,13 +645,15 @@ export async function mutateWorkspace(
 ) {
   if (isDemo())
     return {
-      ...(await mutateDemo(
-        (store) => {
-          mutateStore(store, mutation);
-          return withCustomerMetrics(store);
-        },
-        await demoWorkspaceSlug(),
-      )),
+      ...withoutSecrets(
+        await mutateDemo(
+          (store) => {
+            mutateStore(store, mutation);
+            return withCustomerMetrics(store);
+          },
+          await demoWorkspaceSlug(),
+        ),
+      ),
       viewer: { name: "João Pedro", role: "owner" },
       mode: "demo",
     } as Store;
@@ -625,12 +671,21 @@ export async function mutateWorkspace(
     );
   const store = await loadSupabaseStore(client, businessId);
   mutateStore(store, mutation); // Apply the same validation and full-interval check before the database transaction.
-  const { error } = await createSupabaseAdmin().rpc("workspace_mutation", {
+  const admin = createSupabaseAdmin();
+  // Deposit and club fields are set only by their own server flows.
+  const data = Object.fromEntries(
+    Object.entries(mutation.data).filter(
+      ([key]) => !/^(deposit|membership)/.test(key),
+    ),
+  );
+  if (mutation.entity === "appointments" || mutation.entity === "blockedTimes")
+    await admin.rpc("expire_deposit_holds", { p_business_id: businessId });
+  const { error } = await admin.rpc("workspace_mutation", {
     p_business_id: businessId,
     p_user_id: user.id,
     p_entity: mutation.entity,
     p_action: mutation.action,
-    p_data: mutation.data,
+    p_data: data,
   });
   if (error) {
     const messages: Record<string, string> = {
@@ -660,6 +715,7 @@ export async function mutateWorkspace(
     .maybeSingle();
   return {
     ...(await loadSupabaseStore(client, businessId)),
+    paymentAccount: await readPaymentAccount(businessId),
     viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
     mode: "live",
   } as Store;

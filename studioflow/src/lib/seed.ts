@@ -324,6 +324,9 @@ export function createSeed(): Store {
       loyaltyEnabled: false,
       loyaltyGoal: 10,
       loyaltyReward: "",
+      depositMode: "off",
+      depositValue: 0,
+      depositHold: 15,
     },
   };
 }

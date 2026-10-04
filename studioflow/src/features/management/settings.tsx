@@ -17,7 +17,9 @@ import {
   ShieldCheck,
   Storefront,
   Users,
+  Wallet,
 } from "@phosphor-icons/react/dist/ssr";
+import { PaymentSettings } from "./payment-settings";
 import {
   Avatar,
   Button,
@@ -45,7 +47,7 @@ import {
 
 type EditableTab =
   "business" | "identity" | "agenda" | "loyalty" | "notifications";
-type Tab = EditableTab | "professionals" | "plan";
+type Tab = EditableTab | "professionals" | "payments" | "plan";
 type FieldEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 >;
@@ -91,6 +93,7 @@ const tabs = [
   { id: "identity" as const, label: "Identidade", icon: ImageSquare },
   { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
   { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
+  { id: "payments" as const, label: "Pagamentos", icon: Wallet },
   { id: "professionals" as const, label: "Profissionais", icon: Users },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
@@ -231,7 +234,8 @@ function SettingsContent({ store }: { store: Store }) {
   const agenda = drafts.agenda ?? saved.agenda;
   const notifications = drafts.notifications ?? saved.notifications;
   const loyalty = drafts.loyalty ?? saved.loyalty;
-  const editable = tab !== "professionals" && tab !== "plan";
+  const editable =
+    tab !== "professionals" && tab !== "plan" && tab !== "payments";
   const dirty =
     editable &&
     drafts[tab] !== null &&
@@ -503,12 +507,14 @@ function SettingsContent({ store }: { store: Store }) {
     loyalty: "Cartão fidelidade",
     professionals: "Agendas dos profissionais",
     notifications: "Notificações",
+    payments: "Pagamentos online",
     plan: "Seu espaço de gestão",
   }[tab];
   const sectionDescription = {
     business: "As informações que apresentam seu estabelecimento aos clientes.",
     identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
+    payments: "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
     loyalty:
       "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
     professionals:
@@ -1104,6 +1110,13 @@ function SettingsContent({ store }: { store: Store }) {
               <FormError error={action.error} />
               {saveBar}
             </form>
+          )}
+          {tab === "payments" && (
+            <PaymentSettings
+              store={store}
+              canManage={canManage}
+              onSaved={refresh}
+            />
           )}
           {tab === "plan" && (
             <div className="management-form">

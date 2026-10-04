@@ -70,7 +70,11 @@ export function BookingChrome({
   backDisabled = false,
   children,
   after,
+  subtitle = "Agendamento online",
+  showSteps = true,
 }: {
+  subtitle?: string;
+  showSteps?: boolean;
   business: Business;
   step: number;
   /** Step back inside the flow; without it the arrow returns to the page. */
@@ -112,11 +116,11 @@ export function BookingChrome({
             />
             <span>
               <strong>{business.name}</strong>
-              <small>Agendamento online</small>
+              <small>{subtitle}</small>
             </span>
           </Link>
         </div>
-        <BookingProgress step={step} onStep={onStep} />
+        {showSteps && <BookingProgress step={step} onStep={onStep} />}
       </header>
       <main className="bk-main">{children}</main>
       {after}

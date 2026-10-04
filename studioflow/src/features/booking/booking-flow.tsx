@@ -29,6 +29,12 @@ import { CustomerStep, type CustomerFields } from "./customer-step";
 import { bookingTime } from "./date-format";
 import { haptic } from "@/lib/haptic";
 import { saveLastBooking } from "@/lib/last-booking";
+import { depositFor } from "@/lib/payments";
+import {
+  clubCoverage,
+  useClubToken,
+  useMembership,
+} from "@/features/public/club";
 
 const rememberKey = "studioflow:customer";
 type RememberedCustomer = Omit<CustomerFields, "reminder"> & {
@@ -132,6 +138,8 @@ function BookingWizard({
   }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [clubToken] = useClubToken(business.slug);
+  const { member } = useMembership(business.slug, clubToken);
   const stepHeading = useRef<HTMLDivElement>(null);
   const previousStep = useRef(step);
   useEffect(() => {
@@ -197,6 +205,15 @@ function BookingWizard({
     if (step === 3 && teamFor(serviceId).length === 1) changeStep(1);
     else changeStep(step - 1);
   }
+  const coverage =
+    service && slot
+      ? clubCoverage(member, service.id, slot.start, customer.phone)
+      : null;
+  const covered = coverage?.result === "covered";
+  const deposit =
+    catalog.onlinePayments && service && !covered
+      ? depositFor(settings, service.price)
+      : 0;
   async function submit(values: CustomerFields) {
     if (!service || !slot) return;
     setCustomer(values);
@@ -211,7 +228,14 @@ function BookingWizard({
             serviceIds: [service.id],
             professionalId: slot.professionalId,
             start: slot.start,
-            ...values,
+            name: values.name,
+            phone: values.phone,
+            email: values.email,
+            reminder: values.reminder,
+            ...(deposit > 0 && values.cpf ? { cpf: values.cpf } : {}),
+            ...(member?.status === "active"
+              ? { membershipToken: clubToken }
+              : {}),
           }),
         },
       );
@@ -368,6 +392,16 @@ function BookingWizard({
             onSubmit={submit}
             onChange={setCustomer}
             onEdit={changeStep}
+            deposit={deposit}
+            holdMinutes={settings.depositHold}
+            club={
+              coverage?.member.plan
+                ? {
+                    planName: coverage.member.plan.name,
+                    result: coverage.result,
+                  }
+                : null
+            }
           />
         )}
         {error && step !== 4 && (

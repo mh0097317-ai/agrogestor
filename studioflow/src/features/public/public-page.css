@@ -788,3 +788,58 @@
     animation: none;
   }
 }
+
+/* Club teaser: a small price board */
+.pp-club {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--pp-ink);
+  outline: 1px solid var(--pp-ink);
+  outline-offset: 3px;
+  margin: 4px;
+  color: var(--pp-ink) !important;
+}
+.pp-club ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pp-club li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pp-club li strong {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 500;
+}
+.pp-club li i {
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 1px dotted var(--pp-brass-2);
+  transform: translateY(-4px);
+}
+.pp-club li b {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pp-club li small {
+  color: var(--pp-muted, #6e655b);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 12px;
+}
+.pp-club-cta {
+  color: var(--pp-brass);
+  font-size: 14px;
+  font-weight: 650;
+}
+.pp-club:hover .pp-club-cta {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

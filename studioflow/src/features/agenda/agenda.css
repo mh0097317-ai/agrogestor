@@ -1224,3 +1224,14 @@
 .appointment-loyalty.is-ready svg {
   color: #d97706;
 }
+.appointment-payment.is-waiting {
+  background: #f8f1e4;
+  color: #6b4a1f;
+}
+.appointment-payment.is-alert {
+  background: #fbeae5;
+  color: #8a2c14;
+}
+.appointment-payment.is-alert svg {
+  color: #8a2c14;
+}

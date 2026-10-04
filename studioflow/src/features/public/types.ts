@@ -1,6 +1,7 @@
 import type {
   Appointment,
   Business,
+  MembershipPlan,
   Professional,
   Service,
   Settings,
@@ -19,7 +20,15 @@ export interface PublicCatalog {
   professionals: PublicProfessional[];
   settings: Settings;
   rating?: Rating;
+  /** The business receives online payments (deposit and club). */
+  onlinePayments?: boolean;
+  plans?: PublicPlan[];
 }
+
+export type PublicPlan = Pick<
+  MembershipPlan,
+  "id" | "name" | "description" | "price" | "serviceIds" | "monthlyLimit"
+>;
 
 export interface CustomerReview {
   rating: number;
@@ -35,4 +44,6 @@ export interface ManagedBooking {
   review?: CustomerReview | null;
   /** Completed visits of this customer, for the loyalty card. */
   loyaltyVisits?: number;
+  /** Plan name when the visit is covered by the club. */
+  membershipPlan?: string | null;
 }
