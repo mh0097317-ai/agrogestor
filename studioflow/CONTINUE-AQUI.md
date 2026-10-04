@@ -227,6 +227,11 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Comprovante: contagem até o horário ("Faltam 2 dias 4 horas") e "Compartilhar" (quando o aparelho permite).
 - Correções: faixa do item escolhido ocupa a linha inteira, campo em foco sem caixa interna, sem degradê no hover das linhas.
 
+## Transição com barbeiro de verdade (4 de outubro de 2026)
+
+- Na primeira ida à etapa de Horário em cada visita, uma cena curta (2,6 s) com vídeo real de um barbeiro passando a máquina na nuca, faixas pretas de cinema, legenda "Separando a sua cadeira" com o nome do estabelecimento e uma linha latão; depois a cena sobe como cortina e revela o calendário (`src/features/booking/barber-cut.tsx`, estilos no fim de `booking.css`). Toque para pular, nunca com movimento reduzido, uma vez por visita (`sessionStorage` `studioflow:cut:<slug>`), vídeo pré-carregado nas etapas anteriores. No celular o vídeo ocupa uma faixa 4:5 e a legenda vai na barra de baixo.
+- Arquivos: `public/booking/barber-cut.mp4` (167 KB), `.webm` (133 KB) e `.jpg` (pôster). Origem: Mixkit, vídeo 47845 ("Close up of a trimmer shaving a man's hair"), Mixkit Stock Video Free License (uso comercial, sem atribuição obrigatória).
+
 ## Recepcionista com IA (4 de outubro de 2026)
 
 - Atendente virtual (Claude, `claude-opus-5-5`, esforço baixo, fallback automático do servidor ligado) que responde no chat da página pública e no WhatsApp oficial do estabelecimento: tira dúvidas de serviços, preços, horários e regras, consulta horários livres e marca usando as mesmas rotinas do agendamento público (`bookWithPayments`: sinal via Pix, clube e checagens do banco continuam valendo). Cancelar e remarcar seguem pelo link do comprovante ou com a equipe.

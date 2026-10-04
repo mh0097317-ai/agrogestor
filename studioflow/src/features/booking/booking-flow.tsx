@@ -29,6 +29,7 @@ import { CustomerStep, type CustomerFields } from "./customer-step";
 import { bookingTime } from "./date-format";
 import { servicesSummary } from "./booking-summary";
 import { flyTo, RollingMoney } from "./motion";
+import { BarberCut, markCutSeen, shouldPlayCut } from "./barber-cut";
 import { haptic } from "@/lib/haptic";
 import { saveLastBooking } from "@/lib/last-booking";
 import { depositFor } from "@/lib/payments";
@@ -74,7 +75,9 @@ export function BookingFlow({ slug }: { slug: string }) {
       <PublicRefreshNotice error={error} refreshing={loading} retry={reload} />
       <BookingWizard
         catalog={catalog}
-        initialServices={(query.get("service") || "").split(",").filter(Boolean)}
+        initialServices={(query.get("service") || "")
+          .split(",")
+          .filter(Boolean)}
         initialProfessional={query.get("professional") || "any"}
         revealed={intro !== "on"}
       />
@@ -106,14 +109,18 @@ function BookingWizard({
       (person) =>
         person.active &&
         ids.every((id) =>
-          services.find((item) => item.id === id)?.professionalIds.includes(person.id),
+          services
+            .find((item) => item.id === id)
+            ?.professionalIds.includes(person.id),
         ),
     );
   // Services from a link (?service=a,b) that exist and can be done together.
   const validInitial = (() => {
-    const ids = initialServices.filter((id) =>
-      services.some((service) => service.id === id && service.active),
-    ).slice(0, 8);
+    const ids = initialServices
+      .filter((id) =>
+        services.some((service) => service.id === id && service.active),
+      )
+      .slice(0, 8);
     return ids.length && teamFor(ids).length ? ids : [];
   })();
   const [step, setStep] = useState(validInitial.length ? 2 : 1);
@@ -151,6 +158,12 @@ function BookingWizard({
   }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The barber clip plays on the first trip to the times of this visit; it
+  // stays mounted (and preloaded) only until then.
+  const [cutPending, setCutPending] = useState(() =>
+    shouldPlayCut(business.slug),
+  );
+  const [cut, setCut] = useState(false);
   const [clubToken] = useClubToken(business.slug);
   const { member } = useMembership(business.slug, clubToken);
   const stepHeading = useRef<HTMLDivElement>(null);
@@ -172,6 +185,10 @@ function BookingWizard({
     (person) => person.id === (slot?.professionalId || professionalId),
   );
   function changeStep(next: number) {
+    if (next === 3 && step < 3 && cutPending && shouldPlayCut(business.slug)) {
+      markCutSeen(business.slug);
+      setCut(true);
+    }
     setDirection(next > step ? "forward" : "back");
     setStep(next);
     setError("");
@@ -336,56 +353,68 @@ function BookingWizard({
       onStep={busy ? undefined : changeStep}
       backDisabled={busy}
       after={
-        <div
-          className={`bk-bar ${showBar ? "is-visible" : ""} ${step === 3 && slot ? "is-ready" : ""}`}
-          aria-hidden={!showBar}
-        >
-          {chosen.length > 0 && (
-            <div className="bk-bar-inner">
-              <span
-                ref={barPhoto}
-                className={`bk-bar-photos ${chosen.length > 1 ? "is-stack" : ""}`}
-              >
-                {chosen.slice(-3).map((item) => (
-                  <PublicImage
-                    key={item.id}
-                    src={item.image}
-                    alt=""
-                    className="bk-bar-photo"
-                    segment={item.category}
-                  />
-                ))}
-                {chosen.length > 1 && (
-                  <b className="bk-bar-count" key={chosen.length}>
-                    {chosen.length}
-                  </b>
-                )}
-              </span>
-              <div className="bk-bar-text">
-                <strong key={`${serviceKey}-${slot?.start}`}>
-                  {step === 3 && slot
-                    ? `${slotDay.charAt(0).toUpperCase()}${slotDay.slice(1).replace(".", "")} · ${bookingTime(slot.start)}`
-                    : chosen.length > 1
-                      ? `${chosen.length} serviços`
-                      : chosen[0].name}
-                </strong>
-                <span>
-                  {durationLabel(summary.duration)} •{" "}
-                  <RollingMoney value={summary.price} />
-                </span>
-              </div>
-              <button
-                type="button"
-                className="bk-bar-button"
-                disabled={!canContinue || busy}
-                tabIndex={showBar ? 0 : -1}
-                onClick={next}
-              >
-                Continuar <ArrowRight weight="bold" size={17} />
-              </button>
-            </div>
+        <>
+          {cutPending && (
+            <BarberCut
+              active={cut}
+              name={business.name}
+              onDone={() => {
+                setCut(false);
+                setCutPending(false);
+              }}
+            />
           )}
-        </div>
+          <div
+            className={`bk-bar ${showBar ? "is-visible" : ""} ${step === 3 && slot ? "is-ready" : ""}`}
+            aria-hidden={!showBar}
+          >
+            {chosen.length > 0 && (
+              <div className="bk-bar-inner">
+                <span
+                  ref={barPhoto}
+                  className={`bk-bar-photos ${chosen.length > 1 ? "is-stack" : ""}`}
+                >
+                  {chosen.slice(-3).map((item) => (
+                    <PublicImage
+                      key={item.id}
+                      src={item.image}
+                      alt=""
+                      className="bk-bar-photo"
+                      segment={item.category}
+                    />
+                  ))}
+                  {chosen.length > 1 && (
+                    <b className="bk-bar-count" key={chosen.length}>
+                      {chosen.length}
+                    </b>
+                  )}
+                </span>
+                <div className="bk-bar-text">
+                  <strong key={`${serviceKey}-${slot?.start}`}>
+                    {step === 3 && slot
+                      ? `${slotDay.charAt(0).toUpperCase()}${slotDay.slice(1).replace(".", "")} · ${bookingTime(slot.start)}`
+                      : chosen.length > 1
+                        ? `${chosen.length} serviços`
+                        : chosen[0].name}
+                  </strong>
+                  <span>
+                    {durationLabel(summary.duration)} •{" "}
+                    <RollingMoney value={summary.price} />
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="bk-bar-button"
+                  disabled={!canContinue || busy}
+                  tabIndex={showBar ? 0 : -1}
+                  onClick={next}
+                >
+                  Continuar <ArrowRight weight="bold" size={17} />
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       }
     >
       <div

@@ -2920,3 +2920,175 @@
 .bk {
   overflow-x: clip;
 }
+
+/* ------------------------------------------------------------------
+   Transition into the times: real footage of a barber at work
+   ------------------------------------------------------------------ */
+.bk-cut {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #16130f;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  clip-path: inset(0 0 0 0);
+}
+.bk-cut video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 55% 50%;
+}
+/* Ink veil so the caption reads on any frame. */
+.bk-cut::after {
+  position: absolute;
+  inset: 0;
+  background: #16130f73;
+  content: "";
+}
+.bk-cut-bar {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: 11vh;
+  background: #16130f;
+  transform: scaleY(0);
+}
+.bk-cut-bar.is-top {
+  top: 0;
+  transform-origin: top;
+}
+.bk-cut-bar.is-bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+.bk-cut-caption {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  color: #f4f0e8;
+  text-align: center;
+}
+.bk-cut-caption small {
+  color: #d9b77a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.bk-cut-caption strong {
+  font-family: var(--serif);
+  font-size: clamp(28px, 7vw, 46px);
+  font-weight: 500;
+  line-height: 1.05;
+}
+.bk-cut-rule {
+  width: 120px;
+  height: 1px;
+  margin-top: 6px;
+  background: #d9b77a;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.bk-cut.is-play,
+.bk-cut.is-lift {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.bk-cut.is-play {
+  animation: bk-cut-in 260ms ease-out both;
+}
+.bk-cut.is-play video {
+  animation: bk-cut-push 2.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.bk-cut.is-play .bk-cut-bar,
+.bk-cut.is-lift .bk-cut-bar {
+  animation: bk-cut-bars 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
+}
+.bk-cut.is-play .bk-cut-caption > * {
+  animation: sf-fade-up 520ms var(--ease-out) both;
+}
+.bk-cut.is-play .bk-cut-caption small {
+  animation-delay: 260ms;
+}
+.bk-cut.is-play .bk-cut-caption strong {
+  animation-delay: 380ms;
+}
+.bk-cut.is-play .bk-cut-rule {
+  animation: bk-cut-rule 1.5s cubic-bezier(0.4, 0, 0.2, 1) 450ms both;
+}
+.bk-cut.is-lift {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 650ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+.bk-cut.is-lift .bk-cut-rule {
+  transform: scaleX(1);
+}
+@keyframes bk-cut-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes bk-cut-push {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes bk-cut-bars {
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes bk-cut-rule {
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-cut {
+    display: none;
+  }
+}
+/* Phones: a 4:5 film frame in the middle shows hand, clipper and nape;
+   the caption sits in the lower bar like a subtitle. */
+@media (max-aspect-ratio: 3/4) {
+  .bk-cut video,
+  .bk-cut::after {
+    top: 20vh;
+    bottom: auto;
+    height: 58vh;
+  }
+  .bk-cut video {
+    object-position: 64% 50%;
+  }
+  .bk-cut-bar {
+    height: 20vh;
+  }
+  .bk-cut-bar.is-bottom {
+    height: 22vh;
+  }
+  .bk-cut-caption {
+    position: absolute;
+    right: 0;
+    bottom: calc(5vh + env(safe-area-inset-bottom));
+    left: 0;
+  }
+  .bk-cut-caption strong {
+    font-size: 30px;
+  }
+}
