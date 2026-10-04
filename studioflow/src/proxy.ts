@@ -11,6 +11,7 @@ export async function proxy(request: NextRequest) {
     if (
       process.env.NODE_ENV === "production" &&
       (request.nextUrl.pathname.startsWith("/dashboard") ||
+        request.nextUrl.pathname === "/tv" ||
         request.nextUrl.pathname.startsWith("/admin"))
     )
       return NextResponse.redirect(new URL("/login", requestOrigin(request)));
@@ -35,6 +36,7 @@ export async function proxy(request: NextRequest) {
   if (
     !user &&
     (pathname.startsWith("/dashboard") ||
+      pathname === "/tv" ||
       pathname === "/admin" ||
       pathname.startsWith("/admin/"))
   ) {
@@ -53,6 +55,7 @@ export const config = {
     "/dashboard/:path*",
     "/admin",
     "/admin/:path*",
+    "/tv",
     "/api/admin/:path*",
     "/onboarding/:path*",
     "/login",

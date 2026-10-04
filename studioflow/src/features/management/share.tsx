@@ -10,6 +10,7 @@ import {
   Printer,
   QrCode,
   ShareNetwork,
+  Television,
 } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { Button, Card, PageHeader } from "@/components/ui";
@@ -310,6 +311,28 @@ function ShareContent({ store }: { store: Store }) {
               ? 'Deixe no balcão da recepção. O cliente avisa que chegou e aparece "Chegou" na sua agenda e na TV.'
               : "Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a câmera cai direto na sua agenda."}
           </p>
+        </Card>
+
+        <Card className="share-card share-tv">
+          <h2>
+            <Television size={20} /> Modo TV da recepção
+          </h2>
+          <p>
+            Abra na TV da barbearia (navegador da smart TV, TV box ou um
+            notebook no HDMI) com a sua conta. Mostra o relógio, quem está sendo
+            atendido, os próximos horários, quem fez check-in e os QR Codes para
+            agendar e avisar a chegada. Atualiza sozinha.
+          </p>
+          <div className="share-actions">
+            <a
+              className="btn btn-primary"
+              href="/tv"
+              target="_blank"
+              rel="noopener"
+            >
+              <Television size={16} /> Abrir modo TV
+            </a>
+          </div>
         </Card>
 
         <Card className="share-card share-texts">

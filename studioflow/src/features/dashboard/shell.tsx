@@ -29,6 +29,7 @@ import {
   ChatsCircle,
   Crown,
   ShoppingBagOpen,
+  Television,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -240,6 +241,9 @@ function Shell({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
+          <Link className="sidebar-support" href="/tv" target="_blank">
+            <Television size={16} /> Modo TV da recepção
+          </Link>
           {data?.viewer?.platformAdmin && (
             <Link className="sidebar-support" href="/admin">
               <Crown size={16} /> Plataforma
