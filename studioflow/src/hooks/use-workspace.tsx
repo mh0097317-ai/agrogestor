@@ -9,10 +9,19 @@ import {
   type ReactNode,
 } from "react";
 import type { Store } from "@/types";
+import type { AccessState } from "@/lib/access";
+/** Painel fechado: aguardando liberação, vencido ou pausado. */
+export interface BlockedAccess {
+  state: AccessState;
+  until: string | null;
+  business: string;
+  message: string;
+}
 interface Workspace {
   data: Store | null;
   loading: boolean;
   error: string;
+  blocked: BlockedAccess | null;
   refreshing: boolean;
   refreshError: string;
   refresh: () => Promise<void>;
@@ -27,6 +36,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [blocked, setBlocked] = useState<BlockedAccess | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState("");
   const hasData = useRef(false);
@@ -55,9 +65,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         signal: controller.signal,
       });
       const json = await res.json();
+      if (res.status === 423 && json.access) {
+        if (currentRequest.current !== controller) return;
+        setBlocked({ ...json.access, message: json.error });
+        setData(null);
+        hasData.current = false;
+        setError("");
+        return;
+      }
       if (!res.ok)
         throw new Error(json.error || "Não foi possível carregar os dados.");
       if (currentRequest.current !== controller) return;
+      setBlocked(null);
       setData(json.data || json);
       hasData.current = true;
       setError("");
@@ -105,6 +124,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ entity, action, data: values }),
       });
       const json = await res.json();
+      if (res.status === 423 && json.access && mounted.current) {
+        setBlocked({ ...json.access, message: json.error });
+        setData(null);
+        hasData.current = false;
+      }
       if (!res.ok) throw new Error(json.error || "Não foi possível salvar.");
       if (mounted.current) {
         const pending = currentRequest.current;
@@ -126,6 +150,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         data,
         loading,
         error,
+        blocked,
         refreshing,
         refreshError,
         refresh,

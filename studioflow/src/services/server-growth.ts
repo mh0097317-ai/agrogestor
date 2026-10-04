@@ -1,9 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { DomainError, normalizePhone } from "@/lib/availability";
-import { createSupabaseAdmin, requireMembership } from "@/lib/supabase/server";
+import {
+  createSupabaseAdmin,
+  readBusinessAccess,
+  requireMembership,
+} from "@/lib/supabase/server";
 import type { WaitlistEntry } from "@/types";
 import { isDemo, mutateDemo } from "./server-demo";
+import { assertPublicOpen } from "@/lib/access";
 import { businessDayKey, demoWorkspaceSlug } from "./server-store";
 
 const id = z.string().uuid();
@@ -76,6 +81,7 @@ export async function joinWaitlist(
     input.professionalId === "any" ? null : input.professionalId;
   if (isDemo())
     return mutateDemo((store) => {
+      assertPublicOpen(store.access ?? { status: "active", until: null });
       const service = store.services.find(
         (item) => item.id === input.serviceId && item.active,
       );
@@ -119,6 +125,7 @@ export async function joinWaitlist(
     .eq("slug", slug)
     .maybeSingle();
   if (!business) throw new DomainError("Estabelecimento não encontrado.", 404);
+  assertPublicOpen(await readBusinessAccess(business.id));
   const [service, settings, person] = await Promise.all([
     admin
       .from("services")

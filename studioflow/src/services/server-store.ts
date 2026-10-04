@@ -18,7 +18,13 @@ import {
   servicesFor,
 } from "@/lib/availability";
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
-import { createSupabaseAdmin, requireMembership } from "@/lib/supabase/server";
+import {
+  createSupabaseAdmin,
+  isPlatformAdmin,
+  readBusinessAccess,
+  requireMembership,
+} from "@/lib/supabase/server";
+import { accessState, assertPublicOpen, assertWorkspaceOpen } from "@/lib/access";
 import {
   appointmentSchema,
   blockSchema,
@@ -279,8 +285,13 @@ async function loadClub(client: SupabaseClient, businessId: string) {
       : (camel(memberships.data) as Membership[]),
   };
 }
+/** Agenda online, chat e clube só funcionam com o acesso liberado. */
 export async function getPublicStore(slug: string) {
-  if (isDemo()) return readDemo(slug);
+  if (isDemo()) {
+    const store = await readDemo(slug);
+    assertPublicOpen(store.access ?? { status: "active", until: null });
+    return store;
+  }
   const client = createSupabaseAdmin();
   const { data, error } = await client
     .from("businesses")
@@ -289,6 +300,7 @@ export async function getPublicStore(slug: string) {
     .maybeSingle();
   if (error || !data)
     throw new DomainError("Estabelecimento não encontrado.", 404);
+  assertPublicOpen(await readBusinessAccess(data.id));
   return loadSupabaseStore(client, data.id);
 }
 /** Demo files keep club tokens and simulated charges: never sent out. */
@@ -302,32 +314,51 @@ function withoutSecrets(store: Store): Store {
     demoCharges: undefined,
     // Conversations load through their own API.
     conversations: undefined,
+    accessEvents: undefined,
   };
 }
+/** Demonstração: o acesso guardado no arquivo vale como no Supabase. */
+function demoWorkspaceAccess(store: Store) {
+  const access = store.access ?? { status: "active" as const, until: null };
+  assertWorkspaceOpen(access, store.business.name);
+  return { ...access, state: accessState(access) };
+}
 export async function getWorkspace() {
-  if (isDemo())
+  if (isDemo()) {
+    const store = await readDemo(await demoWorkspaceSlug());
     return {
-      ...withoutSecrets(
-        withCustomerMetrics(await readDemo(await demoWorkspaceSlug())),
-      ),
-      viewer: { name: "João Pedro", role: "owner" },
+      ...withoutSecrets(withCustomerMetrics(store)),
+      access: demoWorkspaceAccess(store),
+      viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
       aiReady: aiReady(),
       mode: "demo",
     } as Store;
-  const { client, businessId, role, user } = await requireMembership();
-  const { data: profile } = await client
-    .from("profiles")
-    .select("name")
-    .eq("id", user.id)
-    .maybeSingle();
+  }
+  const { client, businessId, role, user, access } = await requireMembership();
   return {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
     aiReady: aiReady(),
-    viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
+    access,
+    viewer: await viewerOf(client, user, role),
     mode: "live",
   } as Store;
+}
+async function viewerOf(
+  client: SupabaseClient,
+  user: { id: string; user_metadata?: { name?: string } },
+  role: string,
+) {
+  const [{ data: profile }, platformAdmin] = await Promise.all([
+    client.from("profiles").select("name").eq("id", user.id).maybeSingle(),
+    isPlatformAdmin(user.id),
+  ]);
+  return {
+    name: profile?.name || user.user_metadata?.name || "Você",
+    role,
+    platformAdmin,
+  };
 }
 const aiReady = () =>
   !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
@@ -668,21 +699,24 @@ export function mutateStore(
 export async function mutateWorkspace(
   mutation: z.infer<typeof mutationSchema>,
 ) {
-  if (isDemo())
+  if (isDemo()) {
+    let access: Store["access"];
+    const store = await mutateDemo(
+      (draft) => {
+        access = demoWorkspaceAccess(draft);
+        mutateStore(draft, mutation);
+        return withCustomerMetrics(draft);
+      },
+      await demoWorkspaceSlug(),
+    );
     return {
-      ...withoutSecrets(
-        await mutateDemo(
-          (store) => {
-            mutateStore(store, mutation);
-            return withCustomerMetrics(store);
-          },
-          await demoWorkspaceSlug(),
-        ),
-      ),
-      viewer: { name: "João Pedro", role: "owner" },
+      ...withoutSecrets(store),
+      access,
+      viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
       mode: "demo",
     } as Store;
-  const { client, businessId, role, user } = await requireMembership();
+  }
+  const { client, businessId, role, user, access } = await requireMembership();
   const elevated = ["owner", "admin", "manager"].includes(role);
   if (
     !elevated &&
@@ -733,17 +767,13 @@ export async function mutateWorkspace(
       error.message === "forbidden" ? 403 : 409,
     );
   }
-  const { data: profile } = await client
-    .from("profiles")
-    .select("name")
-    .eq("id", user.id)
-    .maybeSingle();
   return {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
     aiReady: aiReady(),
-    viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
+    access,
+    viewer: await viewerOf(client, user, role),
     mode: "live",
   } as Store;
 }

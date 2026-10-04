@@ -1,3 +1,4 @@
+import type { AccessEvent, AccessState, BusinessAccess } from "@/lib/access";
 export type AppointmentStatus =
   | "confirmed"
   | "pending"
@@ -250,8 +251,12 @@ export interface Store {
   whatsapp?: { displayPhone: string; phoneNumberId: string } | null;
   /** The server has Claude credentials for the AI receptionist. */
   aiReady?: boolean;
-  viewer?: { name: string; role: string };
+  viewer?: { name: string; role: string; platformAdmin?: boolean };
   mode?: "demo" | "live";
+  /** Liberação pela equipe StudioFlow (no modo demonstração, guardada no arquivo). */
+  access?: BusinessAccess & { state?: AccessState };
+  /** Histórico de liberações no modo demonstração. */
+  accessEvents?: AccessEvent[];
 }
 export interface Slot {
   time: string;

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type Anthropic from "@anthropic-ai/sdk";
 import { DomainError } from "@/lib/availability";
-import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
 import type {
   ConversationChannel,
   ConversationMessage,
@@ -13,6 +13,7 @@ import { isDemo, mutateDemo, readDemo } from "../server-demo";
 import { bookWithPayments, getPaymentAccount } from "../server-payments";
 import { decryptSecret, newToken, sha256 } from "../server-secrets";
 import { camel, getPublicStore } from "../server-store";
+import { accessOpen } from "@/lib/access";
 import { claudeCreate, runAssistant, type CreateMessage } from "./agent";
 import { sendWhatsApp } from "./whatsapp";
 
@@ -408,8 +409,8 @@ async function answerPending(
   return result.reply;
 }
 
-const loadStore = (slug: string) =>
-  isDemo() ? readDemo(slug) : getPublicStore(slug);
+// Também confere se a agenda online do estabelecimento está liberada.
+const loadStore = (slug: string) => getPublicStore(slug);
 
 /* ------------------------------------------------------------------ */
 /* Web chat (public page)                                              */
@@ -533,6 +534,9 @@ export async function receiveWhatsApp(
   origin: string,
 ) {
   const slug = await slugOf(account.businessId);
+  // Estabelecimento sem acesso liberado: a mensagem não é tratada.
+  if (!accessOpen(await readBusinessAccess(account.businessId)))
+    return async () => {};
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")

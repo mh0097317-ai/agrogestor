@@ -27,6 +27,7 @@ import {
   QrCode,
   Seal,
   ChatsCircle,
+  Crown,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -36,6 +37,9 @@ import { businessDay } from "@/lib/utils";
 import { useToast } from "@/components/toast";
 import { SegmentIcon } from "@/lib/segments";
 import { Brand } from "@/components/brand";
+import { AccessGate } from "./access-gate";
+import { daysLeft } from "@/lib/access";
+import { format } from "date-fns";
 const links = [
   { path: "/dashboard", label: "Início", icon: House },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarBlank },
@@ -56,8 +60,47 @@ const links = [
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
-      <Shell>{children}</Shell>
+      <Gate>{children}</Gate>
     </WorkspaceProvider>
+  );
+}
+/** Sem acesso liberado, o painel dá lugar à tela de liberação. */
+function Gate({ children }: { children: ReactNode }) {
+  const { blocked, refresh } = useWorkspace();
+  if (blocked) return <AccessGate access={blocked} onRetry={refresh} />;
+  return <Shell>{children}</Shell>;
+}
+const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(/\D/g, "");
+/** Aviso para o dono quando faltam poucos dias de acesso. */
+function RenewBanner() {
+  const { data } = useWorkspace();
+  const access = data?.access;
+  if (
+    !access ||
+    access.state !== "expiring" ||
+    !access.until ||
+    !["owner", "admin"].includes(data?.viewer?.role || "")
+  )
+    return null;
+  const left = daysLeft(access) ?? 0;
+  const ask = `Olá! Quero renovar o acesso do ${data.business.name} no StudioFlow.`;
+  return (
+    <div className="renew-banner" role="status">
+      <span>
+        Seu acesso vai até <b>{format(new Date(access.until), "dd/MM")}</b>
+        {left <= 1 ? " (último dia)" : ` (faltam ${left} dias)`}. Renove para a agenda
+        online continuar aberta.
+      </span>
+      {support && (
+        <a
+          href={`https://wa.me/${support}?text=${encodeURIComponent(ask)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Falar com o StudioFlow
+        </a>
+      )}
+    </div>
   );
 }
 function Shell({ children }: { children: ReactNode }) {
@@ -195,6 +238,11 @@ function Shell({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
+          {data?.viewer?.platformAdmin && (
+            <Link className="sidebar-support" href="/admin">
+              <Crown size={16} /> Plataforma
+            </Link>
+          )}
           <button className="sidebar-support" onClick={() => setHelp(true)}>
             <Question size={16} /> Central de ajuda
           </button>
@@ -312,6 +360,7 @@ function Shell({ children }: { children: ReactNode }) {
               </button>
             </div>
           )}
+          <RenewBanner />
           {children}
         </main>
       </div>
@@ -369,6 +418,11 @@ function Shell({ children }: { children: ReactNode }) {
               {link.label}
             </Link>
           ))}
+          {data?.viewer?.platformAdmin && (
+            <Link href="/admin" onClick={() => setMore(false)}>
+              <Crown size={19} weight="duotone" /> Plataforma
+            </Link>
+          )}
           <Link href="/login" onClick={() => setMore(false)}>
             <SignOut size={17} /> Conta
           </Link>

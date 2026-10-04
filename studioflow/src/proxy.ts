@@ -10,7 +10,8 @@ export async function proxy(request: NextRequest) {
   if (!url || !key) {
     if (
       process.env.NODE_ENV === "production" &&
-      request.nextUrl.pathname.startsWith("/dashboard")
+      (request.nextUrl.pathname.startsWith("/dashboard") ||
+        request.nextUrl.pathname.startsWith("/admin"))
     )
       return NextResponse.redirect(new URL("/login", requestOrigin(request)));
     return response;
@@ -30,7 +31,13 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await client.auth.getUser();
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  const { pathname } = request.nextUrl;
+  if (
+    !user &&
+    (pathname.startsWith("/dashboard") ||
+      pathname === "/admin" ||
+      pathname.startsWith("/admin/"))
+  ) {
     const redirect = NextResponse.redirect(
       new URL("/login", requestOrigin(request)),
     );
@@ -44,6 +51,9 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/api/admin/:path*",
     "/onboarding/:path*",
     "/login",
     "/auth/:path*",

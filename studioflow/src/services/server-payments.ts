@@ -19,6 +19,7 @@ import { createSupabaseAdmin, requireMembership } from "@/lib/supabase/server";
 import type { Appointment, DemoCharge, Membership, Store } from "@/types";
 import { AsaasClient, paidStatuses, type PixCode } from "./payments/asaas";
 import { isDemo, mutateDemo, readDemo } from "./server-demo";
+import { assertPublicOpen } from "@/lib/access";
 import {
   decryptSecret,
   encryptSecret,
@@ -260,6 +261,7 @@ export async function bookWithPayments(
   const cpf = input.cpf || "";
   if (isDemo())
     return mutateDemo((store) => {
+      assertPublicOpen(store.access ?? { status: "active", until: null });
       expireHolds(store);
       const ready = !!store.paymentAccount;
       const price = servicesFor(store, input.serviceIds).reduce(

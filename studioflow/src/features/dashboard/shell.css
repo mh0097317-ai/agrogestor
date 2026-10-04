@@ -208,6 +208,10 @@
 .sidebar-support:hover {
   color: white;
 }
+a.sidebar-support {
+  color: #d9b77a;
+  text-decoration: none;
+}
 .main-shell {
   width: calc(100% - 240px);
   margin-left: 240px;

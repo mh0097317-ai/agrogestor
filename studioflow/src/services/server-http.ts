@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { DomainError } from "@/lib/availability";
+import { AccessError } from "@/lib/access";
 export function respond(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
@@ -13,6 +14,8 @@ export function failure(error: unknown) {
       { error: error.issues[0]?.message || "Confira os dados enviados." },
       400,
     );
+  if (error instanceof AccessError)
+    return respond({ error: error.message, access: error.access }, error.status);
   if (error instanceof DomainError)
     return respond({ error: error.message }, error.status);
   console.error(

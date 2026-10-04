@@ -189,10 +189,32 @@ try {
     ),
     65,
   );
+  // Platform access: pausing closes the panel and the online booking.
+  const businessId = paidWorkspace.body.business.id;
+  const pause = await request("/api/admin/platform", "POST", {
+    businessId,
+    action: "suspended",
+  });
+  assert.equal(pause.response.status, 200);
+  const closed = await request("/api/workspace", "GET", undefined, true);
+  assert.equal(closed.response.status, 423);
+  assert.equal(closed.body.access.state, "suspended");
+  assert(!("appointments" in closed.body));
+  assert.equal((await request(`/api/public/${slug}`)).response.status, 423);
+  const reopen = await request("/api/admin/platform", "POST", {
+    businessId,
+    action: "granted",
+    days: 30,
+  });
+  assert.equal(reopen.response.status, 200);
+  const opened = await request("/api/workspace", "GET", undefined, true);
+  assert.equal(opened.response.status, 200);
+  assert.equal(opened.body.access.state, "active");
+  assert.equal((await request(`/api/public/${slug}`)).response.status, 200);
   const original = await request("/api/workspace");
   assert.equal(original.body.business.slug, "barber-011");
   console.log(
-    "HTTP smoke PASS: isolated onboarding, public projection, tenant isolation, concurrent booking, token receipt, service editing, attendance actions, partial payments, overpayment rejection, reschedule and cancellation.",
+    "HTTP smoke PASS: isolated onboarding, public projection, tenant isolation, concurrent booking, token receipt, service editing, attendance actions, partial payments, overpayment rejection, reschedule, cancellation and platform access.",
   );
 } finally {
   if (slug && /^studioflow-qa-[a-f0-9]{6}$/.test(slug)) {
