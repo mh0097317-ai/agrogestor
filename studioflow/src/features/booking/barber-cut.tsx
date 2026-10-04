@@ -85,11 +85,11 @@ export function BarberCut({
         muted
         playsInline
         preload="auto"
-        poster="/booking/barber-cut.jpg"
+        poster="/media/barber-cut.jpg"
         tabIndex={-1}
       >
-        <source src="/booking/barber-cut.webm" type="video/webm" />
-        <source src="/booking/barber-cut.mp4" type="video/mp4" />
+        <source src="/media/barber-cut.webm" type="video/webm" />
+        <source src="/media/barber-cut.mp4" type="video/mp4" />
       </video>
       <span className="bk-cut-bar is-top" />
       <span className="bk-cut-bar is-bottom" />
