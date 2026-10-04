@@ -44,6 +44,7 @@ export function publicAccentStyle(color?: string): CSSProperties | undefined {
     rgb = rgb.map((value) => Math.floor(value * 0.9));
   const accent = `#${rgb.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
   return {
-    "--public-cta": `linear-gradient(135deg, #07111F 0%, #0D2847 55%, ${accent} 100%)`,
+    // A flat brand color: no gradient, readable under white text.
+    "--public-cta": accent,
   } as CSSProperties;
 }

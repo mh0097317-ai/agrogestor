@@ -4,9 +4,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle,
-  Clock,
-  MapPin,
-  Gift,
   ShareNetwork,
   Star,
 } from "@phosphor-icons/react/dist/ssr";
@@ -148,89 +145,67 @@ export function PublicPage({ slug }: { slug: string }) {
           <div className="pp-cover-fallback" aria-hidden="true">
             <SegmentIcon
               category={business.category}
-              size={220}
+              size={180}
               weight="thin"
             />
           </div>
         )}
-        <div className="pp-cover-shade" />
         <button
           className="pp-cover-share"
           aria-label="Compartilhar estabelecimento"
           onClick={shareBusiness}
         >
-          <ShareNetwork size={19} weight="bold" />
+          <ShareNetwork size={18} weight="bold" />
         </button>
-        <div className="pp-identity">
-          {business.logo ? (
-            <PublicImage
-              src={business.logo}
-              alt={`Logo do ${business.name}`}
-              className="pp-logo"
-              fallbackName={business.name}
-            />
-          ) : (
-            <SegmentIcon
-              category={business.category}
-              className="pp-identity-icon"
-              size={38}
-              weight="light"
-            />
-          )}
-          <h1>{business.name}</h1>
-          <span>{business.category}</span>
-          {business.description && (
-            <p className="pp-cover-tagline">{business.description}</p>
-          )}
-          <div className="pp-cover-pills">
-            {catalog.rating && (
-              <span
-                className="pp-cover-rating"
-                aria-label={`Nota ${ratingLabel(catalog.rating)} de 5 em ${catalog.rating.count} ${catalog.rating.count === 1 ? "avaliação" : "avaliações"}`}
-              >
-                <Star size={15} weight="fill" />
-                <strong>{ratingLabel(catalog.rating)}</strong>(
-                {catalog.rating.count}{" "}
-                {catalog.rating.count === 1 ? "avaliação" : "avaliações"})
-              </span>
-            )}
-            <span className={`pp-status ${isOpen ? "is-open" : ""}`}>
-              <i />
-              {isOpen ? "Aberto agora" : statusNote || "Fechado agora"}
-            </span>
-          </div>
-        </div>
+        <span className={`pp-status ${isOpen ? "is-open" : ""}`}>
+          <i />
+          {isOpen
+            ? `Aberto agora · fecha às ${settings.openEnd}`
+            : statusNote || "Fechado agora"}
+        </span>
       </header>
 
       <div className="pp-layout">
         <main className="pp-main" id="conteudo">
-          <section className="pp-sheet" aria-label="Contato e agendamento">
-            {actions.length > 0 && (
-              <div
-                className="pp-actions"
-                style={{ "--cols": actions.length } as React.CSSProperties}
+          <section className="pp-intro" aria-label="Sobre o estabelecimento">
+            {business.logo && (
+              <PublicImage
+                src={business.logo}
+                alt={`Logo do ${business.name}`}
+                className="pp-logo"
+                fallbackName={business.name}
+              />
+            )}
+            <span className="pp-eyebrow">{business.category}</span>
+            <h1>{business.name}</h1>
+            {business.description && (
+              <p className="pp-tagline">{business.description}</p>
+            )}
+            {catalog.rating && (
+              <p
+                className="pp-rating"
+                aria-label={`Nota ${ratingLabel(catalog.rating)} de 5 em ${catalog.rating.count} ${catalog.rating.count === 1 ? "avaliação" : "avaliações"}`}
               >
-                {actions.map(({ href, label, icon: Icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sf-press"
-                  >
-                    <Icon size={24} />
-                    <span>{label}</span>
+                <Star size={14} weight="fill" />
+                <strong>{ratingLabel(catalog.rating)}</strong>
+                <span>
+                  ({catalog.rating.count}{" "}
+                  {catalog.rating.count === 1 ? "avaliação" : "avaliações"})
+                </span>
+              </p>
+            )}
+            <Link ref={mainCta} href={bookHref} className="pp-cta">
+              Agendar horário <ArrowRight size={20} weight="regular" />
+            </Link>
+            {actions.length > 0 && (
+              <nav className="pp-links" aria-label="Contato">
+                {actions.map(({ href, label }) => (
+                  <a key={label} href={href} target="_blank" rel="noreferrer">
+                    {label}
                   </a>
                 ))}
-              </div>
+              </nav>
             )}
-            <Link
-              ref={mainCta}
-              href={bookHref}
-              className="public-button pp-cta sf-sheen"
-            >
-              Agendar horário <ArrowRight size={19} weight="bold" />
-            </Link>
             <RepeatBooking
               slug={slug}
               services={activeServices}
@@ -242,20 +217,27 @@ export function PublicPage({ slug }: { slug: string }) {
           {settings.loyaltyEnabled && settings.loyaltyReward && (
             <section className="pp-section" aria-label="Cartão fidelidade">
               <Link href={bookHref} className="pp-loyalty" data-reveal>
-                <span className="pp-loyalty-icon" aria-hidden="true">
-                  <Gift size={26} weight="duotone" />
-                </span>
                 <span className="pp-loyalty-text">
-                  <strong>Cartão fidelidade</strong>
-                  <span>
-                    A cada {settings.loyaltyGoal} atendimentos, ganhe{" "}
-                    {settings.loyaltyReward}.
-                  </span>
+                  <span className="pp-eyebrow">Cartão fidelidade</span>
+                  <strong>
+                    A cada {settings.loyaltyGoal} atendimentos,{" "}
+                    <em>{settings.loyaltyReward}</em>.
+                  </strong>
                 </span>
                 <span className="pp-loyalty-stamps" aria-hidden="true">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <i key={index} className={index < 3 ? "is-on" : ""} />
-                  ))}
+                  {Array.from(
+                    { length: Math.min(settings.loyaltyGoal, 10) },
+                    (_, index) => (
+                      <i
+                        key={index}
+                        className={
+                          index === Math.min(settings.loyaltyGoal, 10) - 1
+                            ? "is-gift"
+                            : ""
+                        }
+                      />
+                    ),
+                  )}
                 </span>
               </Link>
             </section>
@@ -277,20 +259,11 @@ export function PublicPage({ slug }: { slug: string }) {
 
         <aside className="pp-aside" aria-label="Agendamento online">
           <div className="pp-book-card">
-            <span className={`pp-status ${isOpen ? "is-open" : ""}`}>
-              <i />
-              {isOpen ? "Aberto agora" : "Fechado agora"}
-            </span>
-            <h2>Agende em menos de um minuto</h2>
-            <p>
-              Escolha o serviço, o profissional e o melhor horário. Sem
-              cadastro.
-            </p>
+            <span className="pp-eyebrow">Agenda online</span>
+            <h2>Escolha o serviço, o profissional e o horário.</h2>
             <dl>
               <div>
-                <dt>
-                  <Clock size={16} weight="duotone" /> Hoje
-                </dt>
+                <dt>Hoje</dt>
                 <dd>
                   {openToday
                     ? `${settings.openStart} – ${settings.openEnd}`
@@ -299,15 +272,13 @@ export function PublicPage({ slug }: { slug: string }) {
               </div>
               {business.address && (
                 <div>
-                  <dt>
-                    <MapPin size={16} weight="duotone" /> Endereço
-                  </dt>
+                  <dt>Endereço</dt>
                   <dd>{business.address}</dd>
                 </div>
               )}
             </dl>
-            <Link href={bookHref} className="public-button">
-              Agendar horário <ArrowRight size={18} weight="bold" />
+            <Link href={bookHref} className="pp-cta">
+              Agendar horário <ArrowRight size={20} weight="regular" />
             </Link>
             {whatsapp && (
               <a
@@ -316,7 +287,7 @@ export function PublicPage({ slug }: { slug: string }) {
                 rel="noreferrer"
                 className="pp-book-help"
               >
-                <WhatsAppIcon size={18} /> Falar no WhatsApp
+                <WhatsAppIcon size={17} /> Falar no WhatsApp
               </a>
             )}
           </div>
@@ -340,12 +311,8 @@ export function PublicPage({ slug }: { slug: string }) {
           <strong>{business.name}</strong>
           <span>{isOpen ? "Aberto agora" : statusNote || "Agenda online"}</span>
         </div>
-        <Link
-          href={bookHref}
-          className="public-button"
-          tabIndex={showDock ? 0 : -1}
-        >
-          Agendar <ArrowRight size={17} weight="bold" />
+        <Link href={bookHref} className="pp-cta" tabIndex={showDock ? 0 : -1}>
+          Agendar <ArrowRight size={18} weight="regular" />
         </Link>
       </div>
       {toast && (

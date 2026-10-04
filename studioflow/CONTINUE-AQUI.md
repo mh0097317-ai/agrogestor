@@ -28,7 +28,7 @@ Copie `.env.example` para `.env.local` quando configurar o ambiente. Nenhuma cre
 
 ## Stack e organização
 
-Next.js 16.3.8/App Router, React 19.3.0, TypeScript 6, Tailwind CSS 4, Geist local, Lucide, Supabase Auth/SSR, PostgreSQL, React Hook Form, Zod e date-fns. Preserve o lockfile. Os scripts usam Webpack após lentidão observada no Turbopack deste Windows.
+Next.js 16.3.8/App Router, React 19.3.0, TypeScript 6, Tailwind CSS 4, Fraunces e Hanken Grotesk locais, Phosphor, Supabase Auth/SSR, PostgreSQL, React Hook Form, Zod e date-fns. Preserve o lockfile. Os scripts usam Webpack após lentidão observada no Turbopack deste Windows.
 
 Leia `AGENTS.md`. Antes de alterar APIs ou convenções Next.js, consulte a documentação instalada em `node_modules/next/dist/docs/` depois de `npm ci`.
 
@@ -51,15 +51,15 @@ docs/             Registro de validação e referência visual
 
 Página pública personalizável; agendamento em cinco etapas com seleção automática de profissional; calendário, confirmação, arquivo de calendário, reagendamento e cancelamento; painel do proprietário; agenda dia/semana/mês; CRM com histórico e regra simples de retorno; CRUD de serviços e equipe; pagamentos parciais; financeiro e relatórios por período; CSV; configurações por seção com rascunhos e confirmação de descarte; onboarding; acesso; PWA e tela offline.
 
-O redesign editorial foi aplicado aos módulos. A interface usa branco predominante, navy e azul profundo em ações e seleções, fotografia contextual, Geist local, indicadores compactos e composições próprias. No celular, há navegação inferior e destaque para o atendimento prioritário. O calendário mobile usa datas semanais e lista por períodos.
+O visual "Cartaz" (papel, tinta e latão, Fraunces + Hanken Grotesk) está aplicado a todos os módulos, com fotografia contextual, indicadores compactos e composições próprias. No celular, há navegação inferior e destaque para o atendimento prioritário. O calendário mobile usa datas semanais e lista por períodos.
 
 A referência original está em `docs/reference/Foto-1.jpg`. Capturas reais da interface estão em `.data/editorial-*.jpg`; as 72 medidas responsivas ficam em `.data/editorial-responsive.json`. Leia `README.md`, `docs/redesign-validation.md` e `supabase/README.md` antes de propor mudanças.
 
 ## Direção visual e escopo aprovados
 
-- Branco `#FFFFFF` e `#F8FAFC`, texto `#111827`, apoio `#64748B`, bordas suaves e sombras mínimas.
-- Navy/azul profundo na sidebar, seleções e ações: `linear-gradient(135deg, #07111F 0%, #0D2847 55%, #123E69 100%)`.
-- Títulos expressivos, espaço em branco, alinhamento preciso, cards de 12–18px e transições de 150–250ms com movimento reduzido.
+- Direção "Cartaz" (escolhida em 4/10/2026; substitui o branco + navy anterior): papel `#F4F0E8`, cartões `#FFFDF9`, tinta `#16130F`, texto de apoio `#6E655B`, linhas `#DCD2C2`/`#E2D9CA`, latão `#8A6430` (texto) e `#A47A3C` (estrelas e detalhes). Cor do estabelecimento, quando escolhida, substitui a tinta nos botões da página e do agendamento (cor chapada, sem degradê).
+- Tipografia: Fraunces (títulos, nomes e preços; variável `--serif`) e Hanken Grotesk (interface), locais em `src/app/fonts/` com licença OFL. As variáveis das fontes ficam no `<body>` (`--font-display`, `--font-ui`); não usar `--font-serif`/`--font-sans`, que o Tailwind já define.
+- Sem degradês decorativos, brilho em botões, luz que segue o mouse, ondulação ao tocar ou ícones em quadradinhos coloridos. Cantos de 2–4px, linhas finas no lugar de sombras, serviços como cardápio numerado, transições de 150–250ms com movimento reduzido.
 - Fotografia como identidade principal do estabelecimento; logo pequena e opcional, com fallback elegante.
 - Agendamento em cinco etapas separadas; preservar escolhas e dados ao voltar ou recuperar um conflito.
 - Agenda com duração proporcional, expediente, pausas e bloqueios. Criação e reagendamento têm confirmação explícita.
@@ -186,6 +186,15 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Cartão fidelidade: Configurações → Fidelidade (ligar, número de atendimentos e prêmio; `PATCH /api/workspace/loyalty`, RLS de `business_settings`). Carimbos = atendimentos concluídos (`src/lib/loyalty.ts`). Aparece no comprovante, na página pública, no perfil do cliente e no detalhe do agendamento ("Ganha o prêmio neste atendimento").
 - Lista de espera: no agendamento, dias lotados ficam riscados e abrem o formulário; em dias com vaga há o link "Nenhum horário serve?". `POST /api/public/[slug]/waitlist` (validação no servidor, rate limit, service role). No painel, "Lista de espera" com "Chamar" (WhatsApp com link de agendamento, marca como avisado) e remover; dias com cancelamento aparecem primeiro com "Abriu vaga". Tabela `waitlist` com RLS: membros leem, só owner/admin/manager/recepção alteram status ou removem; profissional só lê.
 - Migration `20261004150000_studioflow_loyalty_waitlist.sql`, aplicada no Supabase de produção. Testes: `tests/growth.test.ts` e `tests/waitlist-db.test.ts`.
+
+## Visual "Cartaz" (4 de outubro de 2026)
+
+- Três direções foram comparadas (Cartaz, Noir e Gráfico) com as telas reais; a escolhida foi Cartaz.
+- Base: paleta trocada em todo o código (cores frias mapeadas para a escala papel/tinta/latão), fontes Fraunces + Hanken Grotesk, logo do StudioFlow em tinta, papel e latão (`public/icon.svg`, `brand.tsx` e PNGs do PWA regenerados), sem `PointerEffects` e sem o brilho de `.sf-sheen` (classe mantida, sem efeito).
+- Página pública reescrita (`public-page.tsx`, `public-page.css`, `public-services.tsx`): capa só com a foto e o horário numa etiqueta, nome grande com serifa, ações em linha (WhatsApp / Localização / Instagram), cardápio numerado com preço, cartão fidelidade com moldura dupla, galeria (`public-gallery.css`), comodidades em texto, equipe em retratos, horários com pontilhado; no computador, cartão de agendamento fixo à direita.
+- Agendamento e comprovante: camada "Cartaz" no fim de `booking.css` (linhas de cardápio, abas sublinhadas, títulos com serifa).
+- Painel: menu em tinta com destaque discreto, cartões em papel, números com serifa, indicadores sem quadradinhos, gráficos em tinta e latão (camada no fim de `overview.css`); Divulgar com cartaz em papel e moldura dupla (também na imagem para Stories).
+- Verificado: lint, TypeScript, 36 testes, smoke HTTP, build e varredura sem overflow horizontal em 15 rotas × 375/390/430/768/1024/1440px; contraste de texto ≥ 4,5:1 nas cores de texto.
 
 ## Próximos passos para terminar o piloto
 

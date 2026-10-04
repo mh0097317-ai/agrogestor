@@ -35,8 +35,8 @@
   gap: 14px;
   min-width: 0;
   padding: 18px 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   background: #fff;
   box-shadow: var(--shadow-soft);
 }
@@ -46,9 +46,9 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: #eef3f9;
-  color: #0d2847;
+  border-radius: 4px;
+  background: #efe9df;
+  color: #1f1a15;
 }
 .ov-kpi > div {
   min-width: 0;
@@ -82,8 +82,8 @@
   min-width: 0;
 }
 .ov-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   background: #fff;
   box-shadow: var(--shadow-soft);
   min-width: 0;
@@ -105,7 +105,7 @@
   min-height: 44px;
   font-size: 13px;
   font-weight: 600;
-  color: #123e69;
+  color: #2c251e;
 }
 
 /* Agenda table card */
@@ -128,13 +128,13 @@
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   background: #fff;
-  color: #475569;
+  color: #5a5148;
 }
 .ov-day-nav button:hover {
-  background: #f8fafc;
+  background: #f7f3ec;
 }
 .ov-day-nav h2 {
   min-width: 150px;
@@ -149,26 +149,26 @@
 .ov-views {
   display: flex;
   padding: 3px;
-  border-radius: 10px;
-  background: #f1f5f9;
+  border-radius: 4px;
+  background: #efe9df;
 }
 .ov-views a {
   display: grid;
   place-items: center;
   min-height: 32px;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 13px;
-  color: #475569;
+  color: #5a5148;
 }
 .ov-views a.is-active {
   background: #fff;
-  color: #111827;
+  color: #16130f;
   font-weight: 600;
-  box-shadow: 0 1px 2px #0b1b3014;
+  box-shadow: 0 1px 2px #16130f14;
 }
 .ov-views a:hover:not(.is-active) {
-  color: #111827;
+  color: #16130f;
 }
 .ov-agenda-tools select {
   width: auto;
@@ -191,7 +191,7 @@
 }
 .ov-table-head {
   height: 42px;
-  background: #fafbfc;
+  background: #f7f3ec;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
@@ -200,14 +200,14 @@
   width: 100%;
   min-height: 60px;
   border: 0;
-  border-top: 1px solid #f1f3f6;
+  border-top: 1px solid #efe9df;
   background: #fff;
-  color: #111827;
+  color: #16130f;
   font-size: 13px;
   text-align: left;
 }
 .ov-table-row:hover {
-  background: #f8fafc;
+  background: #f7f3ec;
 }
 .ov-cell-time {
   font-weight: 600;
@@ -228,17 +228,17 @@
 }
 .ov-cell-person {
   gap: 8px;
-  color: #475569;
+  color: #5a5148;
 }
 .ov-cell-muted {
-  color: #475569;
+  color: #5a5148;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ov-table-actions {
   justify-self: end;
-  color: #94a3b8;
+  color: #776c5f;
 }
 .ov-show-all {
   width: 100%;
@@ -248,12 +248,12 @@
   justify-content: center;
   gap: 4px;
   border: 0;
-  border-top: 1px solid #f1f3f6;
+  border-top: 1px solid #efe9df;
   border-radius: 0 0 16px 16px;
   background: #fff;
   font-size: 13px;
   font-weight: 600;
-  color: #123e69;
+  color: #2c251e;
 }
 
 /* Upcoming list (mobile) */
@@ -273,10 +273,10 @@
   gap: 12px;
   padding: 10px 0;
   border: 0;
-  border-top: 1px solid #f1f3f6;
+  border-top: 1px solid #efe9df;
   background: none;
   text-align: left;
-  color: #111827;
+  color: #16130f;
 }
 .ov-upcoming li:first-child .ov-row {
   border-top: 0;
@@ -317,7 +317,7 @@
 }
 .ov-row-chevron {
   flex-shrink: 0;
-  color: #94a3b8;
+  color: #776c5f;
 }
 .ov-empty {
   display: flex;
@@ -344,7 +344,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #f1f3f6;
+  border-top: 1px solid #efe9df;
   font-size: 13px;
 }
 .ov-summary dl > div:first-child {
@@ -389,7 +389,7 @@
 }
 .calendar-weekdays {
   font-size: 11px;
-  color: #94a3b8;
+  color: #776c5f;
   margin-bottom: 6px;
 }
 .calendar-days {
@@ -402,20 +402,20 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #334155;
+  color: #433a31;
   font-size: 12px;
   border-radius: 50%;
   position: relative;
 }
 .calendar-days button:hover {
-  background: #f0f4f8;
+  background: #efe9df;
 }
 .calendar-days button.outside {
-  color: #cbd5e1;
+  color: #c9bfae;
 }
 .calendar-days button.today {
   font-weight: 650;
-  box-shadow: inset 0 0 0 1px #bdccdb;
+  box-shadow: inset 0 0 0 1px #ccc9c4;
 }
 .calendar-days button.chosen {
   background: var(--gradient);
@@ -429,12 +429,12 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #8ca3b8;
+  background: #9c9284;
   bottom: 3px;
   left: calc(50% - 1.5px);
 }
 .calendar-days button.chosen::after {
-  background: #c9d9e9;
+  background: #dad7d1;
 }
 .ov-calendar .calendar-legend {
   display: flex;
@@ -442,14 +442,14 @@
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: #8494a6;
+  color: #95928c;
   margin-top: 12px;
 }
 .ov-calendar .calendar-legend i {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #8ca3b8;
+  background: #9c9284;
 }
 
 /* Laptop */
@@ -521,7 +521,7 @@
   .ov-hero p {
     margin-top: 2px;
     font-size: 13px;
-    color: #c4d3e3;
+    color: #c9bfae;
   }
   .ov-hero p::first-letter {
     text-transform: uppercase;
@@ -547,7 +547,7 @@
     place-items: center;
     border-radius: 999px;
     background: #fff;
-    color: #0d2847;
+    color: #1f1a15;
     font-size: 10px;
     font-weight: 700;
   }
@@ -565,13 +565,13 @@
     align-items: flex-start;
     gap: 10px;
     padding: 14px;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px #07111f0f;
+    border-radius: 4px;
+    box-shadow: 0 6px 18px #16130f0f;
   }
   .ov-kpi-icon {
     width: 34px;
     height: 34px;
-    border-radius: 10px;
+    border-radius: 4px;
   }
   .ov-kpi-icon svg {
     width: 17px;
@@ -618,7 +618,7 @@
 }
 .ov-kpi:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 30px #0b1b3012;
+  box-shadow: 0 14px 30px #16130f12;
 }
 .ov-kpi-icon {
   transition: transform 360ms var(--ease-spring);
@@ -652,7 +652,7 @@
 }
 .ov-table-row:hover .ov-table-actions svg {
   transform: scale(1.2);
-  color: #0d2847;
+  color: #1f1a15;
 }
 .ov-row {
   transition: transform var(--motion-fast) var(--ease-out);
@@ -666,10 +666,10 @@
 @keyframes ov-live {
   0%,
   100% {
-    box-shadow: 0 0 0 0 #4376b540;
+    box-shadow: 0 0 0 0 #806e5240;
   }
   50% {
-    box-shadow: 0 0 0 4px #4376b500;
+    box-shadow: 0 0 0 4px #806e5200;
   }
 }
 @media (max-width: 767px) {
@@ -678,10 +678,10 @@
     overflow: hidden;
     background: linear-gradient(
       120deg,
-      #07111f 0%,
-      #0d2847 40%,
-      #1b5288 70%,
-      #0d2847 100%
+      #16130f 0%,
+      #1f1a15 40%,
+      #8a6430 70%,
+      #1f1a15 100%
     );
     background-size: 220% 220%;
     animation: sf-gradient-pan 14s ease-in-out infinite;
@@ -694,7 +694,7 @@
     right: -60px;
     top: -90px;
     border-radius: 50%;
-    background: radial-gradient(circle, #8cbbea33 0%, #8cbbea00 70%);
+    background: radial-gradient(circle, #d9be8c33 0%, #d9be8c00 70%);
     animation: sf-float 7s ease-in-out infinite;
     pointer-events: none;
   }
@@ -766,10 +766,10 @@
   gap: 5px;
   min-height: 32px;
   padding: 0 11px;
-  border: 1px solid #dbe4ee;
+  border: 1px solid #e2d9ca;
   border-radius: 999px;
   background: #fff;
-  color: #0d2847;
+  color: #1f1a15;
   font-size: 12px;
   font-weight: 650;
   white-space: nowrap;
@@ -802,13 +802,13 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 3px;
   background: none;
-  color: #94a3b8;
+  color: #776c5f;
 }
 .ov-more:hover {
-  background: #eef2f7;
-  color: #0d2847;
+  background: #efe9df;
+  color: #1f1a15;
 }
 
 /* Now card */
@@ -816,10 +816,10 @@
   position: relative;
   overflow: hidden;
   padding: 18px 20px;
-  border-radius: 18px;
+  border-radius: 4px;
   color: #fff;
-  background: linear-gradient(135deg, #07111f 0%, #0d2847 60%, #1b5288 100%);
-  box-shadow: 0 16px 36px #0d284730;
+  background: linear-gradient(135deg, #16130f 0%, #1f1a15 60%, #8a6430 100%);
+  box-shadow: 0 16px 36px #1f1a1530;
 }
 .ov-now::after {
   content: "";
@@ -829,7 +829,7 @@
   right: -90px;
   top: -120px;
   border-radius: 50%;
-  background: radial-gradient(circle, #8cbbea30, #8cbbea00 70%);
+  background: radial-gradient(circle, #d9be8c30, #d9be8c00 70%);
   pointer-events: none;
 }
 .ov-now > * {
@@ -857,14 +857,14 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #8cbbea;
+  background: #d9be8c;
 }
 .ov-now.is-live .ov-now-tag i {
   background: #4ade80;
   animation: sf-pulse-ring 1.8s ease-out infinite;
 }
 .ov-now-time {
-  color: #c4d3e3;
+  color: #c9bfae;
   font-variant-numeric: tabular-nums;
 }
 .ov-now-body {
@@ -895,7 +895,7 @@
 }
 .ov-now-info span {
   font-size: 13px;
-  color: #c4d3e3;
+  color: #c9bfae;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -916,7 +916,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #8cbbea, #ffffff);
+  background: linear-gradient(90deg, #d9be8c, #ffffff);
   transition: width 600ms var(--ease-out);
 }
 .ov-now-actions {
@@ -932,9 +932,9 @@
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 4px;
   background: #fff;
-  color: #0d2847;
+  color: #1f1a15;
   font-size: 14px;
   font-weight: 700;
 }
@@ -946,7 +946,7 @@
   min-height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 4px;
   background: #ffffff1a;
 }
 
@@ -986,7 +986,7 @@
   color: #f5a524;
 }
 .ov-rev-score small {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .ov-reviews ul {
@@ -998,8 +998,8 @@
 }
 .ov-reviews li {
   padding: 10px 12px;
-  border-radius: 12px;
-  background: #f8fafc;
+  border-radius: 4px;
+  background: #f7f3ec;
   animation: sf-fade-up 420ms var(--ease-out) both;
 }
 .ov-rev-head {
@@ -1013,7 +1013,7 @@
 }
 .ov-rev-head small {
   flex-basis: 100%;
-  color: #64748b;
+  color: #6e655b;
   font-size: 11.5px;
 }
 .ov-rev-badge {
@@ -1029,7 +1029,7 @@
 }
 .ov-reviews li p {
   margin: 6px 0 0;
-  color: #334155;
+  color: #433a31;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -1093,15 +1093,15 @@
   border-radius: 8px 8px 4px 4px;
 }
 .ov-bar-expected {
-  background: #e8eef5;
+  background: #e2d9ca;
 }
 .ov-bar-fill {
-  background: linear-gradient(180deg, #3f7dc0, #0d2847);
+  background: linear-gradient(180deg, #a47a3c, #1f1a15);
   transform-origin: bottom;
   animation: ov-grow 700ms var(--ease-out) both;
 }
 .ov-bar.is-today .ov-bar-fill {
-  background: linear-gradient(180deg, #8cbbea, #3f7dc0);
+  background: linear-gradient(180deg, #d9be8c, #a47a3c);
 }
 .ov-bar small {
   font-size: 11px;
@@ -1109,7 +1109,7 @@
   text-transform: capitalize;
 }
 .ov-bar.is-today small {
-  color: #0d2847;
+  color: #1f1a15;
   font-weight: 700;
 }
 @keyframes ov-grow {
@@ -1138,10 +1138,10 @@
   border-radius: 3px;
 }
 .ov-legend .is-received {
-  background: #0d2847;
+  background: #1f1a15;
 }
 .ov-legend .is-expected {
-  background: #e8eef5;
+  background: #e2d9ca;
 }
 .ov-occupancy ul,
 .ov-attention ul {
@@ -1179,14 +1179,14 @@
   height: 7px;
   margin-top: 6px;
   border-radius: 999px;
-  background: #eef2f7;
+  background: #efe9df;
   overflow: hidden;
 }
 .ov-occ-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #0d2847, #3f7dc0);
+  background: linear-gradient(90deg, #1f1a15, #a47a3c);
   transform-origin: left;
   animation: ov-grow-x 800ms var(--ease-out) both;
 }
@@ -1221,7 +1221,7 @@
 .ov-att-group + .ov-att-group {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid #f1f3f6;
+  border-top: 1px solid #efe9df;
 }
 .ov-att-group h3 {
   margin-top: 8px;
@@ -1269,15 +1269,15 @@
   gap: 6px;
   min-height: 34px;
   padding: 0 12px;
-  border: 1px solid #dbe4ee;
+  border: 1px solid #e2d9ca;
   border-radius: 999px;
   background: #fff;
-  color: #0d2847;
+  color: #1f1a15;
   font-size: 12px;
   font-weight: 650;
 }
 .ov-att-action:hover {
-  background: #f1f5f9;
+  background: #efe9df;
 }
 .ov-att-action.is-whatsapp {
   border-color: #c9eed8;
@@ -1291,7 +1291,7 @@
   margin-top: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #123e69;
+  color: #2c251e;
 }
 
 @media (max-width: 1250px) {
@@ -1365,11 +1365,11 @@
   align-items: center;
   gap: 2px;
   padding: 8px 14px 8px 12px;
-  border: 1px solid #e5eaf0;
+  border: 1px solid #e2d9ca;
   border-radius: 999px;
   background: #fff;
   box-shadow: var(--shadow-soft);
-  color: #0b1b30;
+  color: #16130f;
   font-size: 15px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
@@ -1389,7 +1389,7 @@
 .ov-clock small {
   margin-left: 10px;
   padding-left: 10px;
-  border-left: 1px solid #e5eaf0;
+  border-left: 1px solid #e2d9ca;
   color: var(--muted);
   font-size: 12.5px;
   font-weight: 500;
@@ -1427,7 +1427,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    var(--kpi-glow, #3f7dc01f),
+    var(--kpi-glow, #a47a3c1f),
     transparent 70%
   );
   pointer-events: none;
@@ -1437,9 +1437,9 @@
   transform: scale(1.35);
 }
 .ov-kpi:nth-child(1) {
-  --kpi-tint: #eaf1fb;
-  --kpi-ink: #1d4f8a;
-  --kpi-glow: #3f7dc026;
+  --kpi-tint: #f3f0ea;
+  --kpi-ink: #5b4629;
+  --kpi-glow: #a47a3c26;
 }
 .ov-kpi:nth-child(2) {
   --kpi-tint: #e9f8ef;
@@ -1452,13 +1452,13 @@
   --kpi-glow: #f59e0b24;
 }
 .ov-kpi:nth-child(4) {
-  --kpi-tint: #f1eefc;
-  --kpi-ink: #5b3fb0;
-  --kpi-glow: #7c5cd624;
+  --kpi-tint: #f2efe9;
+  --kpi-ink: #604b2e;
+  --kpi-glow: #7d6a4e24;
 }
 .ov-kpi .ov-kpi-icon {
-  background: var(--kpi-tint, #eef3f9);
-  color: var(--kpi-ink, #0d2847);
+  background: var(--kpi-tint, #efe9df);
+  color: var(--kpi-ink, #1f1a15);
   box-shadow: inset 0 0 0 1px #ffffff99;
   transition: transform 420ms var(--ease-spring);
 }
@@ -1472,9 +1472,9 @@
   inset: -40%;
   z-index: 0;
   background:
-    radial-gradient(closest-side at 30% 40%, #3f7dc055, transparent),
-    radial-gradient(closest-side at 70% 60%, #8cbbea33, transparent),
-    radial-gradient(closest-side at 50% 90%, #0d284799, transparent);
+    radial-gradient(closest-side at 30% 40%, #a47a3c55, transparent),
+    radial-gradient(closest-side at 70% 60%, #d9be8c33, transparent),
+    radial-gradient(closest-side at 50% 90%, #1f1a1599, transparent);
   animation: ov-aurora 14s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -1501,7 +1501,7 @@
   left: 0;
   width: 3px;
   border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, #0d2847, #3f7dc0);
+  background: linear-gradient(180deg, #1f1a15, #a47a3c);
   transform: scaleY(0);
   transition: transform 260ms var(--ease-out);
 }
@@ -1522,7 +1522,7 @@
 
 /* Reminders and waitlist */
 .ov-rem-count {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1539,14 +1539,14 @@
   justify-content: space-between;
   gap: 10px;
   padding: 9px 0;
-  border-top: 1px solid #eef2f6;
+  border-top: 1px solid #efe9df;
   animation: sf-fade-up 380ms var(--ease-out) both;
 }
 .ov-growth-list li:first-child {
   border-top: 0;
 }
 .ov-growth-list li.is-done .ov-growth-info strong {
-  color: #64748b;
+  color: #6e655b;
 }
 .ov-growth-info {
   display: grid;
@@ -1564,14 +1564,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .ov-growth-info em {
   padding: 1px 7px;
   border-radius: 999px;
-  background: #eef3f9;
-  color: #0d2847;
+  background: #efe9df;
+  color: #1f1a15;
   font-size: 11px;
   font-style: normal;
   font-weight: 650;
@@ -1592,12 +1592,120 @@
   width: 34px;
   height: 34px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 4px;
   background: none;
-  color: #94a3b8;
+  color: #776c5f;
   cursor: pointer;
 }
 .ov-growth-remove:hover {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+/* ------------------------------------------------------------------
+   Cartaz layer: flat ink, paper cards, serif numbers. No glows,
+   tinted icon tiles or moving gradients.
+   ------------------------------------------------------------------ */
+.ov-card,
+.ov-kpi {
+  border-color: #e2d9ca;
+  border-radius: 4px;
+  background: #fffdf9;
+  box-shadow: none;
+}
+.ov-kpi::before,
+.ov-now::before,
+.ov-now::after,
+.ov-hero::after {
+  display: none;
+}
+.ov-kpi:hover {
+  box-shadow: none;
+  transform: none;
+}
+.ov-kpi .ov-kpi-icon,
+.ov-kpi:hover .ov-kpi-icon {
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  color: #8a6430;
+  transform: none;
+}
+.ov-kpi strong {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.ov-head h1 {
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.ov-card-head h2,
+.ov-card > h2,
+.ov-summary h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.ov-attention .ov-card-head svg {
+  color: #8a6430;
+}
+.ov-now {
+  border-radius: 4px;
+  background: #16130f;
+  box-shadow: none;
+}
+.ov-now-progress span {
+  background: #b08a4e;
+}
+.ov-bar-fill,
+.ov-bar.is-today .ov-bar-fill {
+  border-radius: 2px;
+  background: #16130f;
+}
+.ov-bar.is-today .ov-bar-fill {
+  background: #a47a3c;
+}
+.ov-bar-expected {
+  border-radius: 2px;
+}
+.ov-occ-track,
+.ov-occ-track span {
+  border-radius: 1px;
+}
+.ov-occ-track span {
+  background: #16130f;
+}
+.ov-occ-track span.is-full {
+  background: #a47a3c;
+}
+.ov-table-row::before {
+  background: #a47a3c;
+}
+.ov-rev-score > strong {
+  font-family: var(--serif);
+  font-weight: 500;
+}
+.ov-rev-stars {
+  color: #a47a3c;
+}
+.ov-reviews li,
+.ov-growth-list li {
+  border-radius: 2px;
+}
+.ov-clock {
+  border-radius: 3px;
+  background: #fffdf9;
+}
+
+@media (max-width: 767px) {
+  .ov-card-head h2,
+  .ov-card > h2,
+  .ov-summary h2 {
+    font-size: 18px;
+  }
 }

@@ -43,61 +43,6 @@ export function MotionProvider() {
   return null;
 }
 
-const rippleTargets =
-  ".btn, .public-button, .ov-quick, .ov-now-primary, .nav-link, .bottom-nav a, .image-action, .management-tab, .bk-service, .bk-pro, .booking-slot-grid > button, .booking-day-strip button";
-const spotlightTargets =
-  ".ov-card, .ov-kpi, .metric-item, .team-card, .catalog-list";
-
-/**
- * Touch feedback (ripple from the pressed point) and a soft light that
- * follows the pointer on panel cards. Mounted once.
- */
-export function PointerEffects() {
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-    function press(event: PointerEvent) {
-      const target = (event.target as Element | null)?.closest<HTMLElement>(
-        rippleTargets,
-      );
-      if (!target || (target as HTMLButtonElement).disabled) return;
-      const rect = target.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height) * 1.6;
-      const ripple = document.createElement("span");
-      ripple.className = "sf-ripple";
-      ripple.style.width = ripple.style.height = `${size}px`;
-      ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
-      ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
-      target.classList.add("sf-ripple-host");
-      target.appendChild(ripple);
-      ripple.addEventListener("animationend", () => ripple.remove(), {
-        once: true,
-      });
-    }
-    let frame = 0;
-    function move(event: PointerEvent) {
-      if (event.pointerType !== "mouse") return;
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const card = (event.target as Element | null)?.closest<HTMLElement>(
-          spotlightTargets,
-        );
-        if (!card) return;
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-        card.style.setProperty("--my", `${event.clientY - rect.top}px`);
-      });
-    }
-    document.addEventListener("pointerdown", press, { passive: true });
-    document.addEventListener("pointermove", move, { passive: true });
-    return () => {
-      document.removeEventListener("pointerdown", press);
-      document.removeEventListener("pointermove", move);
-      cancelAnimationFrame(frame);
-    };
-  }, []);
-  return null;
-}
-
 /** Animates a number from its previous value to the new one. */
 export function CountUp({
   value,

@@ -6,14 +6,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e2d9ca;
   padding: 18px 0;
   margin: 8px 0 22px;
   font-size: 14px;
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-context > span strong {
-  color: #111827;
+  color: #16130f;
   font-weight: 600;
 }
 .crm-context button {
@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #123e69;
+  color: #2c251e;
   font: inherit;
   font-size: 13px;
   background: transparent;
@@ -52,8 +52,8 @@
   align-items: center;
   padding: 10px 14px;
   border: 1px solid transparent;
-  border-radius: 10px;
-  color: #64748b;
+  border-radius: 4px;
+  color: #6e655b;
   background: transparent;
   font: inherit;
   font-size: 13px;
@@ -62,11 +62,11 @@
   transition: background 180ms;
 }
 .crm-filters .selected {
-  background: #0b1b30;
+  background: #16130f;
   color: white;
 }
 .crm-filters button:not(.selected):hover {
-  background: #edf1f5;
+  background: #efe9df;
 }
 .crm-filters span {
   font-size: 12px;
@@ -74,8 +74,8 @@
 }
 .crm-directory {
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   overflow: hidden;
 }
 .crm-list-head,
@@ -90,9 +90,9 @@
 }
 .crm-list-head {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   background: #fcfdfe;
-  border-bottom: 1px solid #edf0f4;
+  border-bottom: 1px solid #efe9df;
 }
 .crm-directory ul {
   padding: 0;
@@ -100,7 +100,7 @@
   list-style: none;
 }
 .crm-directory li + li {
-  border-top: 1px solid #edf0f4;
+  border-top: 1px solid #efe9df;
 }
 .crm-row {
   width: 100%;
@@ -108,13 +108,13 @@
   background: #fff;
   font: inherit;
   text-align: left;
-  color: #111827;
+  color: #16130f;
   cursor: pointer;
   min-height: 88px;
   transition: background 180ms;
 }
 .crm-row:hover {
-  background: #f8fafc;
+  background: #f7f3ec;
 }
 .crm-person {
   display: flex;
@@ -134,7 +134,7 @@
 .crm-phone {
   display: block;
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   margin-top: 6px;
 }
 .crm-mobile-visit {
@@ -143,7 +143,7 @@
 .crm-visits,
 .crm-last-visit {
   font-size: 13px;
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-spent {
   font-size: 14px;
@@ -153,7 +153,7 @@
 .crm-relationship {
   width: fit-content;
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-relationship {
   border-radius: 999px;
@@ -167,14 +167,14 @@
   color: #b42318;
 }
 .crm-relationship.is-inactive {
-  background: #f1f5f9;
-  color: #64748b;
+  background: #efe9df;
+  color: #6e655b;
 }
 .crm-row-arrow {
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-list-note {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   margin: 18px 0;
   line-height: 1.7;
@@ -202,7 +202,7 @@
 .crm-profile-identity p {
   font-size: 13px;
   line-height: 1.7;
-  color: #64748b;
+  color: #6e655b;
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -217,7 +217,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-return-note {
   display: flex;
@@ -227,7 +227,7 @@
   color: #79521e;
   border: 1px solid #efe2cc;
   padding: 18px;
-  border-radius: 12px;
+  border-radius: 4px;
 }
 .crm-return-note svg {
   flex-shrink: 0;
@@ -250,7 +250,7 @@
 }
 .crm-preferences dt {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   margin-bottom: 7px;
 }
 .crm-preferences dd {
@@ -265,7 +265,7 @@
 }
 .crm-history li {
   position: relative;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid #e2d9ca;
   padding: 0 0 28px 24px;
 }
 .crm-history li:last-child {
@@ -279,13 +279,13 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #123e69;
+  background: #2c251e;
   border: 2px solid #fff;
-  outline: 1px solid #dce3eb;
+  outline: 1px solid #e5e2dd;
 }
 .crm-history time {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .crm-history-title {
   display: flex;
@@ -304,12 +304,12 @@
 }
 .crm-history p {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   margin: 0 0 10px;
 }
 .crm-profile-empty {
   font-size: 14px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.7;
 }
 @media (max-width: 1190px) {
@@ -387,7 +387,7 @@
     margin-top: 2px;
     font-size: 12px;
     line-height: 1.5;
-    color: #64748b;
+    color: #6e655b;
   }
   .crm-spent {
     grid-area: spent;
@@ -430,19 +430,19 @@
   gap: 10px;
   margin: 14px 0;
   padding: 14px;
-  border: 1px solid #e5eaf0;
-  border-radius: 14px;
-  background: #f8fafc;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  background: #f7f3ec;
 }
 .crm-loyalty > div {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #0d2847;
+  color: #1f1a15;
 }
 .crm-loyalty strong {
   flex: 1;
-  color: #0f172a;
+  color: #16130f;
   font-size: 14px;
 }
 .crm-loyalty b {
@@ -459,16 +459,16 @@
 .crm-loyalty li {
   width: 18px;
   height: 18px;
-  border: 1.5px dashed #b6c2d1;
+  border: 1.5px dashed #c9bfae;
   border-radius: 50%;
 }
 .crm-loyalty li.is-on {
   border: 0;
-  background: linear-gradient(135deg, #07111f, #0d2847 55%, #123e69);
+  background: #16130f;
 }
 .crm-loyalty p {
   margin: 0;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12.5px;
 }
 .crm-loyalty.is-ready {

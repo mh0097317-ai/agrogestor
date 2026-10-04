@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-const colors = ["#0D2847", "#3F7DC0", "#8CBBEA", "#F4B860", "#22C55E"];
+const colors = ["#1F1A15", "#A47A3C", "#D9BE8C", "#F4B860", "#22C55E"];
 
 /** Animated check with a short confetti burst, for a fresh confirmation. */
 export function SuccessCheck({ celebrate }: { celebrate: boolean }) {

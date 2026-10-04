@@ -217,28 +217,10 @@
   animation-delay: 460ms;
 }
 
-/* Primary buttons get a periodic light sweep. */
+/* .sf-sheen is kept as a hook but adds no effect: the light sweep read
+   as a template trick. */
 .sf-sheen {
   position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.sf-sheen::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 38%;
-  background: linear-gradient(
-    90deg,
-    #ffffff00 0%,
-    #ffffff38 50%,
-    #ffffff00 100%
-  );
-  animation: sf-sheen 4.2s var(--ease-out) 1.2s infinite;
-  pointer-events: none;
-  z-index: -1;
 }
 
 /* Brand */
@@ -268,28 +250,30 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.035em;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 .brand-lockup .brand-lockup-text {
   display: inline;
 }
 .brand-lockup b {
-  font-weight: 650;
+  font-weight: 500;
+  font-style: italic;
 }
 .brand-lockup.on-light {
-  color: #0b1b30;
+  color: #16130f;
 }
 .brand-lockup.on-light b {
-  color: #2d6aa8;
+  color: #8a6430;
 }
 .brand-lockup.on-dark {
   color: #fff;
 }
 .brand-lockup.on-dark b {
-  color: #8cbbea;
+  color: #d9be8c;
 }
 
 /* Press feedback for touch targets. */
@@ -323,12 +307,12 @@ html {
   scroll-behavior: smooth;
 }
 ::selection {
-  background: #cfe0f3;
-  color: #0b1b30;
+  background: #e1ded8;
+  color: #16130f;
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #c9bfae transparent;
 }
 .btn {
   transition:
@@ -346,23 +330,8 @@ html {
   overflow: hidden;
   isolation: isolate;
 }
-.btn-primary::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 40%;
-  background: linear-gradient(90deg, #fff0, #ffffff30, #fff0);
-  transform: translateX(-130%) skewX(-20deg);
-  pointer-events: none;
-  z-index: -1;
-}
-.btn-primary:hover::after {
-  animation: sf-sheen 900ms var(--ease-out) 1;
-}
 .btn-primary:hover {
-  box-shadow: 0 10px 24px #0d28472e;
+  box-shadow: 0 6px 16px #16130f24;
 }
 .public-button:active:not(:disabled) {
   transform: scale(0.97);
@@ -404,7 +373,7 @@ html {
     box-shadow: 0 0 0 0 currentColor;
   }
   50% {
-    box-shadow: 0 0 0 3px #4376b500;
+    box-shadow: 0 0 0 3px #806e5200;
   }
 }
 .skeleton,
@@ -414,67 +383,6 @@ html {
 @keyframes sf-shimmer {
   to {
     background-position: -200% 0;
-  }
-}
-
-/* Ripple from the pressed point */
-.sf-ripple-host {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.sf-ripple {
-  position: absolute;
-  z-index: 0;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.16;
-  pointer-events: none;
-  transform: scale(0);
-  animation: sf-ripple 620ms var(--ease-out) forwards;
-}
-@keyframes sf-ripple {
-  to {
-    opacity: 0;
-    transform: scale(1);
-  }
-}
-
-/* Light that follows the pointer on panel cards */
-.ov-card,
-.ov-kpi,
-.metric-item,
-.team-card,
-.catalog-list {
-  position: relative;
-  isolation: isolate;
-}
-.ov-card::after,
-.ov-kpi::after,
-.metric-item::after,
-.team-card::after,
-.catalog-list::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: inherit;
-  background: radial-gradient(
-    420px circle at var(--mx, 50%) var(--my, 0%),
-    #3f7dc014,
-    transparent 45%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 300ms var(--ease-out);
-}
-@media (hover: hover) {
-  .ov-card:hover::after,
-  .ov-kpi:hover::after,
-  .metric-item:hover::after,
-  .team-card:hover::after,
-  .catalog-list:hover::after {
-    opacity: 1;
   }
 }
 
@@ -533,8 +441,8 @@ html {
 }
 .team-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 34px #0b1b3012;
+  box-shadow: 0 16px 34px #16130f12;
 }
 .catalog-row:hover {
-  background: #fafbfd;
+  background: #fbf8f2;
 }

@@ -95,14 +95,14 @@ const tabs = [
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
 ];
-// Empty value keeps the StudioFlow navy gradient.
+// Empty value keeps the StudioFlow ink.
 const colorPresets = [
   {
-    label: "Marinho",
+    label: "Tinta",
     value: "",
-    swatch: "linear-gradient(135deg, #07111f, #0d2847 55%, #123e69)",
+    swatch: "#16130F",
   },
-  { label: "Preto", value: "#111111", swatch: "#111111" },
+  { label: "Marinho", value: "#1b2f4a", swatch: "#1b2f4a" },
   { label: "Grafite", value: "#374151", swatch: "#374151" },
   { label: "Vinho", value: "#6b1f2e", swatch: "#6b1f2e" },
   { label: "Verde-escuro", value: "#1f4d3a", swatch: "#1f4d3a" },
@@ -414,7 +414,7 @@ function SettingsContent({ store }: { store: Store }) {
       const cover = identity.cover.trim();
       const logo = identity.logo.trim();
       if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) {
-        action.setError("A cor deve usar o formato hexadecimal, como #123E69.");
+        action.setError("A cor deve usar o formato hexadecimal, como #2C251E.");
         return;
       }
       if (
@@ -679,8 +679,7 @@ function SettingsContent({ store }: { store: Store }) {
                   <div
                     className="settings-preview-cover"
                     style={{
-                      background:
-                        "linear-gradient(135deg, #07111F 0%, #0D2847 55%, #123E69 100%)",
+                      background: "#16130F",
                     }}
                   >
                     {identity.cover ? (
@@ -833,7 +832,7 @@ function SettingsContent({ store }: { store: Store }) {
                         value={
                           /^#[0-9a-fA-F]{6}$/.test(identity.color)
                             ? identity.color
-                            : "#123e69"
+                            : "#2c251e"
                         }
                         onChange={(event) =>
                           updateDraft("identity", { color: event.target.value })
@@ -841,7 +840,7 @@ function SettingsContent({ store }: { store: Store }) {
                       />
                       <input
                         {...identityField("color")}
-                        placeholder="#123E69"
+                        placeholder="#2C251E"
                         pattern="#[0-9a-fA-F]{6}"
                         maxLength={7}
                       />

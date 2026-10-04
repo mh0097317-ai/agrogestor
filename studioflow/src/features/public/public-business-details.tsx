@@ -1,13 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Car,
-  CheckCircle,
-  Coffee,
-  Snowflake,
-  Star,
-  WifiHigh,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Star } from "@phosphor-icons/react/dist/ssr";
 import { ratingLabel } from "@/lib/reviews";
 import type { Business, Settings } from "@/types";
 import type { PublicProfessional } from "./types";
@@ -23,32 +15,16 @@ const weekDays = [
   "Sábado",
 ];
 
-function amenityIcon(amenity: string) {
-  if (/wi.?fi/i.test(amenity)) return WifiHigh;
-  if (/estacion/i.test(amenity)) return Car;
-  if (/bebida|café|cafe/i.test(amenity)) return Coffee;
-  if (/climat|ar.condicionado/i.test(amenity)) return Snowflake;
-  return CheckCircle;
-}
-
 export function PublicAmenities({ amenities }: { amenities: string[] }) {
   if (!amenities.length) return null;
   return (
-    <ul className="pp-amenities" aria-label="Comodidades" role="list">
-      {amenities.map((amenity, index) => {
-        const Icon = amenityIcon(amenity);
-        return (
-          <li
-            key={amenity}
-            data-reveal
-            style={{ "--reveal-i": index } as React.CSSProperties}
-          >
-            <Icon size={24} weight="duotone" />
-            <span>{amenity}</span>
-          </li>
-        );
-      })}
-    </ul>
+    <section className="pp-section" aria-label="Comodidades">
+      <ul className="pp-amenities" role="list" data-reveal>
+        {amenities.map((amenity) => (
+          <li key={amenity}>{amenity}</li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -63,7 +39,7 @@ export function PublicTeam({
   return (
     <section id="equipe" className="pp-section">
       <div className="pp-section-head" data-reveal>
-        <h2>Profissionais</h2>
+        <h2>Equipe</h2>
       </div>
       <ul className="pp-team" role="list">
         {professionals.map((person, index) => (
@@ -93,7 +69,7 @@ export function PublicTeam({
                 {person.specialties.slice(0, 2).join(" · ") || "Profissional"}
               </span>
               <em>
-                Agendar <ArrowUpRight size={13} weight="bold" />
+                Agendar <ArrowUpRight size={13} weight="regular" />
               </em>
             </Link>
           </li>
@@ -121,14 +97,15 @@ export function PublicVisit({
       </div>
       <div className="pp-visit">
         <div className="pp-hours" data-reveal>
-          <h3>Horário de funcionamento</h3>
+          <h3>Funcionamento</h3>
           <dl>
             {weekDays.map((day, index) => (
               <div key={day} className={index === weekday ? "is-today" : ""}>
                 <dt>
                   {day}
-                  {index === weekday && <small>Hoje</small>}
+                  {index === weekday && <small>hoje</small>}
                 </dt>
+                <i aria-hidden="true" />
                 <dd>
                   {settings.openDays.includes(index)
                     ? `${settings.openStart} – ${settings.openEnd}`
@@ -155,7 +132,7 @@ export function PublicVisit({
               rel="noreferrer"
               className="public-text-link"
             >
-              Abrir no mapa <ArrowUpRight size={15} weight="bold" />
+              Abrir no mapa <ArrowUpRight size={15} weight="regular" />
             </a>
           </div>
         )}

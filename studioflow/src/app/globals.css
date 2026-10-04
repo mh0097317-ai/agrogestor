@@ -1,15 +1,23 @@
 @import "tailwindcss";
 :root {
-  --background: #f8fafc;
-  --foreground: #111827;
-  --muted: #64748b;
-  --border: #e5eaf0;
-  --navy: #0b1b30;
-  --gradient: linear-gradient(135deg, #07111f 0%, #0d2847 55%, #123e69 100%);
-  --blue: #245983;
-  --radius: 16px;
-  --surface-muted: #f5f7fa;
-  --shadow-soft: 0 2px 8px #0b1b3004, 0 12px 28px #0b1b3003;
+  /* Cartaz: paper, ink and brass. */
+  --paper: #f4f0e8;
+  --paper-2: #ebe4d6;
+  --card: #fffdf9;
+  --ink: #16130f;
+  --ink-2: #433a31;
+  --brass: #8a6430;
+  --brass-2: #a47a3c;
+  --background: #f6f2ea;
+  --foreground: #16130f;
+  --muted: #6e655b;
+  --border: #e2d9ca;
+  --navy: #16130f;
+  --gradient: #16130f;
+  --blue: #8a6430;
+  --radius: 4px;
+  --surface-muted: #f3eee5;
+  --shadow-soft: 0 2px 8px #16130f04, 0 12px 28px #16130f03;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -22,13 +30,14 @@
   box-sizing: border-box;
 }
 body {
+  /* Set here: the font variables live on <body>, not on :root. */
+  --serif: var(--font-display), Georgia, serif;
   margin: 0;
   color: var(--foreground);
   background: var(--background);
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
-  font-feature-settings: "ss01";
 }
 button,
 input,
@@ -70,10 +79,11 @@ p {
   margin: 0;
 }
 h1 {
-  font-size: 30px;
-  font-weight: 650;
-  letter-spacing: -0.9px;
-  line-height: 1.2;
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
 }
 h2 {
   font-size: 17px;
@@ -93,8 +103,8 @@ textarea {
   width: 100%;
   padding: 11px 13px;
   border: 1px solid var(--border);
-  background: white;
-  border-radius: 9px;
+  background: #fffdf9;
+  border-radius: 3px;
   outline: none;
   color: var(--foreground);
   transition: border-color 0.18s;
@@ -102,14 +112,14 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #7096bb;
-  box-shadow: 0 0 0 3px #123e690d;
+  border-color: #8a6430;
+  box-shadow: 0 0 0 3px #a47a3c24;
 }
 input[type="checkbox"],
 input[type="radio"] {
   width: 16px;
   height: 16px;
-  accent-color: #0d2847;
+  accent-color: #1f1a15;
 }
 label {
   display: flex;
@@ -124,14 +134,14 @@ textarea {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #6a9dcc;
+  outline: 3px solid #a47a3c;
   outline-offset: 3px;
 }
 small {
   font-size: 14px;
 }
 ::selection {
-  background: #d7e6f4;
+  background: #e9d9b8;
 }
 img {
   object-fit: cover;
@@ -142,7 +152,7 @@ img {
   justify-content: center;
   align-items: center;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 11px 17px;
   border: 1px solid transparent;
   font-size: 14px;
@@ -154,29 +164,29 @@ img {
   background: var(--gradient);
   color: white;
   box-shadow:
-    0 1px 2px #07111f12,
+    0 1px 2px #16130f12,
     inset 0 1px 0 #ffffff12;
 }
 .btn-primary:hover {
-  box-shadow: 0 4px 12px #10283f18;
+  box-shadow: 0 4px 12px #27242018;
   transform: translateY(-1px);
 }
 .btn-secondary {
   background: #fff;
-  border-color: #e2e7ed;
-  color: #334155;
+  border-color: #e2d9ca;
+  color: #433a31;
 }
 .btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #c6d2dd;
+  background: #f7f3ec;
+  border-color: #d3d0cb;
 }
 .btn-ghost {
-  color: #64748b;
+  color: #6e655b;
   background: transparent;
 }
 .btn-ghost:hover {
-  background: #f1f5f9;
-  color: #0d2847;
+  background: #efe9df;
+  color: #1f1a15;
 }
 .card {
   background: white;
@@ -186,29 +196,29 @@ img {
 }
 .icon-button {
   border: 0;
-  border-radius: 10px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   background: transparent;
-  color: #738092;
+  color: #817e79;
 }
 .icon-button:hover {
-  background: #eef2f6;
-  color: #0b1b30;
+  background: #efe9df;
+  color: #16130f;
 }
 .avatar {
   display: inline-flex;
   position: relative;
   border-radius: 50%;
-  background: #e9eff5;
+  background: #f1eee8;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   vertical-align: middle;
-  color: #3a546e;
+  color: #54514c;
   font-weight: 600;
   font-size: 12px;
 }
@@ -227,10 +237,10 @@ img {
   font-size: 12px;
   font-weight: 500;
   padding: 5px 10px;
-  border-radius: 20px;
+  border-radius: 4px;
   white-space: nowrap;
-  background: #edf2f7;
-  color: #5a6b7d;
+  background: #f4f1eb;
+  color: #6c6864;
 }
 .status-badge i {
   width: 5px;
@@ -247,12 +257,12 @@ img {
   color: #b8883c;
 }
 .status-in_progress {
-  background: #eaf2fd;
-  color: #4376b5;
+  background: #f4f1eb;
+  color: #806e52;
 }
 .status-completed {
   background: #f1f3f7;
-  color: #64748b;
+  color: #6e655b;
 }
 .status-cancelled,
 .status-no_show {
@@ -285,12 +295,12 @@ img {
   min-height: 220px;
   padding: 30px;
   text-align: center;
-  color: #8491a3;
+  color: #928f8a;
   gap: 12px;
 }
 .empty-state h3 {
   font-size: 15px;
-  color: #334155;
+  color: #433a31;
 }
 .empty-state p {
   color: var(--muted);
@@ -306,10 +316,10 @@ img {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  border-radius: 12px;
-  background: #0b1b30;
+  border-radius: 4px;
+  background: #16130f;
   color: white;
-  box-shadow: 0 8px 35px #07111f24;
+  box-shadow: 0 8px 35px #16130f24;
   max-width: calc(100% - 32px);
   font-size: 13px;
   animation: toast-in 0.2s;
@@ -330,7 +340,7 @@ img {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: #07111f66;
+  background: #16130f66;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -342,10 +352,10 @@ img {
   background: white;
   width: 100%;
   max-width: 560px;
-  border-radius: 18px;
+  border-radius: 4px;
   max-height: 90dvh;
   overflow: auto;
-  box-shadow: 0 20px 60px #07111f20;
+  box-shadow: 0 20px 60px #16130f20;
 }
 .modal > header {
   display: flex;
@@ -379,14 +389,14 @@ img {
   background: #fff1f1;
   color: #a34444;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: 12px;
   margin-bottom: 16px;
 }
 .skeleton {
   height: 105px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, #e9eef3 25%, #f3f6fa 50%, #e9eef3 75%);
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e2d9ca 25%, #f7f3ec 50%, #e2d9ca 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -414,26 +424,26 @@ img {
 }
 .help-content p {
   font-size: 13px;
-  color: #728195;
+  color: #827f7a;
   line-height: 1.8;
   margin-bottom: 16px;
 }
 .help-content a {
-  color: #315b7e;
+  color: #665235;
 }
 .help-content li {
   font-size: 12px;
   line-height: 2;
-  color: #657990;
+  color: #797671;
 }
 .support-contact {
   background: #f4f7fa;
-  border-radius: 9px;
+  border-radius: 4px;
   padding: 16px;
   margin-top: 15px;
   font-size: 12px;
   line-height: 1.8;
-  color: #627994;
+  color: #797671;
 }
 .checkbox-label {
   flex-direction: row;
@@ -443,7 +453,7 @@ img {
 .modal-backdrop.detail-backdrop {
   padding: 0;
   justify-content: flex-end;
-  background: #07111f4d;
+  background: #16130f4d;
 }
 .modal.detail-panel {
   max-width: 520px;
@@ -487,7 +497,7 @@ img {
   grid-auto-columns: minmax(0, 1fr);
   background: white;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 4px;
   padding: 24px 0;
 }
 .metric-item {
@@ -527,7 +537,7 @@ img {
   padding: 14px 18px;
   border: 1px solid #e8dbc3;
   background: #fffaf0;
-  border-radius: 12px;
+  border-radius: 4px;
   margin-bottom: 20px;
   font-size: 13px;
 }

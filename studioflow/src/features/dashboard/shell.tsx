@@ -248,7 +248,7 @@ function Shell({ children }: { children: ReactNode }) {
                 <strong>{ownerName}</strong>
                 <small>{ownerRole}</small>
               </div>
-              <CaretDown size={12} color="#99a7b8" style={{ marginLeft: 6 }} />
+              <CaretDown size={12} color="#a8a5a0" style={{ marginLeft: 6 }} />
             </Link>
           </div>
           {notifications && (

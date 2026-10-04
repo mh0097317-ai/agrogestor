@@ -5,8 +5,8 @@
   flex-wrap: wrap;
   gap: 14px;
   padding: 16px 20px;
-  border: 1px solid #e5eaf0;
-  border-radius: 12px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   background: #fff;
 }
 .management-period .management-filters {
@@ -19,7 +19,7 @@
 }
 .management-period .management-filters button.selected {
   color: #fff;
-  background: #0b1b30;
+  background: #16130f;
 }
 .management-period-dates {
   display: flex;
@@ -27,24 +27,24 @@
   gap: 9px;
   margin-left: auto;
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .management-period-dates label {
   min-width: 0;
 }
 .management-period-dates input {
-  border: 1px solid #e5eaf0;
-  border-radius: 8px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
   min-height: 39px;
   padding: 7px 9px;
-  color: #334155;
+  color: #433a31;
   font: inherit;
   background: #fff;
   min-width: 0;
 }
 .management-period-caption {
   flex-basis: 100%;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .finance-overview {
@@ -63,12 +63,12 @@
   bottom: 27px;
   width: 3px;
   border-radius: 3px;
-  background: linear-gradient(180deg, #07111f, #123e69);
+  background: #16130f;
 }
 .finance-overview > div:first-child > strong {
   display: block;
   font-size: clamp(30px, 3vw, 42px);
-  color: #0b1b30;
+  color: #16130f;
   font-weight: 600;
   margin-top: 16px;
   letter-spacing: -0.05em;
@@ -76,12 +76,12 @@
 }
 .finance-overview p {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   margin: 10px 0 0;
   line-height: 1.6;
 }
 .finance-overview-balance {
-  border-left: 1px solid #edf1f5;
+  border-left: 1px solid #efe9df;
   padding-left: 30px;
   display: flex;
   flex-direction: column;
@@ -90,18 +90,18 @@
 }
 .finance-overview-balance > span {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.6;
 }
 .finance-overview-balance > strong {
-  color: #334155;
+  color: #433a31;
   font-size: 27px;
   font-weight: 500;
   letter-spacing: -0.035em;
   margin: 9px 0;
 }
 .finance-overview-balance > small {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -113,7 +113,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #edf1f5;
+  border-bottom: 1px solid #efe9df;
   padding: 13px 0;
 }
 .finance-pending-list > div:first-child {
@@ -130,7 +130,7 @@
 .finance-pending-list strong {
   font-weight: 500;
   font-size: 12px;
-  color: #243b53;
+  color: #3a3229;
   display: block;
   overflow-wrap: anywhere;
 }
@@ -140,13 +140,13 @@
 }
 .finance-pending-list small {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   display: block;
   margin-top: 6px;
 }
 .management-bar-label {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .management-bar-fill {
   min-width: 0;
@@ -168,7 +168,7 @@
   gap: 14px;
   align-items: center;
   padding: 17px 0;
-  border-bottom: 1px solid #edf1f5;
+  border-bottom: 1px solid #efe9df;
 }
 .management-ranking li:first-child {
   padding-top: 0;
@@ -178,7 +178,7 @@
   padding-bottom: 0;
 }
 .management-rank-number {
-  color: #94a3b8;
+  color: #776c5f;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   min-width: 20px;
@@ -190,20 +190,20 @@
 .management-ranking strong {
   font-size: 13px;
   font-weight: 600;
-  color: #243b53;
+  color: #3a3229;
   display: block;
 }
 .management-ranking small {
   display: block;
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   margin-top: 5px;
   font-weight: 400;
 }
 .management-ranking b {
   font-size: 16px;
   font-weight: 600;
-  color: #0d2847;
+  color: #1f1a15;
   text-align: right;
 }
 .management-status-breakdown > div {
@@ -212,10 +212,10 @@
   gap: 16px;
   padding: 11px 0;
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .management-status-breakdown strong {
-  color: #243b53;
+  color: #3a3229;
   font-weight: 500;
 }
 .management-status-breakdown span {
@@ -228,16 +228,16 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #9aa8b7;
+  background: #a9a6a1;
 }
 .management-status-dot.completed {
   background: #45816c;
 }
 .management-status-dot.confirmed {
-  background: #395f82;
+  background: #6b573a;
 }
 .management-status-dot.in_progress {
-  background: #123e69;
+  background: #2c251e;
 }
 .management-status-dot.pending {
   background: #b89159;
@@ -290,7 +290,7 @@
   .finance-overview-balance {
     border-left: 0;
     padding-left: 0;
-    border-top: 1px solid #edf1f5;
+    border-top: 1px solid #efe9df;
     padding-top: 22px;
   }
   .finance-overview-balance > strong {

@@ -10,6 +10,7 @@ import {
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { PublicImage } from "./public-ui";
+import "./public-gallery.css";
 
 export function PublicWork({
   photos,
@@ -32,7 +33,7 @@ export function PublicWork({
   return (
     <section id="trabalhos" className="pp-section">
       <div className="pp-section-head" data-reveal>
-        <h2>Nossos trabalhos</h2>
+        <h2>Trabalhos</h2>
         <button type="button" className="pp-see-all" onClick={() => setOpen(0)}>
           {photos.length > 1 ? `Ver as ${photos.length} fotos` : "Ampliar"}
           <CaretRight size={14} weight="bold" />

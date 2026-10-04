@@ -1,7 +1,7 @@
 .onboarding-page {
   min-height: 100vh;
-  background: #f8fafc;
-  color: #111827;
+  background: #f7f3ec;
+  color: #16130f;
 }
 .onboarding-header {
   display: flex;
@@ -9,7 +9,7 @@
   justify-content: space-between;
   gap: 20px;
   padding: 24px 5%;
-  border-bottom: 1px solid #edf0f4;
+  border-bottom: 1px solid #efe9df;
   background: white;
 }
 .onboarding-brand {
@@ -20,10 +20,10 @@
   font-size: 18px;
   letter-spacing: -0.04em;
   text-decoration: none;
-  color: #0b1b30;
+  color: #16130f;
 }
 .onboarding-header-note {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .onboarding-container {
@@ -43,7 +43,7 @@
   right: 6%;
   top: 13px;
   height: 1px;
-  background: #dfe4eb;
+  background: #e2d9ca;
 }
 .onboarding-progress > div {
   display: flex;
@@ -60,29 +60,29 @@
   justify-content: center;
   align-items: center;
   border-radius: 50%;
-  background: #e9eef4;
-  color: #94a3b8;
-  border: 4px solid #f8fafc;
+  background: #f0ede7;
+  color: #776c5f;
+  border: 4px solid #f7f3ec;
   box-sizing: content-box;
   font-size: 12px;
   font-weight: 600;
 }
 .onboarding-progress > div.active > span {
-  background: #0d2847;
+  background: #1f1a15;
   color: white;
 }
 .onboarding-progress small {
   font-size: 12px;
-  color: #94a3b8;
+  color: #776c5f;
 }
 .onboarding-progress .active small {
-  color: #111827;
+  color: #16130f;
 }
 .onboarding-step-label {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: #64748b;
+  color: #6e655b;
   display: block;
   margin-bottom: 13px;
 }
@@ -95,7 +95,7 @@
 }
 .onboarding-description {
   font-size: 15px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.8;
   margin: 0 0 28px;
 }
@@ -106,9 +106,9 @@
 }
 .onboarding-category {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2d9ca;
   padding: 19px 22px;
-  border-radius: 12px;
+  border-radius: 4px;
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -117,9 +117,9 @@
   min-width: 0;
 }
 .onboarding-category.selected {
-  border-color: #123e69;
-  background: #f7f9fc;
-  box-shadow: 0 0 0 1px #123e69;
+  border-color: #2c251e;
+  background: #f7f3ec;
+  box-shadow: 0 0 0 1px #2c251e;
 }
 .onboarding-category-icon {
   height: 38px;
@@ -127,9 +127,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #123e69;
-  background: #f1f5f9;
-  border-radius: 10px;
+  color: #2c251e;
+  background: #efe9df;
+  border-radius: 4px;
   margin-bottom: 14px;
 }
 .onboarding-category strong {
@@ -139,14 +139,14 @@
 }
 .onboarding-category small {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.5;
 }
 .onboarding-category-check {
   position: absolute;
   right: 17px;
   top: 19px;
-  color: #123e69;
+  color: #2c251e;
 }
 .onboarding-actions {
   display: flex;
@@ -165,7 +165,7 @@
 .onboarding-cover {
   width: 100%;
   height: 160px;
-  border-radius: 11px;
+  border-radius: 4px;
   object-fit: cover;
 }
 .onboarding-cover-fallback {
@@ -175,9 +175,9 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: linear-gradient(135deg, #07111f, #0d2847 55%, #123e69);
+  background: #16130f;
   color: #fff;
-  border-radius: 11px;
+  border-radius: 4px;
 }
 .onboarding-cover-fallback strong {
   font-size: 22px;
@@ -187,7 +187,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #b4c9e0;
+  color: #c9bfae;
 }
 .onboarding-draft-list {
   display: flex;
@@ -207,7 +207,7 @@
 }
 .onboarding-draft-header > span {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -227,8 +227,8 @@
   align-items: flex-start;
   gap: 13px;
   padding: 19px;
-  background: #f8fafc;
-  border-radius: 11px;
+  background: #f7f3ec;
+  border-radius: 4px;
   margin-top: 8px;
 }
 .onboarding-summary > span {
@@ -237,17 +237,17 @@
   justify-content: center;
   width: 37px;
   height: 37px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: white;
-  color: #123e69;
-  border: 1px solid #e5e7eb;
+  color: #2c251e;
+  border: 1px solid #e2d9ca;
   flex-shrink: 0;
 }
 .onboarding-summary strong {
   font-size: 14px;
 }
 .onboarding-summary p {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   line-height: 1.8;
   margin: 4px 0 0;
@@ -255,7 +255,7 @@
 .onboarding-footer {
   text-align: center;
   font-size: 12px;
-  color: #94a3b8;
+  color: #776c5f;
   margin-top: 23px;
 }
 .onboarding-success {
@@ -270,9 +270,9 @@
   height: 80px;
   color: white;
   border-radius: 50%;
-  background: linear-gradient(135deg, #07111f, #123e69);
+  background: #16130f;
   margin: 0 auto 31px;
-  box-shadow: 0 12px 30px #0d284714;
+  box-shadow: 0 12px 30px #1f1a1514;
 }
 .onboarding-success h1 {
   max-width: 490px;
@@ -292,11 +292,11 @@
 .onboarding-public-link > span {
   font-size: 12px;
   letter-spacing: 0.1em;
-  color: #64748b;
+  color: #6e655b;
 }
 .onboarding-public-link > strong {
   font-size: 23px;
-  color: #0d2847;
+  color: #1f1a15;
   letter-spacing: -0.03em;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -313,8 +313,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #07111f, #123e69);
-  border-radius: 9px;
+  background: #16130f;
+  border-radius: 4px;
   text-decoration: none;
   color: white;
   font-size: 12px;
@@ -397,7 +397,7 @@
 }
 .onboarding-category:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 26px #0b1b3010;
+  box-shadow: 0 12px 26px #16130f10;
 }
 .onboarding-category-icon {
   transition: transform 360ms var(--ease-spring);
@@ -408,4 +408,12 @@
 }
 .onboarding-category-check {
   animation: sf-pop 420ms var(--ease-spring) both;
+}
+
+/* Cartaz: category icons without tinted tiles */
+.onboarding-category-icon,
+.onboarding-category.selected .onboarding-category-icon {
+  background: none !important;
+  box-shadow: none !important;
+  color: #8a6430;
 }

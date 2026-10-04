@@ -14,11 +14,11 @@
   min-height: 45px;
   border: 0;
   background: transparent;
-  color: #64748b;
+  color: #6e655b;
   display: flex;
   align-items: center;
   gap: 11px;
-  border-radius: 9px;
+  border-radius: 4px;
   padding: 12px 14px;
   font: inherit;
   font-size: 13px;
@@ -27,13 +27,13 @@
 }
 .settings-section-nav button:hover {
   background: #eff3f7;
-  color: #123e69;
+  color: #2c251e;
 }
 .settings-section-nav button.selected,
 .settings-section-nav button[aria-current="page"],
 .settings-section-nav button[aria-selected="true"] {
-  background: #edf3f8;
-  color: #0d2847;
+  background: #efe9df;
+  color: #1f1a15;
   font-weight: 600;
 }
 .settings-section-nav button svg {
@@ -61,7 +61,7 @@
 }
 .settings-section-heading p {
   margin: 0;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   line-height: 1.7;
 }
@@ -78,8 +78,8 @@
   opacity: 0.75;
 }
 .settings-preview {
-  border: 1px solid #e5eaf0;
-  border-radius: 14px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   overflow: hidden;
   max-width: 370px;
   background: #fff;
@@ -87,7 +87,7 @@
 }
 .settings-preview-cover {
   height: 170px;
-  background: linear-gradient(135deg, #07111f, #123e69);
+  background: #16130f;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -106,7 +106,7 @@
   content: "";
   position: absolute;
   inset: 50% 0 0;
-  background: linear-gradient(transparent, #07111f99);
+  background: linear-gradient(transparent, #16130f99);
   pointer-events: none;
 }
 .settings-preview-cover > span {
@@ -128,13 +128,13 @@
 .settings-preview-body h3 {
   margin: 0;
   font-size: 20px;
-  color: #111827;
+  color: #16130f;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 .settings-preview-body p {
   margin: 0;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   line-height: 1.7;
 }
@@ -155,8 +155,8 @@
   gap: 10px;
   padding: 13px 15px;
   border: 0;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #07111f, #0d2847 55%, #123e69);
+  border-radius: 4px;
+  background: #16130f;
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -167,13 +167,13 @@
   justify-content: space-between;
   align-items: center;
   gap: 15px;
-  border-top: 1px solid #edf1f5;
+  border-top: 1px solid #efe9df;
   padding-top: 22px;
   margin-top: 25px;
 }
 .settings-savebar > span {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
 }
 .settings-savebar .management-form-actions {
   padding-top: 0;
@@ -235,7 +235,7 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 3px;
   animation: sf-fade-up 420ms var(--ease-out) both;
 }
 .settings-logo-fallback {
@@ -243,7 +243,7 @@
   place-items: center;
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: 4px;
   background: var(--gradient);
   color: #fff;
   font-size: 18px;
@@ -267,7 +267,7 @@
 }
 .settings-color input[type="color"]::-webkit-color-swatch {
   border: 0;
-  border-radius: 6px;
+  border-radius: 3px;
 }
 .settings-swatches {
   display: flex;
@@ -281,10 +281,10 @@
   gap: 8px;
   min-height: 40px;
   padding: 0 14px 0 8px;
-  border: 1px solid #dfe4eb;
+  border: 1px solid #e2d9ca;
   border-radius: 999px;
   background: #fff;
-  color: #1f2937;
+  color: #2b2823;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -295,14 +295,14 @@
     transform 0.12s;
 }
 .settings-swatches button:hover {
-  border-color: #b9c6d4;
+  border-color: #c9bfae;
 }
 .settings-swatches button:active {
   transform: scale(0.97);
 }
 .settings-swatches button.is-selected {
-  border-color: #0b1b30;
-  box-shadow: 0 0 0 1px #0b1b30;
+  border-color: #16130f;
+  box-shadow: 0 0 0 1px #16130f;
 }
 .settings-swatches i {
   width: 24px;

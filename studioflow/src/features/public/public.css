@@ -1,13 +1,13 @@
 .public-site,
 .booking-site {
-  --public-ink: #111827;
-  --public-muted: #64748b;
-  --public-line: #e5e7eb;
-  --public-navy: linear-gradient(135deg, #07111f 0%, #0d2847 55%, #123e69 100%);
+  --public-ink: #16130f;
+  --public-muted: #6e655b;
+  --public-line: #e2d9ca;
+  --public-navy: #16130f;
   color: var(--public-ink);
   font-size: 14px;
   line-height: 1.55;
-  background: #fff;
+  background: #f4f0e8;
   min-height: 100dvh;
 }
 .public-site *,
@@ -48,19 +48,16 @@
 .booking-site button:focus-visible,
 .public-site a:focus-visible,
 .booking-site a:focus-visible {
-  outline: 3px solid #6e98c4;
+  outline: 2px solid #8a6430;
   outline-offset: 4px;
 }
 .public-button {
   min-height: 50px;
   padding: 13px 20px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 4px;
   color: #fff !important;
-  background: var(
-    --public-cta,
-    var(--public-navy, linear-gradient(135deg, #07111f, #123e69))
-  );
+  background: var(--public-cta, var(--public-navy, #16130f));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -71,12 +68,12 @@
     transform 0.18s,
     box-shadow 0.18s;
   white-space: nowrap;
-  box-shadow: 0 2px 6px #07111f0c;
+  box-shadow: 0 2px 6px #16130f0c;
   letter-spacing: -0.1px;
 }
 .public-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px #07111f14;
+  box-shadow: 0 4px 12px #16130f14;
 }
 .public-button:disabled {
   opacity: 0.4;
@@ -84,8 +81,8 @@
 }
 .public-button-outline {
   background: #fff;
-  color: #334155 !important;
-  border-color: #dce2e9;
+  color: #433a31 !important;
+  border-color: #e2d9ca;
   box-shadow: none;
   font-weight: 500;
 }
@@ -99,12 +96,12 @@
   padding: 0;
   border: 0;
   background: transparent;
-  border-radius: 12px;
-  color: #475569;
+  border-radius: 4px;
+  color: #5a5148;
   transition: background 0.18s;
 }
 .public-icon-button:hover {
-  background: #f1f5f9;
+  background: #efe9df;
 }
 .public-text-link {
   display: inline-flex;
@@ -112,7 +109,7 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #123e69 !important;
+  color: #2c251e !important;
   background: none;
   border: 0;
   padding: 4px 0;
@@ -123,7 +120,7 @@
   display: block;
   flex-shrink: 0;
   overflow: hidden;
-  background: #eef2f6;
+  background: #efe9df;
 }
 .public-image img {
   object-fit: cover;
@@ -135,7 +132,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #101e2e, #365374);
+  background: linear-gradient(135deg, #16130f, #3a3229);
   color: white;
   font-weight: 600;
   font-size: 22px;
@@ -147,7 +144,7 @@
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 1.6px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.5;
 }
 .public-toast {
@@ -159,14 +156,14 @@
   width: max-content;
   max-width: calc(100% - 32px);
   padding: 14px 20px;
-  border-radius: 12px;
-  background: #10273e;
+  border-radius: 4px;
+  background: #26231f;
   color: #fff;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  box-shadow: 0 5px 20px #10273e30;
+  box-shadow: 0 5px 20px #26231f30;
   animation: public-fade 0.2s ease-out;
 }
 .public-load {
@@ -177,13 +174,13 @@
 }
 .public-skeleton {
   border-radius: 8px;
-  background: linear-gradient(90deg, #edf1f5 25%, #f8fafc 50%, #edf1f5 75%);
+  background: linear-gradient(90deg, #efe9df 25%, #f7f3ec 50%, #efe9df 75%);
   background-size: 200% 100%;
   animation: public-shimmer 1.5s infinite;
 }
 .public-skeleton-cover {
   height: 290px;
-  border-radius: 18px;
+  border-radius: 4px;
   margin-bottom: 30px;
 }
 .public-skeleton-title {
@@ -218,24 +215,24 @@
   text-align: center;
   padding: 24px;
   gap: 18px;
-  background: #f8fafc;
-  color: #123e69;
+  background: #f7f3ec;
+  color: #2c251e;
 }
 .public-error-page h1 {
   font-size: 25px;
-  color: #111827;
+  color: #16130f;
 }
 .public-error-page p {
   font-size: 14px;
-  color: #64748b;
+  color: #6e655b;
   max-width: 420px;
 }
 .public-inline-empty {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   padding: 20px;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: #f7f3ec;
+  border-radius: 4px;
 }
 .public-sr-only {
   position: absolute;
@@ -259,10 +256,10 @@
   gap: 12px;
   margin: 12px 20px;
   padding: 12px 16px;
-  border: 1px solid #e6ebf0;
-  border-radius: 12px;
-  color: #475569;
-  background: #f8fafc;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  color: #5a5148;
+  background: #f7f3ec;
   font-size: 14px;
   line-height: 1.6;
 }
@@ -293,7 +290,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: #07111f70;
+  background: #16130f70;
   z-index: 80;
   animation: public-fade 0.15s ease-out;
 }
@@ -302,10 +299,10 @@
   width: 100%;
   max-width: 410px;
   background: #fff;
-  border-radius: 18px;
+  border-radius: 4px;
   padding: 35px 28px 27px;
   text-align: center;
-  box-shadow: 0 15px 50px #07111f25;
+  box-shadow: 0 15px 50px #16130f25;
 }
 .public-modal-close {
   position: absolute;
@@ -321,7 +318,7 @@
 .public-modal p {
   font-size: 14px;
   line-height: 1.7;
-  color: #64748b;
+  color: #6e655b;
   margin-bottom: 17px;
 }
 .public-modal .public-button {
@@ -382,16 +379,16 @@
   gap: 12px;
   margin-top: 12px;
   padding: 11px 14px;
-  border: 1px solid #dbe4ef;
-  border-radius: 14px;
-  background: #f5f8fc;
-  color: #0f172a !important;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  background: #f7f3ec;
+  color: #16130f !important;
   transition:
     border-color 0.2s,
     transform 0.15s;
 }
 .repeat-booking:hover {
-  border-color: #b8c7da;
+  border-color: #c9bfae;
 }
 .repeat-booking:active {
   transform: scale(0.98);
@@ -402,10 +399,10 @@
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: 4px;
   background: #fff;
-  color: #0d2847;
-  box-shadow: inset 0 0 0 1px #dbe4ef;
+  color: #1f1a15;
+  box-shadow: inset 0 0 0 1px #e2d9ca;
 }
 .repeat-booking-text {
   display: grid;
@@ -413,7 +410,7 @@
   min-width: 0;
 }
 .repeat-booking-text small {
-  color: #64748b;
+  color: #6e655b;
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -426,7 +423,7 @@
 }
 .repeat-booking > svg {
   flex: none;
-  color: #94a3b8;
+  color: #776c5f;
 }
 .repeat-booking.is-booking {
   margin: -4px 0 16px;

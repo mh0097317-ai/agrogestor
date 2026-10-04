@@ -45,15 +45,21 @@ async function storyImage(store: Store, url: string, qr: string) {
   canvas.width = 1080;
   canvas.height = 1920;
   const ctx = canvas.getContext("2d")!;
-  const fill = ctx.createLinearGradient(0, 0, 1080, 1920);
-  fill.addColorStop(0, "#07111f");
-  fill.addColorStop(0.55, "#0d2847");
-  const brand = store.business.color ?? "";
-  fill.addColorStop(1, /^#[0-9a-f]{6}$/i.test(brand) ? brand : "#123e69");
-  ctx.fillStyle = fill;
+  // The app's own fonts, by the family names the page registered.
+  const css = getComputedStyle(document.body);
+  const display = `${css.getPropertyValue("--font-display") || "Georgia"}, Georgia, serif`;
+  const ui = `${css.getPropertyValue("--font-ui") || "system-ui"}, system-ui, sans-serif`;
+  await document.fonts.ready;
+  // Paper poster with a double ink frame, like a printed price board.
+  ctx.fillStyle = "#f4f0e8";
   ctx.fillRect(0, 0, 1080, 1920);
+  ctx.strokeStyle = "#16130f";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(48, 48, 984, 1824);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(66, 66, 948, 1788);
   ctx.textAlign = "center";
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#16130f";
   let y = 330;
   if (store.business.logo) {
     try {
@@ -73,33 +79,34 @@ async function storyImage(store: Store, url: string, qr: string) {
       // A logo the browser cannot read is simply left out.
     }
   }
-  ctx.font = "800 76px Geist, system-ui, sans-serif";
-  ctx.fillText(store.business.name.toUpperCase(), 540, y, 960);
-  ctx.font = "600 30px Geist, system-ui, sans-serif";
-  ctx.fillStyle = "#a9bdd4";
+  ctx.font = `600 92px ${display}`;
+  ctx.fillText(store.business.name, 540, y, 900);
+  ctx.font = `600 30px ${ui}`;
+  ctx.fillStyle = "#8a6430";
   ctx.fillText(
     store.business.category.toUpperCase().split("").join(" "),
     540,
     y + 64,
     960,
   );
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 64px Geist, system-ui, sans-serif";
+  ctx.fillStyle = "#16130f";
+  ctx.font = `italic 400 68px ${display}`;
   ctx.fillText("Agende seu horário", 540, 720);
   ctx.fillText("pelo celular", 540, 800);
   const card = 620;
   const top = 900;
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.roundRect(540 - card / 2, top, card, card, 48);
-  ctx.fill();
+  ctx.fillStyle = "#fffdf9";
+  ctx.fillRect(540 - card / 2, top, card, card);
+  ctx.strokeStyle = "#dcd2c2";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(540 - card / 2, top, card, card);
   const code = await loadImage(qr);
   ctx.drawImage(code, 540 - 260, top + 50, 520, 520);
-  ctx.fillStyle = "#d6e2f0";
-  ctx.font = "500 38px Geist, system-ui, sans-serif";
+  ctx.fillStyle = "#6e655b";
+  ctx.font = `500 38px ${ui}`;
   ctx.fillText("Aponte a câmera do celular", 540, 1640);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "600 34px Geist, system-ui, sans-serif";
+  ctx.fillStyle = "#16130f";
+  ctx.font = `600 34px ${ui}`;
   ctx.fillText(url.replace(/^https?:\/\//, ""), 540, 1710, 980);
   return canvas.toDataURL("image/png");
 }
@@ -125,7 +132,7 @@ function ShareContent({ store }: { store: Store }) {
       width: 1024,
       margin: 1,
       errorCorrectionLevel: "M",
-      color: { dark: "#0b1220", light: "#ffffff" },
+      color: { dark: "#16130f", light: "#ffffff" },
     }).then((value) => {
       if (alive) setQr(value);
     });

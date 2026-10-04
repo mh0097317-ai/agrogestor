@@ -10,20 +10,20 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 10px;
-  color: #111827;
+  color: #16130f;
   font-size: 12px;
   font-weight: 500;
 }
 .image-field-head em {
   margin-left: auto;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
 }
 .image-field-head small {
   flex-basis: 100%;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
@@ -36,11 +36,11 @@
   place-items: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 1px 1px, #d9e1ea 1px, transparent 0) 0 0 / 14px
+    radial-gradient(circle at 1px 1px, #e3e0da 1px, transparent 0) 0 0 / 14px
       14px,
-    #f7f9fc;
-  border: 1.5px dashed #cdd6e1;
-  border-radius: 14px;
+    #f7f3ec;
+  border: 1.5px dashed #c9bfae;
+  border-radius: 4px;
   transition:
     border-color 180ms var(--ease-out, ease),
     background-color 180ms var(--ease-out, ease),
@@ -65,16 +65,16 @@
 }
 .image-drop.has-image {
   border-style: solid;
-  border-color: #e3e8ef;
-  background: #eef2f6;
+  border-color: #e2d9ca;
+  background: #efe9df;
 }
 .image-drop:not(.is-locked):hover {
-  border-color: #8aa4bf;
+  border-color: #776c5f;
 }
 .image-drop.is-dragging {
-  border-color: #123e69;
-  background-color: #eef4fa;
-  box-shadow: 0 0 0 4px #123e6914;
+  border-color: #2c251e;
+  background-color: #efe9df;
+  box-shadow: 0 0 0 4px #2c251e14;
 }
 .image-drop-photo {
   position: absolute;
@@ -100,7 +100,7 @@
   padding: 16px;
   border: 0;
   background: transparent;
-  color: #0b1b30;
+  color: #16130f;
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -112,7 +112,7 @@
 }
 .image-drop-empty small {
   max-width: 240px;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -121,12 +121,12 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: 4px;
   background: #fff;
-  color: #123e69;
+  color: #2c251e;
   box-shadow:
-    0 1px 2px #0b1b300d,
-    0 6px 16px #0b1b300f;
+    0 1px 2px #16130f0d,
+    0 6px 16px #16130f0f;
   transition: transform 220ms var(--ease-spring, ease);
 }
 .image-drop:not(.is-locked):hover .image-drop-icon,
@@ -142,7 +142,7 @@
   justify-content: center;
   gap: 8px;
   background: #ffffffd9;
-  color: #0b1b30;
+  color: #16130f;
   font-size: 12px;
   font-weight: 600;
   backdrop-filter: blur(2px);
@@ -164,10 +164,10 @@
   gap: 7px;
   min-height: 38px;
   padding: 0 13px;
-  border: 1px solid #dfe4eb;
-  border-radius: 10px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
   background: #fff;
-  color: #0b1b30;
+  color: #16130f;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -178,8 +178,8 @@
     transform 120ms ease;
 }
 .image-action:hover:not(:disabled) {
-  border-color: #b9c6d4;
-  background: #f7f9fc;
+  border-color: #c9bfae;
+  background: #f7f3ec;
 }
 .image-action:active:not(:disabled) {
   transform: scale(0.97);
@@ -228,20 +228,20 @@
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: 10px;
   padding: 2px;
-  border-radius: 16px;
+  border-radius: 4px;
   transition: box-shadow 180ms ease;
 }
 .gallery-grid.is-dragging {
-  box-shadow: 0 0 0 2px #123e69;
-  background: #eef4fa;
+  box-shadow: 0 0 0 2px #2c251e;
+  background: #efe9df;
 }
 .gallery-tile {
   position: relative;
   margin: 0;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 12px;
-  background: #eef2f6;
+  border-radius: 4px;
+  background: #efe9df;
   animation: image-pop 360ms var(--ease-out, ease) both;
 }
 .gallery-tile img {
@@ -259,7 +259,7 @@
   left: 8px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: #0b1b30d9;
+  background: #16130fd9;
   color: #fff;
   font-size: 11px;
   font-weight: 600;
@@ -290,10 +290,10 @@
   width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 4px;
   background: #ffffffeb;
-  color: #0b1b30;
-  box-shadow: 0 2px 8px #0b1b3026;
+  color: #16130f;
+  box-shadow: 0 2px 8px #16130f26;
   cursor: pointer;
 }
 .gallery-tile-actions button.is-danger {
@@ -312,10 +312,10 @@
   gap: 4px;
   aspect-ratio: 1;
   padding: 10px;
-  border: 1.5px dashed #cdd6e1;
-  border-radius: 12px;
-  background: #f7f9fc;
-  color: #0b1b30;
+  border: 1.5px dashed #c9bfae;
+  border-radius: 4px;
+  background: #f7f3ec;
+  color: #16130f;
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -324,8 +324,8 @@
     background-color 160ms ease;
 }
 .gallery-add:hover:not(:disabled) {
-  border-color: #8aa4bf;
-  background: #f1f5f9;
+  border-color: #776c5f;
+  background: #efe9df;
 }
 .gallery-add strong {
   margin-top: 6px;
@@ -333,7 +333,7 @@
   font-weight: 600;
 }
 .gallery-add small {
-  color: #64748b;
+  color: #6e655b;
   font-size: 11px;
 }
 .gallery-add:disabled {

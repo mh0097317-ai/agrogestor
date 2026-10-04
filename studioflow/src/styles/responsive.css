@@ -69,7 +69,7 @@
   }
   .stat-name {
     font-size: 12px;
-    color: #617287;
+    color: #6e655b;
   }
   .presence-list {
     gap: 10px;
@@ -140,7 +140,7 @@
   }
   .stat-name {
     font-size: 12px;
-    color: #617287;
+    color: #6e655b;
   }
   .stat-bottom {
     font-size: 12px;
@@ -206,14 +206,14 @@
     display: inline-block;
   }
   .mobile-top .icon-button {
-    color: #d8e4ef;
+    color: #e5e2dd;
   }
   .mobile-top a {
     font-size: 12px;
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #b1c6da;
+    color: #c6c3bd;
   }
   .dashboard-content {
     padding: 25px 20px 110px;
@@ -228,9 +228,9 @@
     padding: 8px 15px max(8px, env(safe-area-inset-bottom));
     justify-content: space-around;
     background: #fffffffa;
-    border-top: 1px solid #e7edf3;
+    border-top: 1px solid #efece6;
     z-index: 60;
-    box-shadow: 0 -3px 15px #07111f04;
+    box-shadow: 0 -3px 15px #16130f04;
   }
   .bottom-nav > a,
   .bottom-nav > button {
@@ -242,7 +242,7 @@
     justify-content: center;
     gap: 6px;
     font-size: 12px;
-    color: #94a2b5;
+    color: #a3a09b;
     min-width: 48px;
   }
   .bottom-nav svg {
@@ -250,7 +250,7 @@
     height: 20px;
   }
   .bottom-nav a.active {
-    color: #173b5f;
+    color: #4a3416;
   }
   .bottom-nav .mobile-add {
     border-radius: 50%;
@@ -260,8 +260,8 @@
     color: #fff;
     background: var(--gradient);
     margin-top: -19px;
-    border: 5px solid #f8fafc;
-    box-shadow: 0 3px 10px #0b1b3014;
+    border: 5px solid #f7f3ec;
+    box-shadow: 0 3px 10px #16130f14;
   }
   .bottom-nav .mobile-add svg {
     width: 22px;
@@ -272,7 +272,7 @@
     bottom: 85px;
     right: 15px;
     z-index: 55;
-    box-shadow: 0 4px 30px #0b1b3017;
+    box-shadow: 0 4px 30px #16130f17;
     width: 205px;
     padding: 10px;
   }
@@ -281,9 +281,9 @@
     align-items: center;
     gap: 10px;
     padding: 13px;
-    color: #5a6f85;
+    color: #6f6c67;
     font-size: 12px;
-    border-radius: 7px;
+    border-radius: 3px;
   }
   .mobile-more a:hover {
     background: #f2f6fa;
@@ -314,7 +314,7 @@
   }
   .stat-card {
     padding: 17px 15px;
-    border-radius: 12px;
+    border-radius: 4px;
   }
   .stat-value {
     font-size: 25px;
@@ -327,7 +327,7 @@
   .stat-name {
     font-size: 12px;
     letter-spacing: 0;
-    color: #617287;
+    color: #6e655b;
   }
   .stat-bottom {
     font-size: 12px;
@@ -335,7 +335,7 @@
   }
   .stat-bottom strong {
     font-size: 12px;
-    color: #728399;
+    color: #6e655b;
   }
   .home-grid {
     display: block;
@@ -373,7 +373,7 @@
     padding: 17px 15px;
     background: white;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 4px;
     margin-bottom: 10px;
     cursor: pointer;
     text-align: left;
@@ -381,7 +381,7 @@
   }
   .mobile-appt-time {
     font-size: 12px;
-    color: #33526f;
+    color: #504d49;
     font-weight: 650;
     width: 38px;
   }
@@ -396,14 +396,14 @@
   }
   .mobile-appt-info p {
     font-size: 12px;
-    color: #8595a8;
+    color: #96938e;
     margin-top: 5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .mobile-appt > svg {
-    color: #9babbc;
+    color: #aca9a4;
   }
   .mobile-appt .mobile-status-dot {
     width: 5px;
@@ -506,7 +506,7 @@
   }
   .modal {
     max-height: 92dvh;
-    border-radius: 15px;
+    border-radius: 4px;
   }
   .modal > header {
     padding: 18px;
@@ -547,7 +547,7 @@
   }
   .stat-name {
     font-size: 12px;
-    color: #617287;
+    color: #6e655b;
   }
   .stat-value {
     font-size: 24px;
@@ -561,7 +561,7 @@
   }
   .stat-bottom strong {
     font-size: 12px;
-    color: #728399;
+    color: #6e655b;
   }
   .mobile-appt {
     gap: 10px;
@@ -617,7 +617,7 @@
     font-size: 12px;
     padding: 0 10px;
     border: 1px solid #ffffff20;
-    border-radius: 9px;
+    border-radius: 4px;
   }
   .greeting-title h1 {
     font-size: 29px;
@@ -634,7 +634,7 @@
   }
   .stat-card {
     padding: 18px 16px 15px;
-    border-radius: 15px;
+    border-radius: 4px;
   }
   .stat-name {
     font-size: 12px;
@@ -653,7 +653,7 @@
   }
   .mobile-appt {
     padding: 18px 15px;
-    border-radius: 14px;
+    border-radius: 4px;
   }
   .mobile-appt-info strong {
     font-size: 13px;

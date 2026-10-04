@@ -13,12 +13,12 @@
 }
 .catalog-group-heading h2 {
   margin: 0;
-  color: #111827;
+  color: #16130f;
   font-size: 17px;
   letter-spacing: -0.025em;
 }
 .catalog-group-heading span {
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .catalog-list {
@@ -30,7 +30,7 @@
   align-items: center;
   gap: 22px;
   padding: 23px 25px;
-  border-bottom: 1px solid #edf1f5;
+  border-bottom: 1px solid #efe9df;
 }
 .catalog-row:last-child {
   border-bottom: 0;
@@ -45,10 +45,10 @@
   justify-content: center;
   width: 62px;
   height: 68px;
-  border-radius: 10px;
+  border-radius: 4px;
   overflow: hidden;
-  background: #f1f5f9;
-  color: #123e69;
+  background: #efe9df;
+  color: #2c251e;
 }
 .catalog-image img {
   position: absolute;
@@ -69,14 +69,14 @@
 .catalog-service h3 {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: #16130f;
   letter-spacing: -0.025em;
   margin: 0;
   overflow-wrap: anywhere;
 }
 .catalog-service p {
   font-size: 12px;
-  color: #64748b;
+  color: #6e655b;
   line-height: 1.7;
   margin: 7px 0 9px;
 }
@@ -84,19 +84,19 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
 }
 .catalog-duration {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #64748b;
+  color: #6e655b;
   font-size: 12px;
   white-space: nowrap;
 }
 .catalog-price {
-  color: #0b1b30;
+  color: #16130f;
   font-size: 16px;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -160,7 +160,7 @@
     justify-content: flex-end;
     padding-top: 9px;
     margin-top: 4px;
-    border-top: 1px solid #edf1f5;
+    border-top: 1px solid #efe9df;
   }
   .catalog-assigned {
     flex-wrap: wrap;

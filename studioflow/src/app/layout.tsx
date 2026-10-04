@@ -2,20 +2,25 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/toast";
 import { PwaRegister } from "@/components/pwa-register";
-import { MotionProvider, PointerEffects } from "@/components/motion";
+import { MotionProvider } from "@/components/motion";
 import "./globals.css";
 import "@/features/dashboard/shell.css";
 import "@/features/dashboard/overview.css";
 import "@/features/agenda/agenda.css";
 import "@/styles/responsive.css";
 import "@/styles/motion.css";
-const geist = localFont({
+// Hanken Grotesk for the interface, Fraunces for titles and numbers.
+const hanken = localFont({
+  src: [{ path: "./fonts/hanken-grotesk.woff2", weight: "400 700" }],
+  variable: "--font-ui",
+  display: "swap",
+});
+const fraunces = localFont({
   src: [
-    { path: "./fonts/geist-regular.ttf", weight: "400" },
-    { path: "./fonts/geist-medium.ttf", weight: "500" },
-    { path: "./fonts/geist-semibold.ttf", weight: "600" },
-    { path: "./fonts/geist-bold.ttf", weight: "700" },
+    { path: "./fonts/fraunces.woff2", weight: "400 600", style: "normal" },
+    { path: "./fonts/fraunces-italic.woff2", weight: "400", style: "italic" },
   ],
+  variable: "--font-display",
   display: "swap",
 });
 export const metadata: Metadata = {
@@ -37,7 +42,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0B1B30",
+  themeColor: "#16130F",
 };
 export default function RootLayout({
   children,
@@ -46,12 +51,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={geist.className}>
+      <body
+        className={`${hanken.className} ${hanken.variable} ${fraunces.variable}`}
+      >
         <ToastProvider>
           {children}
           <PwaRegister />
           <MotionProvider />
-          <PointerEffects />
         </ToastProvider>
       </body>
     </html>
