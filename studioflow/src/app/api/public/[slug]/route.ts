@@ -42,7 +42,12 @@ export async function GET(
           ...publicProfessional(person),
           rating: ratingSummary(store.reviews, person.id),
         })),
-      settings: store.settings,
+      // Internal assistant notes and limits stay with the owner.
+      settings: {
+        ...store.settings,
+        assistantInstructions: undefined,
+        assistantDailyLimit: undefined,
+      },
       rating: ratingSummary(store.reviews),
       onlinePayments: payments,
       plans: payments ? publicPlans(store) : [],

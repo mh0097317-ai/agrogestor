@@ -2916,3 +2916,7 @@
 .bk {
   overscroll-behavior-x: none;
 }
+/* Entrance slides must never create a sideways scroll, even for a frame. */
+.bk {
+  overflow-x: clip;
+}

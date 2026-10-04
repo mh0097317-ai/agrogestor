@@ -92,6 +92,10 @@ async function transaction<T>(
     store.settings.depositMode ??= "off";
     store.settings.depositValue ??= 0;
     store.settings.depositHold ??= 15;
+    store.settings.assistantEnabled ??= false;
+    store.settings.assistantName ??= "Recepção";
+    store.settings.assistantInstructions ??= "";
+    store.settings.assistantDailyLimit ??= 300;
     expireHolds(store);
     const result = await operation(store);
     if (persist) {

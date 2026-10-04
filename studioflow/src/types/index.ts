@@ -126,6 +126,11 @@ export interface Settings {
   depositValue: number;
   /** Minutes the slot waits for the Pix. */
   depositHold: number;
+  /** AI receptionist (web chat and WhatsApp). */
+  assistantEnabled: boolean;
+  assistantName: string;
+  assistantInstructions: string;
+  assistantDailyLimit: number;
 }
 export interface MembershipPlan {
   id: string;
@@ -198,6 +203,31 @@ export interface Review {
   comment: string;
   createdAt: string;
 }
+export type ConversationChannel = "web" | "whatsapp";
+export type ConversationStatus = "ai" | "human" | "closed";
+export interface ConversationMessage {
+  id: string;
+  role: "customer" | "assistant" | "staff" | "event";
+  body: string;
+  createdAt: string;
+}
+export interface ConversationSummary {
+  id: string;
+  channel: ConversationChannel;
+  contactName: string;
+  contactPhone: string;
+  status: ConversationStatus;
+  unread: number;
+  lastMessageAt: string;
+  preview?: string;
+}
+/** Demo only: the live database keeps these in their own tables. */
+export interface DemoConversation extends ConversationSummary {
+  tokenHash?: string;
+  history: unknown[];
+  aiCursor: string;
+  messages: ConversationMessage[];
+}
 export interface Store {
   business: Business;
   services: Service[];
@@ -215,6 +245,11 @@ export interface Store {
   memberships?: Membership[];
   paymentAccount?: PaymentAccount | null;
   demoCharges?: DemoCharge[];
+  conversations?: DemoConversation[];
+  /** WhatsApp connection (never the token). */
+  whatsapp?: { displayPhone: string; phoneNumberId: string } | null;
+  /** The server has Claude credentials for the AI receptionist. */
+  aiReady?: boolean;
   viewer?: { name: string; role: string };
   mode?: "demo" | "live";
 }

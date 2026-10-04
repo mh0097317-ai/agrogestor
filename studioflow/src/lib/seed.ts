@@ -327,6 +327,10 @@ export function createSeed(): Store {
       depositMode: "off",
       depositValue: 0,
       depositHold: 15,
+      assistantEnabled: false,
+      assistantName: "Recepção",
+      assistantInstructions: "",
+      assistantDailyLimit: 300,
     },
   };
 }

@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   QrCode,
   Seal,
+  ChatsCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -39,6 +40,7 @@ const links = [
   { path: "/dashboard", label: "Início", icon: House },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarBlank },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
+  { path: "/dashboard/conversas", label: "Conversas", icon: ChatsCircle },
   { path: "/dashboard/servicos", label: "Serviços", icon: Scissors },
   { path: "/dashboard/equipe", label: "Equipe", icon: IdentificationBadge },
   { path: "/dashboard/financeiro", label: "Financeiro", icon: Wallet },

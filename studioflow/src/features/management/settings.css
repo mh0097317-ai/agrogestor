@@ -437,3 +437,70 @@
     padding: 9px 12px;
   }
 }
+
+/* Recepcionista */
+.assistant-toggle {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
+  background: #fffdf9;
+  cursor: pointer;
+}
+.assistant-toggle input {
+  margin-top: 3px;
+}
+.assistant-toggle span {
+  display: grid;
+  gap: 2px;
+}
+.assistant-toggle strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #16130f;
+  font-size: 15px;
+}
+.assistant-toggle small {
+  color: #6e655b;
+  font-size: 13px;
+}
+.assistant-webhook {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #16130f;
+  border-radius: 2px;
+  background: #fffdf9;
+  font-size: 13px;
+}
+.assistant-webhook > span {
+  margin-top: 6px;
+  color: #6e655b;
+}
+.assistant-webhook button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px dashed #c9bfae;
+  border-radius: 2px;
+  background: #f7f3ec;
+  text-align: left;
+  cursor: pointer;
+}
+.assistant-webhook code {
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+}
+.assistant-webhook small {
+  color: #6e655b;
+}
+.payment-account strong svg {
+  vertical-align: -2px;
+}

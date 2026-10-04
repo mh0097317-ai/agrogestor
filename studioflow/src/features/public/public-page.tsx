@@ -24,6 +24,7 @@ import {
 } from "./public-ui";
 import { usePublicCatalog } from "./use-public-catalog";
 import { money } from "@/lib/utils";
+import { AssistantChat } from "./assistant-chat";
 import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
@@ -330,6 +331,13 @@ export function PublicPage({ slug }: { slug: string }) {
         </Link>
       </footer>
 
+      {settings.assistantEnabled && (
+        <AssistantChat
+          business={business}
+          name={settings.assistantName || "Recepção"}
+          raised={showDock}
+        />
+      )}
       <div
         className={`pp-dock ${showDock ? "is-visible" : ""}`}
         aria-hidden={!showDock}

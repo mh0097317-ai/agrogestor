@@ -74,6 +74,10 @@ export function normalizeStoreTimes(store: Store): Store {
   store.settings.depositMode ??= "off";
   store.settings.depositValue = Number(store.settings.depositValue ?? 0);
   store.settings.depositHold ??= 15;
+  store.settings.assistantEnabled ??= false;
+  store.settings.assistantName ??= "Recepção";
+  store.settings.assistantInstructions ??= "";
+  store.settings.assistantDailyLimit ??= 300;
   // A Pix hold past its deadline frees the slot right away; the database
   // catches up under the business lock on the next write.
   expireHolds(store);
@@ -296,6 +300,8 @@ function withoutSecrets(store: Store): Store {
       token: undefined,
     })),
     demoCharges: undefined,
+    // Conversations load through their own API.
+    conversations: undefined,
   };
 }
 export async function getWorkspace() {
@@ -305,6 +311,7 @@ export async function getWorkspace() {
         withCustomerMetrics(await readDemo(await demoWorkspaceSlug())),
       ),
       viewer: { name: "João Pedro", role: "owner" },
+      aiReady: aiReady(),
       mode: "demo",
     } as Store;
   const { client, businessId, role, user } = await requireMembership();
@@ -316,9 +323,27 @@ export async function getWorkspace() {
   return {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
+    whatsapp: await readWhatsAppAccount(businessId),
+    aiReady: aiReady(),
     viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
     mode: "live",
   } as Store;
+}
+const aiReady = () =>
+  !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+/** WhatsApp connection (never the token), read with the server key. */
+export async function readWhatsAppAccount(businessId: string) {
+  const { data } = await createSupabaseAdmin()
+    .from("whatsapp_accounts")
+    .select("display_phone,phone_number_id")
+    .eq("business_id", businessId)
+    .maybeSingle();
+  return data
+    ? {
+        displayPhone: data.display_phone as string,
+        phoneNumberId: data.phone_number_id as string,
+      }
+    : null;
 }
 /** Connection state (never the key), read with the server key. */
 export async function readPaymentAccount(
@@ -716,6 +741,8 @@ export async function mutateWorkspace(
   return {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
+    whatsapp: await readWhatsAppAccount(businessId),
+    aiReady: aiReady(),
     viewer: { name: profile?.name || user.user_metadata?.name || "Você", role },
     mode: "live",
   } as Store;

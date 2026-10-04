@@ -227,6 +227,17 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Comprovante: contagem até o horário ("Faltam 2 dias 4 horas") e "Compartilhar" (quando o aparelho permite).
 - Correções: faixa do item escolhido ocupa a linha inteira, campo em foco sem caixa interna, sem degradê no hover das linhas.
 
+## Recepcionista com IA (4 de outubro de 2026)
+
+- Atendente virtual (Claude, `claude-opus-5-5`, esforço baixo, fallback automático do servidor ligado) que responde no chat da página pública e no WhatsApp oficial do estabelecimento: tira dúvidas de serviços, preços, horários e regras, consulta horários livres e marca usando as mesmas rotinas do agendamento público (`bookWithPayments`: sinal via Pix, clube e checagens do banco continuam valendo). Cancelar e remarcar seguem pelo link do comprovante ou com a equipe.
+- Cérebro: `src/services/assistant/agent.ts` (prompt montado do catálogo, sem dados de outros clientes; ferramentas `horarios_livres`, `proximos_horarios`, `agendar`, `chamar_humano`; laço manual com no máximo 6 passos; histórico só acrescentado). O telefone no WhatsApp vem da Meta, não da IA.
+- Conversas: `src/services/assistant/conversations.ts` (uma resposta por vez por conversa com trava `conversation_lease`, mensagens novas tratadas na rodada seguinte, passa para a equipe quando a IA pede, quando falta a chave, quando acaba o limite diário ou quando a conversa fica longa). Tabelas `conversations`, `conversation_messages`, `assistant_usage`, `whatsapp_accounts` (migration `20261006120000_studioflow_assistant.sql`).
+- Página: botão "Tirar dúvidas e agendar" e chat (`src/features/public/assistant-chat.tsx`), `POST/GET /api/public/[slug]/chat`.
+- Painel: Conversas (`/dashboard/conversas`) com assumir, responder, devolver para a atendente e encerrar; Configurações → Recepcionista (ligar, nome, instruções da casa, teto diário de respostas, conexão do WhatsApp).
+- WhatsApp oficial (Cloud API da Meta): o dono cola ID do número, token permanente e chave secreta do app (guardados cifrados); o painel mostra a URL do webhook `/api/whatsapp/[businessId]` e o token de verificação (só o hash fica no banco). Entregas conferidas pela assinatura `X-Hub-Signature-256`, sem duplicar mensagem (`provider_message_id`), resposta da IA depois do 200 com `after()`.
+- Para ligar em produção: definir `ANTHROPIC_API_KEY` nas variáveis do projeto na Vercel. Sem ela, as mensagens chegam em Conversas e a equipe responde.
+- Testes: `tests/assistant.test.ts` (laço com modelo simulado), `tests/assistant-flow.test.ts`, `tests/assistant-db.test.ts`, `tests/whatsapp.test.ts`.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

@@ -18,8 +18,10 @@ import {
   Storefront,
   Users,
   Wallet,
+  Robot,
 } from "@phosphor-icons/react/dist/ssr";
 import { PaymentSettings } from "./payment-settings";
+import { AssistantSettings } from "./assistant-settings";
 import {
   Avatar,
   Button,
@@ -47,7 +49,12 @@ import {
 
 type EditableTab =
   "business" | "identity" | "agenda" | "loyalty" | "notifications";
-type Tab = EditableTab | "professionals" | "payments" | "plan";
+type Tab =
+  | EditableTab
+  | "professionals"
+  | "payments"
+  | "assistant"
+  | "plan";
 type FieldEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 >;
@@ -94,6 +101,7 @@ const tabs = [
   { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
   { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
   { id: "payments" as const, label: "Pagamentos", icon: Wallet },
+  { id: "assistant" as const, label: "Recepcionista", icon: Robot },
   { id: "professionals" as const, label: "Profissionais", icon: Users },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
@@ -235,7 +243,10 @@ function SettingsContent({ store }: { store: Store }) {
   const notifications = drafts.notifications ?? saved.notifications;
   const loyalty = drafts.loyalty ?? saved.loyalty;
   const editable =
-    tab !== "professionals" && tab !== "plan" && tab !== "payments";
+    tab !== "professionals" &&
+    tab !== "plan" &&
+    tab !== "payments" &&
+    tab !== "assistant";
   const dirty =
     editable &&
     drafts[tab] !== null &&
@@ -508,6 +519,7 @@ function SettingsContent({ store }: { store: Store }) {
     professionals: "Agendas dos profissionais",
     notifications: "Notificações",
     payments: "Pagamentos online",
+    assistant: "Recepcionista com IA",
     plan: "Seu espaço de gestão",
   }[tab];
   const sectionDescription = {
@@ -515,6 +527,7 @@ function SettingsContent({ store }: { store: Store }) {
     identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
     payments: "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
+    assistant: "Atendente virtual no chat da página e no WhatsApp, 24 horas.",
     loyalty:
       "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
     professionals:
@@ -1113,6 +1126,13 @@ function SettingsContent({ store }: { store: Store }) {
           )}
           {tab === "payments" && (
             <PaymentSettings
+              store={store}
+              canManage={canManage}
+              onSaved={refresh}
+            />
+          )}
+          {tab === "assistant" && (
+            <AssistantSettings
               store={store}
               canManage={canManage}
               onSaved={refresh}
