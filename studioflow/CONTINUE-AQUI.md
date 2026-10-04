@@ -171,6 +171,13 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Agendamento reconstruído como fluxo focado (`booking-chrome.tsx`, `booking-v2.css`): capa do estabelecimento no topo, cartão branco sobreposto, barra de progresso fina (4 etapas), avanço automático ao escolher serviço e profissional (pula o profissional quando só há um), chips das escolhas para editar, faixa de dias em todas as larguras e barra "Continuar" que só aparece com horário escolhido. Revisão final e recibo usam o ticket (`BookingTicket`).
 - Painel: indicador que desliza no menu lateral, ondulação ao tocar (`PointerEffects` em `components/motion.tsx`), luz que segue o mouse nos cartões, relógio ao vivo no início, indicadores com cor própria, aurora no cartão "Agora", destaque lateral nas linhas da agenda e entrada em cascata nas telas de gestão.
 
+## Agendamento igual à referência e avaliações reais (4 de outubro de 2026)
+
+- Agendamento refeito seguindo `docs/reference/Foto-1.jpg`: cabeçalho branco com a marca do estabelecimento, etapas numeradas (Serviço, Profissional, Horário, Dados, Pronto), lista com seleção e barra "Continuar" com o serviço escolhido, calendário do mês com horários em Manhã/Tarde/Noite, "Quase pronto!" com resumo e confirmação com check, confete, logo do estabelecimento, localização e WhatsApp. Estilos em `src/features/booking/booking.css` (os CSS antigos do agendamento foram removidos).
+- Avaliações reais: depois que o atendimento é marcado como concluído, o comprovante (`/booking/[token]`) pede de 1 a 5 estrelas e um comentário opcional. Uma avaliação por atendimento, via RPC `submit_review` (só `service_role`, migration `20261004120000_studioflow_reviews.sql`, aplicada no Supabase de produção). Membros leem pela RLS; a página pública recebe só médias (`src/lib/reviews.ts`). A nota aparece na capa da página, nos profissionais (agendamento e página) e no card "Avaliações dos clientes" do painel. Sem avaliações, nada de nota aparece.
+- Página pública: frase, nota e "Aberto agora" sobre a capa; logo maior sem moldura.
+- Painel: marca StudioFlow no topo do menu e cartão com a logo do estabelecimento e "Ver página pública" embaixo. Corrigida a saudação duplicada no topo do celular.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

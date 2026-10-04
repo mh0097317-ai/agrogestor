@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import {
-  ArrowsClockwise,
   CalendarBlank,
-  CaretLeft,
+  CalendarPlus,
   Check,
   Clock,
   Copy,
@@ -15,7 +14,10 @@ import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { SuccessCheck } from "./celebration";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
-import type { ManagedBooking } from "@/features/public/types";
+import type {
+  CustomerReview,
+  ManagedBooking,
+} from "@/features/public/types";
 import {
   BusyButton,
   PublicError,
@@ -29,13 +31,14 @@ import {
   usePublicCatalog,
   usePublicData,
 } from "@/features/public/use-public-catalog";
-import { BookingProgress } from "./booking-flow";
-import { BookingTicket } from "./booking-summary";
+import { BookingRecap } from "./booking-summary";
+import { ReviewCard } from "./review-card";
+import { StepHead } from "./selection-steps";
 import { BookingChrome } from "./booking-chrome";
 import { DateStep } from "./date-step";
 import { downloadCalendar } from "./calendar-export";
 import { bookingDate, bookingDateShort, bookingTime } from "./date-format";
-import "@/features/public/public.css";
+
 
 export function BookingConfirmation({ token }: { token: string }) {
   const { data, loading, error, reload } = usePublicData<ManagedBooking>(
@@ -93,6 +96,7 @@ function ConfirmationContent({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [savedReview, setSavedReview] = useState<CustomerReview>();
   // Celebrate only a booking made a moment ago, not every later visit.
   const [celebrate] = useState(
     () => Date.now() - Date.parse(appointment.createdAt) < 10 * 60 * 1000,
@@ -102,6 +106,9 @@ function ConfirmationContent({
   );
   const cancelled = appointment.status === "cancelled";
   const isPending = appointment.status === "pending";
+  const upcoming = ["confirmed", "pending", "in_progress"].includes(
+    appointment.status,
+  );
   const canManage = ["confirmed", "pending"].includes(appointment.status);
   const title = {
     confirmed: "Horário confirmado!",
@@ -179,22 +186,38 @@ function ConfirmationContent({
       );
     }
   }
+  const placeName = business.name;
+  const review =
+    appointment.status === "completed" ? (
+      <ReviewCard
+        token={token}
+        businessName={business.name}
+        professionalName={professional?.name}
+        review={savedReview ?? booking.review}
+        onSaved={setSavedReview}
+      />
+    ) : null;
   return (
-    <BookingChrome business={business}>
-      <div className="booking-confirmation-main">
-        <BookingProgress step={5} />
+    <BookingChrome
+      business={business}
+      step={6}
+      onBack={
+        rescheduling
+          ? () => {
+              setRescheduling(false);
+              setError("");
+            }
+          : undefined
+      }
+      backDisabled={busy}
+    >
+      <div className="bk-done">
         {rescheduling && service ? (
-          <div className="booking-reschedule">
-            <button
-              className="public-text-link"
-              disabled={busy}
-              onClick={() => {
-                setRescheduling(false);
-                setError("");
-              }}
-            >
-              <CaretLeft weight="bold" size={15} /> Voltar ao agendamento
-            </button>
+          <section className="bk-step">
+            <StepHead
+              title="Escolha o novo horário"
+              text={`Seu horário atual é ${bookingDateShort(appointment.start)} às ${bookingTime(appointment.start)}.`}
+            />
             {catalog ? (
               <DateStep
                 slug={business.slug}
@@ -205,146 +228,177 @@ function ConfirmationContent({
                 selectedSlot={slot}
                 onDate={setDate}
                 onSlot={setSlot}
+                embedded
               />
             ) : catalogError ? (
-              <div className="booking-error">
+              <div className="bk-alert" role="alert">
                 <p>{catalogError}</p>
-                <button className="public-text-link" onClick={reload}>
+                <button type="button" onClick={reload}>
                   Tentar novamente
                 </button>
               </div>
             ) : (
-              <p className="booking-subtitle">Carregando horários…</p>
-            )}
-            {error && (
-              <div className="booking-error" role="alert">
-                {error}
+              <div className="bk-times" aria-busy="true">
+                <span className="bk-skeleton bk-skeleton-title" />
               </div>
             )}
-            <BusyButton
-              disabled={!slot}
-              busy={busy}
-              onClick={() => void update("reschedule")}
-            >
-              Confirmar novo horário <Check weight="bold" size={16} />
-            </BusyButton>
-          </div>
+            {error && (
+              <div className="bk-alert" role="alert">
+                <p>{error}</p>
+              </div>
+            )}
+            <div className="bk-actions">
+              <BusyButton
+                disabled={!slot}
+                busy={busy}
+                className="bk-primary"
+                onClick={() => void update("reschedule")}
+              >
+                <Check weight="bold" size={17} /> Confirmar novo horário
+              </BusyButton>
+              <button
+                type="button"
+                className="bk-secondary"
+                disabled={busy}
+                onClick={() => {
+                  setRescheduling(false);
+                  setError("");
+                }}
+              >
+                Manter o horário atual
+              </button>
+            </div>
+          </section>
         ) : (
           <>
             <div
-              className={`booking-success-mark ${cancelled ? "is-cancelled" : ""} ${isPending || cancelled || appointment.status === "no_show" ? "" : "is-success"}`}
+              className={`bk-mark ${cancelled ? "is-cancelled" : ""} ${isPending || cancelled || appointment.status === "no_show" ? "" : "is-success"}`}
             >
-              {cancelled ? (
-                <X weight="bold" size={32} />
-              ) : isPending ? (
-                <Clock weight="duotone" size={32} />
-              ) : appointment.status === "no_show" ? (
-                <XCircle weight="duotone" size={32} />
-              ) : (
-                <SuccessCheck celebrate={celebrate} />
-              )}
-            </div>
-            <h1>{title}</h1>
-            <p className="booking-subtitle">{message}</p>
-            <div className="booking-confirmation-receipt">
-              {service && (
-                <BookingTicket
-                  service={service}
-                  professional={professional}
-                  slot={bookedSlot}
-                  totalPrice={appointment.price}
-                />
-              )}
-              <div className="booking-confirmation-place">
-                <PublicImage
-                  src={business.logo || business.cover}
-                  alt=""
-                  className="booking-confirmation-place-photo"
-                  segment={business.category}
-                />
-                <div>
-                  <strong>{business.name}</strong>
-                  <span>{business.address}</span>
-                </div>
-              </div>
-              <div className="booking-confirmation-code">
-                <span>
-                  Agendamento #{appointment.id.slice(0, 8).toUpperCase()}
+              {celebrate && !cancelled && (
+                <span className="bk-mark-sparks" aria-hidden="true">
+                  {Array.from({ length: 8 }, (_, index) => (
+                    <i key={index} />
+                  ))}
                 </span>
-                <button
-                  className="public-icon-button"
-                  onClick={copyLink}
-                  aria-label="Copiar link do agendamento"
-                >
-                  <Copy weight="duotone" size={15} />
-                </button>
-              </div>
+              )}
+              <span className="bk-mark-circle">
+                {cancelled ? (
+                  <X weight="bold" size={34} />
+                ) : isPending ? (
+                  <Clock weight="duotone" size={34} />
+                ) : appointment.status === "no_show" ? (
+                  <XCircle weight="duotone" size={34} />
+                ) : (
+                  <SuccessCheck celebrate={celebrate} />
+                )}
+              </span>
             </div>
-            {!cancelled && (
-              <div className="booking-confirmation-actions">
+            <header className="bk-done-head">
+              <h1 tabIndex={-1}>{title}</h1>
+              <p>{message}</p>
+            </header>
+            {review}
+            {service && (
+              <BookingRecap
+                service={service}
+                professional={professional}
+                slot={bookedSlot}
+                totalPrice={appointment.price}
+              />
+            )}
+            {upcoming ? (
+              <div className="bk-actions">
                 <button
-                  className="public-button"
+                  type="button"
+                  className="bk-primary"
                   onClick={() =>
                     downloadCalendar(appointment, business, services)
                   }
                 >
-                  <CalendarBlank weight="duotone" size={18} /> Adicionar ao
+                  <CalendarPlus weight="duotone" size={18} /> Adicionar ao
                   calendário
                 </button>
                 {canManage && (
                   <>
                     <button
-                      className="public-button public-button-outline"
+                      type="button"
+                      className="bk-secondary"
                       onClick={() => {
                         setRescheduling(true);
                         setError("");
                       }}
                     >
-                      <ArrowsClockwise weight="duotone" size={16} /> Reagendar
-                      horário
+                      Reagendar horário
                     </button>
                     <button
-                      className="public-button public-button-outline booking-cancel-button"
+                      type="button"
+                      className="bk-secondary is-quiet"
                       onClick={() => {
                         setCancelOpen(true);
                         setError("");
                       }}
                     >
-                      <XCircle weight="duotone" size={16} /> Cancelar horário
+                      Cancelar horário
                     </button>
                   </>
                 )}
               </div>
-            )}
-            {cancelled && (
-              <Link
-                className="public-button"
-                href={`/${business.slug}/agendar${service ? `?service=${service.id}` : ""}`}
-              >
-                Agendar um novo horário{" "}
-                <CalendarBlank weight="duotone" size={17} />
-              </Link>
-            )}
-            {error && !cancelOpen && (
-              <div className="booking-error" role="alert">
-                {error}
+            ) : (
+              <div className="bk-actions">
+                <Link
+                  className="bk-primary"
+                  href={`/${business.slug}/agendar${service ? `?service=${service.id}` : ""}`}
+                >
+                  <CalendarPlus weight="duotone" size={18} />{" "}
+                  {cancelled ? "Agendar um novo horário" : "Agendar de novo"}
+                </Link>
               </div>
             )}
-            <div className="booking-confirmation-social">
+            {error && !cancelOpen && (
+              <div className="bk-alert" role="alert">
+                <p>{error}</p>
+              </div>
+            )}
+            <div className="bk-signoff">
+              <p>
+                {cancelled ? "Quando quiser, estamos aqui." : "Nos vemos em breve!"}
+              </p>
+              <Link href={`/${business.slug}`} className="bk-signoff-brand">
+                <PublicImage
+                  src={business.logo}
+                  alt=""
+                  className={`bk-signoff-logo ${business.logo ? "has-logo" : ""}`}
+                  segment={business.category}
+                />
+                <strong>{placeName}</strong>
+                <small>{business.category}</small>
+              </Link>
+            </div>
+            <div className="bk-contact">
               {business.address.trim() && (
                 <a href={location} target="_blank" rel="noreferrer">
-                  <MapPinIcon size={18} /> Ver localização
+                  <MapPinIcon size={20} />
+                  <strong>Ver localização</strong>
                 </a>
               )}
               {business.phone.replace(/\D/g, "").length >= 10 && (
                 <a href={whatsapp} target="_blank" rel="noreferrer">
-                  <WhatsAppIcon size={18} /> Falar no WhatsApp
+                  <WhatsAppIcon size={20} />
+                  <strong>Falar no WhatsApp</strong>
                 </a>
               )}
             </div>
-            <p className="booking-confirmation-footnote">
+            <div className="bk-code">
+              <span>
+                Agendamento #{appointment.id.slice(0, 8).toUpperCase()}
+              </span>
+              <button type="button" onClick={copyLink}>
+                <Copy weight="duotone" size={15} /> Copiar link
+              </button>
+            </div>
+            <p className="bk-footnote">
               {cancelled
-                ? "Quando quiser, é só marcar um novo horário."
+                ? "Seu horário foi liberado."
                 : "Guarde este link para remarcar ou cancelar quando precisar."}
             </p>
           </>
@@ -364,7 +418,7 @@ function ConfirmationContent({
           >
             <X weight="bold" size={18} />
           </button>
-          <span className="booking-cancel-icon">
+          <span className="bk-modal-icon">
             <CalendarBlank weight="duotone" size={28} />
           </span>
           <h2 id="cancel-title">Cancelar seu horário?</h2>
@@ -373,14 +427,14 @@ function ConfirmationContent({
             {bookingTime(appointment.start)} será liberado para outra pessoa.
           </p>
           {catalog && (
-            <p className="booking-modal-policy">
+            <p className="bk-modal-policy">
               Cancelamentos podem ser realizados até{" "}
               {catalog.settings.cancellationHours} horas antes do atendimento.
             </p>
           )}
           {error && (
-            <div className="booking-error" role="alert">
-              {error}
+            <div className="bk-alert" role="alert">
+              <p>{error}</p>
             </div>
           )}
           <BusyButton busy={busy} onClick={() => void update("cancel")}>

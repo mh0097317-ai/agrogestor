@@ -2,12 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CircleNotch,
-  Scissors,
-  ShieldCheck,
-} from "@phosphor-icons/react/dist/ssr";
+import { CircleNotch, Scissors } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import { initials } from "@/lib/utils";
 import { SegmentIcon } from "@/lib/segments";
@@ -95,65 +90,6 @@ export function PublicError({
         Voltar ao início
       </Link>
     </main>
-  );
-}
-
-export function BookingHeader({
-  slug,
-  businessName,
-  photo,
-  category,
-  onBack,
-  canBack,
-  busy = false,
-}: {
-  slug: string;
-  businessName: string;
-  /** Logo or cover shown next to the name. */
-  photo?: string;
-  category?: string;
-  onBack?: () => void;
-  canBack?: boolean;
-  busy?: boolean;
-}) {
-  return (
-    <header className="booking-header">
-      <div className="booking-header-inner">
-        {canBack ? (
-          <button
-            className="public-icon-button"
-            onClick={onBack}
-            disabled={busy}
-            aria-label="Voltar uma etapa"
-          >
-            <ArrowLeft weight="bold" size={20} />
-          </button>
-        ) : (
-          <Link
-            href={`/${slug}`}
-            className="public-icon-button"
-            aria-label="Voltar ao estabelecimento"
-          >
-            <ArrowLeft weight="bold" size={20} />
-          </Link>
-        )}
-        <Link href={`/${slug}`} className="booking-business-title">
-          <PublicImage
-            src={photo}
-            alt=""
-            className="booking-brand-mark"
-            segment={category}
-          />
-          <span>
-            {businessName}
-            <small>Agendamento online</small>
-          </span>
-        </Link>
-        <span className="booking-safe">
-          <ShieldCheck weight="duotone" size={16} /> Sem cadastro e sem senha
-        </span>
-      </div>
-    </header>
   );
 }
 

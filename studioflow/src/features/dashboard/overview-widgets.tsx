@@ -6,6 +6,7 @@ import {
   CheckCircle,
   Play,
   SealCheck,
+  Star,
   TrendDown,
   TrendUp,
   WarningCircle,
@@ -18,6 +19,7 @@ import { WhatsAppIcon } from "@/components/brand-icons";
 import { dateLabel, money } from "@/lib/utils";
 import type { Appointment, AppointmentStatus, Store } from "@/types";
 import { attention, occupancy, weekRevenue } from "./insights";
+import { ratingLabel, ratingSummary } from "@/lib/reviews";
 
 /** The single next step for an appointment, if there is one. */
 export function nextStep(status: AppointmentStatus) {
@@ -369,6 +371,68 @@ export function AttentionCard({
       <Link className="ov-att-more" href="/dashboard/clientes">
         Ver todos os clientes <ArrowRight size={14} weight="bold" />
       </Link>
+    </section>
+  );
+}
+
+/** Real customer reviews: average, count and the latest comments. */
+export function ReviewsCard({ data }: { data: Store }) {
+  const reviews = data.reviews ?? [];
+  const summary = ratingSummary(reviews);
+  const latest = reviews.slice(0, 3);
+  return (
+    <section className="ov-card ov-reviews" aria-labelledby="ov-rev-title">
+      <div className="ov-card-head">
+        <h2 id="ov-rev-title">Avaliações dos clientes</h2>
+      </div>
+      {summary ? (
+        <>
+          <div className="ov-rev-score">
+            <strong>{ratingLabel(summary)}</strong>
+            <span>
+              <span className="ov-rev-stars" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={15}
+                    weight={star <= Math.round(summary.average) ? "fill" : "regular"}
+                  />
+                ))}
+              </span>
+              <small>
+                {summary.count} {summary.count === 1 ? "avaliação" : "avaliações"}
+              </small>
+            </span>
+          </div>
+          <ul role="list">
+            {latest.map((review) => {
+              const person = data.professionals.find(
+                (item) => item.id === review.professionalId,
+              );
+              return (
+                <li key={review.id}>
+                  <span className="ov-rev-head">
+                    <strong>{review.customerName}</strong>
+                    <span className="ov-rev-badge">
+                      <Star size={12} weight="fill" /> {review.rating}
+                    </span>
+                    <small>
+                      {person ? `com ${person.name.split(" ")[0]} · ` : ""}
+                      {dateLabel(review.createdAt)}
+                    </small>
+                  </span>
+                  {review.comment && <p>“{review.comment}”</p>}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="ov-muted">
+          Quando você conclui um atendimento, o cliente pode dar uma nota pelo
+          link do comprovante. A média aparece na sua página.
+        </p>
+      )}
     </section>
   );
 }

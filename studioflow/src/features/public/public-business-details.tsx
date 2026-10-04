@@ -5,8 +5,10 @@ import {
   CheckCircle,
   Coffee,
   Snowflake,
+  Star,
   WifiHigh,
 } from "@phosphor-icons/react/dist/ssr";
+import { ratingLabel } from "@/lib/reviews";
 import type { Business, Settings } from "@/types";
 import type { PublicProfessional } from "./types";
 import { PublicImage } from "./public-ui";
@@ -81,6 +83,12 @@ export function PublicTeam({
                 fallbackName={person.name}
               />
               <strong>{person.name}</strong>
+              {person.rating && (
+                <span className="pp-person-rating">
+                  <Star size={13} weight="fill" />
+                  {ratingLabel(person.rating)} <em>({person.rating.count})</em>
+                </span>
+              )}
               <span>
                 {person.specialties.slice(0, 2).join(" · ") || "Profissional"}
               </span>

@@ -27,7 +27,7 @@
 /* Cover */
 .pp-cover {
   position: relative;
-  height: 300px;
+  height: 400px;
   overflow: hidden;
   background: #07111f;
   color: #fff;
@@ -105,15 +105,76 @@
   opacity: 0.85;
 }
 .pp-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: #fff;
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background: transparent;
   margin-bottom: 4px;
+  filter: drop-shadow(0 4px 14px #07111f80);
 }
 .pp-logo img {
   object-fit: contain !important;
-  padding: 6px;
+}
+.pp .pp-cover-tagline {
+  display: -webkit-box;
+  max-width: 340px;
+  margin: 12px 0 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 10px #07111f80;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.pp-cover-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.pp-cover-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.pp-cover-rating svg {
+  color: #fbbf24;
+}
+.pp-cover-rating strong {
+  font-weight: 700;
+}
+.pp-cover-pills .pp-status {
+  background: #ffffff26;
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+.pp-cover-pills .pp-status.is-open {
+  background: #dcfce7;
+  color: #166534;
+}
+.pp-person-rating {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #0f172a !important;
+  font-size: 12.5px !important;
+  font-weight: 650;
+}
+.pp-person-rating svg {
+  color: #f5a524;
+}
+.pp-person-rating em {
+  color: #64748b;
+  font-style: normal;
+  font-weight: 500;
 }
 
 /* Sheet */
@@ -762,7 +823,7 @@
     --pp-gutter: 32px;
   }
   .pp-cover {
-    height: 340px;
+    height: 420px;
   }
   .pp .pp-identity h1 {
     font-size: 34px;
@@ -807,7 +868,7 @@
   .pp-cover {
     width: calc(100% - 48px);
     max-width: 1180px;
-    height: 400px;
+    height: 440px;
     margin: 0 auto;
     border-radius: 22px;
   }

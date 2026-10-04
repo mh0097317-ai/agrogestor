@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
-import type { Appointment, Professional, Store } from "@/types";
+import type { Appointment, Professional, Review, Store } from "@/types";
 import {
   chooseProfessional,
   DomainError,
@@ -173,6 +173,14 @@ export async function loadSupabaseStore(
     .eq("business_id", businessId);
   if (serviceIds.error)
     throw new DomainError("Não foi possível carregar os agendamentos.", 503);
+  // Reviews arrived later; a project without them still loads.
+  const reviews = await client
+    .from("reviews")
+    .select(
+      "id,business_id,appointment_id,professional_id,customer_name,rating,comment,created_at",
+    )
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false });
   for (const service of services)
     service.professionalIds = relations
       .filter((relation) => relation.serviceId === service.id)
@@ -198,6 +206,7 @@ export async function loadSupabaseStore(
       payments,
       blockedTimes,
       settings: settings[0],
+      reviews: reviews.error ? [] : (camel(reviews.data) as Review[]),
     }),
   );
 }

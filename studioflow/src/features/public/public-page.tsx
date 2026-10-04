@@ -7,7 +7,9 @@ import {
   Clock,
   MapPin,
   ShareNetwork,
+  Star,
 } from "@phosphor-icons/react/dist/ssr";
+import { ratingLabel } from "@/lib/reviews";
 import {
   InstagramIcon,
   MapPinIcon,
@@ -175,24 +177,32 @@ export function PublicPage({ slug }: { slug: string }) {
           )}
           <h1>{business.name}</h1>
           <span>{business.category}</span>
+          {business.description && (
+            <p className="pp-cover-tagline">{business.description}</p>
+          )}
+          <div className="pp-cover-pills">
+            {catalog.rating && (
+              <span
+                className="pp-cover-rating"
+                aria-label={`Nota ${ratingLabel(catalog.rating)} de 5 em ${catalog.rating.count} ${catalog.rating.count === 1 ? "avaliação" : "avaliações"}`}
+              >
+                <Star size={15} weight="fill" />
+                <strong>{ratingLabel(catalog.rating)}</strong>(
+                {catalog.rating.count}{" "}
+                {catalog.rating.count === 1 ? "avaliação" : "avaliações"})
+              </span>
+            )}
+            <span className={`pp-status ${isOpen ? "is-open" : ""}`}>
+              <i />
+              {isOpen ? "Aberto agora" : statusNote || "Fechado agora"}
+            </span>
+          </div>
         </div>
       </header>
 
       <div className="pp-layout">
         <main className="pp-main" id="conteudo">
-          <section className="pp-sheet" aria-label="Sobre o estabelecimento">
-            <div className="pp-status-row">
-              <span className={`pp-status ${isOpen ? "is-open" : ""}`}>
-                <i />
-                {isOpen ? "Aberto agora" : "Fechado agora"}
-              </span>
-              {statusNote && (
-                <span className="pp-status-note">{statusNote}</span>
-              )}
-            </div>
-            {business.description && (
-              <p className="pp-tagline">{business.description}</p>
-            )}
+          <section className="pp-sheet" aria-label="Contato e agendamento">
             {actions.length > 0 && (
               <div
                 className="pp-actions"

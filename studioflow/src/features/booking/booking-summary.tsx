@@ -1,92 +1,17 @@
 "use client";
 
-import {
-  CalendarBlank,
-  Clock,
-  ShieldCheck,
-  User,
-} from "@phosphor-icons/react/dist/ssr";
+import { CalendarBlank, Clock, User } from "@phosphor-icons/react/dist/ssr";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
 import { bookingDateLabel, bookingTime } from "./date-format";
 
-export function BookingSummary({
-  service,
-  professional,
-  slot,
-  compact = false,
-  totalPrice,
-}: {
-  service?: Service;
-  professional?: PublicProfessional;
-  slot?: Slot;
-  compact?: boolean;
-  totalPrice?: number;
-}) {
-  return (
-    <div className={`booking-summary ${compact ? "is-compact" : ""}`}>
-      <span className="public-eyebrow">SEU AGENDAMENTO</span>
-      {service ? (
-        <div className="booking-summary-service">
-          <PublicImage
-            src={service.image}
-            alt={service.name}
-            className="booking-summary-photo"
-          />
-          <div>
-            <h3>{service.name}</h3>
-            <span>
-              {durationLabel(service.duration)} ·{" "}
-              {money(totalPrice ?? service.price)}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <p className="booking-summary-placeholder">
-          Escolha um serviço para começar.
-        </p>
-      )}
-      <dl>
-        <div>
-          <dt>
-            <User weight="duotone" size={16} /> Profissional
-          </dt>
-          <dd>{professional?.name || "Primeiro disponível"}</dd>
-        </div>
-        <div>
-          <dt>
-            <CalendarBlank weight="duotone" size={16} /> Data
-          </dt>
-          <dd>{slot ? bookingDateLabel(slot.start, true) : "A escolher"}</dd>
-        </div>
-        <div>
-          <dt>
-            <Clock weight="duotone" size={16} /> Horário
-          </dt>
-          <dd>
-            {slot
-              ? `${bookingTime(slot.start)} – ${bookingTime(slot.end)}`
-              : "A escolher"}
-          </dd>
-        </div>
-      </dl>
-      {service && (
-        <div className="booking-summary-total">
-          <span>Total</span>
-          <strong>{money(totalPrice ?? service.price)}</strong>
-        </div>
-      )}
-      <p className="booking-summary-safe">
-        <ShieldCheck weight="duotone" size={15} /> Sem cadastro e sem senha.
-      </p>
-    </div>
-  );
-}
+const capitalize = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1);
 
-/** Boarding-pass style recap: service on top, when and who below. */
-export function BookingTicket({
+/** Service on top, then who, which day and what time. */
+export function BookingRecap({
   service,
   professional,
   slot,
@@ -99,69 +24,61 @@ export function BookingTicket({
   totalPrice?: number;
   onEdit?: (step: number) => void;
 }) {
+  const rows = [
+    {
+      icon: <User weight="duotone" size={18} />,
+      label: "Profissional",
+      value: professional?.name || "Primeiro disponível",
+      step: 2,
+    },
+    {
+      icon: <CalendarBlank weight="duotone" size={18} />,
+      label: "Data",
+      value: capitalize(bookingDateLabel(slot.start, true)),
+      step: 3,
+    },
+    {
+      icon: <Clock weight="duotone" size={18} />,
+      label: "Horário",
+      value: `${bookingTime(slot.start)} – ${bookingTime(slot.end)}`,
+      step: 3,
+    },
+  ];
   return (
-    <div className="bk-ticket">
-      <div className="bk-ticket-top">
+    <div className="bk-recap">
+      <div className="bk-recap-service">
         <PublicImage
           src={service.image}
           alt=""
-          className="bk-ticket-photo"
+          className="bk-recap-photo"
           segment={service.category}
         />
         <div>
           <strong>{service.name}</strong>
           <span>
-            {durationLabel(service.duration)}
-            {onEdit && (
-              <button type="button" onClick={() => onEdit(1)}>
-                Trocar
-              </button>
-            )}
+            {durationLabel(service.duration)} •{" "}
+            {money(totalPrice ?? service.price)}
           </span>
         </div>
-        <b>{money(totalPrice ?? service.price)}</b>
+        {onEdit && (
+          <button type="button" onClick={() => onEdit(1)}>
+            Trocar
+          </button>
+        )}
       </div>
-      <div className="bk-ticket-cut" aria-hidden="true" />
-      <dl className="bk-ticket-rows">
-        <div>
-          <dt>
-            <CalendarBlank weight="duotone" size={16} /> Quando
-          </dt>
-          <dd>
-            <span className="bk-ticket-date">
-              {bookingDateLabel(slot.start, true)}
-            </span>
-            <strong>
-              {bookingTime(slot.start)} – {bookingTime(slot.end)}
-            </strong>
-          </dd>
-          {onEdit && (
-            <button type="button" onClick={() => onEdit(3)}>
-              Alterar
-            </button>
-          )}
-        </div>
-        <div>
-          <dt>
-            <User weight="duotone" size={16} /> Com
-          </dt>
-          <dd>
-            {professional && (
-              <PublicImage
-                src={professional.photo}
-                alt=""
-                className="bk-ticket-avatar"
-                fallbackName={professional.name}
-              />
+      <dl>
+        {rows.map((row) => (
+          <div key={row.label}>
+            <span className="bk-recap-icon">{row.icon}</span>
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+            {onEdit && row.label !== "Horário" && (
+              <button type="button" onClick={() => onEdit(row.step)}>
+                Alterar
+              </button>
             )}
-            <strong>{professional?.name || "Primeiro disponível"}</strong>
-          </dd>
-          {onEdit && (
-            <button type="button" onClick={() => onEdit(2)}>
-              Alterar
-            </button>
-          )}
-        </div>
+          </div>
+        ))}
       </dl>
     </div>
   );

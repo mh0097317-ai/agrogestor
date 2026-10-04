@@ -41,46 +41,109 @@
   position: relative;
   border: 1px solid #ffffff18;
 }
-.sidebar-business {
+.sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
-  padding: 0 8px;
+  padding: 0 10px;
   margin-bottom: 30px;
   color: #fff;
 }
+.sidebar-business {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0 0 14px;
+  padding: 18px 10px 10px;
+  border: 1px solid #ffffff14;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #ffffff12, transparent 70%),
+    #ffffff06;
+  color: #fff;
+  text-align: center;
+}
 .sidebar-business-mark {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  margin-bottom: 8px;
+  border-radius: 16px;
   border: 1px solid #ffffff1f;
   background: #ffffff0a;
   color: #e6eef7;
   overflow: hidden;
 }
+.sidebar-business-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sidebar-business-mark.has-logo {
+  border-color: transparent;
+  background: transparent;
+}
+.sidebar-business-mark.has-logo img {
+  object-fit: contain;
+}
 .sidebar-business-name {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 .sidebar-business-name strong {
   font-size: 14px;
-  font-weight: 650;
-  letter-spacing: 0.6px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
   line-height: 1.25;
 }
 .sidebar-business-name small {
-  margin-top: 2px;
-  font-size: 11px;
-  letter-spacing: 1.4px;
+  margin-top: 3px;
+  font-size: 10px;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: #8ea3b9;
+}
+.sidebar-business-actions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 14px;
+}
+.sidebar-business-actions a,
+.sidebar-business-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid #ffffff1a;
+  border-radius: 10px;
+  background: #ffffff0d;
+  color: #e3ecf6;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.sidebar-business-actions a {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.sidebar-business-actions button {
+  width: 36px;
+  flex: none;
+}
+.sidebar-business-actions a:hover,
+.sidebar-business-actions button:hover {
+  background: #ffffff1c;
 }
 .nav-link {
   display: flex;
@@ -131,50 +194,6 @@
   margin-top: auto;
   padding-top: 30px;
 }
-.sidebar-plan {
-  padding: 17px 14px;
-  border: 1px solid #ffffff12;
-  border-radius: 13px;
-  background: #ffffff03;
-  margin: 0 4px 18px;
-}
-.sidebar-plan-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #d9e5f1;
-  font-size: 12px;
-  font-weight: 500;
-}
-.sidebar-plan p {
-  color: #91a4b8;
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 7px 0 13px;
-}
-.sidebar-plan-actions {
-  display: flex;
-  gap: 8px;
-}
-.sidebar-plan-actions button,
-.sidebar-plan-actions a {
-  flex: 1;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid #ffffff1a;
-  border-radius: 9px;
-  background: #ffffff0a;
-  color: #dbe7f3;
-  font-size: 12px;
-  font-weight: 500;
-}
-.sidebar-plan-actions button:hover,
-.sidebar-plan-actions a:hover {
-  background: #ffffff14;
-}
 .sidebar-support {
   display: flex;
   align-items: center;
@@ -189,27 +208,6 @@
 }
 .sidebar-support:hover {
   color: white;
-}
-.sidebar-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid #ffffff0b;
-  padding: 17px 14px 0;
-  margin-top: 12px;
-  font-size: 12px;
-  color: #7b91a8;
-}
-.sidebar-foot span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.sidebar-foot i {
-  width: 5px;
-  height: 5px;
-  background: #80a78d;
-  border-radius: 50%;
 }
 .main-shell {
   width: calc(100% - 240px);
@@ -386,10 +384,6 @@
   letter-spacing: 1.75px;
   color: #7b93ac;
 }
-.sidebar-foot .brand-lockup {
-  font-size: 15px;
-  gap: 8px;
-}
 .mobile-top-business {
   display: flex;
   align-items: center;
@@ -428,9 +422,6 @@
 }
 .sidebar-business-mark {
   transition: transform 360ms var(--ease-spring);
-}
-.sidebar-business:hover .sidebar-business-mark {
-  transform: rotate(-6deg) scale(1.05);
 }
 .bottom-nav > a,
 .bottom-nav > button {
@@ -472,9 +463,6 @@
 .mobile-more {
   animation: sf-scale-in 220ms var(--ease-out) both;
   transform-origin: bottom right;
-}
-.sidebar-business-mark .avatar {
-  border-radius: 0;
 }
 .mobile-top-business .avatar {
   border-radius: 9px;

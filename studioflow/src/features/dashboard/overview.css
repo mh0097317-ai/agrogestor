@@ -958,8 +958,78 @@
 }
 .ov-week,
 .ov-occupancy,
-.ov-attention {
+.ov-attention,
+.ov-reviews {
   padding: 18px 20px;
+}
+.ov-rev-score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 12px;
+}
+.ov-rev-score > strong {
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.ov-rev-score > span {
+  display: grid;
+  gap: 3px;
+}
+.ov-rev-stars {
+  display: inline-flex;
+  gap: 2px;
+  color: #f5a524;
+}
+.ov-rev-score small {
+  color: #64748b;
+  font-size: 12px;
+}
+.ov-reviews ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ov-reviews li {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  animation: sf-fade-up 420ms var(--ease-out) both;
+}
+.ov-rev-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ov-rev-head strong {
+  font-size: 13px;
+}
+.ov-rev-head small {
+  flex-basis: 100%;
+  color: #64748b;
+  font-size: 11.5px;
+}
+.ov-rev-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #fff7e6;
+  color: #9a5b00;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.ov-reviews li p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
 }
 .ov-trend {
   display: inline-flex;
@@ -1262,6 +1332,9 @@
   .ov-occupancy {
     order: 6;
   }
+  .ov-reviews {
+    order: 7;
+  }
   .ov-now {
     padding: 16px;
   }
@@ -1321,6 +1394,12 @@
 }
 @media (max-width: 1023px) {
   .ov-clock {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  /* The navy mobile header already greets the owner. */
+  .ov-head {
     display: none;
   }
 }

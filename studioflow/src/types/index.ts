@@ -107,6 +107,17 @@ export interface Settings {
   openEnd: string;
   notifications: boolean;
 }
+export interface Review {
+  id: string;
+  businessId: string;
+  appointmentId: string;
+  professionalId: string;
+  /** First name only. */
+  customerName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
 export interface Store {
   business: Business;
   services: Service[];
@@ -116,6 +127,8 @@ export interface Store {
   payments: Payment[];
   blockedTimes: BlockedTime[];
   settings: Settings;
+  /** Customer reviews of completed appointments. */
+  reviews?: Review[];
   viewer?: { name: string; role: string };
   mode?: "demo" | "live";
 }

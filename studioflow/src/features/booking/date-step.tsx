@@ -11,16 +11,14 @@ import {
 import { ptBR } from "date-fns/locale";
 import {
   CalendarBlank,
-  CalendarDots,
   CaretLeft,
   CaretRight,
-  CircleNotch,
-  Rows,
 } from "@phosphor-icons/react/dist/ssr";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import { bookingDate } from "./date-format";
+import { StepHead } from "./selection-steps";
 
 type CalendarData = Record<string, Slot[]>;
 const labels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
@@ -34,6 +32,7 @@ export function DateStep({
   selectedSlot,
   onDate,
   onSlot,
+  embedded = false,
 }: {
   slug: string;
   serviceId: string;
@@ -43,15 +42,14 @@ export function DateStep({
   selectedSlot?: Slot;
   onDate: (value: string) => void;
   onSlot: (value?: Slot) => void;
+  /** Inside another screen (rescheduling): no step heading. */
+  embedded?: boolean;
 }) {
   const [month, setMonth] = useState(() =>
     startOfMonth(new Date(`${selectedDate || bookingDate()}T12:00:00`)),
   );
-  const [showMonth, setShowMonth] = useState(false);
-  const strip = useRef<HTMLDivElement>(null);
   const today = startOfDay(new Date(`${bookingDate()}T12:00:00`));
   const todayKey = format(today, "yyyy-MM-dd");
-  const tomorrowKey = format(addDays(today, 1), "yyyy-MM-dd");
   const maxDate = addDays(today, settings.maxDays);
   const monthKey = format(month, "yyyy-MM");
   const calendarDays = useMemo(() => {
@@ -86,8 +84,10 @@ export function DateStep({
         .find((day) => days[day].length > 0),
     [days],
   );
-  const activeDate = selectedDate || firstAvailable || "";
-  const autoPicked = !selectedDate && !!firstAvailable;
+  const activeDate =
+    (selectedDate && selectedDate.startsWith(monthKey) ? selectedDate : "") ||
+    firstAvailable ||
+    "";
   const availableSlots = days[activeDate] || [];
   const uniqueSlots = availableSlots.filter(
     (slot, index, list) =>
@@ -98,110 +98,46 @@ export function DateStep({
     { label: "Tarde", start: 12, end: 18 },
     { label: "Noite", start: 18, end: 24 },
   ];
-  const stripDays = calendarDays.filter(
-    (day): day is Date => !!day && day >= today && day <= maxDate,
-  );
-  const freeTimes = (key: string) =>
-    new Set((days[key] || []).map((slot) => slot.time)).size;
-
-  useEffect(() => {
-    const container = strip.current;
-    const active = container?.querySelector<HTMLElement>(".is-selected");
-    if (!container || !active) return;
-    container.scrollTo({
-      left:
-        active.offsetLeft - container.clientWidth / 2 + active.clientWidth / 2,
-      behavior: "smooth",
-    });
-  }, [activeDate, loading]);
 
   function chooseDate(date: Date) {
     onDate(format(date, "yyyy-MM-dd"));
     onSlot(undefined);
   }
+  const periodOf = (slot: Slot) => Number(slot.time.split(":")[0]);
   return (
-    <section className="booking-step bk-step">
-      <header className="bk-step-head">
-        <h1 tabIndex={-1}>Quando?</h1>
-        <p>Só aparecem horários livres de verdade.</p>
-      </header>
-      <div className="booking-scheduling-layout">
-        <div className={`booking-calendar ${showMonth ? "is-month" : ""}`}>
-          <div className="booking-calendar-heading">
+    <section className="bk-step">
+      {!embedded && (
+        <StepHead
+          title="Quando você deseja agendar?"
+          text="Selecione a data e o horário disponível."
+        />
+      )}
+      <div className="bk-schedule">
+        <div className="bk-calendar">
+          <div className="bk-calendar-head">
             <button
+              type="button"
               onClick={() => setMonth(addMonths(month, -1))}
               disabled={monthKey <= format(today, "yyyy-MM")}
-              className="public-icon-button"
               aria-label="Mês anterior"
             >
               <CaretLeft weight="bold" size={18} />
             </button>
-            <strong>{format(month, "MMMM 'de' yyyy", { locale: ptBR })}</strong>
+            <strong aria-live="polite">
+              {format(month, "MMMM 'de' yyyy", { locale: ptBR })}
+            </strong>
             <button
+              type="button"
               onClick={() => setMonth(addMonths(month, 1))}
               disabled={monthKey >= format(maxDate, "yyyy-MM")}
-              className="public-icon-button"
               aria-label="Próximo mês"
             >
               <CaretRight weight="bold" size={18} />
             </button>
-            <button
-              type="button"
-              className="booking-calendar-toggle"
-              onClick={() => setShowMonth((value) => !value)}
-              aria-pressed={showMonth}
-            >
-              {showMonth ? (
-                <Rows weight="bold" size={15} />
-              ) : (
-                <CalendarDots weight="duotone" size={16} />
-              )}
-              {showMonth ? "Ver dias" : "Ver mês"}
-            </button>
           </div>
-          <div
-            className="booking-day-strip"
-            ref={strip}
-            role="group"
-            aria-label="Dias disponíveis"
-          >
-            {stripDays.map((day) => {
-              const key = format(day, "yyyy-MM-dd");
-              const count = loading ? 0 : freeTimes(key);
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={!loading && !count}
-                  className={`${activeDate === key ? "is-selected" : ""} ${loading ? "is-loading" : ""}`}
-                  onClick={() => chooseDate(day)}
-                  aria-pressed={activeDate === key}
-                  aria-label={`${format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}${count ? `, ${count} horários livres` : ", sem horários"}`}
-                >
-                  <small>
-                    {key === todayKey
-                      ? "Hoje"
-                      : key === tomorrowKey
-                        ? "Amanhã"
-                        : labels[day.getDay()]}
-                  </small>
-                  <strong>{format(day, "d")}</strong>
-                  <em>
-                    {loading
-                      ? "…"
-                      : count
-                        ? `${count} livres`
-                        : settings.openDays.includes(day.getDay())
-                          ? "Sem vagas"
-                          : "Fechado"}
-                  </em>
-                </button>
-              );
-            })}
-          </div>
-          <div className="booking-calendar-grid">
+          <div className={`bk-calendar-grid ${loading ? "is-loading" : ""}`}>
             {labels.map((label) => (
-              <span key={label} className="booking-weekday">
+              <span key={label} className="bk-weekday">
                 {label}
               </span>
             ))}
@@ -212,70 +148,57 @@ export function DateStep({
               return (
                 <button
                   key={key}
+                  type="button"
                   disabled={!available}
-                  className={`${activeDate === key ? "is-selected" : ""} ${format(today, "yyyy-MM-dd") === key ? "is-today" : ""}`}
+                  className={`${activeDate === key ? "is-selected" : ""} ${todayKey === key ? "is-today" : ""} ${available ? "is-open" : ""}`}
                   onClick={() => chooseDate(day)}
                   aria-pressed={activeDate === key}
-                  aria-label={`${format(day, "d 'de' MMMM", { locale: ptBR })}${available ? ", com horários disponíveis" : ", indisponível"}`}
+                  aria-label={`${format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}${available ? ", com horários" : ", sem horários"}`}
                 >
                   {format(day, "d")}
-                  {available && <i />}
                 </button>
               );
             })}
           </div>
-          <div className="booking-calendar-legend">
-            <i /> Datas com horários disponíveis{" "}
-            {loading && (
-              <CircleNotch weight="bold" size={13} className="public-spin" />
-            )}
-          </div>
         </div>
         {error ? (
-          <div className="booking-error" role="alert">
+          <div className="bk-alert" role="alert">
             <p>{error}</p>
-            <button className="public-text-link" onClick={reload}>
+            <button type="button" onClick={reload}>
               Tentar novamente
             </button>
           </div>
         ) : loading ? (
-          <div className="booking-slots-loading" aria-live="polite">
-            <div className="public-skeleton public-skeleton-line" />
-            <div className="booking-slot-grid">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="public-skeleton booking-slot-skeleton"
-                />
+          <div className="bk-times" aria-live="polite" aria-busy="true">
+            <span className="bk-skeleton bk-skeleton-title" />
+            <div className="bk-slot-grid">
+              {Array.from({ length: 9 }).map((_, index) => (
+                <span key={index} className="bk-skeleton bk-skeleton-slot" />
               ))}
             </div>
           </div>
         ) : activeDate ? (
-          <div className="booking-times" key={activeDate}>
+          <div className="bk-times" key={activeDate}>
             <h2>
               {format(new Date(`${activeDate}T12:00:00`), "EEEE, d 'de' MMMM", {
                 locale: ptBR,
               })}
             </h2>
-            {autoPicked && (
-              <p className="booking-auto-date">
-                Primeiro dia com horário livre. Toque em outra data se preferir.
-              </p>
-            )}
             {periods.map((period) => {
               const slots = uniqueSlots.filter(
                 (slot) =>
-                  Number(slot.time.split(":")[0]) >= period.start &&
-                  Number(slot.time.split(":")[0]) < period.end,
+                  periodOf(slot) >= period.start && periodOf(slot) < period.end,
               );
               return (
                 slots.length > 0 && (
-                  <div className="booking-time-period" key={period.label}>
+                  <div className="bk-period" key={period.label}>
                     <h3>{period.label}</h3>
-                    <div className="booking-slot-grid sf-stagger">
-                      {slots.map((slot) => (
+                    <div className="bk-slot-grid">
+                      {slots.map((slot, index) => (
                         <button
                           key={`${slot.time}-${slot.professionalId}`}
+                          type="button"
+                          style={{ "--i": index } as CSSProperties}
                           className={
                             selectedSlot?.start === slot.start
                               ? "is-selected"
@@ -283,7 +206,7 @@ export function DateStep({
                           }
                           aria-pressed={selectedSlot?.start === slot.start}
                           onClick={() => {
-                            if (!selectedDate) onDate(activeDate);
+                            if (selectedDate !== activeDate) onDate(activeDate);
                             onSlot(slot);
                           }}
                         >
@@ -296,21 +219,25 @@ export function DateStep({
               );
             })}
             {uniqueSlots.length === 0 && (
-              <div className="booking-empty">
+              <div className="bk-empty">
                 <CalendarBlank weight="duotone" size={24} />
-                <p>
-                  Esta data não tem horários disponíveis. Escolha outro dia.
-                </p>
+                <p>Esta data não tem horários livres. Escolha outro dia.</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="booking-empty booking-date-hint">
-            <CalendarBlank weight="duotone" size={22} />
+          <div className="bk-empty">
+            <CalendarBlank weight="duotone" size={24} />
             <p>
-              {Object.values(days).some((slots) => slots.length)
-                ? "Escolha uma data no calendário para ver os horários."
-                : "Não há horários livres neste mês. Consulte o próximo mês."}
+              Não há horários livres neste mês.{" "}
+              {monthKey < format(maxDate, "yyyy-MM") && (
+                <button
+                  type="button"
+                  onClick={() => setMonth(addMonths(month, 1))}
+                >
+                  Ver o próximo mês
+                </button>
+              )}
             </p>
           </div>
         )}

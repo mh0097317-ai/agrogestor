@@ -1,14 +1,20 @@
 "use client";
 
-import { Check, Clock, Sparkle } from "@phosphor-icons/react/dist/ssr";
+import {
+  CaretRight,
+  Check,
+  Star,
+  UsersThree,
+} from "@phosphor-icons/react/dist/ssr";
 import { useState, type CSSProperties } from "react";
 import type { Service } from "@/types";
-import type { PublicProfessional } from "@/features/public/types";
+import type { PublicProfessional, Rating } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import type { Slot } from "@/types";
 import { bookingDate, bookingTime } from "./date-format";
+import { ratingLabel } from "@/lib/reviews";
 
 /** "hoje às 14:30", "amanhã às 09:00" or "sáb., 04/10 às 09:00". */
 export function freeLabel(slot: Slot, now = new Date()) {
@@ -29,7 +35,51 @@ export function freeLabel(slot: Slot, now = new Date()) {
   return `${when} às ${bookingTime(slot.start)}`;
 }
 
+/** "★ 4,9 (120)": only real reviews, never a placeholder score. */
+export function RatingLine({ rating }: { rating?: Rating }) {
+  if (!rating?.count) return null;
+  return (
+    <span
+      className="bk-rating"
+      aria-label={`Nota ${ratingLabel(rating)} de 5, ${rating.count} ${rating.count === 1 ? "avaliação" : "avaliações"}`}
+    >
+      <Star weight="fill" size={14} />
+      {ratingLabel(rating)} <em>({rating.count})</em>
+    </span>
+  );
+}
+
 const stagger = (index: number) => ({ "--i": index }) as CSSProperties;
+
+function Indicator({
+  selected,
+  kind,
+}: {
+  selected: boolean;
+  kind: "chevron" | "radio";
+}) {
+  return (
+    <span
+      className={`bk-indicator is-${kind} ${selected ? "is-on" : ""}`}
+      aria-hidden="true"
+    >
+      {selected ? (
+        <Check weight="bold" size={13} />
+      ) : kind === "chevron" ? (
+        <CaretRight weight="bold" size={16} />
+      ) : null}
+    </span>
+  );
+}
+
+export function StepHead({ title, text }: { title: string; text: string }) {
+  return (
+    <header className="bk-head">
+      <h1 tabIndex={-1}>{title}</h1>
+      <p>{text}</p>
+    </header>
+  );
+}
 
 export function ServiceStep({
   services,
@@ -48,10 +98,10 @@ export function ServiceStep({
   );
   return (
     <section className="bk-step">
-      <header className="bk-step-head">
-        <h1 tabIndex={-1}>Escolha o serviço</h1>
-        <p>Toque em um serviço para seguir.</p>
-      </header>
+      <StepHead
+        title="Qual serviço você deseja?"
+        text="Escolha o serviço que deseja realizar."
+      />
       {categories.length > 2 && (
         <div className="bk-tabs" role="group" aria-label="Categorias">
           {categories.map((item) => (
@@ -67,34 +117,29 @@ export function ServiceStep({
           ))}
         </div>
       )}
-      <ul className="bk-services" role="list" key={category}>
+      <ul className="bk-list" role="list" key={category}>
         {visible.map((service, index) => {
           const selected = selectedId === service.id;
           return (
             <li key={service.id} style={stagger(index)}>
               <button
                 type="button"
-                className={`bk-service ${selected ? "is-selected" : ""}`}
+                className={`bk-option ${selected ? "is-selected" : ""}`}
                 aria-pressed={selected}
                 onClick={() => onSelect(service.id)}
               >
                 <PublicImage
                   src={service.image}
                   alt=""
-                  className="bk-service-photo"
+                  className="bk-option-photo"
                   segment={service.category}
                 />
-                <span className="bk-service-body">
+                <span className="bk-option-body">
                   <strong>{service.name}</strong>
-                  <span>
-                    <Clock weight="bold" size={13} />
-                    {durationLabel(service.duration)}
-                  </span>
+                  <span>{durationLabel(service.duration)}</span>
+                  <b>{money(service.price)}</b>
                 </span>
-                <span className="bk-service-price">{money(service.price)}</span>
-                <span className="bk-check" aria-hidden="true">
-                  <Check weight="bold" size={13} />
-                </span>
+                <Indicator selected={selected} kind="chevron" />
               </button>
             </li>
           );
@@ -131,51 +176,38 @@ export function ProfessionalStep({
   )[0];
   const availability = (slot?: Slot) =>
     loading && !nextFree ? (
-      <em className="bk-free is-loading">Consultando agenda</em>
+      <em className="bk-free is-loading">Consultando agenda…</em>
     ) : slot ? (
       <em className="bk-free">
         <i /> Livre {freeLabel(slot)}
       </em>
     ) : nextFree ? (
-      <em className="bk-free is-busy">Agenda cheia nos próximos dias</em>
+      <em className="bk-free is-busy">Sem horários nos próximos dias</em>
     ) : null;
   return (
     <section className="bk-step">
-      <header className="bk-step-head">
-        <h1 tabIndex={-1}>Com quem?</h1>
-        <p>O próximo horário livre aparece em cada um.</p>
-      </header>
-      <ul className="bk-pros" role="list">
+      <StepHead
+        title="Quem vai te atender?"
+        text="Escolha o profissional de sua preferência."
+      />
+      <ul className="bk-list" role="list">
         {available.length > 1 && (
           <li style={stagger(0)}>
             <button
               type="button"
-              className={`bk-pro is-any ${selectedId === "any" ? "is-selected" : ""}`}
+              className={`bk-option is-any ${selectedId === "any" ? "is-selected" : ""}`}
               aria-pressed={selectedId === "any"}
               onClick={() => onSelect("any")}
             >
-              <span className="bk-pro-stack" aria-hidden="true">
-                {available.slice(0, 2).map((person) => (
-                  <PublicImage
-                    key={person.id}
-                    src={person.photo}
-                    alt=""
-                    className="bk-pro-mini"
-                    fallbackName={person.name}
-                  />
-                ))}
-                <span className="bk-pro-spark">
-                  <Sparkle weight="fill" size={14} />
-                </span>
+              <span className="bk-any-icon" aria-hidden="true">
+                <UsersThree weight="duotone" size={24} />
               </span>
-              <span className="bk-pro-body">
-                <strong>Sem preferência</strong>
-                <span>Quem estiver livre primeiro</span>
+              <span className="bk-option-body">
+                <strong>Qualquer profissional</strong>
+                <span>Primeiro horário disponível</span>
                 {availability(earliest)}
               </span>
-              <span className="bk-check" aria-hidden="true">
-                <Check weight="bold" size={13} />
-              </span>
+              <Indicator selected={selectedId === "any"} kind="chevron" />
             </button>
           </li>
         )}
@@ -183,26 +215,25 @@ export function ProfessionalStep({
           <li key={person.id} style={stagger(index + 1)}>
             <button
               type="button"
-              className={`bk-pro ${selectedId === person.id ? "is-selected" : ""}`}
+              className={`bk-option is-person ${selectedId === person.id ? "is-selected" : ""}`}
               aria-pressed={selectedId === person.id}
               onClick={() => onSelect(person.id)}
             >
               <PublicImage
                 src={person.photo}
                 alt=""
-                className="bk-pro-photo"
+                className="bk-option-photo"
                 fallbackName={person.name}
               />
-              <span className="bk-pro-body">
+              <span className="bk-option-body">
                 <strong>{person.name}</strong>
+                <RatingLine rating={person.rating} />
                 <span>
-                  {person.specialties.slice(0, 2).join(" · ") || "Profissional"}
+                  {person.specialties.slice(0, 3).join(", ") || "Profissional"}
                 </span>
                 {availability(nextFree?.[person.id])}
               </span>
-              <span className="bk-check" aria-hidden="true">
-                <Check weight="bold" size={13} />
-              </span>
+              <Indicator selected={selectedId === person.id} kind="radio" />
             </button>
           </li>
         ))}

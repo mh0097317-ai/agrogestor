@@ -31,6 +31,7 @@ import {
   AttentionCard,
   NowCard,
   OccupancyCard,
+  ReviewsCard,
   WeekRevenueCard,
 } from "./overview-widgets";
 
@@ -268,6 +269,7 @@ export function Overview() {
             canEdit={canEdit}
             onOpen={setDetail}
           />
+          <ReviewsCard data={data} />
         </aside>
       </div>
       <AppointmentForm

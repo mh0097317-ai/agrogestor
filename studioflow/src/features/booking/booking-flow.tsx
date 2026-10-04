@@ -1,15 +1,11 @@
 "use client";
 
-import {
-  ArrowRight,
-  PencilSimple,
-  Sparkle,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { PublicCatalog } from "@/features/public/types";
-import { money } from "@/lib/utils";
+import { durationLabel, money } from "@/lib/utils";
 import {
   PublicError,
   PublicImage,
@@ -24,16 +20,8 @@ import { ServiceStep, ProfessionalStep } from "./selection-steps";
 import { DateStep } from "./date-step";
 import { BookingChrome } from "./booking-chrome";
 import { CustomerStep, type CustomerFields } from "./customer-step";
-import { bookingDateLabel, bookingTime } from "./date-format";
+import { bookingTime } from "./date-format";
 import { haptic } from "@/lib/haptic";
-import "@/features/public/public.css";
-import "./booking-layout.css";
-import "./booking-selection.css";
-import "./booking-scheduling.css";
-import "./booking-summary.css";
-import "./booking-confirmation.css";
-import "./booking-responsive.css";
-import "./booking-v2.css";
 
 const rememberKey = "studioflow:customer";
 type RememberedCustomer = Omit<CustomerFields, "reminder"> & {
@@ -46,50 +34,6 @@ function readRememberedCustomer(): RememberedCustomer | null {
   } catch {
     return null;
   }
-}
-
-export const bookingSteps = [
-  "Serviço",
-  "Profissional",
-  "Horário",
-  "Seus dados",
-];
-export function BookingProgress({ step }: { step: number; onBack?: unknown }) {
-  const current = Math.min(step, bookingSteps.length);
-  const done = step > bookingSteps.length;
-  return (
-    <div
-      className={`bk-progress ${done ? "is-done" : ""}`}
-      role="progressbar"
-      aria-label="Etapas do agendamento"
-      aria-valuemin={1}
-      aria-valuemax={bookingSteps.length}
-      aria-valuenow={current}
-    >
-      <div className="bk-progress-bars">
-        {bookingSteps.map((label, index) => (
-          <span
-            key={label}
-            className={
-              index + 1 < step || done
-                ? "is-done"
-                : index + 1 === step
-                  ? "is-current"
-                  : ""
-            }
-          />
-        ))}
-      </div>
-      <p>
-        <span>
-          {done ? "Tudo certo" : `Etapa ${current} de ${bookingSteps.length}`}
-        </span>
-        <strong>
-          {done ? "Horário reservado" : bookingSteps[current - 1]}
-        </strong>
-      </p>
-    </div>
-  );
 }
 
 export function BookingFlow({ slug }: { slug: string }) {
@@ -189,40 +133,46 @@ function BookingWizard({
         : "smooth",
     });
   }
-  const advance = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(advance.current), []);
-  /** Let the selection animation play, then move on. */
-  function advanceTo(next: number) {
-    window.clearTimeout(advance.current);
-    advance.current = window.setTimeout(() => changeStep(next), 280);
-  }
-  function selectService(id: string) {
-    haptic();
+  const teamFor = (id: string) => {
     const chosen = services.find((item) => item.id === id);
-    const team = professionals.filter(
+    return professionals.filter(
       (person) => person.active && chosen?.professionalIds.includes(person.id),
     );
-    if (id !== serviceId) {
-      setServiceId(id);
-      setSlot(undefined);
-      setDate("");
-      if (!chosen?.professionalIds.includes(professionalId))
-        setProfessionalId("any");
-    }
-    // A single professional needs no choice: go straight to the times.
-    if (team.length === 1) {
-      setProfessionalId(team[0].id);
-      advanceTo(3);
-    } else advanceTo(2);
+  };
+  function selectService(id: string) {
+    haptic();
+    if (id === serviceId) return;
+    const chosen = services.find((item) => item.id === id);
+    setServiceId(id);
+    setSlot(undefined);
+    setDate("");
+    if (!chosen?.professionalIds.includes(professionalId))
+      setProfessionalId("any");
   }
   function selectProfessional(id: string) {
     haptic();
-    if (id !== professionalId) {
-      setProfessionalId(id);
-      setSlot(undefined);
-      setDate("");
-    }
-    advanceTo(3);
+    if (id === professionalId) return;
+    setProfessionalId(id);
+    setSlot(undefined);
+    setDate("");
+  }
+  function next() {
+    if (step === 1) {
+      // A single professional needs no choice: go straight to the times.
+      const team = teamFor(serviceId);
+      if (team.length === 1) {
+        if (professionalId !== team[0].id) {
+          setProfessionalId(team[0].id);
+          setSlot(undefined);
+          setDate("");
+        }
+        changeStep(3);
+      } else changeStep(2);
+    } else changeStep(step + 1);
+  }
+  function back() {
+    if (step === 3 && teamFor(serviceId).length === 1) changeStep(1);
+    else changeStep(step - 1);
   }
   async function submit(values: CustomerFields) {
     if (!service || !slot) return;
@@ -278,41 +228,51 @@ function BookingWizard({
       setBusy(false);
     }
   }
-  const team = service
-    ? professionals.filter(
-        (person) =>
-          person.active && service.professionalIds.includes(person.id),
-      )
-    : [];
-  const chosenPerson = professionals.find(
-    (person) => person.id === professionalId,
-  );
+  const canContinue =
+    (step === 1 && !!service) || (step === 2 && !!service) || !!slot;
+  const showBar = step <= 3 && !!service;
+  const slotDay = slot
+    ? new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      }).format(new Date(slot.start))
+    : "";
   return (
     <BookingChrome
       business={business}
-      onBack={step > 1 ? () => changeStep(step - 1) : undefined}
+      step={step}
+      onBack={step > 1 ? back : undefined}
+      onStep={busy ? undefined : changeStep}
       backDisabled={busy}
       after={
         <div
-          className={`bk-cta ${step === 3 && slot ? "is-visible" : ""}`}
-          aria-hidden={!(step === 3 && slot)}
+          className={`bk-bar ${showBar ? "is-visible" : ""}`}
+          aria-hidden={!showBar}
         >
-          {slot && service && (
-            <div className="bk-cta-inner" key={slot.start}>
-              <div>
-                <strong>
-                  {bookingDateLabel(slot.start, true).split(",")[0]},{" "}
-                  {bookingTime(slot.start)}
-                </strong>
+          {service && (
+            <div className="bk-bar-inner">
+              <PublicImage
+                src={service.image}
+                alt=""
+                className="bk-bar-photo"
+                segment={service.category}
+              />
+              <div className="bk-bar-text" key={`${service.id}-${slot?.start}`}>
+                <strong>{service.name}</strong>
                 <span>
-                  {professional?.name.split(" ")[0]} · {money(service.price)}
+                  {step === 3 && slot
+                    ? `${slotDay.charAt(0).toUpperCase()}${slotDay.slice(1).replace(".", "")} às ${bookingTime(slot.start)}`
+                    : `${durationLabel(service.duration)} • ${money(service.price)}`}
                 </span>
               </div>
               <button
                 type="button"
-                className="public-button sf-sheen"
-                tabIndex={step === 3 ? 0 : -1}
-                onClick={() => changeStep(4)}
+                className="bk-bar-button sf-sheen"
+                disabled={!canContinue || busy}
+                tabIndex={showBar ? 0 : -1}
+                onClick={next}
               >
                 Continuar <ArrowRight weight="bold" size={17} />
               </button>
@@ -321,48 +281,11 @@ function BookingWizard({
         </div>
       }
     >
-      <BookingProgress step={step} />
-      {step > 1 && step < 4 && service && (
-        <nav className="bk-picks" aria-label="Suas escolhas">
-          <button type="button" onClick={() => changeStep(1)} disabled={busy}>
-            <PublicImage
-              src={service.image}
-              alt=""
-              className="bk-pick-photo"
-              segment={service.category}
-            />
-            <span>
-              <small>Serviço</small>
-              <strong>{service.name}</strong>
-            </span>
-            <PencilSimple weight="bold" size={13} />
-          </button>
-          {step === 3 && team.length > 1 && (
-            <button type="button" onClick={() => changeStep(2)} disabled={busy}>
-              {chosenPerson ? (
-                <PublicImage
-                  src={chosenPerson.photo}
-                  alt=""
-                  className="bk-pick-photo is-round"
-                  fallbackName={chosenPerson.name}
-                />
-              ) : (
-                <span className="bk-pick-icon">
-                  <Sparkle weight="fill" size={14} />
-                </span>
-              )}
-              <span>
-                <small>Profissional</small>
-                <strong>
-                  {chosenPerson?.name.split(" ")[0] || "Sem preferência"}
-                </strong>
-              </span>
-              <PencilSimple weight="bold" size={13} />
-            </button>
-          )}
-        </nav>
-      )}
-      <div key={step} className={`bk-screen is-${direction}`} ref={stepHeading}>
+      <div
+        key={step}
+        className={`bk-screen is-${direction}`}
+        ref={stepHeading}
+      >
         {step === 1 && (
           <ServiceStep
             services={services}
@@ -411,8 +334,8 @@ function BookingWizard({
           />
         )}
         {error && step !== 4 && (
-          <div className="booking-error" role="alert">
-            {error}
+          <div className="bk-alert" role="alert">
+            <p>{error}</p>
           </div>
         )}
       </div>

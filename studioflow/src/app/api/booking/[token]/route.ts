@@ -6,7 +6,8 @@ import {
 } from "@/lib/availability";
 import { isDemo, findDemoToken, mutateDemo } from "@/services/server-demo";
 import { camel, publicProfessional } from "@/services/server-store";
-import type { Professional } from "@/types";
+import { randomUUID } from "node:crypto";
+import type { Professional, Review } from "@/types";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { tokenSchema } from "@/services/server-validation";
 import {
@@ -16,8 +17,30 @@ import {
   respond,
 } from "@/services/server-http";
 export const dynamic = "force-dynamic";
+const reviewErrors = {
+  booking_not_found: "Agendamento não encontrado.",
+  review_not_allowed:
+    "A avaliação fica disponível depois que o atendimento for concluído.",
+  already_reviewed: "Você já avaliou este atendimento. Obrigado!",
+  invalid_rating: "Escolha de 1 a 5 estrelas.",
+};
+/** The customer sees only their own rating and comment. */
+function ownReview(review?: Review) {
+  return review
+    ? {
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+      }
+    : null;
+}
 const editSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("cancel") }),
+  z.object({
+    action: z.literal("review"),
+    rating: z.number().int().min(1).max(5),
+    comment: z.string().trim().max(500, "Use no máximo 500 caracteres.").default(""),
+  }),
   z.object({
     action: z.literal("reschedule"),
     start: z.string().datetime({ offset: true }),
@@ -42,6 +65,9 @@ export async function GET(
           store.professionals.find(
             (person) => person.id === appointment.professionalId,
           ),
+        ),
+        review: ownReview(
+          store.reviews?.find((item) => item.appointmentId === appointment.id),
         ),
       });
     }
@@ -77,6 +103,25 @@ export async function PATCH(
           );
           if (!appointment)
             throw new DomainError("Agendamento não encontrado.", 404);
+          if (payload.action === "review") {
+            if (appointment.status !== "completed")
+              throw new DomainError(reviewErrors.review_not_allowed, 409);
+            store.reviews ??= [];
+            if (store.reviews.some((item) => item.appointmentId === appointment.id))
+              throw new DomainError(reviewErrors.already_reviewed, 409);
+            const review: Review = {
+              id: randomUUID(),
+              businessId: appointment.businessId,
+              appointmentId: appointment.id,
+              professionalId: appointment.professionalId,
+              customerName: appointment.customerName.trim().split(/\s+/)[0],
+              rating: payload.rating,
+              comment: payload.comment,
+              createdAt: new Date().toISOString(),
+            };
+            store.reviews.unshift(review);
+            return ownReview(review);
+          }
           if (payload.action === "cancel" && appointment.status === "cancelled")
             return appointment;
           if (!["confirmed", "pending"].includes(appointment.status))
@@ -117,6 +162,23 @@ export async function PATCH(
           return appointment;
         }, slug),
       );
+    }
+    if (payload.action === "review") {
+      const { data, error } = await createSupabaseAdmin().rpc("submit_review", {
+        p_token: token,
+        p_rating: payload.rating,
+        p_comment: payload.comment,
+      });
+      if (error) {
+        const code = Object.keys(reviewErrors).find((key) =>
+          error.message.includes(key),
+        ) as keyof typeof reviewErrors | undefined;
+        throw new DomainError(
+          code ? reviewErrors[code] : "Não foi possível enviar sua avaliação.",
+          code === "booking_not_found" ? 404 : 409,
+        );
+      }
+      return respond(camel(data));
     }
     const { data, error } = await createSupabaseAdmin().rpc("manage_booking", {
       p_token: token,

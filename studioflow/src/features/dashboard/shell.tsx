@@ -19,7 +19,6 @@ import {
   Plus,
   DotsThree,
   Question,
-  LinkSimple,
   Copy,
   Storefront,
   SignOut,
@@ -128,26 +127,8 @@ function Shell({ children }: { children: ReactNode }) {
       data-home={pathname === "/dashboard" ? "" : undefined}
     >
       <aside className="sidebar">
-        <Link className="sidebar-business" href="/dashboard">
-          <span className="sidebar-business-mark">
-            {data?.business.logo || data?.business.cover ? (
-              <Avatar
-                src={data.business.logo || data.business.cover}
-                name={data.business.name}
-                size={40}
-              />
-            ) : (
-              <SegmentIcon
-                category={data?.business.category}
-                size={22}
-                weight="duotone"
-              />
-            )}
-          </span>
-          <span className="sidebar-business-name">
-            <strong>{data?.business.name || "Seu estabelecimento"}</strong>
-            <small>{data?.business.category || "Agenda e gestão"}</small>
-          </span>
+        <Link className="sidebar-brand" href="/dashboard" aria-label="Início">
+          <Brand tone="on-dark" size={30} />
         </Link>
         <nav aria-label="Navegação principal" ref={navRef} className="side-nav">
           {links.map((link) => (
@@ -176,26 +157,44 @@ function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-plan">
-            <div className="sidebar-plan-title">
-              <LinkSimple size={14} /> Seu link de agendamento
-            </div>
-            <p>Divulgue para seus clientes marcarem sozinhos.</p>
-            <div className="sidebar-plan-actions">
-              <button onClick={() => void copyLink()}>
-                <Copy size={13} /> Copiar
-              </button>
+          <div className="sidebar-business">
+            <span
+              className={`sidebar-business-mark ${data?.business.logo ? "has-logo" : ""}`}
+            >
+              {data?.business.logo || data?.business.cover ? (
+                <img
+                  src={data.business.logo || data.business.cover}
+                  alt=""
+                />
+              ) : (
+                <SegmentIcon
+                  category={data?.business.category}
+                  size={24}
+                  weight="duotone"
+                />
+              )}
+            </span>
+            <span className="sidebar-business-name">
+              <strong>{data?.business.name || "Seu estabelecimento"}</strong>
+              <small>{data?.business.category || "Agenda e gestão"}</small>
+            </span>
+            <div className="sidebar-business-actions">
               <Link href={`/${slug}`} target="_blank">
-                Abrir <ArrowUpRight size={12} />
+                Ver página pública <ArrowUpRight size={13} weight="bold" />
               </Link>
+              <button
+                type="button"
+                onClick={() => void copyLink()}
+                aria-label="Copiar link de agendamento"
+                title="Copiar link de agendamento"
+              >
+                <Copy size={15} />
+              </button>
             </div>
           </div>
           <button className="sidebar-support" onClick={() => setHelp(true)}>
             <Question size={16} /> Central de ajuda
           </button>
-          <div className="sidebar-foot">
-            <Brand tone="on-dark" size={26} />
-          </div>
         </div>
       </aside>
       <div className="main-shell">

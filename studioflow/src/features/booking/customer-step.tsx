@@ -3,17 +3,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  ArrowRight,
-  EnvelopeSimple,
-  ShieldCheck,
-  User,
-} from "@phosphor-icons/react/dist/ssr";
+import { Check, LockSimple, User } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import type { Service, Slot } from "@/types";
 import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
-import { BookingTicket } from "./booking-summary";
+import { BookingRecap } from "./booking-summary";
+import { StepHead } from "./selection-steps";
 
 const validDdds = new Set([
   11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35,
@@ -92,42 +88,35 @@ export function CustomerStep({
     defaultValues: defaults,
   });
   return (
-    <section className="booking-step bk-step">
-      <header className="bk-step-head">
-        <h1 tabIndex={-1}>
-          {welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase lá"}
-        </h1>
-        <p>
-          {welcomeName
-            ? "Confira e confirme seu horário."
-            : "Confira o horário e diga como te chamar."}
-        </p>
-      </header>
-      <BookingTicket
+    <section className="bk-step">
+      <StepHead
+        title={welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"}
+        text="Confirme seus dados para finalizar o agendamento."
+      />
+      <BookingRecap
         service={service}
         professional={professional}
         slot={slot}
         onEdit={onEdit}
       />
       {welcomeName && (
-        <div className="booking-welcome" role="status">
-          <span>
-            Seus dados já estão preenchidos e ficam só neste aparelho.
-          </span>
+        <div className="bk-welcome" role="status">
+          <span>Seus dados já estão preenchidos e ficam só neste aparelho.</span>
           <button type="button" onClick={onForget}>
             Não é você?
           </button>
         </div>
       )}
       <form
-        className="booking-customer-form"
+        className="bk-form"
         onSubmit={handleSubmit(onSubmit)}
         onBlur={() => onChange(getValues())}
         onChange={() => onChange(getValues())}
+        noValidate
       >
         <label htmlFor="booking-name">
-          Seu nome
-          <span className="booking-input">
+          <span className="bk-label">Seu nome</span>
+          <span className="bk-input">
             <User weight="duotone" size={18} />
             <input
               id="booking-name"
@@ -140,14 +129,14 @@ export function CustomerStep({
             />
           </span>
           {errors.name && (
-            <span id="booking-name-error" className="booking-field-error">
+            <span id="booking-name-error" className="bk-field-error">
               {errors.name.message}
             </span>
           )}
         </label>
         <label htmlFor="booking-phone">
-          WhatsApp
-          <span className="booking-input">
+          <span className="bk-label">WhatsApp</span>
+          <span className="bk-input">
             <WhatsAppIcon size={18} />
             <input
               id="booking-phone"
@@ -166,51 +155,29 @@ export function CustomerStep({
             />
           </span>
           {errors.phone && (
-            <span id="booking-phone-error" className="booking-field-error">
+            <span id="booking-phone-error" className="bk-field-error">
               {errors.phone.message}
             </span>
           )}
         </label>
-        <label htmlFor="booking-email">
-          E-mail <span className="booking-optional">opcional</span>
-          <span className="booking-input">
-            <EnvelopeSimple weight="duotone" size={18} />
-            <input
-              id="booking-email"
-              type="email"
-              autoComplete="email"
-              placeholder="voce@email.com"
-              aria-invalid={!!errors.email}
-              aria-describedby={
-                errors.email ? "booking-email-error" : undefined
-              }
-              {...register("email")}
-            />
-          </span>
-          {errors.email && (
-            <span id="booking-email-error" className="booking-field-error">
-              {errors.email.message}
-            </span>
-          )}
-        </label>
-        <label className="booking-checkbox">
+        <label className="bk-check">
           <input type="checkbox" {...register("reminder")} />
-          <span>
-            Quero receber lembretes do meu agendamento pelo WhatsApp.
-            <small>O estabelecimento poderá te avisar antes do horário.</small>
+          <span className="bk-check-box" aria-hidden="true">
+            <Check weight="bold" size={12} />
           </span>
+          <span>Quero receber lembretes do meu agendamento pelo WhatsApp.</span>
         </label>
         {error && (
-          <div className="booking-error" role="alert">
-            {error}
+          <div className="bk-alert" role="alert">
+            <p>{error}</p>
           </div>
         )}
-        <BusyButton type="submit" busy={busy} className="sf-sheen">
-          Confirmar agendamento <ArrowRight weight="bold" size={18} />
+        <BusyButton type="submit" busy={busy} className="bk-primary sf-sheen">
+          Confirmar agendamento
         </BusyButton>
-        <p className="booking-private-note">
-          <ShieldCheck weight="duotone" size={14} /> Usamos seus dados só para
-          este agendamento.
+        <p className="bk-safe">
+          <LockSimple weight="duotone" size={14} /> Seus dados são usados só
+          para este agendamento.
         </p>
       </form>
     </section>
