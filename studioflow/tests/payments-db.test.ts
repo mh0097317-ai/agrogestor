@@ -69,11 +69,7 @@ test("sinal via Pix e clube: reserva com prazo, confirmação idempotente, limit
       date.setUTCHours(hour, 0, 0, 0);
       return date.toISOString();
     };
-    const book = async (
-      start: string,
-      phone = "62991234567",
-      service = cut,
-    ) =>
+    const book = async (start: string, phone = "62991234567", service = cut) =>
       (
         await db.query<{ result: { id: string; token: string } }>(
           "select public.book_appointment($1,$2::uuid[],null,$3,$4,$5)as result",
@@ -219,6 +215,27 @@ test("sinal via Pix e clube: reserva com prazo, confirmação idempotente, limit
       "confirmed",
     );
 
+    // Two services in one visit: duration and price add up, both kept.
+    const combo = (
+      await db.query<{
+        result: { id: string; price: number; start: string; end: string };
+      }>(
+        "select public.book_appointment($1,$2::uuid[],null,$3,$4,$5)as result",
+        [biz.id, [cut, beard], day(8, 13), "Matheus Henrique", "62991234560"],
+      )
+    ).rows[0].result;
+    assert.equal(Number(combo.price), 85);
+    assert.equal((Date.parse(combo.end) - Date.parse(combo.start)) / 60000, 70);
+    assert.equal(
+      (
+        await db.query(
+          "select 1 from public.appointment_services where appointment_id=$1",
+          [combo.id],
+        )
+      ).rows.length,
+      2,
+    );
+
     // Club: plan with the cut only, twice a month.
     const plan = (
       await db.query<{ id: string }>(
@@ -255,9 +272,10 @@ test("sinal via Pix e clube: reserva com prazo, confirmação idempotente, limit
     // Pending subscription covers nothing yet.
     const firstClub = await book(day(10, 13));
     assert.equal(await apply(firstClub.id), "inactive");
-    await db.query("update public.memberships set status='active' where id=$1", [
-      member,
-    ]);
+    await db.query(
+      "update public.memberships set status='active' where id=$1",
+      [member],
+    );
     assert.equal(await apply(firstClub.id, "f".repeat(64)), "invalid");
     assert.equal(await apply(firstClub.id), "covered");
     assert.equal(await apply(firstClub.id), "covered");
