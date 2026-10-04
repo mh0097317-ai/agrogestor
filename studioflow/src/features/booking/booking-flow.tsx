@@ -22,6 +22,7 @@ import { BookingChrome } from "./booking-chrome";
 import { CustomerStep, type CustomerFields } from "./customer-step";
 import { bookingTime } from "./date-format";
 import { haptic } from "@/lib/haptic";
+import { saveLastBooking } from "@/lib/last-booking";
 
 const rememberKey = "studioflow:customer";
 type RememberedCustomer = Omit<CustomerFields, "reminder"> & {
@@ -209,6 +210,16 @@ function BookingWizard({
       } catch {
         // Remembering is optional.
       }
+      saveLastBooking(business.slug, {
+        serviceId: service.id,
+        serviceName: service.name,
+        professionalId: professionalId === "any" ? "any" : slot.professionalId,
+        professionalName:
+          professionalId === "any"
+            ? ""
+            : professionals.find((p) => p.id === slot.professionalId)?.name ||
+              "",
+      });
       router.replace(`/booking/${appointment.token}`);
     } catch (cause) {
       const message =
@@ -281,16 +292,14 @@ function BookingWizard({
         </div>
       }
     >
-      <div
-        key={step}
-        className={`bk-screen is-${direction}`}
-        ref={stepHeading}
-      >
+      <div key={step} className={`bk-screen is-${direction}`} ref={stepHeading}>
         {step === 1 && (
           <ServiceStep
             services={services}
             selectedId={serviceId}
             onSelect={selectService}
+            slug={business.slug}
+            professionals={professionals}
           />
         )}
         {step === 2 && service && (
@@ -315,6 +324,7 @@ function BookingWizard({
               if (value) haptic();
               setSlot(value);
             }}
+            waitlist
           />
         )}
         {step === 4 && service && slot && (

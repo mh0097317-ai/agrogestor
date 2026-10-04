@@ -423,3 +423,59 @@
     transition: none;
   }
 }
+
+/* Loyalty card in the customer profile */
+.crm-loyalty {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid #e5eaf0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.crm-loyalty > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0d2847;
+}
+.crm-loyalty strong {
+  flex: 1;
+  color: #0f172a;
+  font-size: 14px;
+}
+.crm-loyalty b {
+  font-variant-numeric: tabular-nums;
+}
+.crm-loyalty ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crm-loyalty li {
+  width: 18px;
+  height: 18px;
+  border: 1.5px dashed #b6c2d1;
+  border-radius: 50%;
+}
+.crm-loyalty li.is-on {
+  border: 0;
+  background: linear-gradient(135deg, #07111f, #0d2847 55%, #123e69);
+}
+.crm-loyalty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12.5px;
+}
+.crm-loyalty.is-ready {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+.crm-loyalty.is-ready p {
+  color: #7c4a03;
+  font-weight: 600;
+}

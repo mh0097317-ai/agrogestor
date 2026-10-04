@@ -1198,3 +1198,29 @@
 .appointment-kind button.selected svg {
   color: #123e69;
 }
+
+/* Loyalty card hint in the appointment panel */
+.appointment-loyalty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -8px 0 18px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.appointment-loyalty svg {
+  flex: none;
+  color: #0d2847;
+}
+.appointment-loyalty.is-ready {
+  background: #fff7e0;
+  color: #7c4a03;
+  animation: sf-pop 420ms var(--ease-spring) both;
+}
+.appointment-loyalty.is-ready svg {
+  color: #d97706;
+}

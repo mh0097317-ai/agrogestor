@@ -106,6 +106,24 @@ export interface Settings {
   openStart: string;
   openEnd: string;
   notifications: boolean;
+  /** Loyalty card: every `loyaltyGoal` completed visits earn `loyaltyReward`. */
+  loyaltyEnabled: boolean;
+  loyaltyGoal: number;
+  loyaltyReward: string;
+}
+export type WaitlistPeriod = "any" | "morning" | "afternoon" | "evening";
+export interface WaitlistEntry {
+  id: string;
+  businessId: string;
+  serviceId: string;
+  professionalId?: string | null;
+  /** yyyy-MM-dd, business day. */
+  desiredDate: string;
+  period: WaitlistPeriod;
+  customerName: string;
+  customerPhone: string;
+  status: "waiting" | "notified";
+  createdAt: string;
 }
 export interface Review {
   id: string;
@@ -129,6 +147,8 @@ export interface Store {
   settings: Settings;
   /** Customer reviews of completed appointments. */
   reviews?: Review[];
+  /** Customers waiting for a spot on a full day. */
+  waitlist?: WaitlistEntry[];
   viewer?: { name: string; role: string };
   mode?: "demo" | "live";
 }

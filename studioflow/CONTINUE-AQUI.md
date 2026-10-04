@@ -178,6 +178,15 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Página pública: frase, nota e "Aberto agora" sobre a capa; logo maior sem moldura.
 - Painel: marca StudioFlow no topo do menu e cartão com a logo do estabelecimento e "Ver página pública" embaixo. Corrigida a saudação duplicada no topo do celular.
 
+## Lembretes, divulgação, fidelidade e lista de espera (4 de outubro de 2026)
+
+- Lembretes de amanhã (painel, início): lista de quem tem horário amanhã com botão "Lembrar" que abre o WhatsApp com a mensagem pronta (`src/features/dashboard/growth.ts`, `overview-growth.tsx`). O "Enviado" fica marcado só neste aparelho. Nenhum envio automático: o dono toca e envia.
+- Agendar de novo: o cliente que já agendou vê um atalho com o último serviço e profissional na página e no início do agendamento (`src/lib/last-booking.ts`, `localStorage` por estabelecimento).
+- Divulgar (`/dashboard/divulgar`): link, compartilhar, QR Code (`qrcode`), cartaz para imprimir em A4, imagem para Stories (canvas 1080x1920) e textos prontos para bio, status e mensagem.
+- Cartão fidelidade: Configurações → Fidelidade (ligar, número de atendimentos e prêmio; `PATCH /api/workspace/loyalty`, RLS de `business_settings`). Carimbos = atendimentos concluídos (`src/lib/loyalty.ts`). Aparece no comprovante, na página pública, no perfil do cliente e no detalhe do agendamento ("Ganha o prêmio neste atendimento").
+- Lista de espera: no agendamento, dias lotados ficam riscados e abrem o formulário; em dias com vaga há o link "Nenhum horário serve?". `POST /api/public/[slug]/waitlist` (validação no servidor, rate limit, service role). No painel, "Lista de espera" com "Chamar" (WhatsApp com link de agendamento, marca como avisado) e remover; dias com cancelamento aparecem primeiro com "Abriu vaga". Tabela `waitlist` com RLS: membros leem, só owner/admin/manager/recepção alteram status ou removem; profissional só lê.
+- Migration `20261004150000_studioflow_loyalty_waitlist.sql`, aplicada no Supabase de produção. Testes: `tests/growth.test.ts` e `tests/waitlist-db.test.ts`.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

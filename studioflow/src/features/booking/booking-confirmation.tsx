@@ -14,10 +14,7 @@ import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { SuccessCheck } from "./celebration";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
-import type {
-  CustomerReview,
-  ManagedBooking,
-} from "@/features/public/types";
+import type { CustomerReview, ManagedBooking } from "@/features/public/types";
 import {
   BusyButton,
   PublicError,
@@ -33,12 +30,12 @@ import {
 } from "@/features/public/use-public-catalog";
 import { BookingRecap } from "./booking-summary";
 import { ReviewCard } from "./review-card";
+import { LoyaltyCard } from "./loyalty-card";
 import { StepHead } from "./selection-steps";
 import { BookingChrome } from "./booking-chrome";
 import { DateStep } from "./date-step";
 import { downloadCalendar } from "./calendar-export";
 import { bookingDate, bookingDateShort, bookingTime } from "./date-format";
-
 
 export function BookingConfirmation({ token }: { token: string }) {
   const { data, loading, error, reload } = usePublicData<ManagedBooking>(
@@ -306,6 +303,14 @@ function ConfirmationContent({
                 totalPrice={appointment.price}
               />
             )}
+            {catalog?.settings.loyaltyEnabled &&
+              catalog.settings.loyaltyReward && (
+                <LoyaltyCard
+                  visits={booking.loyaltyVisits ?? 0}
+                  goal={catalog.settings.loyaltyGoal}
+                  reward={catalog.settings.loyaltyReward}
+                />
+              )}
             {upcoming ? (
               <div className="bk-actions">
                 <button
@@ -361,7 +366,9 @@ function ConfirmationContent({
             )}
             <div className="bk-signoff">
               <p>
-                {cancelled ? "Quando quiser, estamos aqui." : "Nos vemos em breve!"}
+                {cancelled
+                  ? "Quando quiser, estamos aqui."
+                  : "Nos vemos em breve!"}
               </p>
               <Link href={`/${business.slug}`} className="bk-signoff-brand">
                 <PublicImage

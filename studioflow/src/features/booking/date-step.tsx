@@ -19,6 +19,7 @@ import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import { bookingDate } from "./date-format";
 import { StepHead } from "./selection-steps";
+import { WaitlistForm } from "./waitlist-form";
 
 type CalendarData = Record<string, Slot[]>;
 const labels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
@@ -33,6 +34,7 @@ export function DateStep({
   onDate,
   onSlot,
   embedded = false,
+  waitlist = false,
 }: {
   slug: string;
   serviceId: string;
@@ -44,6 +46,8 @@ export function DateStep({
   onSlot: (value?: Slot) => void;
   /** Inside another screen (rescheduling): no step heading. */
   embedded?: boolean;
+  /** Offer the waitlist on full days (new bookings only). */
+  waitlist?: boolean;
 }) {
   const [month, setMonth] = useState(() =>
     startOfMonth(new Date(`${selectedDate || bookingDate()}T12:00:00`)),
@@ -99,6 +103,34 @@ export function DateStep({
     { label: "Noite", start: 18, end: 24 },
   ];
 
+  /** Open day inside the booking window with every time taken. */
+  function isFull(day: Date, key: string) {
+    return (
+      waitlist &&
+      !loading &&
+      !!data &&
+      key > todayKey &&
+      day <= maxDate &&
+      settings.openDays.includes(day.getDay())
+    );
+  }
+  const activeLabel = activeDate
+    ? format(new Date(`${activeDate}T12:00:00`), "EEEE, d 'de' MMMM", {
+        locale: ptBR,
+      })
+    : "";
+  const waitlistForm = (full: boolean) =>
+    waitlist && activeDate && activeDate > todayKey ? (
+      <WaitlistForm
+        key={`${activeDate}-${full}`}
+        slug={slug}
+        serviceId={serviceId}
+        professionalId={professionalId}
+        date={activeDate}
+        dateLabel={activeLabel}
+        full={full}
+      />
+    ) : null;
   function chooseDate(date: Date) {
     onDate(format(date, "yyyy-MM-dd"));
     onSlot(undefined);
@@ -145,15 +177,16 @@ export function DateStep({
               if (!day) return <span key={`empty-${index}`} />;
               const key = format(day, "yyyy-MM-dd");
               const available = !loading && (days[key]?.length || 0) > 0;
+              const full = !available && isFull(day, key);
               return (
                 <button
                   key={key}
                   type="button"
-                  disabled={!available}
-                  className={`${activeDate === key ? "is-selected" : ""} ${todayKey === key ? "is-today" : ""} ${available ? "is-open" : ""}`}
+                  disabled={!available && !full}
+                  className={`${activeDate === key ? "is-selected" : ""} ${todayKey === key ? "is-today" : ""} ${available ? "is-open" : ""} ${full ? "is-full" : ""}`}
                   onClick={() => chooseDate(day)}
                   aria-pressed={activeDate === key}
-                  aria-label={`${format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}${available ? ", com horários" : ", sem horários"}`}
+                  aria-label={`${format(day, "EEEE, d 'de' MMMM", { locale: ptBR })}${available ? ", com horários" : full ? ", lotado, lista de espera" : ", sem horários"}`}
                 >
                   {format(day, "d")}
                 </button>
@@ -218,12 +251,14 @@ export function DateStep({
                 )
               );
             })}
-            {uniqueSlots.length === 0 && (
-              <div className="bk-empty">
-                <CalendarBlank weight="duotone" size={24} />
-                <p>Esta data não tem horários livres. Escolha outro dia.</p>
-              </div>
-            )}
+            {uniqueSlots.length === 0 &&
+              (waitlistForm(true) || (
+                <div className="bk-empty">
+                  <CalendarBlank weight="duotone" size={24} />
+                  <p>Esta data não tem horários livres. Escolha outro dia.</p>
+                </div>
+              ))}
+            {uniqueSlots.length > 0 && waitlistForm(false)}
           </div>
         ) : (
           <div className="bk-empty">

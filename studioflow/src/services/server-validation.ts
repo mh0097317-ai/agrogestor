@@ -103,6 +103,9 @@ export const settingsSchema = z
     openStart: clock,
     openEnd: clock,
     notifications: z.boolean(),
+    loyaltyEnabled: z.boolean().default(false),
+    loyaltyGoal: z.number().int().min(2).max(50).default(10),
+    loyaltyReward: z.string().trim().max(80).default(""),
   })
   .refine(
     (data) => data.openEnd > data.openStart,

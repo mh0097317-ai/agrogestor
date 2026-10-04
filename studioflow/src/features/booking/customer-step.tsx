@@ -90,7 +90,9 @@ export function CustomerStep({
   return (
     <section className="bk-step">
       <StepHead
-        title={welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"}
+        title={
+          welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"
+        }
         text="Confirme seus dados para finalizar o agendamento."
       />
       <BookingRecap
@@ -101,7 +103,9 @@ export function CustomerStep({
       />
       {welcomeName && (
         <div className="bk-welcome" role="status">
-          <span>Seus dados já estão preenchidos e ficam só neste aparelho.</span>
+          <span>
+            Seus dados já estão preenchidos e ficam só neste aparelho.
+          </span>
           <button type="button" onClick={onForget}>
             Não é você?
           </button>

@@ -24,6 +24,7 @@ import {
   SignOut,
   ArrowUpRight,
   ShieldCheck,
+  QrCode,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -45,6 +46,7 @@ const links = [
     label: "Relatórios",
     icon: ChartLineUp,
   },
+  { path: "/dashboard/divulgar", label: "Divulgar", icon: QrCode },
   { path: "/dashboard/configuracoes", label: "Configurações", icon: GearSix },
 ];
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -162,10 +164,7 @@ function Shell({ children }: { children: ReactNode }) {
               className={`sidebar-business-mark ${data?.business.logo ? "has-logo" : ""}`}
             >
               {data?.business.logo || data?.business.cover ? (
-                <img
-                  src={data.business.logo || data.business.cover}
-                  alt=""
-                />
+                <img src={data.business.logo || data.business.cover} alt="" />
               ) : (
                 <SegmentIcon
                   category={data?.business.category}

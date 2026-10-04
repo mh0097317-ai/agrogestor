@@ -959,7 +959,9 @@
 .ov-week,
 .ov-occupancy,
 .ov-attention,
-.ov-reviews {
+.ov-reviews,
+.ov-reminders,
+.ov-waitlist {
   padding: 18px 20px;
 }
 .ov-rev-score {
@@ -1206,7 +1208,9 @@
 }
 
 /* Attention */
-.ov-attention .ov-card-head h2 {
+.ov-attention .ov-card-head h2,
+.ov-reminders .ov-card-head h2,
+.ov-waitlist .ov-card-head h2 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1331,6 +1335,12 @@
   }
   .ov-occupancy {
     order: 6;
+  }
+  .ov-reminders {
+    order: 3;
+  }
+  .ov-waitlist {
+    order: 3;
   }
   .ov-reviews {
     order: 7;
@@ -1508,4 +1518,86 @@
 .ov-kpi > * {
   position: relative;
   z-index: 1;
+}
+
+/* Reminders and waitlist */
+.ov-rem-count {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ov-growth-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ov-growth-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid #eef2f6;
+  animation: sf-fade-up 380ms var(--ease-out) both;
+}
+.ov-growth-list li:first-child {
+  border-top: 0;
+}
+.ov-growth-list li.is-done .ov-growth-info strong {
+  color: #64748b;
+}
+.ov-growth-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ov-growth-info strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ov-growth-info span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: #64748b;
+  font-size: 12px;
+}
+.ov-growth-info em {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eef3f9;
+  color: #0d2847;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 650;
+}
+.ov-growth-info em.is-open {
+  background: #dcfce7;
+  color: #166534;
+}
+.ov-growth-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+.ov-growth-remove {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+.ov-growth-remove:hover {
+  background: #fef2f2;
+  color: #b91c1c;
 }

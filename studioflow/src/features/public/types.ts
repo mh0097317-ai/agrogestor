@@ -33,4 +33,6 @@ export interface ManagedBooking {
   services: Service[];
   professional: PublicProfessional;
   review?: CustomerReview | null;
+  /** Completed visits of this customer, for the loyalty card. */
+  loyaltyVisits?: number;
 }

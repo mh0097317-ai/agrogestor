@@ -6,6 +6,7 @@ import {
   CheckCircle,
   Clock,
   MapPin,
+  Gift,
   ShareNetwork,
   Star,
 } from "@phosphor-icons/react/dist/ssr";
@@ -28,6 +29,7 @@ import { usePublicCatalog } from "./use-public-catalog";
 import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
+import { RepeatBooking } from "./repeat-booking";
 import {
   PublicAmenities,
   PublicTeam,
@@ -229,9 +231,35 @@ export function PublicPage({ slug }: { slug: string }) {
             >
               Agendar horário <ArrowRight size={19} weight="bold" />
             </Link>
+            <RepeatBooking
+              slug={slug}
+              services={activeServices}
+              professionals={availableTeam}
+            />
           </section>
 
           <PublicServices services={activeServices} slug={slug} />
+          {settings.loyaltyEnabled && settings.loyaltyReward && (
+            <section className="pp-section" aria-label="Cartão fidelidade">
+              <Link href={bookHref} className="pp-loyalty" data-reveal>
+                <span className="pp-loyalty-icon" aria-hidden="true">
+                  <Gift size={26} weight="duotone" />
+                </span>
+                <span className="pp-loyalty-text">
+                  <strong>Cartão fidelidade</strong>
+                  <span>
+                    A cada {settings.loyaltyGoal} atendimentos, ganhe{" "}
+                    {settings.loyaltyReward}.
+                  </span>
+                </span>
+                <span className="pp-loyalty-stamps" aria-hidden="true">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <i key={index} className={index < 3 ? "is-on" : ""} />
+                  ))}
+                </span>
+              </Link>
+            </section>
+          )}
           <PublicWork
             photos={(business.photos ?? []).filter(Boolean)}
             businessName={business.name}

@@ -11,6 +11,7 @@ import type { Service } from "@/types";
 import type { PublicProfessional, Rating } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
+import { RepeatBooking } from "@/features/public/repeat-booking";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import type { Slot } from "@/types";
 import { bookingDate, bookingTime } from "./date-format";
@@ -85,10 +86,14 @@ export function ServiceStep({
   services,
   selectedId,
   onSelect,
+  slug,
+  professionals,
 }: {
   services: Service[];
   selectedId?: string;
   onSelect: (id: string) => void;
+  slug?: string;
+  professionals?: PublicProfessional[];
 }) {
   const active = services.filter((service) => service.active);
   const [category, setCategory] = useState("Todos");
@@ -102,6 +107,14 @@ export function ServiceStep({
         title="Qual serviço você deseja?"
         text="Escolha o serviço que deseja realizar."
       />
+      {slug && professionals && (
+        <RepeatBooking
+          slug={slug}
+          services={active}
+          professionals={professionals}
+          className="is-booking"
+        />
+      )}
       {categories.length > 2 && (
         <div className="bk-tabs" role="group" aria-label="Categorias">
           {categories.map((item) => (

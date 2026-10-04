@@ -1,5 +1,6 @@
 "use client";
-import { Clock, PencilSimple } from "@phosphor-icons/react/dist/ssr";
+import { Clock, Gift, PencilSimple } from "@phosphor-icons/react/dist/ssr";
+import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import {
   Avatar,
@@ -31,6 +32,13 @@ export function CustomerProfile({
 }) {
   const { data } = useWorkspace();
   const { canMutate } = usePermissions();
+  const loyalty =
+    customer && data?.settings.loyaltyEnabled
+      ? loyaltyProgress(
+          completedVisits(data.appointments, customer.id),
+          data.settings.loyaltyGoal,
+        )
+      : null;
   const history = (data?.appointments ?? [])
     .filter((appointment) => appointment.customerId === customer?.id)
     .sort((a, b) => b.start.localeCompare(a.start));
@@ -58,6 +66,32 @@ export function CustomerProfile({
               { label: "Total recebido", value: money(customer.totalSpent) },
             ]}
           />
+          {loyalty && (
+            <div
+              className={`crm-loyalty ${loyalty.rewardReady ? "is-ready" : ""}`}
+            >
+              <div>
+                <Gift size={18} weight="duotone" />
+                <strong>Cartão fidelidade</strong>
+                <b>
+                  {loyalty.stamps}/{loyalty.goal}
+                </b>
+              </div>
+              <ol aria-hidden="true">
+                {Array.from({ length: loyalty.goal }, (_, index) => (
+                  <li
+                    key={index}
+                    className={index < loyalty.stamps ? "is-on" : ""}
+                  />
+                ))}
+              </ol>
+              <p>
+                {loyalty.rewardReady
+                  ? `Cartão completo: o próximo atendimento ganha ${data?.settings.loyaltyReward}.`
+                  : `Faltam ${loyalty.missing} para ganhar ${data?.settings.loyaltyReward}.`}
+              </p>
+            </div>
+          )}
           <div className="crm-profile-last">
             <Clock size={16} />
             <span>

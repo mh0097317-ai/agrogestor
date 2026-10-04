@@ -1,6 +1,12 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
-import type { Appointment, Professional, Review, Store } from "@/types";
+import type {
+  Appointment,
+  Professional,
+  Review,
+  Store,
+  WaitlistEntry,
+} from "@/types";
 import {
   chooseProfessional,
   DomainError,
@@ -25,6 +31,15 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 
+/** yyyy-MM-dd in São Paulo, `offset` days from today. */
+export function businessDayKey(offset = 0, now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(now.getTime() + offset * 86_400_000));
+}
 export async function demoWorkspaceSlug() {
   return (
     (await cookies()).get("studioflow-demo-business")?.value || "barber-011"
@@ -49,6 +64,10 @@ export function normalizeStoreTimes(store: Store): Store {
     professional.breakStart = professional.breakStart?.slice(0, 5) || "";
     professional.breakEnd = professional.breakEnd?.slice(0, 5) || "";
   }
+  // Older stores (and projects before the loyalty columns) lack these.
+  store.settings.loyaltyEnabled ??= false;
+  store.settings.loyaltyGoal ??= 10;
+  store.settings.loyaltyReward ??= "";
   store.settings.openStart = store.settings.openStart.slice(0, 5);
   store.settings.openEnd = store.settings.openEnd.slice(0, 5);
   return store;
@@ -181,6 +200,14 @@ export async function loadSupabaseStore(
     )
     .eq("business_id", businessId)
     .order("created_at", { ascending: false });
+  const waitlist = await client
+    .from("waitlist")
+    .select(
+      "id,business_id,service_id,professional_id,desired_date,period,customer_name,customer_phone,status,created_at",
+    )
+    .eq("business_id", businessId)
+    .gte("desired_date", businessDayKey(-1))
+    .order("desired_date");
   for (const service of services)
     service.professionalIds = relations
       .filter((relation) => relation.serviceId === service.id)
@@ -207,6 +234,7 @@ export async function loadSupabaseStore(
       blockedTimes,
       settings: settings[0],
       reviews: reviews.error ? [] : (camel(reviews.data) as Review[]),
+      waitlist: waitlist.error ? [] : (camel(waitlist.data) as WaitlistEntry[]),
     }),
   );
 }

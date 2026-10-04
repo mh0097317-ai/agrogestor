@@ -55,7 +55,13 @@ test("reviews: only a completed appointment, once, through its token; members re
     const booked = (
       await db.query<{ result: { id: string; token: string } }>(
         "select public.book_appointment($1,$2::uuid[],null,$3,$4,$5)as result",
-        [biz, [service], start.toISOString(), "Matheus Henrique", "62991234567"],
+        [
+          biz,
+          [service],
+          start.toISOString(),
+          "Matheus Henrique",
+          "62991234567",
+        ],
       )
     ).rows[0].result;
     const review = (rating: number, comment = "") =>

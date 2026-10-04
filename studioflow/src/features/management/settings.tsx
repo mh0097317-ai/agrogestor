@@ -12,6 +12,7 @@ import {
   CircleNotch,
   Copy,
   CreditCard,
+  Gift,
   ImageSquare,
   ShieldCheck,
   Storefront,
@@ -42,7 +43,8 @@ import {
   brazilianPhone,
 } from "./shared";
 
-type EditableTab = "business" | "identity" | "agenda" | "notifications";
+type EditableTab =
+  "business" | "identity" | "agenda" | "loyalty" | "notifications";
 type Tab = EditableTab | "professionals" | "plan";
 type FieldEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -76,12 +78,19 @@ type Drafts = {
   business: BusinessDraft | null;
   identity: IdentityDraft | null;
   agenda: AgendaDraft | null;
+  loyalty: LoyaltyDraft | null;
   notifications: { notifications: boolean } | null;
+};
+type LoyaltyDraft = {
+  loyaltyEnabled: boolean;
+  loyaltyGoal: string;
+  loyaltyReward: string;
 };
 const tabs = [
   { id: "business" as const, label: "Empresa", icon: Storefront },
   { id: "identity" as const, label: "Identidade", icon: ImageSquare },
   { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
+  { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
   { id: "professionals" as const, label: "Profissionais", icon: Users },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
@@ -139,6 +148,11 @@ function persistedDrafts(store: Store) {
       buffer: String(settings.buffer),
       cancellationHours: String(settings.cancellationHours),
     },
+    loyalty: {
+      loyaltyEnabled: settings.loyaltyEnabled,
+      loyaltyGoal: String(settings.loyaltyGoal),
+      loyaltyReward: settings.loyaltyReward,
+    },
     notifications: { notifications: settings.notifications },
   };
 }
@@ -194,7 +208,7 @@ export default function SettingsPage() {
 
 function SettingsContent({ store }: { store: Store }) {
   const router = useRouter();
-  const { mutate } = useWorkspace();
+  const { mutate, refresh } = useWorkspace();
   const { canManage } = usePermissions();
   const { toast } = useToast();
   const action = useFormAction();
@@ -203,6 +217,7 @@ function SettingsContent({ store }: { store: Store }) {
     business: null,
     identity: null,
     agenda: null,
+    loyalty: null,
     notifications: null,
   });
   const [pendingTab, setPendingTab] = useState<Tab | "discard" | null>(null);
@@ -215,6 +230,7 @@ function SettingsContent({ store }: { store: Store }) {
   const identity = drafts.identity ?? saved.identity;
   const agenda = drafts.agenda ?? saved.agenda;
   const notifications = drafts.notifications ?? saved.notifications;
+  const loyalty = drafts.loyalty ?? saved.loyalty;
   const editable = tab !== "professionals" && tab !== "plan";
   const dirty =
     editable &&
@@ -328,6 +344,44 @@ function SettingsContent({ store }: { store: Store }) {
     event.preventDefault();
     if (!canManage || !editable || busy || !dirty) return;
     const section = tab;
+    if (section === "loyalty") {
+      const goal = Number(loyalty.loyaltyGoal);
+      const reward = loyalty.loyaltyReward.trim();
+      if (!Number.isInteger(goal) || goal < 2 || goal > 50) {
+        action.setError(
+          "Escolha de 2 a 50 atendimentos para completar o cartão.",
+        );
+        return;
+      }
+      if (loyalty.loyaltyEnabled && !reward) {
+        action.setError("Diga qual é o prêmio, por exemplo: 1 corte grátis.");
+        return;
+      }
+      void action.run(async () => {
+        const response = await fetch("/api/workspace/loyalty", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            loyaltyEnabled: loyalty.loyaltyEnabled,
+            loyaltyGoal: goal,
+            loyaltyReward: reward,
+          }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw new Error(
+            body.error || "Não foi possível salvar a fidelidade.",
+          );
+        await refresh();
+        setDrafts((current) => ({ ...current, loyalty: null }));
+        toast(
+          loyalty.loyaltyEnabled
+            ? "Cartão fidelidade ativo na sua página."
+            : "Cartão fidelidade desligado.",
+        );
+      });
+      return;
+    }
     let entity: "business" | "settings";
     let values: Record<string, unknown>;
     if (section === "business") {
@@ -446,6 +500,7 @@ function SettingsContent({ store }: { store: Store }) {
     business: "Dados da empresa",
     identity: "Identidade visual",
     agenda: "Regras da agenda",
+    loyalty: "Cartão fidelidade",
     professionals: "Agendas dos profissionais",
     notifications: "Notificações",
     plan: "Seu espaço de gestão",
@@ -454,6 +509,8 @@ function SettingsContent({ store }: { store: Store }) {
     business: "As informações que apresentam seu estabelecimento aos clientes.",
     identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
+    loyalty:
+      "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
     professionals:
       "Cada integrante da equipe tem uma disponibilidade independente.",
     notifications: "Preferências de contato com o consentimento do cliente.",
@@ -942,6 +999,73 @@ function SettingsContent({ store }: { store: Store }) {
               </FormSection>
             </div>
           )}
+          {tab === "loyalty" && (
+            <form className="management-form" onSubmit={save}>
+              <fieldset
+                className="management-form settings-fields"
+                disabled={!canManage || busy}
+              >
+                <FormSection
+                  title="Como funciona"
+                  description="Cada atendimento concluído vale um carimbo. Com o cartão completo, o próximo atendimento ganha o prêmio."
+                >
+                  <label className="management-check">
+                    <input
+                      type="checkbox"
+                      checked={loyalty.loyaltyEnabled}
+                      onChange={(event) =>
+                        updateDraft("loyalty", {
+                          loyaltyEnabled: event.target.checked,
+                        })
+                      }
+                    />
+                    Ativar cartão fidelidade
+                  </label>
+                  <div className="management-form-grid">
+                    <FormField
+                      label="Atendimentos para completar"
+                      hint="De 2 a 50."
+                    >
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={2}
+                        max={50}
+                        value={loyalty.loyaltyGoal}
+                        onChange={(event) =>
+                          updateDraft("loyalty", {
+                            loyaltyGoal: event.target.value,
+                          })
+                        }
+                      />
+                    </FormField>
+                    <FormField
+                      label="Prêmio"
+                      hint="Aparece na sua página e no comprovante."
+                    >
+                      <input
+                        maxLength={80}
+                        placeholder="Ex.: 1 corte grátis"
+                        value={loyalty.loyaltyReward}
+                        onChange={(event) =>
+                          updateDraft("loyalty", {
+                            loyaltyReward: event.target.value,
+                          })
+                        }
+                      />
+                    </FormField>
+                  </div>
+                </FormSection>
+              </fieldset>
+              <div className="management-info">
+                Os carimbos contam os atendimentos marcados como concluídos na
+                agenda. No dia do prêmio, o agendamento mostra o selo
+                &ldquo;Ganha o prêmio&rdquo; para você lembrar de aplicar.
+              </div>
+              <FormError error={action.error} />
+              {saveBar}
+            </form>
+          )}
           {tab === "notifications" && (
             <form className="management-form" onSubmit={save}>
               <fieldset
@@ -1067,6 +1191,7 @@ function SettingsContent({ store }: { store: Store }) {
                   business: null,
                   identity: null,
                   agenda: null,
+                  loyalty: null,
                   notifications: null,
                 });
                 setPendingNavigation(null);

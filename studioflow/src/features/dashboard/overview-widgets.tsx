@@ -395,12 +395,15 @@ export function ReviewsCard({ data }: { data: Store }) {
                   <Star
                     key={star}
                     size={15}
-                    weight={star <= Math.round(summary.average) ? "fill" : "regular"}
+                    weight={
+                      star <= Math.round(summary.average) ? "fill" : "regular"
+                    }
                   />
                 ))}
               </span>
               <small>
-                {summary.count} {summary.count === 1 ? "avaliação" : "avaliações"}
+                {summary.count}{" "}
+                {summary.count === 1 ? "avaliação" : "avaliações"}
               </small>
             </span>
           </div>

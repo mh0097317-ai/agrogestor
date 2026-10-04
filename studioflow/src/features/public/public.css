@@ -374,3 +374,60 @@
     filter: saturate(0.6) blur(4px);
   }
 }
+
+/* "Agendar de novo" shortcut (public page and booking) */
+.repeat-booking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #f5f8fc;
+  color: #0f172a !important;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+.repeat-booking:hover {
+  border-color: #b8c7da;
+}
+.repeat-booking:active {
+  transform: scale(0.98);
+}
+.repeat-booking-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #fff;
+  color: #0d2847;
+  box-shadow: inset 0 0 0 1px #dbe4ef;
+}
+.repeat-booking-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.repeat-booking-text small {
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.repeat-booking-text strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repeat-booking > svg {
+  flex: none;
+  color: #94a3b8;
+}
+.repeat-booking.is-booking {
+  margin: -4px 0 16px;
+}

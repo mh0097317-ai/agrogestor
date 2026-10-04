@@ -27,6 +27,7 @@ import {
 import type { Appointment, Store } from "@/types";
 import { overviewModel } from "./overview-model";
 import { OverviewAgenda } from "./overview-agenda";
+import { RemindersCard, WaitlistCard } from "./overview-growth";
 import {
   AttentionCard,
   NowCard,
@@ -269,6 +270,8 @@ export function Overview() {
             canEdit={canEdit}
             onOpen={setDetail}
           />
+          <RemindersCard data={data} now={now} />
+          <WaitlistCard data={data} now={now} canEdit={canEdit} />
           <ReviewsCard data={data} />
         </aside>
       </div>

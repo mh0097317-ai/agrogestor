@@ -6,7 +6,14 @@ import type { CustomerReview } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
 import { publicRequest } from "@/features/public/use-public-catalog";
 
-const words = ["", "Ruim", "Poderia ser melhor", "Bom", "Muito bom", "Excelente"];
+const words = [
+  "",
+  "Ruim",
+  "Poderia ser melhor",
+  "Bom",
+  "Muito bom",
+  "Excelente",
+];
 
 function Stars({ value, size = 22 }: { value: number; size?: number }) {
   return (
@@ -132,7 +139,11 @@ export function ReviewCard({
               <p>{error}</p>
             </div>
           )}
-          <BusyButton busy={busy} onClick={() => void send()} className="bk-primary">
+          <BusyButton
+            busy={busy}
+            onClick={() => void send()}
+            className="bk-primary"
+          >
             Enviar avaliação
           </BusyButton>
         </div>

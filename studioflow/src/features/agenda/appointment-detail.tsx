@@ -4,6 +4,7 @@ import {
   CalendarDots,
   Check,
   Checks,
+  Gift,
   Play,
   UserMinus,
   X,
@@ -23,6 +24,7 @@ import { money, dateLabel, formatPhone } from "@/lib/utils";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { AppointmentForm } from "./appointment-form";
 import { appointmentServices } from "./agenda-helpers";
+import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
 
 export function AppointmentDetail({
   appointment,
@@ -103,6 +105,14 @@ export function AppointmentDetail({
       setBusy(false);
     }
   }
+  const loyalty =
+    data?.settings.loyaltyEnabled &&
+    ["pending", "confirmed", "in_progress"].includes(current.status)
+      ? loyaltyProgress(
+          completedVisits(data.appointments, current.customerId),
+          data.settings.loyaltyGoal,
+        )
+      : null;
   return (
     <>
       <DetailPanel
@@ -123,6 +133,28 @@ export function AppointmentDetail({
             <p>{formatPhone(current.customerPhone)}</p>
           </div>
         </div>
+        {loyalty && (
+          <div
+            className={`appointment-loyalty ${loyalty.rewardReady ? "is-ready" : ""}`}
+          >
+            <Gift size={18} weight={loyalty.rewardReady ? "fill" : "duotone"} />
+            <span>
+              {loyalty.rewardReady ? (
+                <>
+                  <strong>Ganha o prêmio neste atendimento:</strong>{" "}
+                  {data?.settings.loyaltyReward}
+                </>
+              ) : (
+                <>
+                  Cartão fidelidade:{" "}
+                  <strong>
+                    {loyalty.stamps} de {loyalty.goal}
+                  </strong>
+                </>
+              )}
+            </span>
+          </div>
+        )}
         <div className="appointment-detail-main">
           <StatusBadge status={current.status} />
           <strong>{appointmentServices(data, current)}</strong>

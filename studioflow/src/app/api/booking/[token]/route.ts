@@ -39,7 +39,11 @@ const editSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("review"),
     rating: z.number().int().min(1).max(5),
-    comment: z.string().trim().max(500, "Use no máximo 500 caracteres.").default(""),
+    comment: z
+      .string()
+      .trim()
+      .max(500, "Use no máximo 500 caracteres.")
+      .default(""),
   }),
   z.object({
     action: z.literal("reschedule"),
@@ -69,6 +73,11 @@ export async function GET(
         review: ownReview(
           store.reviews?.find((item) => item.appointmentId === appointment.id),
         ),
+        loyaltyVisits: store.appointments.filter(
+          (item) =>
+            item.customerId === appointment.customerId &&
+            item.status === "completed",
+        ).length,
       });
     }
     const { data, error } = await createSupabaseAdmin().rpc("get_booking", {
@@ -107,7 +116,11 @@ export async function PATCH(
             if (appointment.status !== "completed")
               throw new DomainError(reviewErrors.review_not_allowed, 409);
             store.reviews ??= [];
-            if (store.reviews.some((item) => item.appointmentId === appointment.id))
+            if (
+              store.reviews.some(
+                (item) => item.appointmentId === appointment.id,
+              )
+            )
               throw new DomainError(reviewErrors.already_reviewed, 409);
             const review: Review = {
               id: randomUUID(),

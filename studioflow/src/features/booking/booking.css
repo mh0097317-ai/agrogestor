@@ -1436,6 +1436,187 @@
   box-shadow: 0 0 0 4px var(--bk-ring);
 }
 
+/* Full days and waitlist */
+.bk-calendar-grid button.is-full {
+  color: #94a3b8;
+  text-decoration: line-through;
+  text-decoration-color: #cbd5e1;
+}
+.bk-calendar-grid button.is-full:hover {
+  background: var(--bk-soft);
+}
+.bk-calendar-grid button.is-full.is-selected {
+  background: #eef2f7;
+  color: var(--bk-ink);
+  box-shadow: inset 0 0 0 1.5px #94a3b8;
+  text-decoration: none;
+}
+.bk-waitlist-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--bk-navy) !important;
+  font-size: 13.5px !important;
+  font-weight: 650;
+  cursor: pointer;
+}
+.bk-waitlist {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 20px 16px 16px;
+  border: 1px solid var(--bk-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafd, #fff);
+  text-align: center;
+  animation: sf-fade-up 360ms var(--ease-out) both;
+}
+.bk-waitlist > strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+.bk-waitlist > p {
+  max-width: 360px;
+  margin: 0 0 4px;
+  color: var(--bk-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.bk-waitlist-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #eef3f9;
+  color: var(--bk-navy);
+}
+.bk-waitlist-periods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.bk-waitlist-periods button {
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--bk-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--bk-text);
+  font-size: 13px !important;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bk-waitlist-periods button.is-active {
+  border-color: transparent;
+  background: var(--bk-fill);
+  color: #fff;
+}
+.bk-waitlist-field {
+  display: grid !important;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+.bk-waitlist .bk-primary,
+.bk-waitlist .bk-alert {
+  width: 100%;
+  margin-top: 6px;
+}
+.bk-waitlist.is-done {
+  color: #15803d;
+}
+.bk-waitlist.is-done strong {
+  color: var(--bk-ink);
+}
+
+/* Loyalty card */
+.bk-done > .bk-loyalty {
+  margin-top: 14px;
+  text-align: left;
+  animation: sf-fade-up 520ms var(--ease-out) 340ms both;
+}
+.bk-loyalty {
+  padding: 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(140% 120% at 100% 0%, #3f7dc033, transparent 60%),
+    var(--bk-fill);
+  color: #fff;
+  box-shadow: 0 14px 30px #0d284733;
+}
+.bk-loyalty header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.bk-loyalty-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #ffffff1f;
+  color: #fde68a;
+}
+.bk-loyalty header > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.bk-loyalty header strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+.bk-loyalty header span {
+  color: #d6e2f0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.bk-loyalty header b {
+  flex: none;
+  font-size: 15px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.bk-stamps {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 10), minmax(0, 1fr));
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bk-stamps li {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  max-width: 34px;
+  border: 1.5px dashed #ffffff4d;
+  border-radius: 50%;
+  color: #fff;
+}
+.bk-stamps li.is-on {
+  border: 0;
+  background: #fff;
+  color: var(--bk-navy);
+  animation: sf-pop 420ms var(--ease-spring) both;
+  animation-delay: calc(400ms + var(--i, 0) * 60ms);
+}
+.bk-loyalty.is-ready .bk-stamps li:last-child {
+  background: #fde68a;
+  color: #7c4a03;
+}
+
 /* Cancel modal bits */
 .bk-modal-icon {
   display: flex;

@@ -84,6 +84,10 @@ async function transaction<T>(
         throw new DomainError("Estabelecimento não encontrado.", 404);
       store = initial || createSeed();
     }
+    // Fields added after a demo file was written.
+    store.settings.loyaltyEnabled ??= false;
+    store.settings.loyaltyGoal ??= 10;
+    store.settings.loyaltyReward ??= "";
     const result = await operation(store);
     if (persist) {
       const temporary = `${filename}.${randomUUID()}.tmp`;

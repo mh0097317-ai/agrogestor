@@ -79,6 +79,9 @@ export async function POST(request: Request) {
           openStart: input.openStart,
           openEnd: input.openEnd,
           notifications: true,
+          loyaltyEnabled: false,
+          loyaltyGoal: 10,
+          loyaltyReward: "",
         },
       };
       await createDemoBusiness(store);

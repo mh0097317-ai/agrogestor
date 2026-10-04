@@ -321,6 +321,9 @@ export function createSeed(): Store {
       openStart: "09:00",
       openEnd: "20:00",
       notifications: true,
+      loyaltyEnabled: false,
+      loyaltyGoal: 10,
+      loyaltyReward: "",
     },
   };
 }
