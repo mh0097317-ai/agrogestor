@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { BookingFlow } from "@/features/booking/booking-flow";
-import { PublicLoading } from "@/features/public/public-ui";
+import { BookingLoader } from "@/features/booking/booking-intro";
 
 export default async function BookingPage({
   params,
@@ -9,7 +9,7 @@ export default async function BookingPage({
 }) {
   const { slug } = await params;
   return (
-    <Suspense fallback={<PublicLoading />}>
+    <Suspense fallback={<BookingLoader />}>
       <BookingFlow slug={slug} />
     </Suspense>
   );

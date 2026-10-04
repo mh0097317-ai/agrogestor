@@ -49,9 +49,14 @@ export function DateStep({
   /** Offer the waitlist on full days (new bookings only). */
   waitlist?: boolean;
 }) {
-  const [month, setMonth] = useState(() =>
+  const [monthStep, setMonthStep] = useState<"next" | "previous" | "">("");
+  const [month, setMonthState] = useState(() =>
     startOfMonth(new Date(`${selectedDate || bookingDate()}T12:00:00`)),
   );
+  function setMonth(next: Date) {
+    setMonthStep(next > month ? "next" : "previous");
+    setMonthState(next);
+  }
   const today = startOfDay(new Date(`${bookingDate()}T12:00:00`));
   const todayKey = format(today, "yyyy-MM-dd");
   const maxDate = addDays(today, settings.maxDays);
@@ -167,7 +172,10 @@ export function DateStep({
               <CaretRight weight="bold" size={18} />
             </button>
           </div>
-          <div className={`bk-calendar-grid ${loading ? "is-loading" : ""}`}>
+          <div
+            key={monthKey}
+            className={`bk-calendar-grid ${loading ? "is-loading" : ""} ${monthStep ? `is-${monthStep}` : ""}`}
+          >
             {labels.map((label) => (
               <span key={label} className="bk-weekday">
                 {label}

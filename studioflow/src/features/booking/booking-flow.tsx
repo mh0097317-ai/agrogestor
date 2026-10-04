@@ -9,9 +9,15 @@ import { durationLabel, money } from "@/lib/utils";
 import {
   PublicError,
   PublicImage,
-  PublicLoading,
   PublicRefreshNotice,
 } from "@/features/public/public-ui";
+import {
+  BookingIntro,
+  BookingLoader,
+  markIntroSeen,
+  shouldPlayIntro,
+  type IntroPhase,
+} from "./booking-intro";
 import {
   publicRequest,
   usePublicCatalog,
@@ -40,7 +46,14 @@ function readRememberedCustomer(): RememberedCustomer | null {
 export function BookingFlow({ slug }: { slug: string }) {
   const { catalog, loading, error, reload } = usePublicCatalog(slug);
   const query = useSearchParams();
-  if (loading && !catalog) return <PublicLoading />;
+  // Decided once in the browser (the flow only renders client-side).
+  const [intro, setIntro] = useState<IntroPhase>(() =>
+    shouldPlayIntro(slug) ? "on" : "off",
+  );
+  useEffect(() => {
+    if (intro !== "off") markIntroSeen(slug);
+  }, [intro, slug]);
+  if (loading && !catalog) return <BookingLoader />;
   if (!catalog)
     return (
       <PublicError
@@ -55,6 +68,12 @@ export function BookingFlow({ slug }: { slug: string }) {
         catalog={catalog}
         initialService={query.get("service") || ""}
         initialProfessional={query.get("professional") || "any"}
+        revealed={intro !== "on"}
+      />
+      <BookingIntro
+        business={catalog.business}
+        phase={intro}
+        onPhase={setIntro}
       />
     </>
   );
@@ -64,10 +83,13 @@ function BookingWizard({
   catalog,
   initialService,
   initialProfessional,
+  revealed,
 }: {
   catalog: PublicCatalog;
   initialService: string;
   initialProfessional: string;
+  /** False while the opening covers the screen. */
+  revealed: boolean;
 }) {
   const router = useRouter();
   const { business, services, professionals, settings } = catalog;
@@ -292,7 +314,12 @@ function BookingWizard({
         </div>
       }
     >
-      <div key={step} className={`bk-screen is-${direction}`} ref={stepHeading}>
+      <div
+        // Remounting after the opening replays the entrance below it.
+        key={`${step}-${revealed}`}
+        className={`bk-screen is-${direction}`}
+        ref={stepHeading}
+      >
         {step === 1 && (
           <ServiceStep
             services={services}

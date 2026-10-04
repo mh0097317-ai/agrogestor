@@ -11,7 +11,7 @@ import {
   XCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
-import { SuccessCheck } from "./celebration";
+import { ConfirmStamp } from "./confirm-stamp";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { CustomerReview, ManagedBooking } from "@/features/public/types";
@@ -103,6 +103,9 @@ function ConfirmationContent({
   );
   const cancelled = appointment.status === "cancelled";
   const isPending = appointment.status === "pending";
+  const stamped = ["confirmed", "in_progress", "completed"].includes(
+    appointment.status,
+  );
   const upcoming = ["confirmed", "pending", "in_progress"].includes(
     appointment.status,
   );
@@ -268,28 +271,31 @@ function ConfirmationContent({
           </section>
         ) : (
           <>
-            <div
-              className={`bk-mark ${cancelled ? "is-cancelled" : ""} ${isPending || cancelled || appointment.status === "no_show" ? "" : "is-success"}`}
-            >
-              {celebrate && !cancelled && (
-                <span className="bk-mark-sparks" aria-hidden="true">
-                  {Array.from({ length: 8 }, (_, index) => (
-                    <i key={index} />
-                  ))}
+            {stamped ? (
+              <ConfirmStamp
+                business={business}
+                label={
+                  appointment.status === "completed"
+                    ? "Atendimento concluído"
+                    : appointment.status === "in_progress"
+                      ? "Em atendimento"
+                      : "Horário confirmado"
+                }
+                animate={celebrate}
+              />
+            ) : (
+              <div className={`bk-mark ${cancelled ? "is-cancelled" : ""}`}>
+                <span className="bk-mark-circle">
+                  {cancelled ? (
+                    <X weight="bold" size={34} />
+                  ) : isPending ? (
+                    <Clock weight="duotone" size={34} />
+                  ) : (
+                    <XCircle weight="duotone" size={34} />
+                  )}
                 </span>
-              )}
-              <span className="bk-mark-circle">
-                {cancelled ? (
-                  <X weight="bold" size={34} />
-                ) : isPending ? (
-                  <Clock weight="duotone" size={34} />
-                ) : appointment.status === "no_show" ? (
-                  <XCircle weight="duotone" size={34} />
-                ) : (
-                  <SuccessCheck celebrate={celebrate} />
-                )}
-              </span>
-            </div>
+              </div>
+            )}
             <header className="bk-done-head">
               <h1 tabIndex={-1}>{title}</h1>
               <p>{message}</p>

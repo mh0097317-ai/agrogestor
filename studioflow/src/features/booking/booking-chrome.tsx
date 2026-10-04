@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Check } from "@phosphor-icons/react/dist/ssr";
+import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
+import { DrawCheck } from "./draw-check";
 import type { Business } from "@/types";
 import { PublicImage } from "@/features/public/public-ui";
 import { publicAccentStyle } from "@/features/public/public-branding";
@@ -48,7 +49,7 @@ export function BookingProgress({
                 aria-label={`${label}${done ? ", concluído" : current ? ", etapa atual" : ""}`}
               >
                 <span className="bk-step-dot">
-                  {done ? <Check weight="bold" size={13} /> : number}
+                  {done ? <DrawCheck size={14} /> : number}
                 </span>
                 <small>{label}</small>
               </button>

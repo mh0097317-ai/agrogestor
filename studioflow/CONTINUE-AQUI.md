@@ -196,6 +196,14 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Painel: menu em tinta com destaque discreto, cartões em papel, números com serifa, indicadores sem quadradinhos, gráficos em tinta e latão (camada no fim de `overview.css`); Divulgar com cartaz em papel e moldura dupla (também na imagem para Stories).
 - Verificado: lint, TypeScript, 36 testes, smoke HTTP, build e varredura sem overflow horizontal em 15 rotas × 375/390/430/768/1024/1440px; contraste de texto ≥ 4,5:1 nas cores de texto.
 
+## Animações do agendamento (4 de outubro de 2026)
+
+- Abertura (`booking-intro.tsx`): ao abrir o agendamento, a logo do estabelecimento (ou monograma com as iniciais, `monogram()` em `lib/utils.ts`) aparece no papel, uma linha latão se desenha, o nome surge e o papel sobe como cortina revelando a etapa. Uma vez por visita (`sessionStorage` `studioflow:intro:<slug>`), toque para pular, nunca com movimento reduzido. Enquanto o catálogo carrega, `BookingLoader` mostra uma linha latão correndo.
+- Fases: títulos sobem palavra por palavra (`StepHead`), checks se desenham (`draw-check.tsx`) no indicador de etapas e nas opções, a faixa de seleção desliza da esquerda, os meses do calendário deslizam na direção escolhida.
+- Confirmação: carimbo (`confirm-stamp.tsx`) com a logo/monograma no centro e o status escrito em volta ("Horário confirmado · Nome ·"), batido com tinta só em agendamento recém-criado; substitui o check com confete.
+- Página pública: a capa assenta com leve zoom, a etiqueta de horário entra pela esquerda e o nome é revelado de baixo para cima.
+- Tudo respeita `prefers-reduced-motion`.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

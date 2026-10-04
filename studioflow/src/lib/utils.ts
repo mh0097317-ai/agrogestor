@@ -86,3 +86,14 @@ export const paymentLabels: Record<string, string> = {
 export function localDay(date = new Date()) {
   return format(date, "yyyy-MM-dd");
 }
+
+/** Up to two initials from the words that start with a letter. */
+export function monogram(name: string) {
+  const letters = name
+    .split(/\s+/)
+    .filter((word) => /^\p{L}/u.test(word))
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join("");
+  return letters || name.trim().slice(0, 1).toUpperCase();
+}

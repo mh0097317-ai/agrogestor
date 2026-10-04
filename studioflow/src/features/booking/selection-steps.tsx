@@ -1,17 +1,13 @@
 "use client";
 
-import {
-  CaretRight,
-  Check,
-  Star,
-  UsersThree,
-} from "@phosphor-icons/react/dist/ssr";
-import { useState, type CSSProperties } from "react";
+import { CaretRight, Star, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { Fragment, useState, type CSSProperties } from "react";
 import type { Service } from "@/types";
 import type { PublicProfessional, Rating } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
 import { RepeatBooking } from "@/features/public/repeat-booking";
+import { DrawCheck } from "./draw-check";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import type { Slot } from "@/types";
 import { bookingDate, bookingTime } from "./date-format";
@@ -65,7 +61,7 @@ function Indicator({
       aria-hidden="true"
     >
       {selected ? (
-        <Check weight="bold" size={13} />
+        <DrawCheck size={14} />
       ) : kind === "chevron" ? (
         <CaretRight weight="bold" size={16} />
       ) : null}
@@ -73,10 +69,24 @@ function Indicator({
   );
 }
 
+/** Step title: its words rise one after another. */
 export function StepHead({ title, text }: { title: string; text: string }) {
   return (
     <header className="bk-head">
-      <h1 tabIndex={-1}>{title}</h1>
+      <h1 tabIndex={-1} aria-label={title}>
+        {title.split(" ").map((word, index) => (
+          <Fragment key={`${word}-${index}`}>
+            {index > 0 && " "}
+            <span
+              className="bk-word"
+              aria-hidden="true"
+              style={{ "--w": index } as CSSProperties}
+            >
+              <span>{word}</span>
+            </span>
+          </Fragment>
+        ))}
+      </h1>
       <p>{text}</p>
     </header>
   );
