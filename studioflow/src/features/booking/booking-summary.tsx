@@ -10,15 +10,24 @@ import { bookingDateLabel, bookingTime } from "./date-format";
 const capitalize = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1);
 
-/** Service on top, then who, which day and what time. */
+/** "Corte + Barba", total minutes and price of the chosen services. */
+export function servicesSummary(services: Service[]) {
+  return {
+    name: services.map((service) => service.name).join(" + "),
+    duration: services.reduce((sum, service) => sum + service.duration, 0),
+    price: services.reduce((sum, service) => sum + service.price, 0),
+  };
+}
+
+/** Services on top, then who, which day and what time. */
 export function BookingRecap({
-  service,
+  services,
   professional,
   slot,
   totalPrice,
   onEdit,
 }: {
-  service: Service;
+  services: Service[];
   professional?: PublicProfessional;
   slot: Slot;
   totalPrice?: number;
@@ -44,20 +53,29 @@ export function BookingRecap({
       step: 3,
     },
   ];
+  const summary = servicesSummary(services);
+  const first = services[0];
   return (
     <div className="bk-recap">
       <div className="bk-recap-service">
-        <PublicImage
-          src={service.image}
-          alt=""
-          className="bk-recap-photo"
-          segment={service.category}
-        />
+        <span
+          className={`bk-recap-photos ${services.length > 1 ? "is-stack" : ""}`}
+        >
+          {services.slice(0, 3).map((service) => (
+            <PublicImage
+              key={service.id}
+              src={service.image}
+              alt=""
+              className="bk-recap-photo"
+              segment={first?.category}
+            />
+          ))}
+        </span>
         <div>
-          <strong>{service.name}</strong>
+          <strong>{summary.name}</strong>
           <span>
-            {durationLabel(service.duration)} •{" "}
-            {money(totalPrice ?? service.price)}
+            {durationLabel(summary.duration)} •{" "}
+            {money(totalPrice ?? summary.price)}
           </span>
         </div>
         {onEdit && (

@@ -10,15 +10,18 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  ArrowRight,
   CalendarBlank,
   CaretLeft,
   CaretRight,
+  Lightning,
 } from "@phosphor-icons/react/dist/ssr";
 import { useMemo, useState, type CSSProperties } from "react";
 import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
-import { bookingDate } from "./date-format";
-import { StepHead } from "./selection-steps";
+import type { PublicProfessional } from "@/features/public/types";
+import { bookingDate, bookingTime } from "./date-format";
+import { freeLabel, StepHead } from "./selection-steps";
 import { WaitlistForm } from "./waitlist-form";
 
 type CalendarData = Record<string, Slot[]>;
@@ -35,7 +38,10 @@ export function DateStep({
   onSlot,
   embedded = false,
   waitlist = false,
+  professionals,
 }: {
+  /** Names for the "first free time" shortcut. */
+  professionals?: PublicProfessional[];
   slug: string;
   serviceId: string;
   professionalId: string;
@@ -129,7 +135,7 @@ export function DateStep({
       <WaitlistForm
         key={`${activeDate}-${full}`}
         slug={slug}
-        serviceId={serviceId}
+        serviceId={serviceId.split(",")[0]}
         professionalId={professionalId}
         date={activeDate}
         dateLabel={activeLabel}
@@ -141,6 +147,12 @@ export function DateStep({
     onSlot(undefined);
   }
   const periodOf = (slot: Slot) => Number(slot.time.split(":")[0]);
+  const earliest = firstAvailable ? days[firstAvailable][0] : undefined;
+  const earliestWith =
+    earliest && professionalId === "any"
+      ? professionals?.find((person) => person.id === earliest.professionalId)
+          ?.name.split(" ")[0]
+      : "";
   return (
     <section className="bk-step">
       {!embedded && (
@@ -148,6 +160,28 @@ export function DateStep({
           title="Quando você deseja agendar?"
           text="Selecione a data e o horário disponível."
         />
+      )}
+      {!embedded && earliest && !selectedSlot && !loading && (
+        <button
+          type="button"
+          className="bk-earliest"
+          onClick={() => {
+            onDate(firstAvailable!);
+            onSlot(earliest);
+          }}
+        >
+          <span className="bk-earliest-icon" aria-hidden="true">
+            <Lightning weight="fill" size={16} />
+          </span>
+          <span className="bk-earliest-text">
+            <small>Primeiro horário livre</small>
+            <strong>
+              {freeLabel(earliest)}
+              {earliestWith ? ` com ${earliestWith}` : ""}
+            </strong>
+          </span>
+          <ArrowRight weight="bold" size={18} />
+        </button>
       )}
       <div className="bk-schedule">
         <div className="bk-calendar">
@@ -251,7 +285,10 @@ export function DateStep({
                             onSlot(slot);
                           }}
                         >
-                          {slot.time}
+                          <span>{slot.time}</span>
+                          {selectedSlot?.start === slot.start && (
+                            <small>até {bookingTime(slot.end)}</small>
+                          )}
                         </button>
                       ))}
                     </div>

@@ -214,7 +214,11 @@ export function PublicPage({ slug }: { slug: string }) {
             />
           </section>
 
-          <PublicServices services={activeServices} slug={slug} />
+          <PublicServices
+            services={activeServices}
+            slug={slug}
+            popularId={catalog.popularServiceId}
+          />
           {settings.loyaltyEnabled && settings.loyaltyReward && (
             <section className="pp-section" aria-label="Cartão fidelidade">
               <Link href={bookHref} className="pp-loyalty" data-reveal>

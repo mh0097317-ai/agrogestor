@@ -4,6 +4,24 @@ import { isDemo } from "@/services/server-demo";
 import { failure, respond } from "@/services/server-http";
 import { ratingSummary } from "@/lib/reviews";
 export const dynamic = "force-dynamic";
+
+/** Most booked active service in the last 90 days, from real bookings. */
+function popularService(store: Awaited<ReturnType<typeof getPublicStore>>) {
+  const since = Date.now() - 90 * 86_400_000;
+  const counts = new Map<string, number>();
+  for (const item of store.appointments)
+    if (
+      !["cancelled", "no_show"].includes(item.status) &&
+      new Date(item.start).getTime() >= since
+    )
+      for (const id of item.serviceIds)
+        counts.set(id, (counts.get(id) || 0) + 1);
+  const [top, second] = [...counts.entries()]
+    .filter(([id]) => store.services.some((s) => s.id === id && s.active))
+    .sort((a, b) => b[1] - a[1]);
+  // Only a clear favorite: at least 3 bookings and ahead of the next one.
+  return top && top[1] >= 3 && (!second || top[1] > second[1]) ? top[0] : null;
+}
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -28,6 +46,7 @@ export async function GET(
       rating: ratingSummary(store.reviews),
       onlinePayments: payments,
       plans: payments ? publicPlans(store) : [],
+      popularServiceId: popularService(store),
     });
   } catch (error) {
     return failure(error);

@@ -12,9 +12,11 @@ const menuPrice = (value: number) =>
 export function PublicServices({
   services,
   slug,
+  popularId,
 }: {
   services: Service[];
   slug: string;
+  popularId?: string | null;
 }) {
   const visible = services.slice(0, shown);
   return (
@@ -44,7 +46,12 @@ export function PublicServices({
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span className="pp-menu-name">
-                  <strong>{service.name}</strong>
+                  <strong>
+                    {service.name}
+                    {service.id === popularId && (
+                      <em className="pp-popular">Mais pedido</em>
+                    )}
+                  </strong>
                   <small>{durationLabel(service.duration)}</small>
                 </span>
                 <span className="pp-menu-price">

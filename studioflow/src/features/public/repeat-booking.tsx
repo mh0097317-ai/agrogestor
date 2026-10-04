@@ -23,17 +23,21 @@ export function RepeatBooking({
   const [last] = useState(() =>
     typeof window === "undefined" ? null : readLastBooking(slug),
   );
-  const service = services.find(
-    (item) => item.id === last?.serviceId && item.active,
-  );
-  if (!last || !service) return null;
+  // One service, or several booked together ("a,b").
+  const chosen = (last?.serviceId || "")
+    .split(",")
+    .map((id) => services.find((item) => item.id === id && item.active));
+  if (!last || !chosen.length || chosen.some((item) => !item)) return null;
+  const picked = chosen as Service[];
   const person = professionals.find(
     (item) =>
       item.id === last.professionalId &&
       item.active &&
-      service.professionalIds.includes(item.id),
+      picked.every((service) => service.professionalIds.includes(item.id)),
   );
-  const query = new URLSearchParams({ service: service.id });
+  const query = new URLSearchParams({
+    service: picked.map((item) => item.id).join(","),
+  });
   if (person) query.set("professional", person.id);
   return (
     <Link
@@ -46,7 +50,7 @@ export function RepeatBooking({
       <span className="repeat-booking-text">
         <small>Agendar de novo</small>
         <strong>
-          {service.name}
+          {picked.map((item) => item.name).join(" + ")}
           {person ? ` com ${person.name.split(" ")[0]}` : ""}
         </strong>
       </span>

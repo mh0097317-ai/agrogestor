@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { PublicCatalog } from "@/features/public/types";
-import { durationLabel, money } from "@/lib/utils";
+import { durationLabel } from "@/lib/utils";
 import {
   PublicError,
   PublicImage,
@@ -27,6 +27,8 @@ import { DateStep } from "./date-step";
 import { BookingChrome } from "./booking-chrome";
 import { CustomerStep, type CustomerFields } from "./customer-step";
 import { bookingTime } from "./date-format";
+import { servicesSummary } from "./booking-summary";
+import { flyTo, RollingMoney } from "./motion";
 import { haptic } from "@/lib/haptic";
 import { saveLastBooking } from "@/lib/last-booking";
 import { depositFor } from "@/lib/payments";
@@ -72,7 +74,7 @@ export function BookingFlow({ slug }: { slug: string }) {
       <PublicRefreshNotice error={error} refreshing={loading} retry={reload} />
       <BookingWizard
         catalog={catalog}
-        initialService={query.get("service") || ""}
+        initialServices={(query.get("service") || "").split(",").filter(Boolean)}
         initialProfessional={query.get("professional") || "any"}
         revealed={intro !== "on"}
       />
@@ -87,37 +89,48 @@ export function BookingFlow({ slug }: { slug: string }) {
 
 function BookingWizard({
   catalog,
-  initialService,
+  initialServices,
   initialProfessional,
   revealed,
 }: {
   catalog: PublicCatalog;
-  initialService: string;
+  initialServices: string[];
   initialProfessional: string;
   /** False while the opening covers the screen. */
   revealed: boolean;
 }) {
   const router = useRouter();
   const { business, services, professionals, settings } = catalog;
-  const validInitialService = services.find(
-    (service) => service.id === initialService && service.active,
-  );
-  const [step, setStep] = useState(validInitialService ? 2 : 1);
+  const teamFor = (ids: string[]) =>
+    professionals.filter(
+      (person) =>
+        person.active &&
+        ids.every((id) =>
+          services.find((item) => item.id === id)?.professionalIds.includes(person.id),
+        ),
+    );
+  // Services from a link (?service=a,b) that exist and can be done together.
+  const validInitial = (() => {
+    const ids = initialServices.filter((id) =>
+      services.some((service) => service.id === id && service.active),
+    ).slice(0, 8);
+    return ids.length && teamFor(ids).length ? ids : [];
+  })();
+  const [step, setStep] = useState(validInitial.length ? 2 : 1);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
-  const [serviceId, setServiceId] = useState(validInitialService?.id || "");
+  const [serviceIds, setServiceIds] = useState<string[]>(validInitial);
   const [professionalId, setProfessionalId] = useState(
     professionals.some(
       (person) =>
         person.id === initialProfessional &&
-        person.active &&
-        (!validInitialService ||
-          validInitialService.professionalIds.includes(person.id)),
+        teamFor(validInitial).some((member) => member.id === person.id),
     )
       ? initialProfessional
       : "any",
   );
   const [date, setDate] = useState("");
   const [slot, setSlot] = useState<Slot>();
+  const [notice, setNotice] = useState("");
   // The wizard only renders on the client (after the catalog loads), so
   // reading the device-stored customer here is safe.
   const [remembered, setRemembered] = useState(readRememberedCustomer);
@@ -141,6 +154,7 @@ function BookingWizard({
   const [clubToken] = useClubToken(business.slug);
   const { member } = useMembership(business.slug, clubToken);
   const stepHeading = useRef<HTMLDivElement>(null);
+  const barPhoto = useRef<HTMLSpanElement>(null);
   const previousStep = useRef(step);
   useEffect(() => {
     if (previousStep.current !== step)
@@ -149,7 +163,11 @@ function BookingWizard({
         ?.focus({ preventScroll: true });
     previousStep.current = step;
   }, [step]);
-  const service = services.find((item) => item.id === serviceId);
+  const chosen = serviceIds
+    .map((id) => services.find((item) => item.id === id))
+    .filter((item): item is (typeof services)[number] => !!item);
+  const summary = servicesSummary(chosen);
+  const serviceKey = serviceIds.join(",");
   const professional = professionals.find(
     (person) => person.id === (slot?.professionalId || professionalId),
   );
@@ -157,6 +175,7 @@ function BookingWizard({
     setDirection(next > step ? "forward" : "back");
     setStep(next);
     setError("");
+    setNotice("");
     window.scrollTo({
       top: 0,
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -164,20 +183,33 @@ function BookingWizard({
         : "smooth",
     });
   }
-  const teamFor = (id: string) => {
-    const chosen = services.find((item) => item.id === id);
-    return professionals.filter(
-      (person) => person.active && chosen?.professionalIds.includes(person.id),
-    );
-  };
-  function selectService(id: string) {
+  function toggleService(id: string, photo: HTMLElement | null) {
     haptic();
-    if (id === serviceId) return;
-    const chosen = services.find((item) => item.id === id);
-    setServiceId(id);
+    setNotice("");
+    const adding = !serviceIds.includes(id);
+    const next = adding
+      ? [...serviceIds, id]
+      : serviceIds.filter((item) => item !== id);
+    if (adding && next.length > 8) {
+      setNotice("Você pode juntar até 8 serviços no mesmo horário.");
+      return;
+    }
+    const team = teamFor(next);
+    if (adding && next.length > 1 && team.length === 0) {
+      const name = services.find((item) => item.id === id)?.name;
+      setNotice(
+        `Ninguém da equipe faz ${name} junto com ${summary.name}. Agende em outro horário.`,
+      );
+      return;
+    }
+    if (adding && serviceIds.length > 0) flyTo(photo, barPhoto.current);
+    setServiceIds(next);
     setSlot(undefined);
     setDate("");
-    if (!chosen?.professionalIds.includes(professionalId))
+    if (
+      professionalId !== "any" &&
+      !team.some((person) => person.id === professionalId)
+    )
       setProfessionalId("any");
   }
   function selectProfessional(id: string) {
@@ -190,7 +222,7 @@ function BookingWizard({
   function next() {
     if (step === 1) {
       // A single professional needs no choice: go straight to the times.
-      const team = teamFor(serviceId);
+      const team = teamFor(serviceIds);
       if (team.length === 1) {
         if (professionalId !== team[0].id) {
           setProfessionalId(team[0].id);
@@ -202,20 +234,20 @@ function BookingWizard({
     } else changeStep(step + 1);
   }
   function back() {
-    if (step === 3 && teamFor(serviceId).length === 1) changeStep(1);
+    if (step === 3 && teamFor(serviceIds).length === 1) changeStep(1);
     else changeStep(step - 1);
   }
   const coverage =
-    service && slot
-      ? clubCoverage(member, service.id, slot.start, customer.phone)
+    chosen.length && slot
+      ? clubCoverage(member, serviceIds, slot.start, customer.phone)
       : null;
   const covered = coverage?.result === "covered";
   const deposit =
-    catalog.onlinePayments && service && !covered
-      ? depositFor(settings, service.price)
+    catalog.onlinePayments && chosen.length && !covered
+      ? depositFor(settings, summary.price)
       : 0;
   async function submit(values: CustomerFields) {
-    if (!service || !slot) return;
+    if (!chosen.length || !slot) return;
     setCustomer(values);
     setBusy(true);
     setError("");
@@ -225,7 +257,7 @@ function BookingWizard({
         {
           method: "POST",
           body: JSON.stringify({
-            serviceIds: [service.id],
+            serviceIds,
             professionalId: slot.professionalId,
             start: slot.start,
             name: values.name,
@@ -257,8 +289,8 @@ function BookingWizard({
         // Remembering is optional.
       }
       saveLastBooking(business.slug, {
-        serviceId: service.id,
-        serviceName: service.name,
+        serviceId: serviceKey,
+        serviceName: summary.name,
         professionalId: professionalId === "any" ? "any" : slot.professionalId,
         professionalName:
           professionalId === "any"
@@ -286,8 +318,8 @@ function BookingWizard({
     }
   }
   const canContinue =
-    (step === 1 && !!service) || (step === 2 && !!service) || !!slot;
-  const showBar = step <= 3 && !!service;
+    ((step === 1 || step === 2) && chosen.length > 0) || !!slot;
+  const showBar = step <= 3 && chosen.length > 0;
   const slotDay = slot
     ? new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
@@ -300,33 +332,51 @@ function BookingWizard({
     <BookingChrome
       business={business}
       step={step}
-      onBack={step > 1 ? back : undefined}
+      onBack={step > 1 && !busy ? back : undefined}
       onStep={busy ? undefined : changeStep}
       backDisabled={busy}
       after={
         <div
-          className={`bk-bar ${showBar ? "is-visible" : ""}`}
+          className={`bk-bar ${showBar ? "is-visible" : ""} ${step === 3 && slot ? "is-ready" : ""}`}
           aria-hidden={!showBar}
         >
-          {service && (
+          {chosen.length > 0 && (
             <div className="bk-bar-inner">
-              <PublicImage
-                src={service.image}
-                alt=""
-                className="bk-bar-photo"
-                segment={service.category}
-              />
-              <div className="bk-bar-text" key={`${service.id}-${slot?.start}`}>
-                <strong>{service.name}</strong>
-                <span>
+              <span
+                ref={barPhoto}
+                className={`bk-bar-photos ${chosen.length > 1 ? "is-stack" : ""}`}
+              >
+                {chosen.slice(-3).map((item) => (
+                  <PublicImage
+                    key={item.id}
+                    src={item.image}
+                    alt=""
+                    className="bk-bar-photo"
+                    segment={item.category}
+                  />
+                ))}
+                {chosen.length > 1 && (
+                  <b className="bk-bar-count" key={chosen.length}>
+                    {chosen.length}
+                  </b>
+                )}
+              </span>
+              <div className="bk-bar-text">
+                <strong key={`${serviceKey}-${slot?.start}`}>
                   {step === 3 && slot
-                    ? `${slotDay.charAt(0).toUpperCase()}${slotDay.slice(1).replace(".", "")} às ${bookingTime(slot.start)}`
-                    : `${durationLabel(service.duration)} • ${money(service.price)}`}
+                    ? `${slotDay.charAt(0).toUpperCase()}${slotDay.slice(1).replace(".", "")} · ${bookingTime(slot.start)}`
+                    : chosen.length > 1
+                      ? `${chosen.length} serviços`
+                      : chosen[0].name}
+                </strong>
+                <span>
+                  {durationLabel(summary.duration)} •{" "}
+                  <RollingMoney value={summary.price} />
                 </span>
               </div>
               <button
                 type="button"
-                className="bk-bar-button sf-sheen"
+                className="bk-bar-button"
                 disabled={!canContinue || busy}
                 tabIndex={showBar ? 0 : -1}
                 onClick={next}
@@ -347,25 +397,27 @@ function BookingWizard({
         {step === 1 && (
           <ServiceStep
             services={services}
-            selectedId={serviceId}
-            onSelect={selectService}
+            selectedIds={serviceIds}
+            onToggle={toggleService}
             slug={business.slug}
             professionals={professionals}
+            popularId={catalog.popularServiceId}
+            notice={notice}
           />
         )}
-        {step === 2 && service && (
+        {step === 2 && chosen.length > 0 && (
           <ProfessionalStep
             slug={business.slug}
             professionals={professionals}
-            service={service}
+            services={chosen}
             selectedId={professionalId}
             onSelect={selectProfessional}
           />
         )}
-        {step === 3 && service && (
+        {step === 3 && chosen.length > 0 && (
           <DateStep
             slug={business.slug}
-            serviceId={service.id}
+            serviceId={serviceKey}
             professionalId={professionalId}
             settings={settings}
             selectedDate={date}
@@ -375,15 +427,16 @@ function BookingWizard({
               if (value) haptic();
               setSlot(value);
             }}
+            professionals={professionals}
             waitlist
           />
         )}
-        {step === 4 && service && slot && (
+        {step === 4 && chosen.length > 0 && slot && (
           <CustomerStep
             key={remembered ? "remembered" : "new"}
             welcomeName={remembered?.name.split(" ")[0]}
             onForget={forgetCustomer}
-            service={service}
+            services={chosen}
             professional={professional}
             slot={slot}
             defaults={customer}

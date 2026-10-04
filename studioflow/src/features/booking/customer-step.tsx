@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -16,6 +16,8 @@ import type { PublicProfessional } from "@/features/public/types";
 import { BusyButton } from "@/features/public/public-ui";
 import { BookingRecap } from "./booking-summary";
 import { StepHead } from "./selection-steps";
+import { DrawCheck } from "./draw-check";
+import { useState } from "react";
 import { coverageMessages, formatCpf, isValidCpf } from "@/lib/payments";
 import type { CoverageResult } from "@/lib/payments";
 import { money } from "@/lib/utils";
@@ -58,6 +60,30 @@ const withCpf = customerSchema.refine((value) => isValidCpf(value.cpf || ""), {
   message: "Informe um CPF válido. Ele é exigido para emitir o Pix.",
 });
 
+const lowerWords = new Set(["da", "de", "do", "das", "dos", "e"]);
+/** "ana paula dos santos" → "Ana Paula dos Santos". */
+function titleName(value: string) {
+  const clean = value.trim().replace(/\s+/g, " ");
+  // Respect a name typed with intentional capitals.
+  if (clean !== clean.toLocaleLowerCase("pt-BR")) return clean;
+  return clean
+    .split(" ")
+    .map((word, index) =>
+      index > 0 && lowerWords.has(word)
+        ? word
+        : word.charAt(0).toLocaleUpperCase("pt-BR") + word.slice(1),
+    )
+    .join(" ");
+}
+
+/** "ana paula" → "Ana" (only a real-looking first name). */
+function firstName(value: string) {
+  const word = value.trim().split(/\s+/)[0] || "";
+  return word.length >= 2 && /^[\p{L}'-]+$/u.test(word)
+    ? word.charAt(0).toLocaleUpperCase("pt-BR") + word.slice(1).toLocaleLowerCase("pt-BR")
+    : "";
+}
+
 export interface ClubNotice {
   planName: string;
   result: CoverageResult;
@@ -75,7 +101,7 @@ export function phoneMask(value: string) {
 export function CustomerStep({
   welcomeName,
   onForget,
-  service,
+  services,
   professional,
   slot,
   defaults,
@@ -94,7 +120,7 @@ export function CustomerStep({
   club?: ClubNotice | null;
   welcomeName?: string;
   onForget?: () => void;
-  service: Service;
+  services: Service[];
   professional?: PublicProfessional;
   slot: Slot;
   defaults: CustomerFields;
@@ -110,20 +136,42 @@ export function CustomerStep({
     formState: { errors },
     getValues,
     setValue,
+    control,
   } = useForm<CustomerFields>({
     resolver: zodResolver(deposit > 0 ? withCpf : customerSchema),
     defaultValues: defaults,
   });
+  const values = useWatch({ control }) as CustomerFields;
+  const valid = {
+    name: (values.name || "").trim().length >= 3,
+    phone: validBrazilianPhone(values.phone || ""),
+    cpf: isValidCpf(values.cpf || ""),
+  };
+  // The title greets by first name once the name field is left.
+  const [greeting, setGreeting] = useState(
+    () => welcomeName || firstName(defaults.name),
+  );
+  const mark = (ok: boolean) =>
+    ok ? (
+      <span className="bk-valid" aria-hidden="true">
+        <DrawCheck size={15} />
+      </span>
+    ) : null;
   return (
     <section className="bk-step">
       <StepHead
+        key={greeting}
         title={
-          welcomeName ? `Que bom te ver, ${welcomeName}!` : "Quase pronto!"
+          welcomeName && greeting === welcomeName
+            ? `Que bom te ver, ${welcomeName}!`
+            : greeting
+              ? `Quase pronto, ${greeting}!`
+              : "Quase pronto!"
         }
         text="Confirme seus dados para finalizar o agendamento."
       />
       <BookingRecap
-        service={service}
+        services={services}
         professional={professional}
         slot={slot}
         onEdit={onEdit}
@@ -175,8 +223,15 @@ export function CustomerStep({
               maxLength={100}
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? "booking-name-error" : undefined}
-              {...register("name")}
+              {...register("name", {
+                onBlur: (event) => {
+                  const tidy = titleName(event.target.value);
+                  if (tidy !== event.target.value) setValue("name", tidy);
+                  setGreeting(firstName(tidy));
+                },
+              })}
             />
+            {mark(valid.name)}
           </span>
           {errors.name && (
             <span id="booking-name-error" className="bk-field-error">
@@ -203,6 +258,7 @@ export function CustomerStep({
                   setValue("phone", phoneMask(event.target.value)),
               })}
             />
+            {mark(valid.phone)}
           </span>
           {errors.phone && (
             <span id="booking-phone-error" className="bk-field-error">
@@ -237,6 +293,7 @@ export function CustomerStep({
                       setValue("cpf", formatCpf(event.target.value)),
                   })}
                 />
+                {mark(valid.cpf)}
               </span>
               {errors.cpf ? (
                 <span id="booking-cpf-error" className="bk-field-error">

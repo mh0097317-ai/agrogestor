@@ -217,6 +217,16 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Para testar com dinheiro de verdade fora da demonstração: crie uma conta no Asaas (ou no sandbox, `https://sandbox.asaas.com`), gere a chave em Integrações e cole em Configurações → Pagamentos escolhendo o ambiente certo.
 - Pendências: renovação automática no cartão (hoje cada mensalidade é paga pela fatura, com Pix, boleto ou cartão), devolução do sinal pelo próprio painel e lembrete automático da mensalidade.
 
+## Agendamento mais gostoso de usar (4 de outubro de 2026)
+
+- Vários serviços no mesmo horário: na etapa 1 cada serviço tem caixa de seleção (ordem 1º, 2º…), até 8, só combinações que alguém da equipe faz junto (senão aparece o aviso). Tempo e valor somam na barra, no resumo, no sinal e no clube; disponibilidade usa a duração total (`serviceId=a,b` nas APIs públicas, que já aceitavam a lista). "Agendar de novo" e o link do comprovante repetem a combinação.
+- "Mais pedido": serviço mais agendado nos últimos 90 dias (mínimo de 3 e à frente do segundo), calculado no servidor (`popularServiceId` no catálogo público), na etapa 1 e no cardápio da página.
+- Atalho "Primeiro horário livre" no topo da etapa de horário; o horário escolhido mostra até quando vai.
+- Interações (`src/features/booking/motion.tsx`): a foto do serviço voa até a barra ao somar, fotos empilhadas com contador, total que rola até o novo valor, botão "Continuar" dá um toque quando o horário é escolhido, arrastar para a direita volta uma etapa (o toque na borda continua do sistema e o navegador não sai da página), aviso com leve tremida quando não dá para combinar.
+- Dados: o título cumprimenta pelo primeiro nome ("Quase pronto, Ana!"), o nome é ajustado para maiúsculas ("ana paula dos santos" → "Ana Paula dos Santos") e cada campo válido ganha um check.
+- Comprovante: contagem até o horário ("Faltam 2 dias 4 horas") e "Compartilhar" (quando o aparelho permite).
+- Correções: faixa do item escolhido ocupa a linha inteira, campo em foco sem caixa interna, sem degradê no hover das linhas.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

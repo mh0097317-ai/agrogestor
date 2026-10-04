@@ -73,14 +73,14 @@ const digits = (value: string) =>
  */
 export function clubCoverage(
   member: MemberView | null | undefined,
-  serviceId: string,
+  serviceIds: string[],
   start: string,
   phone: string,
 ) {
   if (!member?.plan || member.status !== "active") return null;
   const result = planCovers(
     member.plan,
-    [serviceId],
+    serviceIds,
     member.usage[monthKey(start)] || 0,
   );
   const samePhone = !phone || digits(phone) === member.customerPhone;

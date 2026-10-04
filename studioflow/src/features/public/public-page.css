@@ -272,7 +272,10 @@
   transition: background 0.2s;
 }
 .pp-menu-row:hover {
-  background: linear-gradient(90deg, transparent, #ebe4d680 30%, transparent);
+  background: #ebe4d659;
+}
+.pp-menu-row:active {
+  background: #ebe4d6;
 }
 .pp-menu-number {
   color: var(--pp-brass);
@@ -842,4 +845,20 @@
 .pp-club:hover .pp-club-cta {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.pp-popular {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid #a47a3c80;
+  border-radius: 2px;
+  color: var(--pp-brass);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 3px;
 }

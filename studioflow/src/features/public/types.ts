@@ -23,6 +23,8 @@ export interface PublicCatalog {
   /** The business receives online payments (deposit and club). */
   onlinePayments?: boolean;
   plans?: PublicPlan[];
+  /** Most booked service in the last 90 days (real bookings only). */
+  popularServiceId?: string | null;
 }
 
 export type PublicPlan = Pick<

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { DrawCheck } from "./draw-check";
+import { useSwipeBack } from "./motion";
 import type { Business } from "@/types";
 import { PublicImage } from "@/features/public/public-ui";
 import { publicAccentStyle } from "@/features/public/public-branding";
@@ -84,6 +85,7 @@ export function BookingChrome({
   children: ReactNode;
   after?: ReactNode;
 }) {
+  const swipe = useSwipeBack(backDisabled ? undefined : onBack);
   return (
     <div className="booking-site bk" style={publicAccentStyle(business.color)}>
       <header className="bk-top">
@@ -122,7 +124,9 @@ export function BookingChrome({
         </div>
         {showSteps && <BookingProgress step={step} onStep={onStep} />}
       </header>
-      <main className="bk-main">{children}</main>
+      <main className="bk-main" {...swipe}>
+        {children}
+      </main>
       {after}
     </div>
   );

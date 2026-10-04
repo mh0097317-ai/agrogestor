@@ -7,12 +7,14 @@ import {
   Check,
   Clock,
   Copy,
+  ShareNetwork,
   X,
   XCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { ConfirmStamp } from "./confirm-stamp";
 import { DepositPanel } from "./deposit-panel";
+import { Countdown } from "./countdown";
 import { useState } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { CustomerReview, ManagedBooking } from "@/features/public/types";
@@ -106,9 +108,10 @@ function ConfirmationContent({
   const [celebrate] = useState(
     () => Date.now() - Date.parse(appointment.createdAt) < 10 * 60 * 1000,
   );
-  const service = services.find((item) =>
+  const booked = services.filter((item) =>
     appointment.serviceIds.includes(item.id),
   );
+  const service = booked[0];
   const cancelled = appointment.status === "cancelled";
   const isPending = appointment.status === "pending";
   const stamped = ["confirmed", "in_progress", "completed"].includes(
@@ -197,6 +200,19 @@ function ConfirmationContent({
       setBusy(false);
     }
   }
+  const canShare =
+    typeof navigator !== "undefined" && typeof navigator.share === "function";
+  async function share() {
+    try {
+      await navigator.share({
+        title: `Meu horário na ${business.name}`,
+        text: `${booked.map((item) => item.name).join(" + ")} · ${bookingDateShort(appointment.start)} às ${bookingTime(appointment.start)} na ${business.name}`,
+        url: window.location.href,
+      });
+    } catch {
+      // Closed the share sheet.
+    }
+  }
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -245,7 +261,7 @@ function ConfirmationContent({
             {catalog ? (
               <DateStep
                 slug={business.slug}
-                serviceId={service.id}
+                serviceId={booked.map((item) => item.id).join(",")}
                 professionalId={appointment.professionalId}
                 settings={catalog.settings}
                 selectedDate={date}
@@ -304,7 +320,7 @@ function ConfirmationContent({
             />
             {service && (
               <BookingRecap
-                service={service}
+                services={booked}
                 professional={professional}
                 slot={bookedSlot}
                 totalPrice={appointment.price}
@@ -346,10 +362,13 @@ function ConfirmationContent({
               <h1 tabIndex={-1}>{title}</h1>
               <p>{message}</p>
             </header>
+            {["confirmed", "pending"].includes(appointment.status) && (
+              <Countdown start={appointment.start} />
+            )}
             {review}
             {service && (
               <BookingRecap
-                service={service}
+                services={booked}
                 professional={professional}
                 slot={bookedSlot}
                 totalPrice={appointment.price}
@@ -410,7 +429,7 @@ function ConfirmationContent({
               <div className="bk-actions">
                 <Link
                   className="bk-primary"
-                  href={`/${business.slug}/agendar${service ? `?service=${service.id}` : ""}`}
+                  href={`/${business.slug}/agendar${booked.length ? `?service=${booked.map((item) => item.id).join(",")}` : ""}`}
                 >
                   <CalendarPlus weight="duotone" size={18} />{" "}
                   {cancelled ? "Agendar um novo horário" : "Agendar de novo"}
@@ -457,9 +476,16 @@ function ConfirmationContent({
               <span>
                 Agendamento #{appointment.id.slice(0, 8).toUpperCase()}
               </span>
-              <button type="button" onClick={copyLink}>
-                <Copy weight="duotone" size={15} /> Copiar link
-              </button>
+              <span className="bk-code-actions">
+                {canShare && (
+                  <button type="button" onClick={share}>
+                    <ShareNetwork weight="duotone" size={15} /> Compartilhar
+                  </button>
+                )}
+                <button type="button" onClick={copyLink}>
+                  <Copy weight="duotone" size={15} /> Copiar link
+                </button>
+              </span>
             </div>
             <p className="bk-footnote">
               {cancelled

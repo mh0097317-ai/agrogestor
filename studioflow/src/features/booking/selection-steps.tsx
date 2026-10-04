@@ -53,7 +53,7 @@ function Indicator({
   kind,
 }: {
   selected: boolean;
-  kind: "chevron" | "radio";
+  kind: "chevron" | "radio" | "check";
 }) {
   return (
     <span
@@ -94,16 +94,23 @@ export function StepHead({ title, text }: { title: string; text: string }) {
 
 export function ServiceStep({
   services,
-  selectedId,
-  onSelect,
+  selectedIds,
+  onToggle,
   slug,
   professionals,
+  popularId,
+  notice,
 }: {
   services: Service[];
-  selectedId?: string;
-  onSelect: (id: string) => void;
+  selectedIds: string[];
+  /** `photo` is the row picture, used to fly the choice to the bar. */
+  onToggle: (id: string, photo: HTMLElement | null) => void;
   slug?: string;
   professionals?: PublicProfessional[];
+  /** Most booked service lately (real bookings), if any. */
+  popularId?: string | null;
+  /** Why the last choice could not be combined. */
+  notice?: string;
 }) {
   const active = services.filter((service) => service.active);
   const [category, setCategory] = useState("Todos");
@@ -115,7 +122,7 @@ export function ServiceStep({
     <section className="bk-step">
       <StepHead
         title="Qual serviço você deseja?"
-        text="Escolha o serviço que deseja realizar."
+        text="Pode escolher mais de um: o tempo e o valor somam."
       />
       {slug && professionals && (
         <RepeatBooking
@@ -136,20 +143,37 @@ export function ServiceStep({
               onClick={() => setCategory(item)}
             >
               {item}
+              {item !== "Todos" &&
+                active.some(
+                  (service) =>
+                    service.category === item &&
+                    selectedIds.includes(service.id),
+                ) && <i className="bk-tab-dot" aria-hidden="true" />}
             </button>
           ))}
         </div>
       )}
+      {notice && (
+        <p className="bk-notice" role="status" key={notice}>
+          {notice}
+        </p>
+      )}
       <ul className="bk-list" role="list" key={category}>
         {visible.map((service, index) => {
-          const selected = selectedId === service.id;
+          const selected = selectedIds.includes(service.id);
+          const order = selectedIds.indexOf(service.id) + 1;
           return (
             <li key={service.id} style={stagger(index)}>
               <button
                 type="button"
                 className={`bk-option ${selected ? "is-selected" : ""}`}
                 aria-pressed={selected}
-                onClick={() => onSelect(service.id)}
+                onClick={(event) =>
+                  onToggle(
+                    service.id,
+                    event.currentTarget.querySelector(".bk-option-photo"),
+                  )
+                }
               >
                 <PublicImage
                   src={service.image}
@@ -158,11 +182,23 @@ export function ServiceStep({
                   segment={service.category}
                 />
                 <span className="bk-option-body">
-                  <strong>{service.name}</strong>
+                  <strong>
+                    {service.name}
+                    {service.id === popularId && (
+                      <em className="bk-popular">Mais pedido</em>
+                    )}
+                  </strong>
                   <span>{durationLabel(service.duration)}</span>
                   <b>{money(service.price)}</b>
                 </span>
-                <Indicator selected={selected} kind="chevron" />
+                <span className="bk-check-wrap">
+                  <Indicator selected={selected} kind="check" />
+                  {selected && selectedIds.length > 1 && (
+                    <small className="bk-order" aria-hidden="true">
+                      {order}º
+                    </small>
+                  )}
+                </span>
               </button>
             </li>
           );
@@ -178,21 +214,23 @@ export function ServiceStep({
 export function ProfessionalStep({
   slug,
   professionals,
-  service,
+  services,
   selectedId,
   onSelect,
 }: {
   slug: string;
   professionals: PublicProfessional[];
-  service: Service;
+  services: Service[];
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
   const available = professionals.filter(
-    (person) => person.active && service.professionalIds.includes(person.id),
+    (person) =>
+      person.active &&
+      services.every((service) => service.professionalIds.includes(person.id)),
   );
   const { data: nextFree, loading } = usePublicData<Record<string, Slot>>(
-    `/api/public/${encodeURIComponent(slug)}/next-free?serviceId=${service.id}`,
+    `/api/public/${encodeURIComponent(slug)}/next-free?serviceId=${services.map((service) => service.id).join(",")}`,
   );
   const earliest = Object.values(nextFree || {}).sort((a, b) =>
     a.start.localeCompare(b.start),
