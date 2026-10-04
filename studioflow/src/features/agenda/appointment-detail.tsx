@@ -7,6 +7,7 @@ import {
   Gift,
   Play,
   Seal,
+  ShoppingBagOpen,
   Wallet,
   UserMinus,
   X,
@@ -27,6 +28,7 @@ import type { Appointment, AppointmentStatus } from "@/types";
 import { AppointmentForm } from "./appointment-form";
 import { appointmentServices } from "./agenda-helpers";
 import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
+import { SaleSheet } from "@/features/management/sale-sheet";
 
 export function AppointmentDetail({
   appointment,
@@ -40,12 +42,14 @@ export function AppointmentDetail({
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [selling, setSelling] = useState(false);
   const [confirm, setConfirm] = useState<AppointmentStatus | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     queueMicrotask(() => {
       setConfirm(null);
       setEditing(false);
+      setSelling(false);
       setError("");
     });
   }, [appointment?.id]);
@@ -116,6 +120,13 @@ export function AppointmentDetail({
         )
       : null;
   const deposit = Number(current.depositAmount || 0);
+  const sold = (data.productSales || []).filter(
+    (sale) => sale.appointmentId === current.id && sale.status === "paid",
+  );
+  const canSell =
+    canEdit &&
+    !["cancelled", "no_show"].includes(current.status) &&
+    (data.products || []).some((product) => product.active && product.stock > 0);
   const planName = current.membershipId
     ? data?.plans?.find(
         (plan) =>
@@ -150,7 +161,7 @@ export function AppointmentDetail({
   return (
     <>
       <DetailPanel
-        open={!editing}
+        open={!editing && !selling}
         onClose={() => !busy && onClose()}
         title="Agendamento"
         description={dateLabel(current.start, "EEEE, dd 'de' MMMM")}
@@ -233,6 +244,18 @@ export function AppointmentDetail({
             <dt>Valor do atendimento</dt>
             <dd>{money(current.price)}</dd>
           </div>
+          {sold.length > 0 && (
+            <div>
+              <dt>Produtos</dt>
+              <dd>
+                {sold
+                  .flatMap((sale) => sale.items)
+                  .map((item) => `${item.quantity}× ${item.name}`)
+                  .join(", ")}{" "}
+                · {money(sold.reduce((sum, sale) => sum + sale.total, 0))}
+              </dd>
+            </div>
+          )}
         </dl>
         {confirm && canEdit ? (
           <div className="calendar-confirm-box">
@@ -303,6 +326,12 @@ export function AppointmentDetail({
                   </Button>
                 </>
               )}
+              {canSell && (
+                <Button variant="secondary" onClick={() => setSelling(true)} disabled={busy}>
+                  <ShoppingBagOpen size={17} />
+                  Vender produto
+                </Button>
+              )}
               <a
                 className="btn btn-secondary"
                 href={`https://wa.me/55${current.customerPhone.replace(/\D/g, "")}`}
@@ -319,6 +348,12 @@ export function AppointmentDetail({
           ID · {current.id.slice(0, 8).toUpperCase()}
         </p>
       </DetailPanel>
+      <SaleSheet
+        store={data}
+        open={selling}
+        onClose={() => setSelling(false)}
+        appointment={current}
+      />
       <AppointmentForm
         open={editing}
         onClose={() => {

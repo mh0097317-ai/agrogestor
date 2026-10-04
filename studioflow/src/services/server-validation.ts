@@ -16,6 +16,8 @@ const image = z
       /^data:image\/(jpeg|png|webp);base64,/.test(value),
     "Imagem inválida.",
   );
+/** Foto guardada: URL, caminho do app ou imagem embutida. */
+export const imageField = image;
 const phone = z.string().transform((value) => normalizePhone(value));
 export const bookSchema = z.object({
   serviceIds: z.array(id).min(1).max(8),

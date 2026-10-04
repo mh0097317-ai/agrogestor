@@ -4,6 +4,7 @@ const adminEntities = [
   "business",
   "settings",
   "payments",
+  "products",
 ];
 
 /**

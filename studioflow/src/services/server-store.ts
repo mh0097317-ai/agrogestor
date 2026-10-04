@@ -4,6 +4,8 @@ import type {
   Appointment,
   Membership,
   MembershipPlan,
+  Product,
+  ProductSale,
   Professional,
   Review,
   Store,
@@ -227,7 +229,10 @@ export async function loadSupabaseStore(
     .eq("business_id", businessId)
     .gte("desired_date", businessDayKey(-1))
     .order("desired_date");
-  const club = await loadClub(client, businessId);
+  const [club, shop] = await Promise.all([
+    loadClub(client, businessId),
+    loadProducts(client, businessId),
+  ]);
   for (const service of services)
     service.professionalIds = relations
       .filter((relation) => relation.serviceId === service.id)
@@ -257,8 +262,46 @@ export async function loadSupabaseStore(
       waitlist: waitlist.error ? [] : (camel(waitlist.data) as WaitlistEntry[]),
       plans: club.plans,
       memberships: club.memberships,
+      products: shop.products,
+      productSales: shop.productSales,
     }),
   );
+}
+/** Produtos e vendas do último ano; um projeto sem as tabelas ainda carrega. */
+async function loadProducts(client: SupabaseClient, businessId: string) {
+  const since = new Date(Date.now() - 400 * 86_400_000).toISOString();
+  const [products, sales] = await Promise.all([
+    client
+      .from("products")
+      .select(
+        "id,business_id,name,description,price,cost,stock,min_stock,image,show_public,active,created_at",
+      )
+      .eq("business_id", businessId)
+      .order("name"),
+    client
+      .from("product_sales")
+      .select(
+        "id,business_id,appointment_id,customer_id,customer_name,items,total,method,status,created_at",
+      )
+      .eq("business_id", businessId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false }),
+  ]);
+  const toNumber = <T extends { price?: unknown; cost?: unknown; total?: unknown }>(row: T) => ({
+    ...row,
+    ...(row.price !== undefined ? { price: Number(row.price) } : {}),
+    ...(row.cost !== undefined && row.cost !== null ? { cost: Number(row.cost) } : {}),
+    ...(row.total !== undefined ? { total: Number(row.total) } : {}),
+  });
+  return {
+    products: products.error
+      ? []
+      : (camel(products.data) as Product[]).map(toNumber),
+    // Item keys come from the database already in camelCase.
+    productSales: sales.error
+      ? []
+      : (camel(sales.data) as ProductSale[]).map(toNumber),
+  };
 }
 /** Club plans and subscribers; a project without them still loads. */
 async function loadClub(client: SupabaseClient, businessId: string) {

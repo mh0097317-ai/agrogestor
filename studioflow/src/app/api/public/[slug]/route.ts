@@ -1,3 +1,4 @@
+import { publicProducts } from "@/services/server-products";
 import { getPublicStore, publicProfessional } from "@/services/server-store";
 import { getPaymentAccount, publicPlans } from "@/services/server-payments";
 import { isDemo } from "@/services/server-demo";
@@ -52,6 +53,8 @@ export async function GET(
       onlinePayments: payments,
       plans: payments ? publicPlans(store) : [],
       popularServiceId: popularService(store),
+      // Só nome, foto, descrição e preço: sem custo nem estoque.
+      products: publicProducts(store),
     });
   } catch (error) {
     return failure(error);

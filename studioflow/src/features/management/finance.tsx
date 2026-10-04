@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
@@ -147,9 +148,11 @@ export default function FinancePage() {
                 <Wallet size={16} weight="duotone" />
                 Recebido no período
               </span>
-              <strong>{money(reais(summary.revenueCents))}</strong>
+              <strong>{money(reais(summary.cashCents))}</strong>
               <p>
                 {summary.payments.length} pagamentos · pela data de recebimento
+                {summary.productCents > 0 &&
+                  ` · ${money(reais(summary.revenueCents))} em serviços e ${money(reais(summary.productCents))} em produtos`}
               </p>
             </div>
             <div className="finance-overview-balance">
@@ -193,25 +196,29 @@ export default function FinancePage() {
                 </div>
               </div>
               <div className="management-bars">
-                {summary.paymentMethods.map((item) => (
-                  <div key={item.method}>
-                    <div className="management-bar-label">
-                      <span>{paymentLabels[item.method]}</span>
-                      <strong>{money(reais(item.amountCents))}</strong>
+                {summary.paymentMethods.map((item, index) => {
+                  const amount =
+                    item.amountCents + summary.productMethods[index].amountCents;
+                  return (
+                    <div key={item.method}>
+                      <div className="management-bar-label">
+                        <span>{paymentLabels[item.method]}</span>
+                        <strong>{money(reais(amount))}</strong>
+                      </div>
+                      <div className="management-bar-track">
+                        <div
+                          className="management-bar-fill"
+                          style={{
+                            width:
+                              (summary.cashCents
+                                ? (amount / summary.cashCents) * 100
+                                : 0) + "%",
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="management-bar-track">
-                      <div
-                        className="management-bar-fill"
-                        style={{
-                          width:
-                            (summary.revenueCents
-                              ? (item.amountCents / summary.revenueCents) * 100
-                              : 0) + "%",
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
             <Card className="management-panel">
@@ -256,6 +263,43 @@ export default function FinancePage() {
               )}
             </Card>
           </div>
+          {summary.productSales.length > 0 && (
+            <Card className="management-panel">
+              <div className="management-section-heading">
+                <div>
+                  <h2>Produtos vendidos</h2>
+                  <p>
+                    {summary.productSales.length} vendas ·{" "}
+                    {money(reais(summary.productCents))} no período
+                  </p>
+                </div>
+                <Link className="btn btn-secondary" href="/dashboard/produtos">
+                  Ver produtos
+                </Link>
+              </div>
+              <div className="management-bars">
+                {summary.topProducts.slice(0, 6).map((item) => (
+                  <div key={item.name}>
+                    <div className="management-bar-label">
+                      <span>
+                        {item.name} · {item.quantity}{" "}
+                        {item.quantity === 1 ? "unidade" : "unidades"}
+                      </span>
+                      <strong>{money(reais(item.amountCents))}</strong>
+                    </div>
+                    <div className="management-bar-track">
+                      <div
+                        className="management-bar-fill"
+                        style={{
+                          width: `${(item.amountCents / summary.productCents) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
           <Card className="management-panel">
             <div className="management-section-heading">
               <div>

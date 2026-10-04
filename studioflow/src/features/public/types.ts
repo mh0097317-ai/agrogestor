@@ -25,6 +25,15 @@ export interface PublicCatalog {
   plans?: PublicPlan[];
   /** Most booked service in the last 90 days (real bookings only). */
   popularServiceId?: string | null;
+  /** Produtos à venda na casa (vitrine, sem compra online). */
+  products?: PublicProduct[];
+}
+export interface PublicProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
 }
 
 export type PublicPlan = Pick<

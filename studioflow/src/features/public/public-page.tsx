@@ -270,6 +270,37 @@ export function PublicPage({ slug }: { slug: string }) {
               </Link>
             </section>
           )}
+          {!!catalog.products?.length && (
+            <section className="pp-section" aria-label="Produtos à venda">
+              <div className="pp-section-head" data-reveal>
+                <h2>Na casa você encontra</h2>
+                <span className="pp-count">Peça no seu atendimento</span>
+              </div>
+              {/* With photos it is a shelf; without, a short price list. */}
+              <ul
+                className={`pp-products ${catalog.products.some((product) => product.image) ? "" : "is-list"}`}
+              >
+                {catalog.products.slice(0, 8).map((product) => (
+                  <li key={product.id} data-reveal>
+                    {product.image ? (
+                      <span className="pp-product-photo">
+                        <img src={product.image} alt="" loading="lazy" />
+                      </span>
+                    ) : (
+                      catalog.products!.some((item) => item.image) && (
+                        <span className="pp-product-photo" aria-hidden="true">
+                          {product.name.slice(0, 1)}
+                        </span>
+                      )
+                    )}
+                    <strong>{product.name}</strong>
+                    {product.description && <small>{product.description}</small>}
+                    <b>{money(product.price)}</b>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <PublicWork
             photos={(business.photos ?? []).filter(Boolean)}
             businessName={business.name}

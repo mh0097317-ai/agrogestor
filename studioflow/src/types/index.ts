@@ -100,6 +100,41 @@ export interface Payment {
   /** Set when the payment came from the provider (Pix deposit). */
   providerChargeId?: string | null;
 }
+export interface Product {
+  id: string;
+  businessId: string;
+  name: string;
+  description: string;
+  price: number;
+  /** Custo de compra, opcional, para a margem. */
+  cost?: number | null;
+  stock: number;
+  /** Abaixo disso aparece o alerta de estoque baixo. */
+  minStock: number;
+  image: string;
+  /** Aparece na página do estabelecimento. */
+  showPublic: boolean;
+  active: boolean;
+  createdAt: string;
+}
+export interface ProductSaleItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+export interface ProductSale {
+  id: string;
+  businessId: string;
+  appointmentId?: string | null;
+  customerId?: string | null;
+  customerName: string;
+  items: ProductSaleItem[];
+  total: number;
+  method: PaymentMethod;
+  status: "paid" | "cancelled";
+  createdAt: string;
+}
 export interface BlockedTime {
   id: string;
   businessId: string;
@@ -244,6 +279,8 @@ export interface Store {
   waitlist?: WaitlistEntry[];
   plans?: MembershipPlan[];
   memberships?: Membership[];
+  products?: Product[];
+  productSales?: ProductSale[];
   paymentAccount?: PaymentAccount | null;
   demoCharges?: DemoCharge[];
   conversations?: DemoConversation[];

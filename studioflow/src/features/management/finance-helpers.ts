@@ -118,6 +118,28 @@ export function financeSummary(data: Store, period: FinancePeriod) {
       .filter((payment) => payment.method === method)
       .reduce((sum, payment) => sum + cents(payment.amount), 0),
   }));
+  // Vendas de produtos: entram no caixa pela data da venda.
+  const productSales = (data.productSales || []).filter(
+    (sale) => sale.status === "paid" && inPeriod(sale.createdAt, period),
+  );
+  const productCents = productSales.reduce((sum, sale) => sum + cents(sale.total), 0);
+  const productTotals = new Map<string, { name: string; quantity: number; amountCents: number }>();
+  for (const item of productSales.flatMap((sale) => sale.items)) {
+    const entry = productTotals.get(item.productId) || {
+      name: item.name,
+      quantity: 0,
+      amountCents: 0,
+    };
+    entry.quantity += item.quantity;
+    entry.amountCents += cents(item.price) * item.quantity;
+    productTotals.set(item.productId, entry);
+  }
+  const productMethods = methods.map((method) => ({
+    method,
+    amountCents: productSales
+      .filter((sale) => sale.method === method)
+      .reduce((sum, sale) => sum + cents(sale.total), 0),
+  }));
   return {
     appointments,
     completed,
@@ -127,6 +149,14 @@ export function financeSummary(data: Store, period: FinancePeriod) {
     services,
     paymentMethods,
     revenueCents,
+    productSales,
+    productCents,
+    productMethods,
+    topProducts: [...productTotals.values()].sort(
+      (a, b) => b.amountCents - a.amountCents || b.quantity - a.quantity,
+    ),
+    /** Serviços recebidos mais produtos vendidos. */
+    cashCents: revenueCents + productCents,
     dueCents: outstanding.reduce((sum, item) => sum + item.dueCents, 0),
     commissionCents: professionals.reduce(
       (sum, item) => sum + item.commissionCents,
