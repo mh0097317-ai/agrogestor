@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import { DomainError } from "@/lib/availability";
 import { handleAsaasWebhook } from "@/services/server-payments";
 import { respond } from "@/services/server-http";
@@ -22,6 +23,8 @@ export async function POST(
       ),
     );
   } catch (error) {
+    if (error instanceof ZodError)
+      return respond({ error: "Não encontrado." }, 404);
     if (error instanceof DomainError)
       return respond({ error: error.message }, error.status);
     console.error(
