@@ -22,7 +22,9 @@ import {
 import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
-import { ImageUpload } from "@/components/image-upload";
+import { GalleryUpload } from "@/components/image-upload";
+import { servicePhotos } from "@/lib/service-photos";
+import { PhotoScrub } from "@/components/photo-scrub";
 import { money } from "@/lib/utils";
 import type { Service } from "@/types";
 import {
@@ -76,6 +78,7 @@ export default function ServicesPage() {
     event.preventDefault();
     if (!editable || uploading) return;
     const form = new FormData(event.currentTarget);
+    const photos = JSON.parse(String(form.get("photos") || "[]")) as string[];
     const name = String(form.get("name")).trim();
     const serviceCategory = String(form.get("category")).trim();
     const duration = Number(form.get("duration"));
@@ -118,7 +121,8 @@ export default function ServicesPage() {
         description: String(form.get("description") ?? "").trim(),
         duration,
         price,
-        image: String(form.get("image") ?? "").trim(),
+        image: photos[0] || "",
+        photos: photos.slice(1),
         active: form.get("active") === "on",
         professionalIds,
       });
@@ -257,13 +261,11 @@ export default function ServicesPage() {
                           <div className="catalog-image">
                             <Scissors size={24} weight="light" />
                             {service.image && (
-                              <img
-                                src={service.image}
+                              <PhotoScrub
+                                photos={servicePhotos(service)}
                                 alt=""
-                                loading="lazy"
-                                onError={(event) => {
-                                  event.currentTarget.style.display = "none";
-                                }}
+                                label={`Fotos de ${service.name}`}
+                                className="catalog-scrub"
                               />
                             )}
                           </div>
@@ -375,15 +377,9 @@ export default function ServicesPage() {
       >
         <form className="management-form" onSubmit={save}>
           <FormSection title="Informações do serviço">
-            <ImageUpload
-              label="Foto do serviço (opcional)"
-              hint="Uma foto real do resultado, como um corte ou uma barba feita aqui."
-              name="image"
-              preset="service"
-              shape="card"
-              defaultValue={editing?.image ?? ""}
-              emptyTitle="Adicionar foto do serviço"
-              emptyText="Sem foto, o catálogo mostra um ícone discreto"
+            <ServicePhotosField
+              key={editing?.id ?? "new"}
+              initial={editing ? servicePhotos(editing) : []}
               disabled={action.busy}
               onBusy={setUploading}
             />
@@ -536,5 +532,34 @@ export default function ServicesPage() {
         </div>
       </Modal>
     </ManagementBoundary>
+  );
+}
+
+/** Até 3 fotos do serviço; a primeira é a principal. */
+function ServicePhotosField({
+  initial,
+  disabled,
+  onBusy,
+}: {
+  initial: string[];
+  disabled: boolean;
+  onBusy: (busy: boolean) => void;
+}) {
+  const [photos, setPhotos] = useState(initial);
+  return (
+    <>
+      <GalleryUpload
+        label="Fotos do serviço (opcional)"
+        hint="Até 3 fotos reais do resultado, como o corte de frente, de lado e de trás. A primeira é a principal; no agendamento o cliente passa o dedo ou o mouse para ver as outras."
+        value={photos}
+        onChange={setPhotos}
+        max={3}
+        preset="service"
+        firstLabel="Principal"
+        disabled={disabled}
+        onBusy={onBusy}
+      />
+      <input type="hidden" name="photos" value={JSON.stringify(photos)} />
+    </>
   );
 }

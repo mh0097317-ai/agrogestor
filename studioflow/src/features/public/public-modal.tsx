@@ -7,11 +7,14 @@ export function PublicModal({
   labelId,
   onClose,
   busy,
+  variant,
 }: {
   children: React.ReactNode;
   labelId: string;
   onClose: () => void;
   busy?: boolean;
+  /** "sheet": rises from the bottom on phones, a wider panel on computers. */
+  variant?: "sheet";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -67,13 +70,13 @@ export function PublicModal({
   }, []);
   return (
     <div
-      className="public-modal-backdrop"
+      className={`public-modal-backdrop ${variant === "sheet" ? "is-sheet" : ""}`}
       role="presentation"
       onClick={() => !busy && onClose()}
     >
       <div
         ref={panelRef}
-        className="public-modal"
+        className={`public-modal ${variant === "sheet" ? "public-sheet" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}

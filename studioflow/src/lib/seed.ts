@@ -139,6 +139,13 @@ export function createSeed(): Store {
     duration: s[2],
     price: s[3],
     image: s[4],
+    // Demo services with more than one photo show the photo browsing.
+    photos:
+      i === 0
+        ? ["/demo/work-2.jpg", "/demo/work-3.jpg"]
+        : i === 2
+          ? ["/demo/work-4.jpg"]
+          : [],
     description: s[5],
     active: true,
     professionalIds:

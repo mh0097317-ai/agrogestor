@@ -16,6 +16,19 @@ const image = z
       /^data:image\/(jpeg|png|webp);base64,/.test(value),
     "Imagem inválida.",
   );
+/** Link do Google Maps (perfil ou endereço), só de domínios do Google. */
+export const mapsUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) =>
+      !value ||
+      /^https:\/\/((www\.)?google\.[a-z.]{2,8}\/maps|maps\.google\.[a-z.]{2,8}\/|maps\.app\.goo\.gl\/|goo\.gl\/maps\/|g\.page\/)/i.test(
+        value,
+      ),
+    "Cole o link do Google Maps (começa com https://maps.app.goo.gl ou https://www.google.com/maps).",
+  );
 /** Foto guardada: URL, caminho do app ou imagem embutida. */
 export const imageField = image;
 const phone = z.string().transform((value) => normalizePhone(value));
@@ -47,6 +60,7 @@ export const serviceSchema = z.object({
   duration: z.number().int().min(5).max(480),
   price: z.number().min(0).max(100000),
   image: image.default(""),
+  photos: z.array(image).max(2, "Use no máximo 3 fotos por serviço.").default([]),
   active: z.boolean().default(true),
   professionalIds: z.array(id).max(100),
 });
@@ -105,6 +119,7 @@ export const businessSchema = z.object({
     .nullish()
     .transform((value) => value ?? ""),
   photos: z.array(image).max(12).optional(),
+  mapsUrl: mapsUrl.optional(),
 });
 export const settingsSchema = z
   .object({

@@ -195,13 +195,6 @@
   font-weight: 600;
   text-align: center;
 }
-.pp-links a + a::before {
-  content: "/";
-  position: absolute;
-  left: -4px;
-  color: #c3b7a4;
-  font-weight: 400;
-}
 .pp-links a:hover {
   color: var(--pp-brass) !important;
 }
@@ -302,6 +295,101 @@
   font-size: 19px;
   font-weight: 500;
   white-space: nowrap;
+}
+/* A service with photos: the picture sits at the end of the line. */
+.pp-menu li.has-photo {
+  position: relative;
+}
+.pp-menu li.has-photo .pp-menu-row {
+  padding-right: 78px;
+}
+.pp-menu-photo {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  transform: translateY(-50%);
+  cursor: zoom-in;
+  isolation: isolate;
+}
+.pp-menu-scrub {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--pp-line);
+  transition:
+    transform 0.3s var(--ease-out, ease),
+    box-shadow 0.3s ease;
+}
+.pp-menu-photo:hover .pp-menu-scrub,
+.pp-menu-photo:focus-visible .pp-menu-scrub {
+  transform: rotate(-2deg) scale(1.06);
+  box-shadow:
+    0 0 0 1px var(--pp-line),
+    0 10px 22px -12px rgb(22 19 15 / 0.55);
+}
+/* The other photos peek out behind the first one, like a small stack. */
+.pp-menu-photo::before,
+.pp-menu-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 3px;
+  background: var(--pp-card, #fffdf9);
+  box-shadow: 0 0 0 1px var(--pp-line);
+  opacity: 0;
+  transition:
+    transform 0.35s var(--ease-out, ease),
+    opacity 0.2s ease;
+}
+.pp-menu-photo:has(.pp-menu-photo-count)::before {
+  opacity: 1;
+  transform: rotate(4deg) translate(3px, -1px);
+}
+.pp-menu-photo:has(.pp-menu-photo-count):hover::before {
+  transform: rotate(9deg) translate(9px, -3px);
+}
+.pp-menu-photo:has(.pp-menu-photo-count):hover::after {
+  opacity: 1;
+  transform: rotate(-9deg) translate(-9px, -2px);
+}
+.pp-menu-photo-count {
+  position: absolute;
+  z-index: 3;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--pp-ink);
+  color: #fffdf9;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+@media (max-width: 420px) {
+  .pp-menu li.has-photo .pp-menu-row {
+    padding-right: 70px;
+  }
+  .pp-menu-photo {
+    width: 56px;
+    height: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-menu-scrub,
+  .pp-menu-photo::before,
+  .pp-menu-photo::after {
+    transition: none;
+  }
 }
 .pp-empty {
   display: grid;

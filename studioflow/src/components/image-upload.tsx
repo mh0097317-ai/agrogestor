@@ -198,6 +198,8 @@ export function GalleryUpload({
   max = 12,
   disabled = false,
   onBusy,
+  preset = "gallery",
+  firstLabel = "Destaque",
 }: {
   label: string;
   hint?: string;
@@ -206,6 +208,9 @@ export function GalleryUpload({
   max?: number;
   disabled?: boolean;
   onBusy?: (busy: boolean) => void;
+  preset?: Preset;
+  /** Badge on the first photo. */
+  firstLabel?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ done: number; total: number }>();
@@ -222,8 +227,8 @@ export function GalleryUpload({
     if (files.length > room)
       setError(
         room
-          ? `A galeria aceita até ${max} fotos. Adicionamos as ${room} primeiras.`
-          : `A galeria já tem ${max} fotos. Remova alguma para adicionar outra.`,
+          ? `Aceita até ${max} fotos. Adicionamos as ${room} primeiras.`
+          : `Já tem ${max} fotos. Remova alguma para adicionar outra.`,
       );
     if (!accepted.length) return;
     onBusy?.(true);
@@ -232,7 +237,7 @@ export function GalleryUpload({
     for (const [index, file] of accepted.entries()) {
       setProgress({ done: index, total: accepted.length });
       try {
-        added.push(await uploadImage(file, imagePresets.gallery));
+        added.push(await uploadImage(file, imagePresets[preset]));
       } catch {
         failures.push(file.name);
       }
@@ -280,7 +285,7 @@ export function GalleryUpload({
         {value.map((photo, index) => (
           <figure className="gallery-tile" key={`${index}-${photo.slice(-24)}`}>
             <img src={photo} alt={`Foto ${index + 1} da galeria`} />
-            {index === 0 && <span className="gallery-badge">Destaque</span>}
+            {index === 0 && <span className="gallery-badge">{firstLabel}</span>}
             <div className="gallery-tile-actions">
               <button
                 type="button"

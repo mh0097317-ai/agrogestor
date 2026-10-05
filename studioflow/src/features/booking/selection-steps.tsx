@@ -6,6 +6,9 @@ import type { Service } from "@/types";
 import type { PublicProfessional, Rating } from "@/features/public/types";
 import { durationLabel, money } from "@/lib/utils";
 import { PublicImage } from "@/features/public/public-ui";
+import { PhotoScrub } from "@/components/photo-scrub";
+import { servicePhotos } from "@/lib/service-photos";
+import { SegmentIcon } from "@/lib/segments";
 import { RepeatBooking } from "@/features/public/repeat-booking";
 import { DrawCheck } from "./draw-check";
 import { usePublicData } from "@/features/public/use-public-catalog";
@@ -175,11 +178,16 @@ export function ServiceStep({
                   )
                 }
               >
-                <PublicImage
-                  src={service.image}
+                <PhotoScrub
+                  photos={servicePhotos(service)}
                   alt=""
+                  label={`Fotos de ${service.name}`}
                   className="bk-option-photo"
-                  segment={service.category}
+                  fallback={
+                    <span className="public-image-fallback">
+                      <SegmentIcon category={service.category} size={28} weight="light" />
+                    </span>
+                  }
                 />
                 <span className="bk-option-body">
                   <strong>

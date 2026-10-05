@@ -23,6 +23,8 @@ export interface Business {
   cnpj?: string;
   photos?: string[];
   amenities: string[];
+  /** Link do perfil no Google Maps; sem ele, o mapa usa o endereço. */
+  mapsUrl?: string;
 }
 export interface Service {
   id: string;
@@ -33,6 +35,8 @@ export interface Service {
   duration: number;
   price: number;
   image: string;
+  /** Até mais duas fotos, além da principal (`image`). */
+  photos?: string[];
   active: boolean;
   professionalIds: string[];
 }
@@ -292,6 +296,8 @@ export interface Store {
   whatsapp?: { displayPhone: string; phoneNumberId: string } | null;
   /** Instagram Direct connection (never the token). */
   instagram?: { username: string; igUserId: string } | null;
+  /** Conta que mostra os posts na página (dela mesma ou da recepcionista). */
+  instagramFeed?: { username: string; source: "page" | "assistant" } | null;
   /** Áudios do WhatsApp/Instagram viram texto (serviço de transcrição configurado). */
   transcriptionReady?: boolean;
   /** The server has Claude credentials for the AI receptionist. */

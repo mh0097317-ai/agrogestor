@@ -75,9 +75,20 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
         [biz.tenant_id, biz.id],
       ),
     );
+    // Up to two extra photos per service, besides the main one.
+    await db.query("update public.services set photos=array['/a.jpg','/b.jpg'] where business_id=$1", [biz.id]);
+    await assert.rejects(
+      db.query("update public.services set photos=array['/a.jpg','/b.jpg','/c.jpg'] where business_id=$1", [biz.id]),
+    );
+    await db.query("update public.businesses set maps_url='https://maps.app.goo.gl/x' where id=$1", [biz.id]);
+    await db.query(
+      "insert into public.instagram_feeds(business_id,tenant_id,ig_user_id,username,access_token_enc)values($1,$2,'1789000000','casa','x')",
+      [biz.id, biz.tenant_id],
+    );
     await db.exec("reset role;set role authenticated;");
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [owner]);
     await assert.rejects(db.query("select * from public.instagram_accounts"));
+    await assert.rejects(db.query("select * from public.instagram_feeds"));
   } finally {
     await db.close();
   }

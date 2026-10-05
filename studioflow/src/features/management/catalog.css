@@ -57,6 +57,10 @@
   height: 100%;
   object-fit: cover;
 }
+.catalog-image .catalog-scrub {
+  position: absolute;
+  inset: 0;
+}
 .catalog-service {
   min-width: 0;
 }

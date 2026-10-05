@@ -21,6 +21,7 @@ import {
 } from "@/lib/availability";
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
 import { transcriptionReady } from "./assistant/transcribe";
+import { readInstagramFeedStatus } from "./instagram-feed";
 import {
   createSupabaseAdmin,
   isPlatformAdmin,
@@ -392,12 +393,38 @@ export async function getWorkspace() {
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
     instagram: await readInstagramAccount(businessId),
+    instagramFeed: await readInstagramFeedStatus(businessId),
     transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,
     viewer: await viewerOf(client, user, role),
     mode: "live",
   } as Store;
+}
+/** Fields the workspace RPC predates: extra service photos and the Maps link. */
+async function saveExtraFields(
+  admin: SupabaseClient,
+  businessId: string,
+  store: Store,
+  mutation: z.infer<typeof mutationSchema>,
+) {
+  let result: { error: { message: string } | null } | null = null;
+  if (mutation.entity === "services" && mutation.action !== "delete") {
+    const service = store.services.find((item) => item.id === mutation.data.id);
+    if (service)
+      result = await admin
+        .from("services")
+        .update({ image: service.image, photos: service.photos || [] })
+        .eq("business_id", businessId)
+        .eq("id", service.id);
+  }
+  if (mutation.entity === "business" && "mapsUrl" in mutation.data)
+    result = await admin
+      .from("businesses")
+      .update({ maps_url: store.business.mapsUrl || "" })
+      .eq("id", businessId);
+  if (result?.error)
+    throw new DomainError("Salvo em parte: tente salvar as fotos de novo.", 503);
 }
 async function viewerOf(
   client: SupabaseClient,
@@ -576,6 +603,14 @@ export function mutateStore(
   let validated: Record<string, unknown>;
   if (entity === "services") {
     validated = serviceSchema.parse(merged);
+    // Main photo first; without it, the next one takes its place.
+    const photos = [
+      ...new Set(
+        [validated.image as string, ...(validated.photos as string[])].filter(Boolean),
+      ),
+    ].slice(0, 3);
+    validated.image = photos[0] || "";
+    validated.photos = photos.slice(1);
     if (
       (validated.professionalIds as string[]).some(
         (id) =>
@@ -799,7 +834,10 @@ export async function mutateWorkspace(
   // Deposit and club fields are set only by their own server flows.
   const data = Object.fromEntries(
     Object.entries(mutation.data).filter(
-      ([key]) => !/^(deposit|membership)/.test(key),
+      ([key]) =>
+        !/^(deposit|membership)/.test(key) &&
+        // Extra service photos are saved after the RPC, already in order.
+        !(mutation.entity === "services" && key === "photos"),
     ),
   );
   if (mutation.entity === "appointments" || mutation.entity === "blockedTimes")
@@ -832,11 +870,13 @@ export async function mutateWorkspace(
       error.message === "forbidden" ? 403 : 409,
     );
   }
+  await saveExtraFields(admin, businessId, store, mutation);
   return {
     ...(await loadSupabaseStore(client, businessId)),
     paymentAccount: await readPaymentAccount(businessId),
     whatsapp: await readWhatsAppAccount(businessId),
     instagram: await readInstagramAccount(businessId),
+    instagramFeed: await readInstagramFeedStatus(businessId),
     transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,

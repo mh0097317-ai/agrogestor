@@ -69,20 +69,24 @@ export function PublicWork({
   );
 }
 
-function Lightbox({
+/** Full-screen photos: swipe, arrows, thumbnails and a booking button. */
+export function Lightbox({
   photos,
   index,
   onIndex,
   onClose,
   businessName,
   bookHref,
+  ctaLabel = "Gostei, quero agendar",
 }: {
   photos: string[];
   index: number;
   onIndex: (index: number) => void;
   onClose: () => void;
+  /** Whose photos these are (a business or a service). */
   businessName: string;
   bookHref: string;
+  ctaLabel?: string;
 }) {
   const [direction, setDirection] = useState(1);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -217,7 +221,7 @@ function Lightbox({
           </div>
         )}
         <Link href={bookHref} className="public-button pp-lightbox-cta">
-          Gostei, quero agendar <ArrowRight size={18} weight="bold" />
+          {ctaLabel} <ArrowRight size={18} weight="bold" />
         </Link>
       </div>
     </div>,

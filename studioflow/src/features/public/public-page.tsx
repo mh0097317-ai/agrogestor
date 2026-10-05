@@ -29,6 +29,9 @@ import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
 import { RepeatBooking } from "./repeat-booking";
+import { LocationSheet, mapLinks } from "./public-location";
+import { InstagramSheet } from "./public-instagram";
+import "./public-sheets.css";
 import {
   PublicAmenities,
   PublicTeam,
@@ -36,6 +39,14 @@ import {
 } from "./public-business-details";
 import "./public.css";
 import "./public-page.css";
+
+/** "@casa", "casa" or a profile link → "casa". */
+const instagramHandle = (value: string) =>
+  value
+    .trim()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0];
 
 const shortDays = [
   "domingo",
@@ -51,6 +62,7 @@ export function PublicPage({ slug }: { slug: string }) {
   const { catalog, loading, error, reload } = usePublicCatalog(slug);
   const [toast, setToast] = useState("");
   const [showDock, setShowDock] = useState(false);
+  const [sheet, setSheet] = useState<"location" | "instagram" | null>(null);
   const mainCta = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -77,14 +89,10 @@ export function PublicPage({ slug }: { slug: string }) {
   const availableTeam = professionals.filter((person) => person.active);
   const phone = business.phone.replace(/\D/g, "").replace(/^55(?=\d{11}$)/, "");
   const whatsapp = phone ? `https://wa.me/55${phone}` : "";
-  const location = business.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`
+  const location = business.address ? mapLinks(business).google : "";
+  const instagram = business.instagram
+    ? `https://instagram.com/${instagramHandle(business.instagram)}`
     : "";
-  const instagram = !business.instagram
-    ? ""
-    : business.instagram.startsWith("http")
-      ? business.instagram
-      : `https://instagram.com/${business.instagram.replace("@", "")}`;
   const { weekday, time } = businessClock();
   const openToday = settings.openDays.includes(weekday);
   const isOpen =
@@ -118,13 +126,22 @@ export function PublicPage({ slug }: { slug: string }) {
   }
 
   const actions = [
-    location && { href: location, label: "Localização", icon: MapPinIcon },
+    location && {
+      label: "Localização",
+      icon: MapPinIcon,
+      open: () => setSheet("location"),
+    },
     whatsapp && { href: whatsapp, label: "WhatsApp", icon: WhatsAppIcon },
-    instagram && { href: instagram, label: "Instagram", icon: InstagramIcon },
+    instagram && {
+      label: "Instagram",
+      icon: InstagramIcon,
+      open: () => setSheet("instagram"),
+    },
   ].filter(Boolean) as {
-    href: string;
+    href?: string;
     label: string;
     icon: typeof WhatsAppIcon;
+    open?: () => void;
   }[];
 
   return (
@@ -201,11 +218,22 @@ export function PublicPage({ slug }: { slug: string }) {
             </Link>
             {actions.length > 0 && (
               <nav className="pp-links" aria-label="Contato">
-                {actions.map(({ href, label }) => (
-                  <a key={label} href={href} target="_blank" rel="noreferrer">
-                    {label}
-                  </a>
-                ))}
+                {actions.map(({ href, label, icon: Icon, open }) =>
+                  open ? (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={open}
+                      aria-haspopup="dialog"
+                    >
+                      <Icon size={15} /> {label}
+                    </button>
+                  ) : (
+                    <a key={label} href={href} target="_blank" rel="noreferrer">
+                      <Icon size={15} /> {label}
+                    </a>
+                  ),
+                )}
               </nav>
             )}
             <RepeatBooking
@@ -381,6 +409,22 @@ export function PublicPage({ slug }: { slug: string }) {
           Agendar <ArrowRight size={18} weight="regular" />
         </Link>
       </div>
+      {sheet === "location" && (
+        <LocationSheet business={business} onClose={() => setSheet(null)} />
+      )}
+      {sheet === "instagram" && (
+        <InstagramSheet
+          slug={slug}
+          profileUrl={instagram}
+          handle={instagramHandle(business.instagram)}
+          businessName={business.name}
+          fallbackPhotos={[
+            ...(business.photos || []),
+            ...activeServices.map((service) => service.image),
+          ].filter(Boolean)}
+          onClose={() => setSheet(null)}
+        />
+      )}
       {toast && (
         <div className="public-toast" role="status">
           <CheckCircle size={18} weight="fill" />

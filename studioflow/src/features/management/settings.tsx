@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { PaymentSettings } from "./payment-settings";
 import { AssistantSettings } from "./assistant-settings";
+import { InstagramFeedSettings } from "./instagram-feed-settings";
 import {
   Avatar,
   Button,
@@ -67,6 +68,7 @@ type BusinessDraft = {
   cnpj: string;
   description: string;
   address: string;
+  mapsUrl: string;
   phone: string;
   instagram: string;
   amenities: string;
@@ -143,6 +145,7 @@ function persistedDrafts(store: Store) {
       cnpj: business.cnpj ?? "",
       description: business.description,
       address: business.address,
+      mapsUrl: business.mapsUrl ?? "",
       phone: formatPhone(business.phone),
       instagram: business.instagram,
       amenities: business.amenities.join(", "),
@@ -419,6 +422,7 @@ function SettingsContent({ store }: { store: Store }) {
         phone: phone.replace(/\D/g, ""),
         description: company.description.trim(),
         address: company.address.trim(),
+        mapsUrl: company.mapsUrl.trim(),
         instagram: company.instagram.trim(),
         cnpj: company.cnpj.trim(),
         amenities: company.amenities
@@ -695,6 +699,18 @@ function SettingsContent({ store }: { store: Store }) {
                       />
                     </FormField>
                     <FormField
+                      label="Link do Google Maps (opcional)"
+                      hint="Abra sua barbearia no Google Maps, toque em Compartilhar e cole o link. Assim o cliente vê suas fotos e avaliações do Google."
+                    >
+                      <input
+                        {...businessField("mapsUrl")}
+                        type="url"
+                        inputMode="url"
+                        placeholder="https://maps.app.goo.gl/..."
+                        maxLength={500}
+                      />
+                    </FormField>
+                    <FormField
                       label="Comodidades"
                       hint="Separe por vírgula: Wi-Fi, estacionamento, bebidas, ambiente climatizado."
                     >
@@ -706,6 +722,13 @@ function SettingsContent({ store }: { store: Store }) {
               <FormError error={action.error} />
               {saveBar}
             </form>
+          )}
+          {tab === "business" && (
+            <InstagramFeedSettings
+              store={store}
+              canManage={canManage}
+              onSaved={refresh}
+            />
           )}
           {tab === "identity" && (
             <form className="management-form" onSubmit={save}>
