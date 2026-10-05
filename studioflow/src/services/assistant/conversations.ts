@@ -14,6 +14,7 @@ import { bookWithPayments, getPaymentAccount } from "../server-payments";
 import { decryptSecret, newToken, sha256 } from "../server-secrets";
 import { camel, getPublicStore } from "../server-store";
 import { accessOpen } from "@/lib/access";
+import { hasModule } from "@/lib/modules";
 import { claudeCreate, runAssistant, type CreateMessage } from "./agent";
 import { sendWhatsApp } from "./whatsapp";
 import { sendInstagram, type InstagramMessage } from "./instagram";
@@ -567,8 +568,9 @@ export async function receiveWhatsApp(
   origin: string,
 ) {
   const slug = await slugOf(account.businessId);
-  // Estabelecimento sem acesso liberado: a mensagem não é tratada.
-  if (!accessOpen(await readBusinessAccess(account.businessId)))
+  // Sem acesso liberado ou sem a recepcionista no plano: a mensagem não é tratada.
+  const access = await readBusinessAccess(account.businessId);
+  if (!accessOpen(access) || !hasModule(access.modules, "recepcionista"))
     return async () => {};
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
@@ -661,7 +663,8 @@ export async function receiveInstagram(
   origin: string,
 ) {
   const slug = await slugOf(account.businessId);
-  if (!accessOpen(await readBusinessAccess(account.businessId))) return async () => {};
+  const access = await readBusinessAccess(account.businessId);
+  if (!accessOpen(access) || !hasModule(access.modules, "recepcionista")) return async () => {};
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")

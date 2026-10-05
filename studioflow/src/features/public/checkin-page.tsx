@@ -43,6 +43,8 @@ export function CheckInPage({ slug }: { slug: string }) {
   if (!catalog)
     return <PublicError message={error || "Estabelecimento não encontrado."} retry={reload} />;
   const { business } = catalog;
+  if (catalog.features?.checkin === false)
+    return <PublicError message="O check-in pelo celular não está disponível aqui. Avise na recepção." retry={reload} />;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

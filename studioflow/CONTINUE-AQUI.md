@@ -253,6 +253,14 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Recepcionista: áudios do WhatsApp e do Instagram viram texto com `TRANSCRIBE_API_KEY` (serviço compatível com `/audio/transcriptions`; sem chave a atendente pede texto). Instagram Direct (Configurações → Recepcionista): token da conta profissional e chave do app, cifrados; webhook `/api/instagram/[businessId]` com assinatura `X-Hub-Signature-256`; a IA pede o WhatsApp para marcar e a equipe responde em Conversas (janela de 24 h). Migration `20261008140000_studioflow_instagram.sql`.
 - Testes novos: `access`, `platform-db`, `products-db`, `checkin-db`, `instagram`, `migrations-chain` (aplica todas as migrations em sequência).
 
+## Planos e módulos por cliente (5 de outubro de 2026)
+
+- Em `/admin` → Gerenciar, a equipe escolhe o plano (Essencial, Profissional ou Premium, ou módulo a módulo), o nome do plano e a mensalidade. O topo mostra a receita mensal combinada dos clientes ativos.
+- Módulos (`src/lib/modules.ts`): `pagamentos` (sinal Pix), `clube`, `recepcionista` (chat, WhatsApp, Instagram, Conversas), `produtos`, `recepcao` (check-in e Modo TV), `fidelidade`, `espera`. Sempre inclusos: página e agendamento, agenda, clientes, serviços, equipe, financeiro, relatórios e divulgação. Essencial = fidelidade + lista de espera; Profissional = + sinal, clube, produtos, check-in/TV; Premium = tudo.
+- Módulo fora do plano: some do menu e das Configurações, a página mostra "não está no seu plano" com botão para pedir, as APIs do painel recusam (403, `requireModule`) e o público não vê nem usa (`applyModules` em `getPublicStore`: sem sinal, sem clube, sem atendente, sem produtos, sem lista de espera, sem check-in). As configurações guardadas não são apagadas: religar o módulo traz tudo de volta. `modules` nulo = todos (quem já usava).
+- Configurações → Plano mostra ao dono o plano, o prazo e os módulos incluídos.
+- Migration `20261009120000_studioflow_modules.sql` (colunas `modules`, `plan`, `monthly_price` e RPC `platform_set_plan`). Testes: `modules.test.ts`, `migrations-chain` e o smoke.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

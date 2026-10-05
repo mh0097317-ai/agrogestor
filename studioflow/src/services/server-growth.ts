@@ -9,6 +9,7 @@ import {
 import type { WaitlistEntry } from "@/types";
 import { isDemo, mutateDemo } from "./server-demo";
 import { assertPublicOpen } from "@/lib/access";
+import { assertModule } from "@/lib/modules";
 import { businessDayKey, demoWorkspaceSlug } from "./server-store";
 
 const id = z.string().uuid();
@@ -82,6 +83,7 @@ export async function joinWaitlist(
   if (isDemo())
     return mutateDemo((store) => {
       assertPublicOpen(store.access ?? { status: "active", until: null });
+      assertModule(store.access?.modules, "espera");
       const service = store.services.find(
         (item) => item.id === input.serviceId && item.active,
       );
@@ -125,7 +127,9 @@ export async function joinWaitlist(
     .eq("slug", slug)
     .maybeSingle();
   if (!business) throw new DomainError("Estabelecimento não encontrado.", 404);
-  assertPublicOpen(await readBusinessAccess(business.id));
+  const access = await readBusinessAccess(business.id);
+  assertPublicOpen(access);
+  assertModule(access.modules, "espera");
   const [service, settings, person] = await Promise.all([
     admin
       .from("services")

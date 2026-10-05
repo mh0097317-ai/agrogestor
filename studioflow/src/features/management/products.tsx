@@ -25,10 +25,15 @@ import { FormError, FormField, ManagementBoundary } from "./shared";
 import { SaleSheet } from "./sale-sheet";
 import { monthSales, lowStock } from "./product-metrics";
 import "./products.css";
+import { ModuleGate } from "@/features/dashboard/module-lock";
 
 export default function ProductsPage() {
   const { data } = useWorkspace();
-  return <ManagementBoundary>{data && <ProductsContent store={data} />}</ManagementBoundary>;
+  return (
+    <ManagementBoundary>
+      <ModuleGate module="produtos">{data && <ProductsContent store={data} />}</ModuleGate>
+    </ManagementBoundary>
+  );
 }
 
 const methodLabel: Record<ProductSale["method"], string> = {

@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   connectWhatsApp,
   disconnectWhatsApp,
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await requireModule("recepcionista");
     assertSameOrigin(request);
     const input = whatsappSchema.parse(await request.json());
     return respond(await connectWhatsApp(input, requestOrigin(request)));

@@ -18,6 +18,7 @@ import {
   waitlistQueue,
   waitlistWhen,
 } from "./growth";
+import { hasModule } from "@/lib/modules";
 
 function whatsappLink(phone: string, text: string) {
   const digits = phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
@@ -113,7 +114,7 @@ export function WaitlistCard({
   const { toast } = useToast();
   const [busyId, setBusyId] = useState("");
   const queue = waitlistQueue(data, now);
-  if (!queue.length) return null;
+  if (!queue.length || !hasModule(data.access?.modules, "espera")) return null;
   async function change(entry: WaitlistEntry, action: "notify" | "remove") {
     setBusyId(entry.id);
     try {

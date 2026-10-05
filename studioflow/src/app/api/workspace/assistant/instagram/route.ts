@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   connectInstagram,
   disconnectInstagram,
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await requireModule("recepcionista");
     assertSameOrigin(request);
     const input = instagramSchema.parse(await request.json());
     return respond(await connectInstagram(input, requestOrigin(request)));

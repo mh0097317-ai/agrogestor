@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { ArrowsOut, DoorOpen, Scissors, X } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowsOut,
+  DoorOpen,
+  Scissors,
+  X,
+} from "@phosphor-icons/react/dist/ssr";
 import { WorkspaceProvider, useWorkspace } from "@/hooks/use-workspace";
 import { AccessGate } from "@/features/dashboard/access-gate";
+import { ModuleGate } from "@/features/dashboard/module-lock";
+import { hasModule } from "@/lib/modules";
 import { dateLabel, money, monogram } from "@/lib/utils";
 import type { Store } from "@/types";
 import { tvBoard, tvName } from "./tv-model";
@@ -27,10 +34,20 @@ function TvGate() {
     return () => window.clearInterval(timer);
   }, [refresh]);
   if (blocked) return <AccessGate access={blocked} onRetry={refresh} />;
+  if (data && !hasModule(data.access?.modules, "recepcao"))
+    return (
+      <main className="tv tv-loading">
+        <ModuleGate module="recepcao">{null}</ModuleGate>
+      </main>
+    );
   if (!data)
     return (
       <main className="tv tv-loading">
-        {error ? <p>{error}</p> : <span className="tv-loader" aria-label="Carregando" />}
+        {error ? (
+          <p>{error}</p>
+        ) : (
+          <span className="tv-loader" aria-label="Carregando" />
+        )}
       </main>
     );
   return <TvScreen store={data} />;
@@ -55,21 +72,33 @@ function useQr(url: string) {
 
 type Slide =
   | { kind: "photo"; src: string }
-  | { kind: "products"; items: { name: string; price: number; image: string }[] }
+  | {
+      kind: "products";
+      items: { name: string; price: number; image: string }[];
+    }
   | { kind: "club"; items: { name: string; price: number }[] }
   | { kind: "loyalty"; goal: number; reward: string };
 
 function TvScreen({ store }: { store: Store }) {
   const [now, setNow] = useState(() => new Date());
-  const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
+  const [origin] = useState(() =>
+    typeof window === "undefined" ? "" : window.location.origin,
+  );
   const [slide, setSlide] = useState(0);
-  const [announce, setAnnounce] = useState<{ id: string; name: string; who: string } | null>(null);
+  const [announce, setAnnounce] = useState<{
+    id: string;
+    name: string;
+    who: string;
+  } | null>(null);
   const seen = useRef<Set<string> | null>(null);
   const [full, setFull] = useState(false);
   const { business, settings } = store;
   // The board moves every 30 seconds; the clock every second.
   const tick = Math.floor(now.getTime() / 30_000);
-  const board = useMemo(() => tvBoard(store, new Date(tick * 30_000)), [store, tick]);
+  const board = useMemo(
+    () => tvBoard(store, new Date(tick * 30_000)),
+    [store, tick],
+  );
   const bookQr = useQr(origin ? `${origin}/${business.slug}` : "");
   const checkinQr = useQr(origin ? `${origin}/${business.slug}/checkin` : "");
 
@@ -82,7 +111,9 @@ function TvScreen({ store }: { store: Store }) {
   useEffect(() => {
     let lock: { release: () => Promise<void> } | null = null;
     const nav = navigator as Navigator & {
-      wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
+      wakeLock?: {
+        request: (type: "screen") => Promise<{ release: () => Promise<void> }>;
+      };
     };
     const take = () =>
       nav.wakeLock
@@ -108,7 +139,9 @@ function TvScreen({ store }: { store: Store }) {
     const fresh = board.arrivals.find((item) => !seen.current!.has(item.id));
     ids.forEach((id) => seen.current!.add(id));
     if (!fresh) return;
-    const who = store.professionals.find((person) => person.id === fresh.professionalId);
+    const who = store.professionals.find(
+      (person) => person.id === fresh.professionalId,
+    );
     queueMicrotask(() =>
       setAnnounce({
         id: fresh.id,
@@ -134,7 +167,9 @@ function TvScreen({ store }: { store: Store }) {
     if (products.length)
       list.splice(1, 0, {
         kind: "products",
-        items: products.slice(0, 4).map(({ name, price, image }) => ({ name, price, image })),
+        items: products
+          .slice(0, 4)
+          .map(({ name, price, image }) => ({ name, price, image })),
       });
     const plans = (store.plans || []).filter((plan) => plan.active);
     if (plans.length && store.paymentAccount)
@@ -143,14 +178,22 @@ function TvScreen({ store }: { store: Store }) {
         items: plans.slice(0, 3).map(({ name, price }) => ({ name, price })),
       });
     if (settings.loyaltyEnabled && settings.loyaltyReward)
-      list.push({ kind: "loyalty", goal: settings.loyaltyGoal, reward: settings.loyaltyReward });
-    if (!list.length && business.cover) list.push({ kind: "photo", src: business.cover });
+      list.push({
+        kind: "loyalty",
+        goal: settings.loyaltyGoal,
+        reward: settings.loyaltyReward,
+      });
+    if (!list.length && business.cover)
+      list.push({ kind: "photo", src: business.cover });
     return list;
   }, [business, settings, store.products, store.plans, store.paymentAccount]);
 
   useEffect(() => {
     if (slides.length < 2) return;
-    const timer = window.setInterval(() => setSlide((value) => (value + 1) % slides.length), 9000);
+    const timer = window.setInterval(
+      () => setSlide((value) => (value + 1) % slides.length),
+      9000,
+    );
     return () => window.clearInterval(timer);
   }, [slides.length]);
 
@@ -194,7 +237,10 @@ function TvScreen({ store }: { store: Store }) {
             <p className="tv-quiet">Equipe de folga hoje.</p>
           ) : (
             board.team.slice(0, 6).map((seat) => (
-              <article key={seat.professional.id} className={`tv-seat is-${seat.state}`}>
+              <article
+                key={seat.professional.id}
+                className={`tv-seat is-${seat.state}`}
+              >
                 <span className="tv-photo">
                   {seat.professional.photo ? (
                     <img src={seat.professional.photo} alt="" />
@@ -206,8 +252,12 @@ function TvScreen({ store }: { store: Store }) {
                   <strong>{seat.professional.name.split(" ")[0]}</strong>
                   {seat.state === "busy" && seat.current ? (
                     <span>
-                      <Scissors size={16} weight="fill" /> Atendendo {tvName(seat.current.customerName)}
-                      <small> · até {dateLabel(seat.current.end, "HH:mm")}</small>
+                      <Scissors size={16} weight="fill" /> Atendendo{" "}
+                      {tvName(seat.current.customerName)}
+                      <small>
+                        {" "}
+                        · até {dateLabel(seat.current.end, "HH:mm")}
+                      </small>
                     </span>
                   ) : seat.state === "next" && seat.next ? (
                     <span>
@@ -226,13 +276,20 @@ function TvScreen({ store }: { store: Store }) {
         <div className="tv-list">
           <h2>Próximos horários</h2>
           {board.upcoming.length === 0 ? (
-            <p className="tv-quiet">Sem mais horários marcados hoje. Agende pelo QR Code ao lado.</p>
+            <p className="tv-quiet">
+              Sem mais horários marcados hoje. Agende pelo QR Code ao lado.
+            </p>
           ) : (
             <ol>
               {board.upcoming.map((item) => {
-                const person = store.professionals.find((p) => p.id === item.professionalId);
+                const person = store.professionals.find(
+                  (p) => p.id === item.professionalId,
+                );
                 return (
-                  <li key={item.id} className={item.checkedInAt ? "is-here" : ""}>
+                  <li
+                    key={item.id}
+                    className={item.checkedInAt ? "is-here" : ""}
+                  >
                     <time>{dateLabel(item.start, "HH:mm")}</time>
                     <strong>{tvName(item.customerName)}</strong>
                     <span>{person?.name.split(" ")[0]}</span>
@@ -267,7 +324,9 @@ function TvScreen({ store }: { store: Store }) {
           </figure>
         </div>
         <div className="tv-slide" key={slide}>
-          {current?.kind === "photo" && <img className="tv-slide-photo" src={current.src} alt="" />}
+          {current?.kind === "photo" && (
+            <img className="tv-slide-photo" src={current.src} alt="" />
+          )}
           {current?.kind === "products" && (
             <div className="tv-slide-card">
               <small>Na casa você encontra</small>
@@ -311,7 +370,11 @@ function TvScreen({ store }: { store: Store }) {
           </span>
           <span className="tv-controls">
             {!full && (
-              <button type="button" onClick={() => void toggleFull()} aria-label="Tela cheia">
+              <button
+                type="button"
+                onClick={() => void toggleFull()}
+                aria-label="Tela cheia"
+              >
                 <ArrowsOut size={18} />
               </button>
             )}
@@ -329,7 +392,11 @@ function TvScreen({ store }: { store: Store }) {
           </span>
           <div>
             <strong>{announce.name} chegou</strong>
-            <span>{announce.who ? `${announce.who} já foi avisado.` : "A equipe já foi avisada."}</span>
+            <span>
+              {announce.who
+                ? `${announce.who} já foi avisado.`
+                : "A equipe já foi avisada."}
+            </span>
           </div>
         </div>
       )}

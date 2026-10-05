@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import { z } from "zod";
 import {
   conversationAction,
@@ -13,6 +14,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireModule("recepcionista");
     return respond(await conversationDetail(id.parse((await params).id)));
   } catch (error) {
     return failure(error);
@@ -23,6 +25,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireModule("recepcionista");
     assertSameOrigin(request);
     const input = conversationActionSchema.parse(await request.json());
     return respond(await conversationAction(id.parse((await params).id), input));

@@ -41,17 +41,33 @@ import { SegmentIcon } from "@/lib/segments";
 import { Brand } from "@/components/brand";
 import { AccessGate } from "./access-gate";
 import { daysLeft } from "@/lib/access";
+import { hasModule, type ModuleKey } from "@/lib/modules";
 import { format } from "date-fns";
 const links = [
   { path: "/dashboard", label: "Início", icon: House },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarBlank },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
-  { path: "/dashboard/conversas", label: "Conversas", icon: ChatsCircle },
+  {
+    path: "/dashboard/conversas",
+    label: "Conversas",
+    icon: ChatsCircle,
+    module: "recepcionista" as ModuleKey,
+  },
   { path: "/dashboard/servicos", label: "Serviços", icon: Scissors },
-  { path: "/dashboard/produtos", label: "Produtos", icon: ShoppingBagOpen },
+  {
+    path: "/dashboard/produtos",
+    label: "Produtos",
+    icon: ShoppingBagOpen,
+    module: "produtos" as ModuleKey,
+  },
   { path: "/dashboard/equipe", label: "Equipe", icon: IdentificationBadge },
   { path: "/dashboard/financeiro", label: "Financeiro", icon: Wallet },
-  { path: "/dashboard/clube", label: "Clube", icon: Seal },
+  {
+    path: "/dashboard/clube",
+    label: "Clube",
+    icon: Seal,
+    module: "clube" as ModuleKey,
+  },
   {
     path: "/dashboard/relatorios",
     label: "Relatórios",
@@ -73,7 +89,10 @@ function Gate({ children }: { children: ReactNode }) {
   if (blocked) return <AccessGate access={blocked} onRetry={refresh} />;
   return <Shell>{children}</Shell>;
 }
-const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(/\D/g, "");
+const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(
+  /\D/g,
+  "",
+);
 /** Aviso para o dono quando faltam poucos dias de acesso. */
 function RenewBanner() {
   const { data } = useWorkspace();
@@ -91,8 +110,8 @@ function RenewBanner() {
     <div className="renew-banner" role="status">
       <span>
         Seu acesso vai até <b>{format(new Date(access.until), "dd/MM")}</b>
-        {left <= 1 ? " (último dia)" : ` (faltam ${left} dias)`}. Renove para a agenda
-        online continuar aberta.
+        {left <= 1 ? " (último dia)" : ` (faltam ${left} dias)`}. Renove para a
+        agenda online continuar aberta.
       </span>
       {support && (
         <a
@@ -154,6 +173,12 @@ function Shell({ children }: { children: ReactNode }) {
     }
   }
   const page = links.find((l) => l.path === pathname)?.label || "Início";
+  // Only what the business's plan includes shows up in the menu.
+  const menu = links.filter(
+    (link) =>
+      !("module" in link && link.module) ||
+      hasModule(data?.access?.modules, link.module),
+  );
   const ownerName = data?.viewer?.name || "Seu perfil";
   const ownerRole =
     data?.viewer?.role === "owner"
@@ -183,7 +208,7 @@ function Shell({ children }: { children: ReactNode }) {
           <Brand tone="on-dark" size={30} />
         </Link>
         <nav aria-label="Navegação principal" ref={navRef} className="side-nav">
-          {links.map((link) => (
+          {menu.map((link) => (
             <Link
               key={link.path}
               href={link.path}
@@ -241,9 +266,11 @@ function Shell({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
-          <Link className="sidebar-support" href="/tv" target="_blank">
-            <Television size={16} /> Modo TV da recepção
-          </Link>
+          {hasModule(data?.access?.modules, "recepcao") && (
+            <Link className="sidebar-support" href="/tv" target="_blank">
+              <Television size={16} /> Modo TV da recepção
+            </Link>
+          )}
           {data?.viewer?.platformAdmin && (
             <Link className="sidebar-support" href="/admin">
               <Crown size={16} /> Plataforma
@@ -414,7 +441,7 @@ function Shell({ children }: { children: ReactNode }) {
       </nav>
       {more && (
         <Card className="mobile-more">
-          {links.slice(3).map((link) => (
+          {menu.slice(3).map((link) => (
             <Link
               key={link.path}
               href={link.path}

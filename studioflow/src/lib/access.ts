@@ -7,6 +7,11 @@ export interface BusinessAccess {
   /** Fim do acesso; null = sem prazo. */
   until: string | null;
   note?: string;
+  /** Módulos contratados; null = todos (veja src/lib/modules.ts). */
+  modules?: string[] | null;
+  /** Plano combinado com o cliente e a mensalidade, para a equipe. */
+  plan?: string;
+  price?: number | null;
 }
 export type AccessState =
   | "pending"
@@ -16,7 +21,15 @@ export type AccessState =
   | "suspended";
 export interface AccessEvent {
   id: string;
-  action: "created" | "granted" | "unlimited" | "until" | "suspended" | "pending" | "note";
+  action:
+    | "created"
+    | "granted"
+    | "unlimited"
+    | "until"
+    | "suspended"
+    | "pending"
+    | "note"
+    | "plan";
   days: number | null;
   until: string | null;
   createdAt: string;

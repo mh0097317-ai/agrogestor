@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   connectPayments,
   connectSchema,
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 /** Connects the business's own Asaas account. */
 export async function POST(request: Request) {
   try {
+    await requireModule("pagamentos");
     assertSameOrigin(request);
     const input = connectSchema.parse(await request.json());
     return respond(await connectPayments(input, requestOrigin(request)));
@@ -26,6 +28,7 @@ export async function POST(request: Request) {
 /** Deposit rules. */
 export async function PATCH(request: Request) {
   try {
+    await requireModule("pagamentos");
     assertSameOrigin(request);
     return respond(
       await updateDeposit(depositSchema.parse(await request.json())),

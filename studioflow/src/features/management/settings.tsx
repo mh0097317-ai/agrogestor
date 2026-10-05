@@ -14,6 +14,7 @@ import {
   CreditCard,
   Gift,
   ImageSquare,
+  LockSimple,
   ShieldCheck,
   Storefront,
   Users,
@@ -34,6 +35,13 @@ import {
 import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
+import {
+  allModules,
+  enabledModules,
+  hasModule,
+  moduleCatalog,
+  planCatalog,
+} from "@/lib/modules";
 import type { Store } from "@/types";
 import { GalleryUpload, ImageUpload } from "@/components/image-upload";
 import { storedImagePattern } from "@/lib/image";
@@ -49,12 +57,7 @@ import {
 
 type EditableTab =
   "business" | "identity" | "agenda" | "loyalty" | "notifications";
-type Tab =
-  | EditableTab
-  | "professionals"
-  | "payments"
-  | "assistant"
-  | "plan";
+type Tab = EditableTab | "professionals" | "payments" | "assistant" | "plan";
 type FieldEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 >;
@@ -526,7 +529,8 @@ function SettingsContent({ store }: { store: Store }) {
     business: "As informações que apresentam seu estabelecimento aos clientes.",
     identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
-    payments: "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
+    payments:
+      "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
     assistant: "Atendente virtual no chat da página e no WhatsApp, 24 horas.",
     loyalty:
       "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
@@ -561,25 +565,40 @@ function SettingsContent({ store }: { store: Store }) {
           className="management-tabs settings-section-nav"
           aria-label="Seções das configurações"
         >
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-current={tab === item.id ? "page" : undefined}
-              className={`management-tab ${tab === item.id ? "selected" : ""}`}
-              disabled={busy}
-              onClick={() => switchTab(item.id)}
-            >
-              <item.icon
-                size={17}
-                weight={tab === item.id ? "fill" : "duotone"}
-              />
-              {item.label}
-              {tab === item.id && dirty && (
-                <span aria-label="Alterações não salvas">•</span>
-              )}
-            </button>
-          ))}
+          {tabs
+            .filter((item) => {
+              const needs = {
+                loyalty: "fidelidade",
+                payments: "pagamentos",
+                assistant: "recepcionista",
+              } as const;
+              return (
+                !(item.id in needs) ||
+                hasModule(
+                  store.access?.modules,
+                  needs[item.id as keyof typeof needs],
+                )
+              );
+            })
+            .map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-current={tab === item.id ? "page" : undefined}
+                className={`management-tab ${tab === item.id ? "selected" : ""}`}
+                disabled={busy}
+                onClick={() => switchTab(item.id)}
+              >
+                <item.icon
+                  size={17}
+                  weight={tab === item.id ? "fill" : "duotone"}
+                />
+                {item.label}
+                {tab === item.id && dirty && (
+                  <span aria-label="Alterações não salvas">•</span>
+                )}
+              </button>
+            ))}
         </nav>
         <Card className="management-settings-card">
           <div className="settings-section-heading">
@@ -1138,38 +1157,7 @@ function SettingsContent({ store }: { store: Store }) {
               onSaved={refresh}
             />
           )}
-          {tab === "plan" && (
-            <div className="management-form">
-              <span className="management-pill">
-                {store.mode === "demo"
-                  ? "Ambiente de demonstração"
-                  : "Versão inicial"}
-              </span>
-              <FormSection title="Recursos disponíveis">
-                <ul className="management-plan-list">
-                  {[
-                    "Link público de agendamento",
-                    "Agenda individual da equipe",
-                    "Cadastro de clientes e histórico",
-                    "Serviços e profissionais",
-                    "Financeiro e comissões",
-                    "Relatórios e instalação no celular",
-                  ].map((item) => (
-                    <li key={item}>
-                      <Check size={16} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </FormSection>
-              <div className="management-info">
-                {store.mode === "demo" &&
-                  "Este ambiente utiliza dados fictícios para demonstração. "}
-                A contratação, a cobrança e os limites comerciais ainda não
-                estão conectados. Nenhuma cobrança é realizada neste ambiente.
-              </div>
-            </div>
-          )}
+          {tab === "plan" && <PlanSection store={store} />}
         </Card>
       </div>
       <Modal
@@ -1236,5 +1224,86 @@ function SettingsContent({ store }: { store: Store }) {
         </div>
       </Modal>
     </>
+  );
+}
+
+const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(
+  /\D/g,
+  "",
+);
+
+/** Configurações → Plano: o que o estabelecimento contratou com a StudioFlow. */
+function PlanSection({ store }: { store: Store }) {
+  const access = store.access;
+  const on = enabledModules(access?.modules);
+  const planName =
+    access?.plan ||
+    (access?.modules
+      ? Object.values(planCatalog).find(
+          (plan) =>
+            plan.modules.slice().sort().join() === on.slice().sort().join(),
+        )?.label
+      : "") ||
+    (store.mode === "demo" ? "Demonstração" : "Completo");
+  const ask = `Olá! Quero mudar o plano do ${store.business.name} no StudioFlow.`;
+  return (
+    <div className="management-form">
+      <span className="management-pill">Plano {planName}</span>
+      {access?.until && (
+        <p className="management-info">
+          Acesso até{" "}
+          {new Intl.DateTimeFormat("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+          }).format(new Date(access.until))}
+          .
+        </p>
+      )}
+      <FormSection title="Sempre incluso">
+        <ul className="management-plan-list">
+          {[
+            "Página e agendamento online",
+            "Agenda da equipe, clientes e histórico",
+            "Serviços, profissionais e financeiro",
+            "Relatórios, divulgação e story das vagas",
+          ].map((item) => (
+            <li key={item}>
+              <Check size={16} />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </FormSection>
+      <FormSection title="Módulos">
+        <ul className="management-plan-list plan-modules">
+          {allModules.map((key) => (
+            <li key={key} className={on.includes(key) ? "" : "is-off"}>
+              {on.includes(key) ? (
+                <Check size={16} />
+              ) : (
+                <LockSimple size={16} />
+              )}
+              <span>
+                <strong>{moduleCatalog[key].label}</strong>
+                <small>
+                  {on.includes(key)
+                    ? moduleCatalog[key].detail
+                    : "Não incluído no seu plano"}
+                </small>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </FormSection>
+      {support && (
+        <a
+          className="btn btn-secondary plan-change"
+          href={`https://wa.me/${support}?text=${encodeURIComponent(ask)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Mudar de plano com a equipe StudioFlow
+        </a>
+      )}
+    </div>
   );
 }

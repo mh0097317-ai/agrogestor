@@ -23,6 +23,7 @@ import type {
 } from "@/types";
 import { ManagementBoundary } from "./shared";
 import "./conversations.css";
+import { ModuleGate } from "@/features/dashboard/module-lock";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -60,7 +61,13 @@ const who = (item: Pick<ConversationSummary, "contactName" | "contactPhone" | "c
 
 export default function ConversationsPage() {
   const { data } = useWorkspace();
-  return <ManagementBoundary>{data && <ConversationsContent store={data} />}</ManagementBoundary>;
+  return (
+    <ManagementBoundary>
+      <ModuleGate module="recepcionista">
+        {data && <ConversationsContent store={data} />}
+      </ModuleGate>
+    </ManagementBoundary>
+  );
 }
 
 function ConversationsContent({ store }: { store: Store }) {

@@ -27,6 +27,8 @@ export interface PublicCatalog {
   popularServiceId?: string | null;
   /** Produtos à venda na casa (vitrine, sem compra online). */
   products?: PublicProduct[];
+  /** O que o plano do estabelecimento inclui na página. */
+  features?: { waitlist: boolean; checkin: boolean };
 }
 export interface PublicProduct {
   id: string;

@@ -11,6 +11,7 @@ import {
   type BusinessAccess,
 } from "@/lib/access";
 import { DomainError } from "@/lib/availability";
+import { allModules, type ModuleKey } from "@/lib/modules";
 import {
   createSupabaseAdmin,
   createSupabaseServer,
@@ -38,6 +39,10 @@ export interface PlatformBusiness {
   appointments30d: number;
   customers: number;
   lastAppointmentAt: string | null;
+  /** null = todos os módulos. */
+  modules: string[] | null;
+  plan: string;
+  price: number | null;
 }
 
 /** No modo demonstração o acesso fica no próprio arquivo; sem registro, liberado. */
@@ -93,6 +98,9 @@ function demoRow(store: Store, now: Date): PlatformBusiness {
     customers: store.customers.length,
     lastAppointmentAt:
       store.appointments.map((item) => item.createdAt).sort().at(-1) || null,
+    modules: access.modules ?? null,
+    plan: access.plan || "",
+    price: access.price ?? null,
   };
 }
 
@@ -130,6 +138,12 @@ export async function platformOverview(now = new Date()) {
       appointments30d: Number(row.appointments_30d) || 0,
       customers: Number(row.customers) || 0,
       lastAppointmentAt: (row.last_appointment_at as string | null) ?? null,
+      modules: (row.modules as string[] | null | undefined) ?? null,
+      plan: (row.plan as string) || "",
+      price:
+        row.monthly_price === null || row.monthly_price === undefined
+          ? null
+          : Number(row.monthly_price),
     };
   });
 }
@@ -182,6 +196,53 @@ export const platformActionSchema = z.discriminatedUnion("action", [
     note: z.string().trim().max(500, "Anotação muito longa."),
   }),
 ]);
+
+export const platformPlanSchema = z.object({
+  businessId: z.string().uuid(),
+  plan: z.string().trim().max(40),
+  price: z.number().min(0).max(100000).nullable(),
+  modules: z.array(z.enum(allModules as [ModuleKey, ...ModuleKey[]])).max(allModules.length),
+});
+
+/** Plano, mensalidade e módulos que o cliente contratou. */
+export async function platformPlan(input: z.infer<typeof platformPlanSchema>, now = new Date()) {
+  const { userId } = await requirePlatformAdmin();
+  const modules = [...new Set(input.modules)].sort();
+  if (isDemo()) {
+    for (const slug of await demoSlugs()) {
+      const store = await readDemo(slug);
+      if (store.business.id !== input.businessId) continue;
+      await mutateDemo((draft) => {
+        draft.access = {
+          ...demoAccess(draft),
+          modules,
+          plan: input.plan,
+          price: input.price,
+        };
+        draft.accessEvents = [
+          ...(draft.accessEvents || []),
+          { id: randomUUID(), action: "plan" as const, days: null, until: draft.access.until, createdAt: now.toISOString() },
+        ].slice(-50);
+      }, slug);
+      return;
+    }
+    throw new DomainError("Estabelecimento não encontrado.", 404);
+  }
+  const { error } = await createSupabaseAdmin().rpc("platform_set_plan", {
+    p_business_id: input.businessId,
+    p_actor: userId,
+    p_plan: input.plan,
+    p_price: input.price,
+    p_modules: modules,
+  });
+  if (error)
+    throw new DomainError(
+      error.message === "business not found"
+        ? "Estabelecimento não encontrado."
+        : "Não foi possível salvar o plano.",
+      error.message === "business not found" ? 404 : 409,
+    );
+}
 
 export async function platformAction(
   input: z.infer<typeof platformActionSchema>,

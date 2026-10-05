@@ -30,6 +30,7 @@ import { appointmentServices } from "./agenda-helpers";
 import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
 import { SaleSheet } from "@/features/management/sale-sheet";
 import { ArrivedTag } from "@/features/agenda/arrived-tag";
+import { hasModule } from "@/lib/modules";
 
 export function AppointmentDetail({
   appointment,
@@ -126,6 +127,7 @@ export function AppointmentDetail({
   );
   const canSell =
     canEdit &&
+    hasModule(data.access?.modules, "produtos") &&
     !["cancelled", "no_show"].includes(current.status) &&
     (data.products || []).some((product) => product.active && product.stock > 0);
   const planName = current.membershipId

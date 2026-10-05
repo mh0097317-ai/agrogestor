@@ -457,7 +457,7 @@ function BookingWizard({
               setSlot(value);
             }}
             professionals={professionals}
-            waitlist
+            waitlist={catalog.features?.waitlist !== false}
           />
         )}
         {step === 4 && chosen.length > 0 && slot && (

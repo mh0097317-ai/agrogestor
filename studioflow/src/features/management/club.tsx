@@ -34,12 +34,15 @@ import { formatPhone, money } from "@/lib/utils";
 import type { Membership, MembershipPlan, Store } from "@/types";
 import { FormError, FormField, ManagementBoundary } from "./shared";
 import "./club.css";
+import { ModuleGate } from "@/features/dashboard/module-lock";
 
 export default function ClubPage() {
   const { data } = useWorkspace();
   return (
     <ManagementBoundary>
+      <ModuleGate module="clube">
       {data && <ClubContent store={data} />}
+      </ModuleGate>
     </ManagementBoundary>
   );
 }

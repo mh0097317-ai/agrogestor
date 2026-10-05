@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   changeWaitlist,
   waitlistRemoveSchema,
@@ -7,6 +8,7 @@ import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 export async function PATCH(request: Request) {
   try {
+    await requireModule("espera");
     assertSameOrigin(request);
     return respond(
       await changeWaitlist(
@@ -20,6 +22,7 @@ export async function PATCH(request: Request) {
 }
 export async function DELETE(request: Request) {
   try {
+    await requireModule("espera");
     assertSameOrigin(request);
     return respond(
       await changeWaitlist(

@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   changeMembership,
   membershipActionSchema,
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
   try {
+    await requireModule("clube");
     assertSameOrigin(request);
     return respond(
       await changeMembership(

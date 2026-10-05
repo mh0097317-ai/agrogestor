@@ -20,6 +20,7 @@ import type { Appointment, DemoCharge, Membership, Store } from "@/types";
 import { AsaasClient, paidStatuses, type PixCode } from "./payments/asaas";
 import { isDemo, mutateDemo, readDemo } from "./server-demo";
 import { assertPublicOpen } from "@/lib/access";
+import { applyModules, hasModule } from "@/lib/modules";
 import {
   decryptSecret,
   encryptSecret,
@@ -268,12 +269,15 @@ export async function bookWithPayments(
         (sum, service) => sum + service.price,
         0,
       );
-      const planned = ready ? depositFor(store.settings, price) : 0;
+      // Only what the plan includes: no deposit or club when it is off.
+      const planned = ready
+        ? depositFor(applyModules(store, store.access?.modules).settings, price)
+        : 0;
       if (planned && !input.membershipToken && !isValidCpf(cpf))
         throw new DomainError(cpfRequired, 400);
       const appointment = createBooking(store, input) as BookingOutcome;
       let coverage: CoverageResult | undefined;
-      if (input.membershipToken)
+      if (input.membershipToken && hasModule(store.access?.modules, "clube"))
         coverage = applyMembership(
           store,
           appointment,
@@ -341,7 +345,8 @@ export async function bookWithPayments(
       .from("appointments")
       .update({ status: "cancelled", deposit_status: null })
       .eq("id", appointment.id);
-  if (input.membershipToken) {
+  // getPublicStore empties the club when the plan does not include it.
+  if (input.membershipToken && store.memberships?.length) {
     const { data: result } = await admin.rpc("apply_membership", {
       p_appointment_id: appointment.id,
       p_token: input.membershipToken,

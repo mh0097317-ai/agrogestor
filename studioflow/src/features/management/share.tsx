@@ -19,6 +19,7 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { SegmentIcon } from "@/lib/segments";
 import type { Store } from "@/types";
 import { ManagementBoundary } from "./shared";
+import { hasModule } from "@/lib/modules";
 import { SlotsStory } from "./story-slots";
 import "./share.css";
 
@@ -129,7 +130,8 @@ function ShareContent({ store }: { store: Store }) {
   const url = `${origin}/${business.slug}`;
   // The poster has two jobs: book online, or check in at the counter.
   const [poster, setPoster] = useState<"book" | "checkin">("book");
-  const posterUrl = poster === "checkin" ? `${url}/checkin` : url;
+  const reception = hasModule(store.access?.modules, "recepcao");
+  const posterUrl = poster === "checkin" && reception ? `${url}/checkin` : url;
   const [qr, setQr] = useState("");
   useEffect(() => {
     let alive = true;
@@ -216,30 +218,32 @@ function ShareContent({ store }: { store: Store }) {
         </Card>
 
         <Card className="share-card share-qr">
-          <div
-            className="share-switch"
-            role="tablist"
-            aria-label="Tipo de cartaz"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={poster === "book"}
-              className={poster === "book" ? "is-on" : ""}
-              onClick={() => setPoster("book")}
+          {reception && (
+            <div
+              className="share-switch"
+              role="tablist"
+              aria-label="Tipo de cartaz"
             >
-              Agendar
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={poster === "checkin"}
-              className={poster === "checkin" ? "is-on" : ""}
-              onClick={() => setPoster("checkin")}
-            >
-              Check-in na recepção
-            </button>
-          </div>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={poster === "book"}
+                className={poster === "book" ? "is-on" : ""}
+                onClick={() => setPoster("book")}
+              >
+                Agendar
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={poster === "checkin"}
+                className={poster === "checkin" ? "is-on" : ""}
+                onClick={() => setPoster("checkin")}
+              >
+                Check-in na recepção
+              </button>
+            </div>
+          )}
           <div className="share-poster" id="share-poster">
             <div className="share-poster-brand">
               {business.logo ? (
@@ -316,27 +320,29 @@ function ShareContent({ store }: { store: Store }) {
 
         <SlotsStory store={store} url={url} />
 
-        <Card className="share-card share-tv">
-          <h2>
-            <Television size={20} /> Modo TV da recepção
-          </h2>
-          <p>
-            Abra na TV da barbearia (navegador da smart TV, TV box ou um
-            notebook no HDMI) com a sua conta. Mostra o relógio, quem está sendo
-            atendido, os próximos horários, quem fez check-in e os QR Codes para
-            agendar e avisar a chegada. Atualiza sozinha.
-          </p>
-          <div className="share-actions">
-            <a
-              className="btn btn-primary"
-              href="/tv"
-              target="_blank"
-              rel="noopener"
-            >
-              <Television size={16} /> Abrir modo TV
-            </a>
-          </div>
-        </Card>
+        {reception && (
+          <Card className="share-card share-tv">
+            <h2>
+              <Television size={20} /> Modo TV da recepção
+            </h2>
+            <p>
+              Abra na TV da barbearia (navegador da smart TV, TV box ou um
+              notebook no HDMI) com a sua conta. Mostra o relógio, quem está
+              sendo atendido, os próximos horários, quem fez check-in e os QR
+              Codes para agendar e avisar a chegada. Atualiza sozinha.
+            </p>
+            <div className="share-actions">
+              <a
+                className="btn btn-primary"
+                href="/tv"
+                target="_blank"
+                rel="noopener"
+              >
+                <Television size={16} /> Abrir modo TV
+              </a>
+            </div>
+          </Card>
+        )}
 
         <Card className="share-card share-texts">
           <h2>Textos prontos</h2>

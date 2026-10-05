@@ -154,3 +154,47 @@
     animation: none;
   }
 }
+
+/* Módulo fora do plano */
+.module-lock {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 8vh auto;
+  padding: 36px 24px;
+  border: 1px solid #dcd2c2;
+  border-radius: 4px;
+  background: #fffdf9;
+  text-align: center;
+}
+.module-lock-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f1ebe0;
+  color: #8a6430;
+}
+.module-lock h1 {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+}
+.module-lock p {
+  margin: 0;
+  color: #6e655b;
+}
+.module-lock .module-lock-note {
+  color: #16130f;
+  font-weight: 650;
+}
+.module-lock .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  text-decoration: none;
+}

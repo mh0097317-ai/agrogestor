@@ -28,6 +28,7 @@ import {
   requireMembership,
 } from "@/lib/supabase/server";
 import { accessState, assertPublicOpen, assertWorkspaceOpen } from "@/lib/access";
+import { applyModules } from "@/lib/modules";
 import {
   appointmentSchema,
   blockSchema,
@@ -334,7 +335,7 @@ export async function getPublicStore(slug: string) {
   if (isDemo()) {
     const store = await readDemo(slug);
     assertPublicOpen(store.access ?? { status: "active", until: null });
-    return store;
+    return applyModules(store, store.access?.modules);
   }
   const client = createSupabaseAdmin();
   const { data, error } = await client
@@ -344,8 +345,14 @@ export async function getPublicStore(slug: string) {
     .maybeSingle();
   if (error || !data)
     throw new DomainError("Estabelecimento não encontrado.", 404);
-  assertPublicOpen(await readBusinessAccess(data.id));
-  return loadSupabaseStore(client, data.id);
+  const access = await readBusinessAccess(data.id);
+  assertPublicOpen(access);
+  // What the plan does not include is off for customers too.
+  return {
+    ...applyModules(await loadSupabaseStore(client, data.id), access.modules),
+    // Server use only: public routes pick their fields explicitly.
+    access,
+  };
 }
 /** Demo files keep club tokens and simulated charges: never sent out. */
 function withoutSecrets(store: Store): Store {

@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   cancelSale,
   cancelSaleSchema,
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await requireModule("produtos");
     assertSameOrigin(request);
     return respond(await sellProducts(saleSchema.parse(await request.json())), 201);
   } catch (error) {
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
 /** Cancelar uma venda devolve os itens ao estoque. */
 export async function PATCH(request: Request) {
   try {
+    await requireModule("produtos");
     assertSameOrigin(request);
     return respond(await cancelSale(cancelSaleSchema.parse(await request.json())));
   } catch (error) {

@@ -43,6 +43,24 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
       (await db.query<{ status: string }>("select status from public.platform_access where business_id=$1", [biz.id])).rows[0].status,
       "pending",
     );
+    // Plan and modules picked for the client.
+    const planned = (
+      await db.query<{ value: { modules: string[]; plan: string; monthly_price: string } }>(
+        "select public.platform_set_plan($1,null,'Profissional',149.9,array['produtos','clube','produtos']) as value",
+        [biz.id],
+      )
+    ).rows[0].value;
+    assert.deepEqual(planned.modules, ["clube", "produtos"]);
+    assert.equal(Number(planned.monthly_price), 149.9);
+    await assert.rejects(
+      db.query("select public.platform_set_plan($1,null,'X',null,array['teletransporte'])", [biz.id]),
+    );
+    const overview = (
+      await db.query<{ value: { plan: string; modules: string[] } }>(
+        "select value from public.platform_overview() as value",
+      )
+    ).rows[0].value;
+    assert.equal(overview.plan, "Profissional");
     const insert = (ref: string) =>
       db.query(
         "insert into public.conversations(tenant_id,business_id,channel,contact_ref)values($1,$2,'instagram',$3)",

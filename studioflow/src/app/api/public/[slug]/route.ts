@@ -1,3 +1,4 @@
+import { hasModule } from "@/lib/modules";
 import { publicProducts } from "@/services/server-products";
 import { getPublicStore, publicProfessional } from "@/services/server-store";
 import { getPaymentAccount, publicPlans } from "@/services/server-payments";
@@ -55,6 +56,11 @@ export async function GET(
       popularServiceId: popularService(store),
       // Só nome, foto, descrição e preço: sem custo nem estoque.
       products: publicProducts(store),
+      // Partes da página que dependem do plano do estabelecimento.
+      features: {
+        waitlist: hasModule(store.access?.modules, "espera"),
+        checkin: hasModule(store.access?.modules, "recepcao"),
+      },
     });
   } catch (error) {
     return failure(error);

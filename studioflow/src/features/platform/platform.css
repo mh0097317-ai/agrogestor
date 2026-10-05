@@ -553,3 +553,110 @@
     animation: none;
   }
 }
+
+/* Receita mensal e planos */
+.pf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+.pf-mrr {
+  display: grid;
+  gap: 2px;
+  padding: 14px 18px;
+  border: 1px solid #dcd2c2;
+  border-left: 3px solid #a47a3c;
+  border-radius: 4px;
+  background: #fffdf9;
+}
+.pf-mrr small {
+  color: #8a6430;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pf-mrr strong {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.pf-mrr span {
+  color: #6e655b;
+  font-size: 13px;
+}
+.pf-usage .pf-plan {
+  color: #16130f;
+  font-weight: 650;
+}
+.pf-plan-editor {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2d9ca;
+}
+.pf-custom-tag {
+  align-self: center;
+  color: #8a6430;
+  font-size: 13px;
+  font-weight: 650;
+}
+.pf-modules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-modules label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  height: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pf-modules label:has(input:checked) {
+  border-color: #16130f;
+  background: #f7f3ec;
+}
+.pf-modules input {
+  margin-top: 2px;
+}
+.pf-modules span {
+  display: grid;
+  gap: 2px;
+}
+.pf-modules strong {
+  font-size: 14px;
+}
+.pf-modules small {
+  color: #6e655b;
+  font-size: 12px;
+  font-weight: 500;
+}
+.pf-base {
+  margin: 0;
+  color: #6e655b;
+  font-size: 12.5px;
+}
+.pf-field {
+  display: grid;
+  flex: 1 1 160px;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pf-field input {
+  height: 40px;
+}
+@media (max-width: 560px) {
+  .pf-modules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

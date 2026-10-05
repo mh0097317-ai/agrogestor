@@ -1,3 +1,4 @@
+import { requireModule } from "@/services/modules-guard";
 import {
   productActiveSchema,
   productSchema,
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await requireModule("produtos");
     assertSameOrigin(request);
     return respond(await saveProduct(productSchema.parse(await request.json())));
   } catch (error) {
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
 /** Arquivar ou reativar um produto. */
 export async function PATCH(request: Request) {
   try {
+    await requireModule("produtos");
     assertSameOrigin(request);
     return respond(await setProductActive(productActiveSchema.parse(await request.json())));
   } catch (error) {

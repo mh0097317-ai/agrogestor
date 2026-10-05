@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assertPublicOpen } from "@/lib/access";
+import { assertModule } from "@/lib/modules";
 import { DomainError, normalizePhone } from "@/lib/availability";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
 import type { Store } from "@/types";
@@ -91,6 +92,7 @@ export async function checkIn(
   if (isDemo())
     return mutateDemo((store) => {
       assertPublicOpen(store.access ?? { status: "active", until: null });
+      assertModule(store.access?.modules, "recepcao");
       return checkInStore(store, input);
     }, slug);
   const admin = createSupabaseAdmin();
@@ -100,7 +102,9 @@ export async function checkIn(
     .eq("slug", slug)
     .maybeSingle();
   if (!business) throw new DomainError("Estabelecimento não encontrado.", 404);
-  assertPublicOpen(await readBusinessAccess(business.id));
+  const access = await readBusinessAccess(business.id);
+  assertPublicOpen(access);
+  assertModule(access.modules, "recepcao");
   const { data, error } =
     "token" in input
       ? await admin.rpc("check_in_by_token", { p_token: input.token })

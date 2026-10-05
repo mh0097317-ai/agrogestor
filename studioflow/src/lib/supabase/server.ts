@@ -86,17 +86,32 @@ const missingTable = (code?: string) => code === "42P01" || code === "PGRST205";
 export async function readBusinessAccess(
   businessId: string,
 ): Promise<BusinessAccess> {
-  const { data, error } = await createSupabaseAdmin()
-    .from("platform_access")
-    .select("status,access_until,note")
-    .eq("business_id", businessId)
-    .maybeSingle();
+  const read = (columns: string) =>
+    createSupabaseAdmin()
+      .from("platform_access")
+      .select(columns)
+      .eq("business_id", businessId)
+      .maybeSingle<Record<string, unknown>>();
+  let { data, error } = await read("status,access_until,note,modules,plan,monthly_price");
+  // Before the modules migration: every module stays on.
+  if (error && (error.code === "42703" || error.code === "PGRST204"))
+    ({ data, error } = await read("status,access_until,note"));
   if (error) {
     if (missingTable(error.code)) return { status: "active", until: null };
     throw new DomainError("Não foi possível conferir o acesso. Tente novamente.", 503);
   }
   return data
-    ? { status: data.status, until: data.access_until, note: data.note }
+    ? {
+        status: data.status as BusinessAccess["status"],
+        until: (data.access_until as string | null) ?? null,
+        note: (data.note as string) || "",
+        modules: (data.modules as string[] | null | undefined) ?? null,
+        plan: (data.plan as string) || "",
+        price:
+          data.monthly_price === null || data.monthly_price === undefined
+            ? null
+            : Number(data.monthly_price),
+      }
     : { status: "pending", until: null };
 }
 /** Equipe StudioFlow: quem pode liberar o acesso dos estabelecimentos. */

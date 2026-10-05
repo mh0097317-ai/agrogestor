@@ -13,6 +13,7 @@ import {
   Infinity as InfinityIcon,
   MagnifyingGlass,
   NotePencil,
+  Package,
   Pause,
   Play,
   UsersThree,
@@ -22,7 +23,21 @@ import { WhatsAppIcon } from "@/components/brand-icons";
 import { Button, Modal } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { SegmentIcon } from "@/lib/segments";
-import { daysLeft, extendUntil, type AccessEvent, type AccessState } from "@/lib/access";
+import {
+  daysLeft,
+  extendUntil,
+  type AccessEvent,
+  type AccessState,
+} from "@/lib/access";
+import {
+  allModules,
+  enabledModules,
+  moduleCatalog,
+  planCatalog,
+  planFor,
+  type ModuleKey,
+  type PlanKey,
+} from "@/lib/modules";
 import type { PlatformBusiness } from "@/services/platform";
 import "./platform.css";
 
@@ -49,8 +64,19 @@ const actionLabels: Record<AccessEvent["action"], string> = {
   suspended: "Pausou o acesso",
   pending: "Voltou para aguardando",
   note: "Anotação",
+  plan: "Mudou o plano e os módulos",
 };
-const day = (value: string) => format(new Date(value), "dd/MM/yyyy", { locale: ptBR });
+const money = (value: number) =>
+  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Plano mostrado na lista: o nome combinado ou o que bate com os módulos. */
+function planLabel(item: Pick<PlatformBusiness, "plan" | "modules">) {
+  if (item.plan) return item.plan;
+  if (!item.modules) return "Completo";
+  const key = planFor(item.modules);
+  return key ? planCatalog[key].label : "Personalizado";
+}
+const day = (value: string) =>
+  format(new Date(value), "dd/MM/yyyy", { locale: ptBR });
 const ago = (value: string) =>
   formatDistanceToNowStrict(new Date(value), { locale: ptBR, addSuffix: true });
 
@@ -62,7 +88,9 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error || "Não foi possível concluir.") as Error & {
+    const error = new Error(
+      data.error || "Não foi possível concluir.",
+    ) as Error & {
       status?: number;
     };
     error.status = response.status;
@@ -77,7 +105,8 @@ function accessLine(item: PlatformBusiness) {
     return item.until ? `Pausado · prazo era ${day(item.until)}` : "Pausado";
   if (!item.until) return "Sem prazo";
   const left = daysLeft({ status: item.status, until: item.until })!;
-  if (item.state === "expired") return `Venceu ${ago(item.until)} · ${day(item.until)}`;
+  if (item.state === "expired")
+    return `Venceu ${ago(item.until)} · ${day(item.until)}`;
   return `Até ${day(item.until)} · ${left === 1 ? "falta 1 dia" : `faltam ${left} dias`}`;
 }
 
@@ -94,7 +123,9 @@ export function PlatformAdmin() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await call<{ businesses: PlatformBusiness[] }>("/api/admin/platform");
+      const data = await call<{ businesses: PlatformBusiness[] }>(
+        "/api/admin/platform",
+      );
       setItems(data.businesses);
       setError("");
     } catch (cause) {
@@ -113,14 +144,24 @@ export function PlatformAdmin() {
     const list = items || [];
     return {
       pending: list.filter((item) => item.state === "pending").length,
-      active: list.filter((item) => item.state === "active" || item.state === "expiring").length,
+      active: list.filter(
+        (item) => item.state === "active" || item.state === "expiring",
+      ).length,
       expiring: list.filter((item) => item.state === "expiring").length,
-      closed: list.filter((item) => item.state === "expired" || item.state === "suspended").length,
+      closed: list.filter(
+        (item) => item.state === "expired" || item.state === "suspended",
+      ).length,
       all: list.length,
     };
   }, [items]);
+  const paying = (items || []).filter(
+    (item) =>
+      (item.state === "active" || item.state === "expiring") && item.price,
+  );
+  const monthly = paying.reduce((sum, item) => sum + (item.price || 0), 0);
   // Opens on the queue that needs attention; with nothing waiting, on all.
-  const effective: Filter = filter === "pending" && items && !counts.pending ? "all" : filter;
+  const effective: Filter =
+    filter === "pending" && items && !counts.pending ? "all" : filter;
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return (items || []).filter((item) => {
@@ -141,13 +182,22 @@ export function PlatformAdmin() {
     });
   }, [items, effective, query]);
 
-  async function act(body: Record<string, unknown>, message: string) {
-    const data = await call<{ businesses: PlatformBusiness[] }>("/api/admin/platform", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+  async function act(
+    body: Record<string, unknown>,
+    message: string,
+    method = "POST",
+  ) {
+    const data = await call<{ businesses: PlatformBusiness[] }>(
+      "/api/admin/platform",
+      {
+        method,
+        body: JSON.stringify(body),
+      },
+    );
     setItems(data.businesses);
-    setOpen(data.businesses.find((item) => item.id === body.businessId) || null);
+    setOpen(
+      data.businesses.find((item) => item.id === body.businessId) || null,
+    );
     toast(message);
   }
 
@@ -178,7 +228,10 @@ export function PlatformAdmin() {
             disabled={loading}
             aria-label="Atualizar"
           >
-            <ArrowsClockwise size={17} className={loading ? "is-spinning" : ""} />
+            <ArrowsClockwise
+              size={17}
+              className={loading ? "is-spinning" : ""}
+            />
           </button>
           <Link href="/dashboard" className="pf-back">
             Meu painel
@@ -191,12 +244,27 @@ export function PlatformAdmin() {
             <small>Acesso dos estabelecimentos</small>
             <h1>Quem usa o StudioFlow</h1>
             <p>
-              Cadastro novo entra em <b>Aguardando</b>. Painel e agenda online só abrem
-              depois que você libera, e fecham sozinhos quando o prazo acaba.
+              Cadastro novo entra em <b>Aguardando</b>. Painel e agenda online
+              só abrem depois que você libera, e fecham sozinhos quando o prazo
+              acaba.
             </p>
           </div>
+          {items && (
+            <div className="pf-mrr">
+              <small>Receita mensal combinada</small>
+              <strong>{money(monthly)}</strong>
+              <span>
+                {paying.length}{" "}
+                {paying.length === 1 ? "cliente pagante" : "clientes pagantes"}
+              </span>
+            </div>
+          )}
         </div>
-        <div className="pf-kpis" role="tablist" aria-label="Filtrar estabelecimentos">
+        <div
+          className="pf-kpis"
+          role="tablist"
+          aria-label="Filtrar estabelecimentos"
+        >
           {filters.map((item) => (
             <button
               key={item.id}
@@ -207,7 +275,9 @@ export function PlatformAdmin() {
               data-filter={item.id}
               onClick={() => setFilter(item.id)}
             >
-              <strong>{items ? counts[item.id as keyof typeof counts] : "–"}</strong>
+              <strong>
+                {items ? counts[item.id as keyof typeof counts] : "–"}
+              </strong>
               <span>{item.label}</span>
             </button>
           ))}
@@ -231,7 +301,9 @@ export function PlatformAdmin() {
           </div>
         ) : visible.length === 0 ? (
           <p className="pf-empty">
-            {query ? "Nada encontrado com essa busca." : "Nenhum estabelecimento nesta lista."}
+            {query
+              ? "Nada encontrado com essa busca."
+              : "Nenhum estabelecimento nesta lista."}
           </p>
         ) : (
           <ul className="pf-list">
@@ -246,7 +318,11 @@ export function PlatformAdmin() {
                     {item.image ? (
                       <img src={item.image} alt="" />
                     ) : (
-                      <SegmentIcon category={item.category} size={20} weight="duotone" />
+                      <SegmentIcon
+                        category={item.category}
+                        size={20}
+                        weight="duotone"
+                      />
                     )}
                   </span>
                   <div>
@@ -261,12 +337,19 @@ export function PlatformAdmin() {
                   {item.ownerEmail && <small>{item.ownerEmail}</small>}
                 </div>
                 <div className="pf-access">
-                  <span className={`pf-badge is-${item.state}`}>{stateLabels[item.state]}</span>
+                  <span className={`pf-badge is-${item.state}`}>
+                    {stateLabels[item.state]}
+                  </span>
                   <small>{accessLine(item)}</small>
                 </div>
                 <div className="pf-usage">
+                  <span className="pf-plan">
+                    <Package size={14} /> {planLabel(item)}
+                    {item.price ? ` · ${money(item.price)}/mês` : ""}
+                  </span>
                   <span>
-                    <CalendarCheck size={14} /> {item.appointments30d} em 30 dias
+                    <CalendarCheck size={14} /> {item.appointments30d} em 30
+                    dias
                   </span>
                   <span>
                     <UsersThree size={14} /> {item.customers} clientes
@@ -278,7 +361,11 @@ export function PlatformAdmin() {
                       Liberar
                     </Button>
                   ) : (
-                    <Button type="button" variant="secondary" onClick={() => setOpen(item)}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setOpen(item)}
+                    >
                       Gerenciar
                     </Button>
                   )}
@@ -309,7 +396,11 @@ function AccessSheet({
 }: {
   item: PlatformBusiness;
   onClose: () => void;
-  onAct: (body: Record<string, unknown>, message: string) => Promise<void>;
+  onAct: (
+    body: Record<string, unknown>,
+    message: string,
+    method?: string,
+  ) => Promise<void>;
 }) {
   const [days, setDays] = useState(30);
   const [date, setDate] = useState("");
@@ -330,14 +421,20 @@ function AccessSheet({
     };
   }, [item.id, item.status, item.until]);
 
-  async function run(label: string, body: Record<string, unknown>, message: string) {
+  async function run(
+    label: string,
+    body: Record<string, unknown>,
+    message: string,
+  ) {
     setBusy(label);
     setError("");
     try {
       await onAct({ businessId: item.id, ...body }, message);
       setConfirmPause(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível salvar.");
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível salvar.",
+      );
     } finally {
       setBusy("");
     }
@@ -350,10 +447,17 @@ function AccessSheet({
   const phone = item.phone.replace(/\D/g, "");
 
   return (
-    <Modal open onClose={onClose} title={item.name} description={`/${item.slug}`}>
+    <Modal
+      open
+      onClose={onClose}
+      title={item.name}
+      description={`/${item.slug}`}
+    >
       <div className="pf-sheet">
         <div className={`pf-sheet-state is-${item.state}`}>
-          <span className={`pf-badge is-${item.state}`}>{stateLabels[item.state]}</span>
+          <span className={`pf-badge is-${item.state}`}>
+            {stateLabels[item.state]}
+          </span>
           <strong>{accessLine(item)}</strong>
           <div className="pf-contact">
             {item.ownerEmail && (
@@ -370,15 +474,28 @@ function AccessSheet({
                 <WhatsAppIcon size={14} /> WhatsApp da casa
               </a>
             )}
-            {item.lastSignInAt && <span>Último acesso {ago(item.lastSignInAt)}</span>}
+            {item.lastSignInAt && (
+              <span>Último acesso {ago(item.lastSignInAt)}</span>
+            )}
           </div>
         </div>
+
+        <PlanEditor
+          item={item}
+          onAct={(body, message, method) =>
+            onAct({ businessId: item.id, ...body }, message, method)
+          }
+        />
 
         <section className="pf-block">
           <h3>
             <ClockCountdown size={18} /> Liberar por dias
           </h3>
-          <div className="pf-chips" role="radiogroup" aria-label="Dias de acesso">
+          <div
+            className="pf-chips"
+            role="radiogroup"
+            aria-label="Dias de acesso"
+          >
             {quick.map((value) => (
               <button
                 key={value}
@@ -397,7 +514,9 @@ function AccessSheet({
                 min={1}
                 max={3660}
                 value={days}
-                onChange={(event) => setDays(Math.max(1, Number(event.target.value) || 1))}
+                onChange={(event) =>
+                  setDays(Math.max(1, Number(event.target.value) || 1))
+                }
                 aria-label="Outra quantidade de dias"
               />
               dias
@@ -415,11 +534,17 @@ function AccessSheet({
             type="button"
             disabled={!!busy}
             onClick={() =>
-              void run("granted", { action: "granted", days }, `${item.name}: +${days} dias liberados.`)
+              void run(
+                "granted",
+                { action: "granted", days },
+                `${item.name}: +${days} dias liberados.`,
+              )
             }
           >
             <Play size={15} weight="fill" />
-            {busy === "granted" ? "Liberando…" : `Liberar ${days} ${days === 1 ? "dia" : "dias"}`}
+            {busy === "granted"
+              ? "Liberando…"
+              : `Liberar ${days} ${days === 1 ? "dia" : "dias"}`}
           </Button>
         </section>
 
@@ -439,7 +564,11 @@ function AccessSheet({
                 variant="secondary"
                 disabled={!date || !!busy}
                 onClick={() =>
-                  void run("until", { action: "until", date }, `Acesso até ${day(`${date}T12:00:00`)}.`)
+                  void run(
+                    "until",
+                    { action: "until", date },
+                    `Acesso até ${day(`${date}T12:00:00`)}.`,
+                  )
                 }
               >
                 Definir
@@ -452,7 +581,13 @@ function AccessSheet({
               type="button"
               variant="secondary"
               disabled={!!busy || (item.status === "active" && !item.until)}
-              onClick={() => void run("unlimited", { action: "unlimited" }, "Liberado sem prazo.")}
+              onClick={() =>
+                void run(
+                  "unlimited",
+                  { action: "unlimited" },
+                  "Liberado sem prazo.",
+                )
+              }
             >
               <InfinityIcon size={16} /> Liberar sem prazo
             </Button>
@@ -474,7 +609,9 @@ function AccessSheet({
             type="button"
             variant="ghost"
             disabled={!!busy || note === item.note}
-            onClick={() => void run("note", { action: "note", note }, "Anotação salva.")}
+            onClick={() =>
+              void run("note", { action: "note", note }, "Anotação salva.")
+            }
           >
             Salvar anotação
           </Button>
@@ -485,8 +622,8 @@ function AccessSheet({
             {confirmPause ? (
               <>
                 <p>
-                  Pausar fecha o painel e a agenda online de <b>{item.name}</b> agora. Os
-                  dados ficam guardados.
+                  Pausar fecha o painel e a agenda online de <b>{item.name}</b>{" "}
+                  agora. Os dados ficam guardados.
                 </p>
                 <div className="pf-inline">
                   <Button
@@ -494,18 +631,30 @@ function AccessSheet({
                     className="pf-pause"
                     disabled={!!busy}
                     onClick={() =>
-                      void run("suspended", { action: "suspended" }, "Acesso pausado.")
+                      void run(
+                        "suspended",
+                        { action: "suspended" },
+                        "Acesso pausado.",
+                      )
                     }
                   >
                     {busy === "suspended" ? "Pausando…" : "Sim, pausar"}
                   </Button>
-                  <Button type="button" variant="ghost" onClick={() => setConfirmPause(false)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setConfirmPause(false)}
+                  >
                     Cancelar
                   </Button>
                 </div>
               </>
             ) : (
-              <button type="button" className="pf-link-danger" onClick={() => setConfirmPause(true)}>
+              <button
+                type="button"
+                className="pf-link-danger"
+                onClick={() => setConfirmPause(true)}
+              >
                 <Pause size={15} /> Pausar acesso
               </button>
             )}
@@ -525,12 +674,18 @@ function AccessSheet({
                 <li key={event.id}>
                   <span>
                     {actionLabels[event.action]}
-                    {event.days ? ` ${event.days} ${event.days === 1 ? "dia" : "dias"}` : ""}
-                    {event.until && event.action !== "suspended" && event.action !== "note"
+                    {event.days
+                      ? ` ${event.days} ${event.days === 1 ? "dia" : "dias"}`
+                      : ""}
+                    {event.until &&
+                    event.action !== "suspended" &&
+                    event.action !== "note"
                       ? ` · até ${day(event.until)}`
                       : ""}
                   </span>
-                  <small>{format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}</small>
+                  <small>
+                    {format(new Date(event.createdAt), "dd/MM/yyyy HH:mm")}
+                  </small>
                 </li>
               ))}
             </ol>
@@ -538,5 +693,138 @@ function AccessSheet({
         </section>
       </div>
     </Modal>
+  );
+}
+
+/** Plano, mensalidade e módulos que o cliente fechou. */
+function PlanEditor({
+  item,
+  onAct,
+}: {
+  item: PlatformBusiness;
+  onAct: (
+    body: Record<string, unknown>,
+    message: string,
+    method?: string,
+  ) => Promise<void>;
+}) {
+  const [modules, setModules] = useState<ModuleKey[]>(
+    enabledModules(item.modules),
+  );
+  const [plan, setPlan] = useState(item.plan || planLabel(item));
+  const [price, setPrice] = useState(item.price ? item.price.toFixed(2).replace(".", ",") : "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const matched = planFor(modules);
+
+  function pick(key: PlanKey) {
+    setModules([...planCatalog[key].modules]);
+    setPlan(planCatalog[key].label);
+  }
+  function toggle(key: ModuleKey) {
+    const next = modules.includes(key)
+      ? modules.filter((value) => value !== key)
+      : [...modules, key];
+    setModules(next);
+    const found = planFor(next);
+    setPlan(found ? planCatalog[found].label : "Personalizado");
+  }
+  async function save() {
+    setBusy(true);
+    setError("");
+    try {
+      const value = price.trim()
+        ? Number(price.replace(/\./g, "").replace(",", "."))
+        : null;
+      if (value !== null && !Number.isFinite(value))
+        throw new Error("Mensalidade inválida.");
+      await onAct(
+        { plan: plan.trim(), price: value, modules },
+        `Plano ${plan.trim() || "salvo"} para ${item.name}.`,
+        "PUT",
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível salvar.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const dirty =
+    plan !== (item.plan || planLabel(item)) ||
+    price !== (item.price ? item.price.toFixed(2).replace(".", ",") : "") ||
+    modules.slice().sort().join() !==
+      enabledModules(item.modules).slice().sort().join();
+
+  return (
+    <section className="pf-block pf-plan-editor">
+      <h3>
+        <Package size={18} /> Plano e módulos
+      </h3>
+      <div className="pf-chips" role="radiogroup" aria-label="Plano">
+        {(Object.keys(planCatalog) as PlanKey[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={matched === key}
+            className={matched === key ? "is-on" : ""}
+            onClick={() => pick(key)}
+          >
+            {planCatalog[key].label}
+          </button>
+        ))}
+        {!matched && <span className="pf-custom-tag">Personalizado</span>}
+      </div>
+      <ul className="pf-modules">
+        {allModules.map((key) => (
+          <li key={key}>
+            <label>
+              <input
+                type="checkbox"
+                checked={modules.includes(key)}
+                onChange={() => toggle(key)}
+              />
+              <span>
+                <strong>{moduleCatalog[key].label}</strong>
+                <small>{moduleCatalog[key].detail}</small>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <p className="pf-base">
+        Sempre incluso: página e agendamento online, agenda, clientes, serviços,
+        equipe, financeiro, relatórios e divulgação.
+      </p>
+      <div className="pf-inline">
+        <label className="pf-field">
+          <span>Nome do plano</span>
+          <input
+            value={plan}
+            maxLength={40}
+            onChange={(event) => setPlan(event.target.value)}
+          />
+        </label>
+        <label className="pf-field">
+          <span>Mensalidade (R$)</span>
+          <input
+            inputMode="decimal"
+            placeholder="149,90"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+          />
+        </label>
+      </div>
+      {error && <p className="pf-error">{error}</p>}
+      <Button
+        type="button"
+        disabled={busy || !dirty}
+        onClick={() => void save()}
+      >
+        {busy ? "Salvando…" : "Salvar plano"}
+      </Button>
+    </section>
   );
 }
