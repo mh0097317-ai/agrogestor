@@ -168,6 +168,8 @@ export interface Settings {
   depositValue: number;
   /** Minutes the slot waits for the Pix. */
   depositHold: number;
+  /** WhatsApp para o profissional quando entra um agendamento. */
+  notifyProfessionals?: boolean;
   /** AI receptionist (web chat and WhatsApp). */
   assistantEnabled: boolean;
   assistantName: string;
@@ -296,6 +298,12 @@ export interface Store {
   whatsapp?: { displayPhone: string; phoneNumberId: string } | null;
   /** Instagram Direct connection (never the token). */
   instagram?: { username: string; igUserId: string } | null;
+  /** WhatsApp da loja conectado por QR Code (Evolution API do StudioFlow). */
+  whatsappLink?: WhatsAppLink | null;
+  /** O servidor tem a Evolution API configurada. */
+  evolutionReady?: boolean;
+  /** Demonstração: mensagens que sairiam pelo WhatsApp. */
+  outbox?: { to: string; body: string; kind: string; at: string }[];
   /** Conta que mostra os posts na página (dela mesma ou da recepcionista). */
   instagramFeed?: { username: string; source: "page" | "assistant" } | null;
   /** Áudios do WhatsApp/Instagram viram texto (serviço de transcrição configurado). */
@@ -308,6 +316,11 @@ export interface Store {
   access?: BusinessAccess & { state?: AccessState };
   /** Histórico de liberações no modo demonstração. */
   accessEvents?: AccessEvent[];
+}
+export interface WhatsAppLink {
+  status: "connecting" | "open" | "close";
+  phone: string;
+  profileName: string;
 }
 export interface Slot {
   time: string;

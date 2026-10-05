@@ -7,6 +7,7 @@ import {
   ArrowRight,
   ArrowSquareOut,
   Bell,
+  ChatCircleText,
   CalendarBlank,
   Check,
   CircleNotch,
@@ -24,6 +25,7 @@ import {
 import { PaymentSettings } from "./payment-settings";
 import { AssistantSettings } from "./assistant-settings";
 import { InstagramFeedSettings } from "./instagram-feed-settings";
+import { WhatsAppSettings } from "./whatsapp-settings";
 import {
   Avatar,
   Button,
@@ -58,7 +60,13 @@ import {
 
 type EditableTab =
   "business" | "identity" | "agenda" | "loyalty" | "notifications";
-type Tab = EditableTab | "professionals" | "payments" | "assistant" | "plan";
+type Tab =
+  | EditableTab
+  | "professionals"
+  | "payments"
+  | "assistant"
+  | "whatsapp"
+  | "plan";
 type FieldEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 >;
@@ -106,6 +114,7 @@ const tabs = [
   { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
   { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
   { id: "payments" as const, label: "Pagamentos", icon: Wallet },
+  { id: "whatsapp" as const, label: "WhatsApp", icon: ChatCircleText },
   { id: "assistant" as const, label: "Recepcionista", icon: Robot },
   { id: "professionals" as const, label: "Profissionais", icon: Users },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
@@ -252,7 +261,8 @@ function SettingsContent({ store }: { store: Store }) {
     tab !== "professionals" &&
     tab !== "plan" &&
     tab !== "payments" &&
-    tab !== "assistant";
+    tab !== "assistant" &&
+    tab !== "whatsapp";
   const dirty =
     editable &&
     drafts[tab] !== null &&
@@ -527,6 +537,7 @@ function SettingsContent({ store }: { store: Store }) {
     notifications: "Notificações",
     payments: "Pagamentos online",
     assistant: "Recepcionista com IA",
+    whatsapp: "WhatsApp da loja",
     plan: "Seu espaço de gestão",
   }[tab];
   const sectionDescription = {
@@ -536,6 +547,7 @@ function SettingsContent({ store }: { store: Store }) {
     payments:
       "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
     assistant: "Atendente virtual no chat da página e no WhatsApp, 24 horas.",
+    whatsapp: "Conecte com QR Code e deixe os avisos saírem sozinhos.",
     loyalty:
       "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
     professionals:
@@ -1175,6 +1187,13 @@ function SettingsContent({ store }: { store: Store }) {
           )}
           {tab === "assistant" && (
             <AssistantSettings
+              store={store}
+              canManage={canManage}
+              onSaved={refresh}
+            />
+          )}
+          {tab === "whatsapp" && (
+            <WhatsAppSettings
               store={store}
               canManage={canManage}
               onSaved={refresh}

@@ -269,6 +269,14 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Instagram: "Instagram" abre o perfil com seguidores e os 12 posts mais recentes pela API oficial (`/api/public/[slug]/instagram`, cache de 15 minutos, token cifrado em `instagram_feeds` ou o da Recepcionista). Sem conta ligada, mostra o @ e as fotos da casa. Conexão em Configurações → Empresa → Posts do Instagram na página.
 - Migration `20261010120000_studioflow_photos_instagram.sql`. Teste: `tests/photos-instagram.test.ts`.
 
+## WhatsApp por QR Code e aviso ao profissional (5 de outubro de 2026)
+
+- Evolution API (v2) do StudioFlow: um servidor só (`EVOLUTION_API_URL`, `EVOLUTION_API_KEY`), uma instância por loja (`sf-<businessId>`). Em Configurações → WhatsApp a loja toca em "Conectar com QR Code", lê o código no celular (Aparelhos conectados) e o painel confere a cada 3 s até conectar; o código se renova sozinho. Tabela `whatsapp_links` (só servidor; hash do token do webhook), cliente em `src/services/whatsapp/evolution.ts`, conexão em `link.ts`, webhook `/api/evolution/[businessId]?token=` (token novo a cada conexão).
+- Mensagens que chegam por esse número entram em Conversas e a recepcionista responde por ele (mesmo fluxo do WhatsApp oficial: `receiveWhatsAppMessages`, áudio transcrito). A equipe responde em Conversas pelo número da loja (`shopSender`: QR Code primeiro, depois a API oficial da Meta se existir).
+- A recepcionista agora manda o link de agendamento por padrão (ferramenta `link_agendamento`, já com serviço e profissional) e continua tirando dúvidas; ainda marca pela conversa se o cliente preferir.
+- Aviso ao profissional: quando o cliente agenda (página ou recepcionista), quem vai atender recebe pelo WhatsApp da loja nome, dia, horário, serviços, valor, se é a primeira vez, sinal pendente e o link da agenda do dia (`src/services/whatsapp/notify.ts`, depois da resposta com `after()`). Liga/desliga em Configurações → WhatsApp (`business_settings.notify_professionals`). Na demonstração a conexão é simulada e os avisos aparecem como balões na mesma tela.
+- Migration `20261010130000_studioflow_whatsapp_links.sql`. Teste: `tests/whatsapp-link.test.ts`.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

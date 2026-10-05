@@ -10,6 +10,7 @@ import type {
   Store,
 } from "@/types";
 import { isDemo, mutateDemo, readDemo } from "../server-demo";
+import { notifyNewBooking } from "../whatsapp/notify";
 import { bookWithPayments, getPaymentAccount } from "../server-payments";
 import { decryptSecret, newToken, sha256 } from "../server-secrets";
 import { camel, getPublicStore } from "../server-store";
@@ -410,8 +411,8 @@ async function answerPending(
       origin: delivery.origin,
       payments,
       loadStore: () => loadStore(delivery.slug),
-      book: (input) =>
-        bookWithPayments(delivery.slug, {
+      book: async (input) => {
+        const appointment = await bookWithPayments(delivery.slug, {
           serviceIds: input.serviceIds,
           professionalId: input.professionalId,
           start: input.start,
@@ -420,7 +421,10 @@ async function answerPending(
           email: "",
           reminder: true,
           cpf: input.cpf,
-        }),
+        });
+        await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
+        return appointment;
+      },
     },
   });
   await repo.update(conversationId, {
@@ -557,32 +561,44 @@ export async function slugOf(businessId: string) {
   return data.slug as string;
 }
 
+/** One customer message from any WhatsApp connection. */
+export interface IncomingWhatsApp {
+  id: string;
+  /** Sender with country code; answers go back to this exact number. */
+  from: string;
+  name: string;
+  text: string;
+  /** Voice note: transcribed before it is stored, when the server can. */
+  loadAudio?: () => Promise<{ audio: ArrayBuffer; mime: string }>;
+}
+
 /**
- * A delivery from Meta for one business, already authenticated by the
- * signature. Stores each message once; the AI answers when it is on.
- * Returns the work to run after the 200 goes back to Meta.
+ * Messages that reached the business WhatsApp (Meta Cloud API or the QR
+ * Code connection). Stores each one once; the AI answers when it is on.
+ * Returns the work to run after the 200 goes back.
  */
-export async function receiveWhatsApp(
-  account: WhatsAppAccount,
-  messages: import("./whatsapp").InboundMessage[],
-  origin: string,
-) {
-  const slug = await slugOf(account.businessId);
+export async function receiveWhatsAppMessages(input: {
+  businessId: string;
+  tenantId: string;
+  origin: string;
+  messages: IncomingWhatsApp[];
+  send: (to: string, body: string) => Promise<void>;
+}) {
+  const slug = await slugOf(input.businessId);
   // Sem acesso liberado ou sem a recepcionista no plano: a mensagem não é tratada.
-  const access = await readBusinessAccess(account.businessId);
+  const access = await readBusinessAccess(input.businessId);
   if (!accessOpen(access) || !hasModule(access.modules, "recepcionista"))
     return async () => {};
-  const repo = liveRepo(account.businessId, account.tenantId);
+  const repo = liveRepo(input.businessId, input.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
     .select("assistant_enabled")
-    .eq("business_id", account.businessId)
+    .eq("business_id", input.businessId)
     .maybeSingle();
-  // Reply to the exact wa_id WhatsApp used (it may lack the 9 of new numbers).
+  const { brazilPhone } = await import("./whatsapp");
+  // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
   const touched = new Map<string, string>();
-  for (const message of messages) {
-    if (message.phoneNumberId && message.phoneNumberId !== account.phoneNumberId) continue;
-    const { brazilPhone } = await import("./whatsapp");
+  for (const message of input.messages) {
     const phone = brazilPhone(message.from);
     const conversation =
       (await repo.byPhone("whatsapp", phone)) ||
@@ -591,9 +607,7 @@ export async function receiveWhatsApp(
         contactPhone: phone,
         contactName: message.name,
       }));
-    const body = message.audioId
-      ? await audioText(() => downloadWhatsAppMedia(message.audioId!, account.token))
-      : message.text;
+    const body = message.loadAudio ? await audioText(message.loadAudio) : message.text;
     if (!(await repo.addMessage(conversation.id, "customer", body, message.id))) continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
@@ -605,22 +619,42 @@ export async function receiveWhatsApp(
   }
   return async () => {
     if (!settings?.assistant_enabled) return;
-    for (const [id, waId] of touched) {
+    for (const [id, to] of touched) {
       const conversation = await repo.get(id);
       if (!conversation || conversation.status !== "ai") continue;
       await processConversation(repo, id, {
-        origin,
+        origin: input.origin,
         slug,
-        send: (body) =>
-          sendWhatsApp({
-            phoneNumberId: account.phoneNumberId,
-            token: account.token,
-            to: waId,
-            body,
-          }),
+        send: (body) => input.send(to, body),
       });
     }
   };
+}
+
+/** A delivery from Meta for one business, already authenticated by the signature. */
+export async function receiveWhatsApp(
+  account: WhatsAppAccount,
+  messages: import("./whatsapp").InboundMessage[],
+  origin: string,
+) {
+  return receiveWhatsAppMessages({
+    businessId: account.businessId,
+    tenantId: account.tenantId,
+    origin,
+    messages: messages
+      .filter((message) => !message.phoneNumberId || message.phoneNumberId === account.phoneNumberId)
+      .map((message) => ({
+        id: message.id,
+        from: message.from,
+        name: message.name,
+        text: message.text,
+        loadAudio: message.audioId
+          ? () => downloadWhatsAppMedia(message.audioId!, account.token)
+          : undefined,
+      })),
+    send: (to, body) =>
+      sendWhatsApp({ phoneNumberId: account.phoneNumberId, token: account.token, to, body }),
+  });
 }
 
 /* ------------------------------------------------------------------ */

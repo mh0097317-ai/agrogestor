@@ -96,7 +96,8 @@ export function systemPrompt(store: Store, payments: boolean) {
 Como responder:
 - Português do Brasil, simpático e direto, como uma boa recepcionista no WhatsApp: mensagens curtas (1 a 4 frases), sem listas longas, sem markdown com asteriscos ou títulos.
 - Nunca invente preço, horário, serviço, profissional, promoção ou política. Horários livres só pelas ferramentas; o resto vem dos dados abaixo. Se não souber, diga que vai chamar alguém da equipe e use chamar_humano.
-- Para marcar: confirme serviço(s), dia e horário (e profissional, se o cliente tiver preferência), consulte com horarios_livres ou proximos_horarios, ofereça no máximo 3 opções, e só chame agendar depois que o cliente escolher um horário e você tiver o nome e o WhatsApp dele (no WhatsApp o número já é conhecido). Antes de agendar, repita em uma frase o que vai marcar.
+- Quando o cliente quiser marcar, o caminho padrão é o link: use link_agendamento (com o serviço, se ele já disse qual) e mande o link numa mensagem curta e calorosa, por exemplo "Temos sim! Te mando o link, é só escolher o horário: <link>". Se ele não disse o serviço, mande o link geral mesmo. Depois que ele agendar, siga tirando as dúvidas normalmente.
+- Se o cliente preferir marcar por aqui mesmo (ou pedir um horário específico): confirme serviço(s), dia e horário (e profissional, se o cliente tiver preferência), consulte com horarios_livres ou proximos_horarios, ofereça no máximo 3 opções, e só chame agendar depois que o cliente escolher um horário e você tiver o nome e o WhatsApp dele (no WhatsApp o número já é conhecido). Antes de agendar, repita em uma frase o que vai marcar.
 - Use os ids exatamente como aparecem aqui e o campo "inicio" exatamente como a ferramenta devolveu.
 - Cancelar ou remarcar: o cliente faz pelo link do comprovante que recebeu ao agendar. Se ele não tiver o link ou precisar de ajuda, use chamar_humano.
 - Se o cliente pedir para falar com uma pessoa, reclamar, ou o assunto fugir de agendamento e informações do estabelecimento, use chamar_humano.
@@ -194,6 +195,28 @@ export const tools: Anthropic.Beta.BetaTool[] = [
     },
   },
   {
+    name: "link_agendamento",
+    description:
+      "Link da página de agendamento do estabelecimento, já com o(s) serviço(s) e o profissional escolhidos quando houver. O cliente escolhe o horário por lá.",
+    strict: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        servicos: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ids dos serviços, se o cliente já disse; senão lista vazia.",
+        },
+        profissional: {
+          type: "string",
+          description: 'Id do profissional preferido ou "any".',
+        },
+      },
+      required: ["servicos", "profissional"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "chamar_humano",
     description:
       "Passa a conversa para alguém da equipe e avisa no painel. Depois disso, diga ao cliente que alguém vai responder em breve.",
@@ -225,6 +248,23 @@ export async function runTool(
     if (name === "chamar_humano") {
       state.handoff = String(input.motivo || "Cliente pediu atendimento").slice(0, 300);
       return { content: "Conversa passada para a equipe." };
+    }
+    if (name === "link_agendamento") {
+      const store = await ctx.loadStore();
+      const chosen = (stringList(input.servicos) || []).filter((id) =>
+        store.services.some((service) => service.id === id && service.active),
+      );
+      const professional = String(input.profissional || "any");
+      const query = new URLSearchParams();
+      if (chosen.length) query.set("service", chosen.join(","));
+      if (professional !== "any" && store.professionals.some((person) => person.id === professional && person.active))
+        query.set("professional", professional);
+      const search = query.toString();
+      return {
+        content: JSON.stringify({
+          link: `${ctx.origin}/${store.business.slug}/agendar${search ? `?${search}` : ""}`,
+        }),
+      };
     }
     const services = stringList(input.servicos);
     if (!services?.length) return { content: "Informe ao menos um serviço.", isError: true };

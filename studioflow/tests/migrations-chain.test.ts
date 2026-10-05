@@ -85,10 +85,22 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
       "insert into public.instagram_feeds(business_id,tenant_id,ig_user_id,username,access_token_enc)values($1,$2,'1789000000','casa','x')",
       [biz.id, biz.tenant_id],
     );
+    await db.query(
+      "insert into public.whatsapp_links(business_id,tenant_id,instance,webhook_token_hash)values($1,$2,$3,'\\x00')",
+      [biz.id, biz.tenant_id, `sf-${biz.id}`],
+    );
+    await assert.rejects(
+      db.query("update public.whatsapp_links set status='perdido' where business_id=$1", [biz.id]),
+    );
+    assert.equal(
+      (await db.query<{ v: boolean }>("select notify_professionals as v from public.business_settings where business_id=$1", [biz.id])).rows[0].v,
+      true,
+    );
     await db.exec("reset role;set role authenticated;");
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [owner]);
     await assert.rejects(db.query("select * from public.instagram_accounts"));
     await assert.rejects(db.query("select * from public.instagram_feeds"));
+    await assert.rejects(db.query("select * from public.whatsapp_links"));
   } finally {
     await db.close();
   }

@@ -22,6 +22,8 @@ import {
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
 import { transcriptionReady } from "./assistant/transcribe";
 import { readInstagramFeedStatus } from "./instagram-feed";
+import { readWhatsAppLink } from "./whatsapp/link";
+import { evolutionReady } from "./whatsapp/evolution";
 import {
   createSupabaseAdmin,
   isPlatformAdmin,
@@ -384,6 +386,7 @@ export async function getWorkspace() {
       viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
       aiReady: aiReady(),
       transcriptionReady: transcriptionReady(),
+      evolutionReady: true,
       mode: "demo",
     } as Store;
   }
@@ -394,6 +397,8 @@ export async function getWorkspace() {
     whatsapp: await readWhatsAppAccount(businessId),
     instagram: await readInstagramAccount(businessId),
     instagramFeed: await readInstagramFeedStatus(businessId),
+    whatsappLink: await readWhatsAppLink(businessId),
+    evolutionReady: evolutionReady(),
     transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,
@@ -877,6 +882,8 @@ export async function mutateWorkspace(
     whatsapp: await readWhatsAppAccount(businessId),
     instagram: await readInstagramAccount(businessId),
     instagramFeed: await readInstagramFeedStatus(businessId),
+    whatsappLink: await readWhatsAppLink(businessId),
+    evolutionReady: evolutionReady(),
     transcriptionReady: transcriptionReady(),
     aiReady: aiReady(),
     access,

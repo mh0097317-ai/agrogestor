@@ -6,9 +6,10 @@ import type { ConversationMessage, ConversationSummary } from "@/types";
 import { isDemo, mutateDemo, readDemo } from "../server-demo";
 import { encryptSecret, sha256 } from "../server-secrets";
 import { camel, demoWorkspaceSlug } from "../server-store";
-import { demoRepo, instagramAccount, liveRepo, whatsappAccount } from "./conversations";
-import { checkWhatsApp, sendWhatsApp } from "./whatsapp";
+import { demoRepo, instagramAccount, liveRepo } from "./conversations";
+import { checkWhatsApp } from "./whatsapp";
 import { checkInstagram, sendInstagram } from "./instagram";
+import { shopSender } from "../whatsapp/link";
 
 const editors = ["owner", "admin", "manager"];
 const staff = [...editors, "receptionist"];
@@ -236,24 +237,21 @@ export async function conversationAction(
 ) {
   const demo = isDemo();
   let repo;
-  let whatsapp: Awaited<ReturnType<typeof whatsappAccount>> = null;
+  let businessId: string | undefined;
   let instagram: Awaited<ReturnType<typeof instagramAccount>> = null;
   if (demo) {
     const slug = await demoWorkspaceSlug();
     const store = await readDemo(slug);
     repo = demoRepo(slug, store.business.id);
   } else {
-    const { businessId } = await member(staff);
+    ({ businessId } = await member(staff));
     const { data: business } = await createSupabaseAdmin()
       .from("businesses")
       .select("tenant_id")
       .eq("id", businessId)
       .single();
     repo = liveRepo(businessId, business!.tenant_id);
-    [whatsapp, instagram] = await Promise.all([
-      whatsappAccount(businessId),
-      instagramAccount(businessId).catch(() => null),
-    ]);
+    instagram = await instagramAccount(businessId).catch(() => null);
   }
   const conversation = await repo.get(id);
   if (!conversation) throw new DomainError("Conversa não encontrada.", 404);
@@ -270,14 +268,10 @@ export async function conversationAction(
     );
     return { ok: true };
   }
-  if (conversation.channel === "whatsapp") {
-    if (!whatsapp) throw new DomainError("Conecte o WhatsApp para responder por ele.", 409);
-    await sendWhatsApp({
-      phoneNumberId: whatsapp.phoneNumberId,
-      token: whatsapp.token,
-      to: `55${conversation.contactPhone}`,
-      body: input.body,
-    });
+  if (conversation.channel === "whatsapp" && !demo) {
+    const send = await shopSender(businessId!);
+    if (!send) throw new DomainError("Conecte o WhatsApp da loja para responder por ele.", 409);
+    await send(conversation.contactPhone, input.body);
   }
   if (conversation.channel === "instagram" && !demo) {
     if (!instagram || !conversation.contactRef)

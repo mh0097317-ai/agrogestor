@@ -1,0 +1,259 @@
+/* Configurações → WhatsApp */
+.wa-start {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
+  background: #fffdf9;
+}
+.wa-start-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f4f0e8;
+}
+.wa-start strong {
+  display: block;
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+.wa-start p {
+  margin: 4px 0 0;
+  color: #6e655b;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .wa-start {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .wa-start > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.wa-qr {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+}
+.wa-qr figure {
+  position: relative;
+  margin: 0;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid #dcd2c2;
+  border-radius: 3px;
+  background: #fff;
+  animation: wa-qr-in 420ms var(--ease-out, ease) both;
+}
+.wa-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+/* A brass line sweeps the code while it waits to be read. */
+.wa-qr-scan {
+  position: absolute;
+  right: 12px;
+  left: 12px;
+  top: 12px;
+  height: 2px;
+  background: #a47a3c;
+  box-shadow: 0 0 10px #a47a3c99;
+  animation: wa-scan 2.4s ease-in-out infinite;
+}
+@keyframes wa-scan {
+  50% {
+    top: calc(100% - 14px);
+  }
+}
+@keyframes wa-qr-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.wa-pair {
+  margin: 12px 0 0;
+  color: #433a31;
+  font-size: 13.5px;
+}
+.wa-pair b {
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+.wa-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  color: #6e655b;
+  font-size: 13.5px;
+}
+.wa-wait i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #25d366;
+  animation: wa-pulse 1.4s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+.wa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+@media (max-width: 640px) {
+  .wa-qr {
+    grid-template-columns: 1fr;
+  }
+  .wa-qr figure {
+    width: min(260px, 100%);
+    justify-self: center;
+  }
+}
+
+.wa-linked {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
+  background: #fffdf9;
+  animation: wa-qr-in 420ms var(--ease-out, ease) both;
+}
+.wa-linked-mark {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f4f0e8;
+}
+.wa-linked-mark > svg:last-child {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  background: #fffdf9;
+  color: #2f6b45;
+}
+.wa-linked > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.wa-linked strong {
+  overflow: hidden;
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wa-linked span {
+  color: #6e655b;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 520px) {
+  .wa-linked {
+    flex-wrap: wrap;
+  }
+  .wa-linked > button {
+    width: 100%;
+  }
+}
+
+.wa-toggle {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+.wa-toggle input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: #16130f;
+}
+.wa-toggle span {
+  display: grid;
+  gap: 3px;
+}
+.wa-toggle strong {
+  color: #16130f;
+  font-size: 14.5px;
+  font-weight: 650;
+}
+.wa-toggle small {
+  color: #6e655b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-qr-scan,
+  .wa-wait i {
+    animation: none;
+  }
+}
+
+/* Demonstração: os avisos que sairiam, como balões do WhatsApp */
+.wa-outbox {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 16px;
+  border-radius: 3px;
+  background: #efe7da;
+}
+.wa-outbox .sheet-eyebrow {
+  color: #8a6430;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.wa-bubble {
+  max-width: 420px;
+  margin: 0;
+  padding: 8px 12px 10px;
+  border-radius: 8px 8px 8px 2px;
+  background: #fff;
+  box-shadow: 0 1px 1px rgb(22 19 15 / 0.08);
+}
+.wa-bubble figcaption {
+  margin-bottom: 4px;
+  color: #6e655b;
+  font-size: 11.5px;
+}
+.wa-bubble p {
+  margin: 0;
+  color: #16130f;
+  font-size: 13.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
