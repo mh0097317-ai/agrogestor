@@ -290,6 +290,8 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - O cadastro (`/onboarding`) agora tem 6 etapas e a página já nasce completa: Negócio; Contato (nome, frase, WhatsApp e endereço obrigatórios, Instagram); Identidade (capa obrigatória, logo, cor dos botões, até 12 fotos dos trabalhos e comodidades); Serviços com foto e descrição; Equipe com foto e WhatsApp (para os avisos de agendamento); Horários. A prévia ao lado mostra "Sua página está X% pronta".
 - O servidor continua criando com `create_workspace` e completa em seguida o que a RPC não recebe (contato, identidade, fotos dos serviços, foto e WhatsApp da equipe) em `completeWorkspace` (`src/app/api/onboarding/route.ts`); os campos novos do `onboardingSchema` são opcionais no servidor para não quebrar integrações antigas.
 
+- "Complete sua página" (5/10): no Início do painel, dono e gerência veem o que falta na página pública (WhatsApp, endereço, Instagram, frase, capa, logo, fotos dos trabalhos, fotos dos serviços), com a porcentagem pronta e link direto para o campo (`src/features/dashboard/page-checklist.tsx`). Configurações abre na aba pedida por `?aba=` (ex.: `?aba=identity`). Lojas criadas antes do cadastro completo (como a Coliseu) não mostram Localização/WhatsApp/Instagram até esses dados serem preenchidos.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

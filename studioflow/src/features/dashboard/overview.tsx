@@ -1,5 +1,7 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { PageChecklist } from "./page-checklist";
 import Link from "next/link";
 import {
   Bell,
@@ -165,6 +167,9 @@ export function Overview() {
 
       <div className="ov-body">
         <div className="ov-main">
+          {["owner", "admin", "manager"].includes(data.viewer?.role || "owner") && (
+            <PageChecklist data={data} />
+          )}
           {nowCard && (
             <NowCard
               appointment={nowCard}

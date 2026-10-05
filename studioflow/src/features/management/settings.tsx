@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ArrowRight,
@@ -239,7 +239,12 @@ function SettingsContent({ store }: { store: Store }) {
   const { canManage } = usePermissions();
   const { toast } = useToast();
   const action = useFormAction();
-  const [tab, setTab] = useState<Tab>("business");
+  // "?aba=identity" opens a section directly (links from the checklist).
+  const query = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => {
+    const wanted = query.get("aba");
+    return tabs.some((item) => item.id === wanted) ? (wanted as Tab) : "business";
+  });
   const [drafts, setDrafts] = useState<Drafts>({
     business: null,
     identity: null,

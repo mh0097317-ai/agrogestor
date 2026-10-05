@@ -1709,3 +1709,130 @@
     font-size: 18px;
   }
 }
+
+/* Complete sua página */
+.ov-checklist {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-left: 2px solid #a47a3c;
+}
+.ov-checklist-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ov-checklist-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f8f1e4;
+  color: #a47a3c;
+}
+.ov-checklist-head > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.ov-checklist-head strong {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+.ov-checklist-head span {
+  color: #6e655b;
+  font-size: 13px;
+}
+.ov-checklist-head b {
+  color: #16130f;
+}
+.ov-checklist-view {
+  flex: none;
+  color: #16130f;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ov-checklist-bar {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #ebe4d6;
+}
+.ov-checklist-bar em {
+  display: block;
+  height: 100%;
+  background: #a47a3c;
+  transition: width 600ms var(--ease-out, ease);
+}
+.ov-checklist ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ov-checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  color: #16130f;
+}
+a.ov-checklist-row:hover {
+  background: #f8f4ed;
+}
+.ov-checklist-row > i {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #c9bda9;
+  border-radius: 50%;
+}
+.ov-checklist-row > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ov-checklist-row b {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+.ov-checklist-row small {
+  overflow: hidden;
+  color: #6e655b;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ov-checklist-row > svg:last-child {
+  flex: none;
+  color: #8a6430;
+}
+.ov-checklist li.is-done .ov-checklist-row {
+  min-height: 32px;
+  color: #6e655b;
+}
+.ov-checklist li.is-done svg {
+  color: #2f6b45;
+}
+.ov-checklist li.is-done b {
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-color: #c9bda9;
+}
+@media (max-width: 720px) {
+  .ov-checklist ul {
+    grid-template-columns: 1fr;
+  }
+}
