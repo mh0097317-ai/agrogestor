@@ -4,6 +4,7 @@ import {
   platformOverview,
   platformPlan,
   platformPlanSchema,
+  requirePlatformAdmin,
 } from "@/services/platform";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
+    await requirePlatformAdmin();
     await platformAction(platformActionSchema.parse(await request.json()));
     return respond({ businesses: await platformOverview() });
   } catch (error) {
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     assertSameOrigin(request);
+    await requirePlatformAdmin();
     await platformPlan(platformPlanSchema.parse(await request.json()));
     return respond({ businesses: await platformOverview() });
   } catch (error) {
