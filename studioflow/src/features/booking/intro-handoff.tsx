@@ -21,7 +21,7 @@ const timers: number[] = [];
 const clearTimers = () => timers.splice(0).forEach((id) => window.clearTimeout(id));
 
 /** Minimum time on screen, so the paper, mark and name finish arriving. */
-const minimum = 1150;
+const minimum = 1500;
 const liftTime = 720;
 
 function set(next: Handoff | null) {

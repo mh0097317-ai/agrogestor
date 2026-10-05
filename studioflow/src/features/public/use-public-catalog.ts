@@ -55,7 +55,15 @@ const catalogUrl = (slug: string) => `/api/public/${encodeURIComponent(slug)}`;
 export const cachedCatalog = (slug: string) =>
   (memo.get(catalogUrl(slug)) as PublicCatalog | undefined) ?? null;
 
-export function usePublicData<T>(url: string) {
+export function usePublicData<T>(url: string, initial?: T | null) {
+  // Data the server already rendered with the page: shown at once. The
+  // memory is only for the browser; on the server each request brings its own.
+  const server = typeof window === "undefined";
+  useState(() => {
+    if (!server && initial && url) memo.set(url, initial);
+    return null;
+  });
+  const remembered = server ? (initial ?? null) : ((memo.get(url) as T) ?? null);
   const [revision, setRevision] = useState(0);
   const [result, setResult] = useState<{
     key: string;
@@ -91,15 +99,15 @@ export function usePublicData<T>(url: string) {
     return () => controller.abort();
   }, [key, url]);
   return {
-    data: result.url === url && result.data ? result.data : ((memo.get(url) as T) ?? null),
+    data: result.url === url && result.data ? result.data : remembered,
     error: result.key === key ? result.error : "",
     // A first visit answered from memory refreshes quietly.
-    loading: !!url && result.key !== key && !(result.url !== url && memo.has(url)),
+    loading: !!url && result.key !== key && !(result.url !== url && !!remembered),
     reload,
   };
 }
 
-export function usePublicCatalog(slug: string) {
-  const { data, ...state } = usePublicData<PublicCatalog>(catalogUrl(slug));
+export function usePublicCatalog(slug: string, initial?: PublicCatalog | null) {
+  const { data, ...state } = usePublicData<PublicCatalog>(catalogUrl(slug), initial);
   return { catalog: data, ...state };
 }

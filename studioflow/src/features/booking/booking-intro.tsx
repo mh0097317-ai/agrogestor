@@ -44,7 +44,7 @@ export function BookingIntro({
   phase,
   onPhase,
   mode = "full",
-  hold = 1250,
+  hold = 1650,
 }: {
   business: Pick<Business, "name" | "logo" | "category">;
   phase: IntroPhase;
@@ -73,6 +73,11 @@ export function BookingIntro({
       onClick={() => phase === "on" && onPhase("lift")}
       aria-hidden="true"
     >
+      {/* Poster corners, drawn in from the edges */}
+      <span className="bk-intro-corner is-tl" />
+      <span className="bk-intro-corner is-tr" />
+      <span className="bk-intro-corner is-bl" />
+      <span className="bk-intro-corner is-br" />
       <div className="bk-intro-mark">
         {business.logo ? (
           <span
@@ -83,12 +88,22 @@ export function BookingIntro({
           </span>
         ) : (
           <span className="bk-intro-monogram">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle className="is-outer" cx="60" cy="60" r="58" pathLength={1} />
+              <circle className="is-inner" cx="60" cy="60" r="51" pathLength={1} />
+            </svg>
             <span>{monogram(business.name)}</span>
           </span>
         )}
       </div>
       <span className="bk-intro-rule" />
-      <strong className="bk-intro-name">{business.name}</strong>
+      <strong className="bk-intro-name" aria-label={business.name}>
+        {[...business.name].map((letter, index) => (
+          <span key={index} style={{ "--i": index } as React.CSSProperties}>
+            {letter === " " ? "\u00a0" : letter}
+          </span>
+        ))}
+      </strong>
       <small className="bk-intro-category">{business.category}</small>
     </div>
   );

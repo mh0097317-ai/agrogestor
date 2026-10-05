@@ -2,7 +2,7 @@
 
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Appointment, Slot } from "@/types";
 import type { PublicCatalog } from "@/features/public/types";
 import { durationLabel } from "@/lib/utils";
@@ -53,21 +53,42 @@ function readRememberedCustomer(): RememberedCustomer | null {
   }
 }
 
-export function BookingFlow({ slug }: { slug: string }) {
-  const { catalog, loading, error, reload } = usePublicCatalog(slug);
+const noSubscribe = () => () => {};
+
+export function BookingFlow({
+  slug,
+  initialCatalog,
+}: {
+  slug: string;
+  initialCatalog?: PublicCatalog | null;
+}) {
+  const { catalog, loading, error, reload } = usePublicCatalog(
+    slug,
+    initialCatalog,
+  );
   const query = useSearchParams();
   // Decided once in the browser (the flow only renders client-side).
   // Tapped on the page: its opening is already on screen and lifts here.
   const [handedOff] = useState(() => handoffActive());
-  const [intro, setIntro] = useState<IntroPhase>(() =>
-    !handedOff && shouldPlayIntro(slug) ? "on" : "off",
-  );
+  // Server and first paint agree: the opening is on (the page arrives with
+  // the business). Seen already in this visit, it just lifts away.
+  const [intro, setIntro] = useState<IntroPhase>(handedOff ? "off" : "on");
   useEffect(() => {
-    if (intro !== "off" || handedOff) markIntroSeen(slug);
-  }, [intro, slug, handedOff]);
+    const seen = !handedOff && !shouldPlayIntro(slug);
+    markIntroSeen(slug);
+    if (seen)
+      queueMicrotask(() =>
+        setIntro((phase) => (phase === "on" ? "lift" : phase)),
+      );
+  }, [handedOff, slug]);
   useEffect(() => {
     if (catalog) finishHandoff();
   }, [catalog]);
+  const mounted = useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
   if (loading && !catalog) return <BookingLoader />;
   if (!catalog)
     return (
@@ -79,14 +100,18 @@ export function BookingFlow({ slug }: { slug: string }) {
   return (
     <>
       <PublicRefreshNotice error={error} refreshing={loading} retry={reload} />
-      <BookingWizard
-        catalog={catalog}
-        initialServices={(query.get("service") || "")
-          .split(",")
-          .filter(Boolean)}
-        initialProfessional={query.get("professional") || "any"}
-        revealed={intro !== "on"}
-      />
+      {/* The steps read the device (remembered customer, last booking), so
+          they mount in the browser; the opening covers the first paint. */}
+      {mounted && (
+        <BookingWizard
+          catalog={catalog}
+          initialServices={(query.get("service") || "")
+            .split(",")
+            .filter(Boolean)}
+          initialProfessional={query.get("professional") || "any"}
+          revealed={intro !== "on"}
+        />
+      )}
       <BookingIntro
         business={catalog.business}
         phase={intro}

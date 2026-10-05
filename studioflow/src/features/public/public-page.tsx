@@ -23,6 +23,7 @@ import {
   PublicRefreshNotice,
 } from "./public-ui";
 import { usePublicCatalog } from "./use-public-catalog";
+import type { PublicCatalog } from "./types";
 import { money } from "@/lib/utils";
 import { AssistantChat } from "./assistant-chat";
 import { businessClock, publicAccentStyle } from "./public-branding";
@@ -59,8 +60,14 @@ const shortDays = [
   "sábado",
 ];
 
-export function PublicPage({ slug }: { slug: string }) {
-  const { catalog, loading, error, reload } = usePublicCatalog(slug);
+export function PublicPage({
+  slug,
+  initialCatalog,
+}: {
+  slug: string;
+  initialCatalog?: PublicCatalog | null;
+}) {
+  const { catalog, loading, error, reload } = usePublicCatalog(slug, initialCatalog);
   const [toast, setToast] = useState("");
   const [showDock, setShowDock] = useState(false);
   const [sheet, setSheet] = useState<"location" | "instagram" | null>(null);
