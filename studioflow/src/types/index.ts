@@ -302,6 +302,8 @@ export interface Store {
   whatsappLink?: WhatsAppLink | null;
   /** O servidor tem a Evolution API configurada. */
   evolutionReady?: boolean;
+  /** Demonstração: faturas da mensalidade do StudioFlow. */
+  platformInvoices?: PlatformInvoice[];
   /** Demonstração: mensagens que sairiam pelo WhatsApp. */
   outbox?: { to: string; body: string; kind: string; at: string }[];
   /** Conta que mostra os posts na página (dela mesma ou da recepcionista). */
@@ -316,6 +318,16 @@ export interface Store {
   access?: BusinessAccess & { state?: AccessState };
   /** Histórico de liberações no modo demonstração. */
   accessEvents?: AccessEvent[];
+}
+/** Mensalidade do StudioFlow (fatura do Asaas da plataforma). */
+export interface PlatformInvoice {
+  id: string;
+  value: number;
+  dueDate: string;
+  status: "pending" | "paid" | "cancelled";
+  invoiceUrl: string;
+  paidAt: string | null;
+  createdAt: string;
 }
 export interface WhatsAppLink {
   status: "connecting" | "open" | "close";

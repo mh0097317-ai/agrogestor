@@ -26,6 +26,7 @@ import { PaymentSettings } from "./payment-settings";
 import { AssistantSettings } from "./assistant-settings";
 import { InstagramFeedSettings } from "./instagram-feed-settings";
 import { WhatsAppSettings } from "./whatsapp-settings";
+import { FeePayment } from "@/features/dashboard/fee-payment";
 import {
   Avatar,
   Button,
@@ -1199,7 +1200,16 @@ function SettingsContent({ store }: { store: Store }) {
               onSaved={refresh}
             />
           )}
-          {tab === "plan" && <PlanSection store={store} />}
+          {tab === "plan" && (
+            <>
+              <PlanSection store={store} />
+              <FeePayment
+                showHistory
+                demo={store.mode === "demo"}
+                onPaid={refresh}
+              />
+            </>
+          )}
         </Card>
       </div>
       <Modal

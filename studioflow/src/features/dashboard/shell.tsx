@@ -40,6 +40,7 @@ import { useToast } from "@/components/toast";
 import { SegmentIcon } from "@/lib/segments";
 import { Brand } from "@/components/brand";
 import { AccessGate } from "./access-gate";
+import { FeePayment } from "./fee-payment";
 import { daysLeft } from "@/lib/access";
 import { hasModule, type ModuleKey } from "@/lib/modules";
 import { format } from "date-fns";
@@ -95,7 +96,9 @@ const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(
 );
 /** Aviso para o dono quando faltam poucos dias de acesso. */
 function RenewBanner() {
-  const { data } = useWorkspace();
+  const { data, refresh } = useWorkspace();
+  const { toast } = useToast();
+  const [paying, setPaying] = useState(false);
   const access = data?.access;
   if (
     !access ||
@@ -113,15 +116,37 @@ function RenewBanner() {
         {left <= 1 ? " (último dia)" : ` (faltam ${left} dias)`}. Renove para a
         agenda online continuar aberta.
       </span>
-      {support && (
-        <a
-          href={`https://wa.me/${support}?text=${encodeURIComponent(ask)}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Falar com o StudioFlow
-        </a>
+      {access.price ? (
+        <button type="button" onClick={() => setPaying(true)}>
+          Pagar agora
+        </button>
+      ) : (
+        support && (
+          <a
+            href={`https://wa.me/${support}?text=${encodeURIComponent(ask)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Falar com o StudioFlow
+          </a>
+        )
       )}
+      <Modal
+        open={paying}
+        onClose={() => setPaying(false)}
+        title="Mensalidade StudioFlow"
+        description="Pague no Pix, boleto ou cartão. Quando o pagamento cair, o acesso renova sozinho."
+      >
+        {paying && (
+          <FeePayment
+            demo={data.mode === "demo"}
+            onPaid={async () => {
+              toast("Pagamento recebido. Seu acesso foi renovado.");
+              await refresh();
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

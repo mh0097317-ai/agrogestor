@@ -147,6 +147,20 @@
   color: #16130f;
   font-weight: 650;
 }
+.renew-banner > button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 2px;
+  background: #16130f;
+  color: #fffdf9;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.gate-card .fee {
+  margin: 4px 0 6px;
+}
 @media (prefers-reduced-motion: reduce) {
   .gate-card,
   .gate-steps li.is-now > span,

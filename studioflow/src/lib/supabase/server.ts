@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { DomainError } from "@/lib/availability";
-import { assertWorkspaceOpen, type BusinessAccess } from "@/lib/access";
+import { accessState, assertWorkspaceOpen, type BusinessAccess } from "@/lib/access";
 
 export async function createSupabaseServer() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,7 +43,11 @@ export function createSupabaseAdmin() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
-export async function requireMembership() {
+/**
+ * Who is signed in and in which business. `allowClosed` is only for what an
+ * owner still needs with the access closed (paying the monthly fee).
+ */
+export async function requireMembership(options: { allowClosed?: boolean } = {}) {
   const client = await createSupabaseServer();
   const {
     data: { user },
@@ -72,7 +76,9 @@ export async function requireMembership() {
     readBusinessAccess(businessId),
     client.from("businesses").select("name").eq("id", businessId).maybeSingle(),
   ]);
-  const state = assertWorkspaceOpen(access, business.data?.name || "");
+  const state = options.allowClosed
+    ? accessState(access)
+    : assertWorkspaceOpen(access, business.data?.name || "");
   return {
     client,
     businessId,

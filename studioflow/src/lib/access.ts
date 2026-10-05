@@ -29,7 +29,8 @@ export interface AccessEvent {
     | "suspended"
     | "pending"
     | "note"
-    | "plan";
+    | "plan"
+    | "paid";
   days: number | null;
   until: string | null;
   createdAt: string;

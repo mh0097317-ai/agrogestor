@@ -1,5 +1,6 @@
 "use client";
 
+import { PlatformWhatsApp } from "./platform-whatsapp";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -65,6 +66,7 @@ const actionLabels: Record<AccessEvent["action"], string> = {
   pending: "Voltou para aguardando",
   note: "Anotação",
   plan: "Mudou o plano e os módulos",
+  paid: "Pagou a mensalidade",
 };
 const money = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -260,6 +262,7 @@ export function PlatformAdmin() {
             </div>
           )}
         </div>
+        <PlatformWhatsApp />
         <div
           className="pf-kpis"
           role="tablist"

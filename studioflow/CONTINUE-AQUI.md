@@ -277,6 +277,13 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Aviso ao profissional: quando o cliente agenda (página ou recepcionista), quem vai atender recebe pelo WhatsApp da loja nome, dia, horário, serviços, valor, se é a primeira vez, sinal pendente e o link da agenda do dia (`src/services/whatsapp/notify.ts`, depois da resposta com `after()`). Liga/desliga em Configurações → WhatsApp (`business_settings.notify_professionals`). Na demonstração a conexão é simulada e os avisos aparecem como balões na mesma tela.
 - Migration `20261010130000_studioflow_whatsapp_links.sql`. Teste: `tests/whatsapp-link.test.ts`.
 
+## Mensalidade do StudioFlow com liberação automática (5 de outubro de 2026)
+
+- Conta Asaas da própria plataforma (`STUDIOFLOW_ASAAS_API_KEY`, `STUDIOFLOW_ASAAS_ENV`). Com plano e mensalidade definidos em `/admin`, o dono vê "Pagar agora" no aviso de vencimento (últimos 5 dias), "Pagar mensalidade" na tela de acesso encerrado e em Configurações → Plano (com o histórico). A fatura é do Asaas (Pix, boleto ou cartão, `billingType UNDEFINED`), uma em aberto por loja (`platform_invoices`); pede CPF/CNPJ na primeira vez e guarda em `businesses.cnpj`.
+- Pagou → `platform_invoice_paid` marca a fatura e soma 30 dias ao acesso (do fim do prazo, ou de agora se já venceu), uma vez só, com o evento "Pagou a mensalidade" no histórico. Chega pelo webhook `/api/billing/asaas` (cabeçalho `asaas-access-token` = `STUDIOFLOW_ASAAS_WEBHOOK_TOKEN`) ou pelo botão "Já paguei, conferir" (o painel também confere sozinho a cada 10 s). Acesso sem prazo não é cobrado.
+- Lembretes no WhatsApp: Vercel Cron diário (`vercel.json`, 9h de Brasília) chama `/api/cron/billing` com `CRON_SECRET`; manda 3 dias antes, no último dia e depois de vencer (até 7 dias), uma vez por vencimento (`platform_billing_notices`), com o link da fatura ou do painel. Saem pelo WhatsApp do próprio StudioFlow, conectado com QR Code no topo de `/admin` (instância `EVOLUTION_PLATFORM_INSTANCE`, padrão `sf-studioflow`).
+- Migration `20261010140000_studioflow_billing.sql`. Teste: `tests/billing.test.ts`.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

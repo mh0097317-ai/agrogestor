@@ -3,14 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowsClockwise, Check, SignOut } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowsClockwise,
+  Check,
+  SignOut,
+} from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import type { BlockedAccess } from "@/hooks/use-workspace";
+import { FeePayment } from "./fee-payment";
 import "./access-gate.css";
 
 /** Número da equipe StudioFlow para falar sobre liberação (só dígitos, com DDI). */
-const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(/\D/g, "");
+const support = (process.env.NEXT_PUBLIC_STUDIOFLOW_WHATSAPP || "").replace(
+  /\D/g,
+  "",
+);
 
 const copy = {
   pending: {
@@ -44,7 +52,11 @@ export function AccessGate({
   const [checking, setChecking] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const text =
-    copy[access.state === "pending" || access.state === "suspended" ? access.state : "expired"];
+    copy[
+      access.state === "pending" || access.state === "suspended"
+        ? access.state
+        : "expired"
+    ];
 
   // Opens by itself as soon as the team releases the access.
   useEffect(() => {
@@ -97,6 +109,13 @@ export function AccessGate({
             </p>
           )
         )}
+        {access.state === "expired" && (
+          <FeePayment
+            onPaid={async () => {
+              await onRetry();
+            }}
+          />
+        )}
         <div className="gate-actions">
           {support && (
             <a
@@ -114,7 +133,10 @@ export function AccessGate({
             onClick={() => void check()}
             disabled={checking}
           >
-            <ArrowsClockwise size={16} className={checking ? "gate-spin" : ""} />
+            <ArrowsClockwise
+              size={16}
+              className={checking ? "gate-spin" : ""}
+            />
             {checking ? "Conferindo…" : "Conferir agora"}
           </button>
         </div>

@@ -41,7 +41,7 @@ async function evo<T>(path: string, init: RequestInit = {}): Promise<T> {
 const events = ["MESSAGES_UPSERT", "CONNECTION_UPDATE"];
 
 /** Instância da loja, já com o webhook que traz mensagens e o status. */
-export async function createInstance(instance: string, webhookUrl: string) {
+export async function createInstance(instance: string, webhookUrl?: string) {
   return evo<{ qrcode?: { base64?: string; pairingCode?: string | null } }>("/instance/create", {
     method: "POST",
     body: JSON.stringify({
@@ -51,7 +51,7 @@ export async function createInstance(instance: string, webhookUrl: string) {
       groupsIgnore: true,
       alwaysOnline: false,
       readMessages: false,
-      webhook: { url: webhookUrl, byEvents: false, base64: true, events },
+      ...(webhookUrl ? { webhook: { url: webhookUrl, byEvents: false, base64: true, events } } : {}),
     }),
   });
 }

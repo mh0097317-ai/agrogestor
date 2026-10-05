@@ -1,0 +1,139 @@
+/* Mensalidade do StudioFlow */
+.fee {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #dcd2c2;
+  border-radius: 3px;
+  background: #fffdf9;
+  text-align: left;
+}
+.fee-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fee-head > svg {
+  flex: none;
+  color: #8a6430;
+}
+.fee-head > div {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.fee-head span {
+  color: #6e655b;
+  font-size: 12.5px;
+}
+.fee-head strong {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+.fee-head small {
+  color: #6e655b;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.fee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.fee-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.fee-document {
+  display: grid !important;
+  flex: 1 1 200px;
+  gap: 4px;
+}
+.fee-document span {
+  color: #433a31;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.fee-document input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #dcd2c2;
+  border-radius: 2px;
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.fee-note,
+.fee-error {
+  margin: 0;
+  color: #6e655b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.fee-error {
+  color: #9b2c1f;
+}
+.fee-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-color: #b9d2c0;
+  background: #f1f7f2;
+  animation: fee-in 420ms var(--ease-out, ease) both;
+}
+.fee-done > svg {
+  color: #2f6b45;
+}
+.fee-done div {
+  display: grid;
+}
+.fee-done strong {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+.fee-done span {
+  color: #433a31;
+  font-size: 13px;
+}
+@keyframes fee-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+.fee-spin {
+  animation: fee-spin 0.9s linear infinite;
+}
+@keyframes fee-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.fee-history {
+  display: grid;
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid #e2d9ca;
+  list-style: none;
+}
+.fee-history li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 6px 0;
+  color: #433a31;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.fee-history em {
+  color: #2f6b45;
+  font-style: normal;
+  font-weight: 650;
+}

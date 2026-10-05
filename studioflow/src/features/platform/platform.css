@@ -660,3 +660,66 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* WhatsApp do StudioFlow (lembretes de mensalidade) */
+.pf-wa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #e2d9ca;
+  border-radius: 3px;
+  background: #fffdf9;
+}
+.pf-wa > div {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.pf-wa strong {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+}
+.pf-wa span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #6e655b;
+  font-size: 13px;
+}
+.pf-wa span svg {
+  color: #2f6b45;
+}
+.pf-wa em {
+  color: #9b2c1f;
+  font-size: 12.5px;
+  font-style: normal;
+}
+.pf-wa img {
+  width: 132px;
+  height: 132px;
+  padding: 6px;
+  border: 1px solid #dcd2c2;
+  background: #fff;
+}
+.pf-wa button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 2px;
+  background: #16130f;
+  color: #fffdf9;
+  font-weight: 650;
+}
+@media (max-width: 560px) {
+  .pf-wa {
+    flex-wrap: wrap;
+  }
+}

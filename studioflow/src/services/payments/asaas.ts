@@ -130,6 +130,27 @@ export class AsaasClient {
     });
   }
 
+  /** A charge paid on Asaas's own page: Pix, boleto or card, as the customer prefers. */
+  createInvoice(input: {
+    customer: string;
+    value: number;
+    dueDate: string;
+    description: string;
+    reference: string;
+  }) {
+    return this.request<ProviderPayment>("/payments", {
+      method: "POST",
+      body: {
+        customer: input.customer,
+        billingType: "UNDEFINED",
+        value: input.value,
+        dueDate: input.dueDate,
+        description: input.description.slice(0, 500),
+        externalReference: input.reference,
+      },
+    });
+  }
+
   async pixCode(paymentId: string): Promise<PixCode> {
     const data = await this.request<{
       encodedImage: string;
