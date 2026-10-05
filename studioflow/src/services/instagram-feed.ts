@@ -7,7 +7,7 @@ import {
   requireMembership,
 } from "@/lib/supabase/server";
 import type { Store } from "@/types";
-import { checkInstagram, instagramVersion } from "./assistant/instagram";
+import { checkInstagram, instagramTokenProblem, instagramVersion } from "./assistant/instagram";
 import { isDemo, readDemo } from "./server-demo";
 import { decryptSecret, encryptSecret } from "./server-secrets";
 
@@ -31,7 +31,15 @@ export interface InstagramFeed {
 }
 
 export const instagramFeedSchema = z.object({
-  token: z.string().trim().min(20, "Cole o token de acesso completo.").max(1000),
+  token: z
+    .string()
+    .trim()
+    .min(20, "Cole o token de acesso completo.")
+    .max(1000)
+    .superRefine((value, ctx) => {
+      const problem = instagramTokenProblem(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    }),
 });
 
 const base = `https://graph.instagram.com/${instagramVersion}`;
@@ -249,4 +257,40 @@ export async function readInstagramFeedStatus(businessId: string) {
   if (!assistant.error && assistant.data)
     return { username: assistant.data.username as string, source: "assistant" as const };
   return null;
+}
+
+/**
+ * Instagram tokens last 60 days. Once a day, those older than a week are
+ * renewed, so the posts and the Direct never stop on their own.
+ */
+export async function refreshInstagramTokens(now = new Date()) {
+  const admin = createSupabaseAdmin();
+  const before = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+  const report = { renewed: 0, failed: 0 };
+  for (const table of ["instagram_feeds", "instagram_accounts"] as const) {
+    const { data } = await admin
+      .from(table)
+      .select("business_id,access_token_enc")
+      .lt("updated_at", before)
+      .limit(200);
+    for (const row of data || []) {
+      try {
+        const token = decryptSecret(row.access_token_enc as string);
+        const response = await fetch(
+          `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(token)}`,
+          { signal: AbortSignal.timeout(10_000), cache: "no-store" },
+        );
+        const body = (await response.json().catch(() => ({}))) as { access_token?: string };
+        if (!response.ok || !body.access_token) throw new Error("refresh");
+        await admin
+          .from(table)
+          .update({ access_token_enc: encryptSecret(body.access_token) })
+          .eq("business_id", row.business_id);
+        report.renewed++;
+      } catch {
+        report.failed++;
+      }
+    }
+  }
+  return report;
 }

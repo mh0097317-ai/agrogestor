@@ -101,3 +101,11 @@ test("Instagram: perfil e posts recentes, vídeo pela capa, só links seguros", 
     globalThis.fetch = original;
   }
 });
+
+test("token do Instagram: avisa quando colam o código errado", async () => {
+  const { instagramTokenProblem } = await import("../src/services/assistant/instagram");
+  assert.match(instagramTokenProblem("EAAGm0PX4ZCpsBAKZB...")!, /Facebook/);
+  assert.match(instagramTokenProblem("0123456789abcdef0123456789abcdef")!, /chave secreta/);
+  assert.match(instagramTokenProblem("1234567890123")!, /ID do app/);
+  assert.equal(instagramTokenProblem("IGAAKx" + "a".repeat(150)), null);
+});

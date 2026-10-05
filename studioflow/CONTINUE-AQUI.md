@@ -268,6 +268,7 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Até 3 fotos por serviço (`services.image` + `services.photos` com até mais duas). No painel, Serviços → editar usa a galeria com reordenar (a primeira é a principal). No agendamento e no painel a foto troca ao passar o mouse ou deslizar o dedo (`src/components/photo-scrub.tsx`); no cardápio da página aparece uma pilha de fotos que abre em tela cheia.
 - Localização: "Localização" abre "Como chegar" dentro da página (mapa do Google, copiar endereço, rota no Google Maps e no Waze). Link opcional do perfil no Google Maps em Configurações → Empresa (`businesses.maps_url`, só domínios do Google).
 - Instagram: "Instagram" abre o perfil com seguidores e os 12 posts mais recentes pela API oficial (`/api/public/[slug]/instagram`, cache de 15 minutos, token cifrado em `instagram_feeds` ou o da Recepcionista). Sem conta ligada, mostra o @ e as fotos da casa. Conexão em Configurações → Empresa → Posts do Instagram na página.
+- Token do Instagram: começa com `IG` (API do Instagram com login do Instagram). Antes de chamar a Meta, `instagramTokenProblem` avisa quando colam o token do Facebook (`EAA…`), a chave secreta ou o ID do app. O cron diário (`/api/cron/billing`) também renova os tokens de `instagram_feeds` e `instagram_accounts` com mais de 7 dias (`refreshInstagramTokens`; eles valem 60 dias).
 - Migration `20261010120000_studioflow_photos_instagram.sql`. Teste: `tests/photos-instagram.test.ts`.
 
 ## WhatsApp por QR Code e aviso ao profissional (5 de outubro de 2026)

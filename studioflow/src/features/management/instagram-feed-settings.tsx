@@ -98,13 +98,28 @@ export function InstagramFeedSettings({
       ) : canManage ? (
         <form className="management-form" onSubmit={connect}>
           <ol className="payment-steps">
-            <li>A conta do Instagram precisa ser profissional (Empresa ou Criador de conteúdo).</li>
             <li>
-              Em developers.facebook.com, crie um app, adicione o produto Instagram e gere o token
-              da conta (API do Instagram com login do Instagram).
+              No app do Instagram: <b>Configurações → Tipo de conta</b> → mude para conta{" "}
+              <b>profissional</b> (Empresa ou Criador de conteúdo).
             </li>
-            <li>Cole o token abaixo. Sem ele, a página mostra o seu @ e as fotos da casa.</li>
+            <li>
+              Em <b>developers.facebook.com</b> → Meus apps → <b>Criar app</b> → caso de uso{" "}
+              <b>&quot;Gerenciar mensagens e conteúdo no Instagram&quot;</b>.
+            </li>
+            <li>
+              No app criado: <b>Instagram → Configuração da API com login do Instagram</b> →{" "}
+              <b>Gerar tokens de acesso</b> → <b>Adicionar conta</b> e entre com o Instagram da
+              barbearia.
+            </li>
+            <li>
+              Toque em <b>Gerar token</b> e copie o código inteiro. Ele começa com <b>IG</b>.
+              (Não é a chave secreta do app nem o token do Facebook, que começa com EAA.)
+            </li>
           </ol>
+          <p className="payment-copy">
+            Sem token a página mostra o seu @ e as fotos da casa. O token é renovado sozinho a cada
+            semana.
+          </p>
           <FormField label="Token de acesso do Instagram" hint="Fica guardado cifrado no servidor.">
             <input
               value={token}

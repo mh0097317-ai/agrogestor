@@ -8,7 +8,7 @@ import { encryptSecret, sha256 } from "../server-secrets";
 import { camel, demoWorkspaceSlug } from "../server-store";
 import { demoRepo, instagramAccount, liveRepo } from "./conversations";
 import { checkWhatsApp } from "./whatsapp";
-import { checkInstagram, sendInstagram } from "./instagram";
+import { checkInstagram, instagramTokenProblem, sendInstagram } from "./instagram";
 import { shopSender } from "../whatsapp/link";
 
 const editors = ["owner", "admin", "manager"];
@@ -26,7 +26,15 @@ export const whatsappSchema = z.object({
   appSecret: z.string().trim().min(16, "Cole a chave secreta do app.").max(200),
 });
 export const instagramSchema = z.object({
-  token: z.string().trim().min(20, "Cole o token de acesso do Instagram completo.").max(1000),
+  token: z
+    .string()
+    .trim()
+    .min(20, "Cole o token de acesso do Instagram completo.")
+    .max(1000)
+    .superRefine((value, ctx) => {
+      const problem = instagramTokenProblem(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    }),
   appSecret: z.string().trim().min(16, "Cole a chave secreta do app.").max(200),
 });
 export const conversationActionSchema = z.discriminatedUnion("action", [

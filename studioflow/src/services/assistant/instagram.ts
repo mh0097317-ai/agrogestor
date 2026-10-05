@@ -114,3 +114,19 @@ export async function checkInstagram(token: string) {
     );
   return { igUserId: String(data.user_id), username: data.username || "" };
 }
+
+/**
+ * Friendly check before asking Meta: the most common mix-ups are pasting the
+ * Facebook token (EAA...) or the app secret instead of the Instagram token (IG...).
+ */
+export function instagramTokenProblem(token: string) {
+  const value = token.trim();
+  if (/^EAA/.test(value))
+    return "Esse é um token do Facebook. Use o token do Instagram, que começa com IG (Instagram → Configuração da API com login do Instagram → Gerar token).";
+  if (/^[a-f0-9]{32}$/i.test(value))
+    return "Isso parece a chave secreta do app, não o token. O token do Instagram é bem mais longo e começa com IG.";
+  if (/^[0-9]{10,20}$/.test(value))
+    return "Isso parece o ID do app ou da conta, não o token. O token do Instagram começa com IG.";
+  if (/\s/.test(value)) return "O token não tem espaços. Copie de novo, inteiro.";
+  return null;
+}
