@@ -522,3 +522,19 @@ a.sidebar-support {
     transition: none;
   }
 }
+
+/* Ícones do menu: traço firme; o da página aberta, cheio e em latão. */
+.nav-link svg {
+  flex: none;
+  opacity: 0.82;
+}
+.nav-link:hover svg {
+  opacity: 1;
+}
+.nav-link.active svg {
+  color: #d9b77a;
+  opacity: 1;
+}
+.mobile-more svg {
+  color: #8a6430;
+}

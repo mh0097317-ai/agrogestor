@@ -608,7 +608,7 @@ function SettingsContent({ store }: { store: Store }) {
               >
                 <item.icon
                   size={17}
-                  weight={tab === item.id ? "fill" : "duotone"}
+                  weight={tab === item.id ? "fill" : "regular"}
                 />
                 {item.label}
                 {tab === item.id && dirty && (

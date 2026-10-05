@@ -3,33 +3,33 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
-  House,
-  CalendarBlank,
-  UsersThree,
-  Scissors,
-  IdentificationBadge,
-  Wallet,
-  ChartLineUp,
-  GearSix,
+  ArrowSquareOut,
+  ArrowUpRight,
+  Bell,
+  CalendarDots,
   CaretDown,
   CaretRight,
-  MagnifyingGlass,
-  Bell,
-  ArrowSquareOut,
-  Plus,
-  DotsThree,
-  Question,
+  ChartLineUp,
+  ChatCircleDots,
   Copy,
-  Storefront,
-  SignOut,
-  ArrowUpRight,
-  ShieldCheck,
-  QrCode,
-  Seal,
-  ChatsCircle,
   Crown,
+  DotsThree,
+  GearSix,
+  MagnifyingGlass,
+  Megaphone,
+  Money,
+  Plus,
+  Question,
+  Scissors,
+  ShieldCheck,
+  ShieldStar,
   ShoppingBagOpen,
+  SignOut,
+  SquaresFour,
+  Storefront,
   Television,
+  UserCircleGear,
+  UsersThree,
 } from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace, WorkspaceProvider } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -45,13 +45,13 @@ import { daysLeft } from "@/lib/access";
 import { hasModule, type ModuleKey } from "@/lib/modules";
 import { format } from "date-fns";
 const links = [
-  { path: "/dashboard", label: "Início", icon: House },
-  { path: "/dashboard/agenda", label: "Agenda", icon: CalendarBlank },
+  { path: "/dashboard", label: "Início", icon: SquaresFour },
+  { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDots },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
   {
     path: "/dashboard/conversas",
     label: "Conversas",
-    icon: ChatsCircle,
+    icon: ChatCircleDots,
     module: "recepcionista" as ModuleKey,
   },
   { path: "/dashboard/servicos", label: "Serviços", icon: Scissors },
@@ -61,12 +61,12 @@ const links = [
     icon: ShoppingBagOpen,
     module: "produtos" as ModuleKey,
   },
-  { path: "/dashboard/equipe", label: "Equipe", icon: IdentificationBadge },
-  { path: "/dashboard/financeiro", label: "Financeiro", icon: Wallet },
+  { path: "/dashboard/equipe", label: "Equipe", icon: UserCircleGear },
+  { path: "/dashboard/financeiro", label: "Financeiro", icon: Money },
   {
     path: "/dashboard/clube",
     label: "Clube",
-    icon: Seal,
+    icon: Crown,
     module: "clube" as ModuleKey,
   },
   {
@@ -74,7 +74,7 @@ const links = [
     label: "Relatórios",
     icon: ChartLineUp,
   },
-  { path: "/dashboard/divulgar", label: "Divulgar", icon: QrCode },
+  { path: "/dashboard/divulgar", label: "Divulgar", icon: Megaphone },
   { path: "/dashboard/configuracoes", label: "Configurações", icon: GearSix },
 ];
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -241,7 +241,7 @@ function Shell({ children }: { children: ReactNode }) {
             >
               <link.icon
                 size={20}
-                weight={active(link.path) ? "fill" : "duotone"}
+                weight={active(link.path) ? "fill" : "regular"}
               />
               {link.label}
               {link.label === "Agenda" && data && (
@@ -298,7 +298,7 @@ function Shell({ children }: { children: ReactNode }) {
           )}
           {data?.viewer?.platformAdmin && (
             <Link className="sidebar-support" href="/admin">
-              <Crown size={16} /> Plataforma
+              <ShieldStar size={16} /> Plataforma
             </Link>
           )}
           <button className="sidebar-support" onClick={() => setHelp(true)}>
@@ -427,14 +427,14 @@ function Shell({ children }: { children: ReactNode }) {
           href="/dashboard"
           className={active("/dashboard") ? "active" : ""}
         >
-          <House size={24} weight={active("/dashboard") ? "fill" : "regular"} />
+          <SquaresFour size={24} weight={active("/dashboard") ? "fill" : "regular"} />
           Início
         </Link>
         <Link
           href="/dashboard/agenda"
           className={active("/dashboard/agenda") ? "active" : ""}
         >
-          <CalendarBlank
+          <CalendarDots
             size={24}
             weight={active("/dashboard/agenda") ? "fill" : "regular"}
           />
@@ -472,13 +472,13 @@ function Shell({ children }: { children: ReactNode }) {
               href={link.path}
               onClick={() => setMore(false)}
             >
-              <link.icon size={19} weight="duotone" />
+              <link.icon size={20} weight="regular" />
               {link.label}
             </Link>
           ))}
           {data?.viewer?.platformAdmin && (
             <Link href="/admin" onClick={() => setMore(false)}>
-              <Crown size={19} weight="duotone" /> Plataforma
+              <ShieldStar size={20} weight="regular" /> Plataforma
             </Link>
           )}
           <Link href="/login" onClick={() => setMore(false)}>
