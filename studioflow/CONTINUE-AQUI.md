@@ -203,6 +203,7 @@ Verificado nesta rodada: lint, TypeScript, 30 testes, build, smoke HTTP, envio r
 - Confirmação: carimbo (`confirm-stamp.tsx`) com a logo/monograma no centro e o status escrito em volta ("Horário confirmado · Nome ·"), batido com tinta só em agendamento recém-criado; substitui o check com confete.
 - Página pública: a capa assenta com leve zoom, a etiqueta de horário entra pela esquerda e o nome é revelado de baixo para cima.
 - Tudo respeita `prefers-reduced-motion`.
+- Abertura ao tocar em "Agendar" (5/10): qualquer link da página para `/[slug]/agendar` cobre a tela na hora com o papel subindo (`startHandoff` em `src/features/booking/intro-handoff.tsx`); a camada fica em `src/app/[slug]/layout.tsx`, então continua na troca de rota e só sobe quando o agendamento está pronto (mínimo 1,15 s, máximo 9 s). A página pública foi para o grupo `src/app/[slug]/(home)` para o esqueleto dela não aparecer no caminho, e o catálogo fica em memória entre a página e o agendamento (`usePublicData`).
 
 ## Pagamentos: sinal via Pix e Clube de assinatura (4 de outubro de 2026)
 

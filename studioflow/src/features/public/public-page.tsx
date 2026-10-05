@@ -32,6 +32,7 @@ import { RepeatBooking } from "./repeat-booking";
 import { LocationSheet, mapLinks } from "./public-location";
 import { InstagramSheet } from "./public-instagram";
 import "./public-sheets.css";
+import { startHandoff } from "@/features/booking/intro-handoff";
 import {
   PublicAmenities,
   PublicTeam,
@@ -64,6 +65,23 @@ export function PublicPage({ slug }: { slug: string }) {
   const [showDock, setShowDock] = useState(false);
   const [sheet, setSheet] = useState<"location" | "instagram" | null>(null);
   const mainCta = useRef<HTMLAnchorElement>(null);
+
+  // Any link into the booking: the opening covers the page right away.
+  useEffect(() => {
+    function onClick(event: MouseEvent) {
+      // Next's Link prevents the default to navigate in place: still ours.
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = (event.target as Element | null)?.closest?.("a[href]");
+      if (link?.getAttribute("target") === "_blank") return;
+      const href = link?.getAttribute("href") || "";
+      if (!href.startsWith(`/${slug}/agendar`)) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (catalog) startHandoff(catalog.business);
+    }
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [slug, catalog]);
 
   useEffect(() => {
     const target = mainCta.current;

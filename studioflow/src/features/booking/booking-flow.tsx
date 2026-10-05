@@ -30,6 +30,7 @@ import { bookingTime } from "./date-format";
 import { servicesSummary } from "./booking-summary";
 import { flyTo, RollingMoney } from "./motion";
 import { BarberCut, markCutSeen, shouldPlayCut } from "./barber-cut";
+import { finishHandoff, handoffActive } from "./intro-handoff";
 import { haptic } from "@/lib/haptic";
 import { saveLastBooking } from "@/lib/last-booking";
 import { depositFor } from "@/lib/payments";
@@ -56,12 +57,17 @@ export function BookingFlow({ slug }: { slug: string }) {
   const { catalog, loading, error, reload } = usePublicCatalog(slug);
   const query = useSearchParams();
   // Decided once in the browser (the flow only renders client-side).
+  // Tapped on the page: its opening is already on screen and lifts here.
+  const [handedOff] = useState(() => handoffActive());
   const [intro, setIntro] = useState<IntroPhase>(() =>
-    shouldPlayIntro(slug) ? "on" : "off",
+    !handedOff && shouldPlayIntro(slug) ? "on" : "off",
   );
   useEffect(() => {
-    if (intro !== "off") markIntroSeen(slug);
-  }, [intro, slug]);
+    if (intro !== "off" || handedOff) markIntroSeen(slug);
+  }, [intro, slug, handedOff]);
+  useEffect(() => {
+    if (catalog) finishHandoff();
+  }, [catalog]);
   if (loading && !catalog) return <BookingLoader />;
   if (!catalog)
     return (

@@ -46,6 +46,15 @@ export async function publicRequest<T>(
   }
 }
 
+/**
+ * Last answer per URL, kept while the app is open: going from the page to
+ * the booking shows what is already known at once and refreshes behind it.
+ */
+const memo = new Map<string, unknown>();
+const catalogUrl = (slug: string) => `/api/public/${encodeURIComponent(slug)}`;
+export const cachedCatalog = (slug: string) =>
+  (memo.get(catalogUrl(slug)) as PublicCatalog | undefined) ?? null;
+
 export function usePublicData<T>(url: string) {
   const [revision, setRevision] = useState(0);
   const [result, setResult] = useState<{
@@ -61,8 +70,10 @@ export function usePublicData<T>(url: string) {
     const controller = new AbortController();
     publicRequest<T>(url, { signal: controller.signal }).then(
       (data) => {
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted) {
+          memo.set(url, data);
           setResult({ key, url, data, error: "" });
+        }
       },
       (cause) => {
         if (!controller.signal.aborted)
@@ -80,16 +91,15 @@ export function usePublicData<T>(url: string) {
     return () => controller.abort();
   }, [key, url]);
   return {
-    data: result.url === url ? result.data : null,
+    data: result.url === url && result.data ? result.data : ((memo.get(url) as T) ?? null),
     error: result.key === key ? result.error : "",
-    loading: !!url && result.key !== key,
+    // A first visit answered from memory refreshes quietly.
+    loading: !!url && result.key !== key && !(result.url !== url && memo.has(url)),
     reload,
   };
 }
 
 export function usePublicCatalog(slug: string) {
-  const { data, ...state } = usePublicData<PublicCatalog>(
-    `/api/public/${encodeURIComponent(slug)}`,
-  );
+  const { data, ...state } = usePublicData<PublicCatalog>(catalogUrl(slug));
   return { catalog: data, ...state };
 }

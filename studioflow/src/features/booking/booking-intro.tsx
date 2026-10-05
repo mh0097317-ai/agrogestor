@@ -43,26 +43,33 @@ export function BookingIntro({
   business,
   phase,
   onPhase,
+  mode = "full",
+  hold = 1250,
 }: {
-  business: Business;
+  business: Pick<Business, "name" | "logo" | "category">;
   phase: IntroPhase;
   onPhase: (phase: IntroPhase) => void;
+  /** "enter": the paper rises over the page that was tapped. */
+  mode?: "full" | "enter";
+  /** Time on screen before lifting; 0 keeps it until the page changes. */
+  hold?: number;
 }) {
   const [logoReady, setLogoReady] = useState(!business.logo);
   useEffect(() => {
     if (phase === "on") {
-      const lift = window.setTimeout(() => onPhase("lift"), 1250);
+      if (!hold) return;
+      const lift = window.setTimeout(() => onPhase("lift"), hold);
       return () => window.clearTimeout(lift);
     }
     if (phase === "lift") {
       const done = window.setTimeout(() => onPhase("off"), 720);
       return () => window.clearTimeout(done);
     }
-  }, [phase, onPhase]);
+  }, [phase, onPhase, hold]);
   if (phase === "off") return null;
   return (
     <div
-      className={`bk-intro is-${phase}`}
+      className={`bk-intro is-${phase} is-${mode}`}
       onClick={() => phase === "on" && onPhase("lift")}
       aria-hidden="true"
     >

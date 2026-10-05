@@ -3092,3 +3092,28 @@
     font-size: 30px;
   }
 }
+
+/* Opening handed over from the page: the paper rises over the page on tap,
+   stays (in the [slug] layout) while the booking loads, then lifts. */
+.bk-intro.is-enter {
+  animation: bk-intro-enter 560ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+.bk-intro.is-enter > * {
+  animation-delay: 220ms;
+}
+.bk-intro.is-enter .bk-intro-rule {
+  animation-delay: 420ms;
+}
+.bk-intro.is-enter .bk-intro-name {
+  animation-delay: 540ms;
+}
+@keyframes bk-intro-enter {
+  from {
+    transform: translateY(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-intro.is-enter {
+    animation: none;
+  }
+}
