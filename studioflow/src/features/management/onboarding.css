@@ -417,3 +417,111 @@
   box-shadow: none !important;
   color: #8a6430;
 }
+
+/* Cadastro completo: identidade, serviços com foto e equipe com WhatsApp */
+.onboarding-field {
+  display: grid;
+  gap: 8px;
+}
+.onboarding-field-label {
+  color: #16130f;
+  font-size: 13px;
+  font-weight: 650;
+}
+.onboarding-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.onboarding-swatches button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px 0 8px;
+  border: 1px solid #dcd2c2;
+  border-radius: 2px;
+  background: #fffdf9;
+  color: #16130f;
+  font-size: 13px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.onboarding-swatches button.is-selected {
+  border-color: #16130f;
+  box-shadow: 0 0 0 1px #16130f;
+}
+.onboarding-swatches i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.onboarding-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.onboarding-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dcd2c2;
+  border-radius: 999px;
+  background: #fffdf9;
+  color: #433a31;
+  font-size: 13px;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+.onboarding-chips button.is-on {
+  border-color: #16130f;
+  background: #16130f;
+  color: #fffdf9;
+}
+.onboarding-service-row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.onboarding-service-row .shape-square,
+.onboarding-member .shape-round {
+  display: block;
+}
+.onboarding-service-row .image-field-actions,
+.onboarding-member .image-field-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.onboarding-member {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2d9ca;
+}
+.onboarding-member > button {
+  margin-top: 26px;
+}
+@media (max-width: 600px) {
+  .onboarding-service-row,
+  .onboarding-member {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-member > button {
+    justify-self: end;
+    margin-top: 0;
+  }
+}
+
+.onboarding-member .image-action,
+.onboarding-service-row .image-action {
+  font-size: 12.5px;
+  white-space: nowrap;
+}

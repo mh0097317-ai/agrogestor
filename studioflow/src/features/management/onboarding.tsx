@@ -18,7 +18,8 @@ import { Brand } from "@/components/brand";
 import { SegmentIcon } from "@/lib/segments";
 import { FormField, FormError, DayPicker, dayNames } from "./shared";
 import { OnboardingPreview } from "./onboarding-preview";
-import { ImageUpload } from "@/components/image-upload";
+import { GalleryUpload, ImageUpload } from "@/components/image-upload";
+import { formatPhone } from "@/lib/utils";
 import { storedImagePattern } from "@/lib/image";
 import "./onboarding.css";
 import "./onboarding-preview.css";
@@ -45,24 +46,62 @@ const categories = [
   },
   { name: "Outro", description: "Outro serviço com hora marcada" },
 ];
-const steps = ["Negócio", "Identidade", "Serviços", "Equipe", "Horários"];
+const steps = ["Negócio", "Contato", "Identidade", "Serviços", "Equipe", "Horários"];
+const last = steps.length - 1;
+const done = steps.length;
 type DraftService = {
   id: string;
   name: string;
   duration: string;
   price: string;
+  image: string;
+  description: string;
 };
+type DraftMember = { name: string; phone: string; photo: string };
+// Empty value keeps the StudioFlow ink.
+const colorPresets = [
+  { label: "Tinta", value: "", swatch: "#16130F" },
+  { label: "Marinho", value: "#1b2f4a", swatch: "#1b2f4a" },
+  { label: "Grafite", value: "#374151", swatch: "#374151" },
+  { label: "Vinho", value: "#6b1f2e", swatch: "#6b1f2e" },
+  { label: "Verde-escuro", value: "#1f4d3a", swatch: "#1f4d3a" },
+  { label: "Café", value: "#5b3a29", swatch: "#5b3a29" },
+];
+const amenityOptions = [
+  "Wi-Fi",
+  "Estacionamento",
+  "Café",
+  "Bebidas",
+  "Ar-condicionado",
+  "Acessível",
+  "TV",
+  "Música ao vivo",
+  "Atende crianças",
+  "Cartão e Pix",
+];
+const phoneOk = (value: string) => /^[1-9][0-9]{9,10}$/.test(value.replace(/\D/g, ""));
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState("Barbearia");
   const [name, setName] = useState("");
   const [cover, setCover] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [logo, setLogo] = useState("");
+  const [color, setColor] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [uploads, setUploads] = useState(0);
+  const uploading = uploads > 0;
+  const onBusy = (busy: boolean) => setUploads((count) => Math.max(0, count + (busy ? 1 : -1)));
   const [services, setServices] = useState<DraftService[]>([
-    { id: "first", name: "", duration: "40", price: "" },
+    { id: "first", name: "", duration: "40", price: "", image: "", description: "" },
   ]);
-  const [professionals, setProfessionals] = useState<string[]>([""]);
+  const [team, setTeam] = useState<DraftMember[]>([{ name: "", phone: "", photo: "" }]);
+  const professionals = team.map((member) => member.name);
   const [days, setDays] = useState([1, 2, 3, 4, 5, 6]);
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("19:00");
@@ -72,15 +111,19 @@ export default function OnboardingPage() {
   const [copied, setCopied] = useState(false);
   function continueStep() {
     setError("");
-    if (
-      step === 1 &&
-      (name.trim().length < 3 || (cover && !storedImagePattern.test(cover)))
-    ) {
-      setError("Informe um nome com pelo menos 3 letras.");
-      return;
+    if (step === 1) {
+      if (name.trim().length < 3) return setError("Informe o nome do estabelecimento, com pelo menos 3 letras.");
+      if (!phoneOk(phone)) return setError("Informe o WhatsApp da loja com DDD. É por ele que os clientes falam com você.");
+      if (address.trim().length < 8) return setError("Informe o endereço completo: rua, número, bairro e cidade.");
+    }
+    if (step === 2) {
+      if (!cover || !storedImagePattern.test(cover))
+        return setError("Coloque uma foto de capa. Ela é a primeira coisa que o cliente vê.");
+      if ((logo && !storedImagePattern.test(logo)) || photos.some((photo) => !storedImagePattern.test(photo)))
+        return setError("Uma das fotos não foi salva. Tente enviar de novo.");
     }
     if (
-      step === 2 &&
+      step === 3 &&
       services.some(
         (service) =>
           service.name.trim().length < 3 ||
@@ -91,29 +134,17 @@ export default function OnboardingPage() {
           Number(service.price) < 0 ||
           !Number.isFinite(Number(service.price)),
       )
-    ) {
-      setError(
+    )
+      return setError(
         "Revise seus serviços. Nome obrigatório, duração de 5 a 480 minutos e preço a partir de R$ 0.",
       );
-      return;
-    }
-    if (
-      step === 3 &&
-      professionals.some((professional) => professional.trim().length < 3)
-    ) {
-      setError(
-        "Informe o nome de cada profissional, incluindo você se também realiza atendimentos.",
-      );
-      return;
-    }
-    if (
-      step === 3 &&
-      new Set(
-        professionals.map((professional) => professional.trim().toLowerCase()),
-      ).size !== professionals.length
-    ) {
-      setError("Os nomes dos profissionais não podem se repetir.");
-      return;
+    if (step === 4) {
+      if (team.some((member) => member.name.trim().length < 3))
+        return setError("Informe o nome de cada profissional, incluindo você se também atende.");
+      if (new Set(team.map((member) => member.name.trim().toLowerCase())).size !== team.length)
+        return setError("Os nomes dos profissionais não podem se repetir.");
+      if (team.some((member) => member.phone && !phoneOk(member.phone)))
+        return setError("Confira o WhatsApp dos profissionais (com DDD) ou deixe em branco.");
     }
     setStep((previous) => previous + 1);
   }
@@ -132,14 +163,27 @@ export default function OnboardingPage() {
           category,
           name: name.trim(),
           cover: cover.trim(),
+          logo,
+          color,
+          photos,
+          description: description.trim(),
+          phone: phone.replace(/\D/g, ""),
+          address: address.trim(),
+          instagram: instagram.trim(),
+          amenities,
           services: services.map((service) => ({
             name: service.name.trim(),
             duration: Number(service.duration),
             price: Number(service.price),
+            image: service.image,
+            description: service.description.trim(),
           })),
-          professionalNames: professionals.map((professional) =>
-            professional.trim(),
-          ),
+          professionalNames: team.map((member) => member.name.trim()),
+          team: team.map((member) => ({
+            name: member.name.trim(),
+            phone: member.phone.replace(/\D/g, ""),
+            photo: member.photo,
+          })),
           openDays: days,
           openStart: start,
           openEnd: end,
@@ -153,7 +197,7 @@ export default function OnboardingPage() {
       if (!result.slug)
         throw new Error("O link público não foi retornado. Tente novamente.");
       setSlug(result.slug);
-      setStep(5);
+      setStep(done);
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -183,13 +227,13 @@ export default function OnboardingPage() {
           Cada detalhe, do seu jeito.
         </span>
       </header>
-      <div className={`onboarding-layout ${step === 5 ? "is-complete" : ""}`}>
+      <div className={`onboarding-layout ${step === done ? "is-complete" : ""}`}>
         <div className="onboarding-container">
-          {step < 5 && (
+          {step < done && (
             <>
               <div
                 className="onboarding-progress"
-                aria-label={`Etapa ${step + 1} de 5`}
+                aria-label={`Etapa ${step + 1} de ${steps.length}`}
               >
                 {steps.map((label, index) => (
                   <div key={label} className={index <= step ? "active" : ""}>
@@ -204,7 +248,9 @@ export default function OnboardingPage() {
                   </div>
                 ))}
               </div>
-              <div className="onboarding-step-label">ETAPA {step + 1} DE 5</div>
+              <div className="onboarding-step-label">
+                ETAPA {step + 1} DE {steps.length}
+              </div>
             </>
           )}
           {step === 0 && (
@@ -240,9 +286,9 @@ export default function OnboardingPage() {
           )}
           {step === 1 && (
             <>
-              <h1>Como se chama seu estabelecimento?</h1>
+              <h1>Como os clientes encontram você?</h1>
               <p className="onboarding-description">
-                Sua capa é o primeiro convite. A logo pode vir depois.
+                Nome, WhatsApp e endereço aparecem na sua página e no comprovante de cada agendamento.
               </p>
               <Card className="onboarding-form-card">
                 <div className="management-form">
@@ -255,117 +301,217 @@ export default function OnboardingPage() {
                       autoFocus
                     />
                   </FormField>
-                  <ImageUpload
-                    label="Foto de capa (opcional)"
-                    hint="Uma foto horizontal do seu espaço funciona muito bem. Dá para trocar depois."
-                    preset="cover"
-                    shape="wide"
-                    value={cover}
-                    onChange={setCover}
-                    emptyTitle="Adicionar foto de capa"
-                    emptyText="A fachada, a recepção ou as cadeiras do seu espaço"
-                    onBusy={setUploading}
-                  />
+                  <FormField label="Frase de apresentação" hint="Uma linha que diga o seu jeito. Aparece embaixo do nome.">
+                    <input
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                      placeholder="Ex.: Corte, barba e cuidado sem pressa."
+                      maxLength={140}
+                    />
+                  </FormField>
+                  <div className="management-form-grid">
+                    <FormField label="WhatsApp da loja">
+                      <input
+                        value={phone}
+                        onChange={(event) => setPhone(formatPhone(event.target.value))}
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder="(11) 99999-9999"
+                      />
+                    </FormField>
+                    <FormField label="Instagram (opcional)">
+                      <input
+                        value={instagram}
+                        onChange={(event) => setInstagram(event.target.value)}
+                        placeholder="@suabarbearia"
+                        maxLength={100}
+                      />
+                    </FormField>
+                  </div>
+                  <FormField label="Endereço completo" hint="Rua, número, bairro e cidade. Vira o mapa e a rota da sua página.">
+                    <input
+                      value={address}
+                      onChange={(event) => setAddress(event.target.value)}
+                      autoComplete="street-address"
+                      placeholder="Rua Augusta, 1420 · Consolação, São Paulo - SP"
+                      maxLength={250}
+                    />
+                  </FormField>
                 </div>
               </Card>
             </>
           )}
           {step === 2 && (
             <>
+              <h1>A cara do seu espaço</h1>
+              <p className="onboarding-description">
+                Fotos reais vendem mais que qualquer texto. Capa, logo, cor e os trabalhos da casa.
+              </p>
+              <Card className="onboarding-form-card">
+                <div className="management-form">
+                  <ImageUpload
+                    label="Foto de capa"
+                    hint="Uma foto horizontal do seu espaço: fachada, recepção ou as cadeiras."
+                    preset="cover"
+                    shape="wide"
+                    value={cover}
+                    onChange={setCover}
+                    emptyTitle="Adicionar foto de capa"
+                    emptyText="Toque para escolher ou arraste uma foto"
+                    onBusy={onBusy}
+                  />
+                  <ImageUpload
+                    label="Logo (opcional)"
+                    hint="PNG com fundo transparente fica ainda melhor."
+                    preset="logo"
+                    shape="square"
+                    value={logo}
+                    onChange={setLogo}
+                    onBusy={onBusy}
+                  />
+                  <div className="onboarding-field">
+                    <span className="onboarding-field-label">Cor dos botões</span>
+                    <div className="onboarding-swatches" role="radiogroup" aria-label="Cor dos botões">
+                      {colorPresets.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={color === preset.value}
+                          className={color === preset.value ? "is-selected" : ""}
+                          onClick={() => setColor(preset.value)}
+                        >
+                          <i style={{ background: preset.swatch }} />
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <GalleryUpload
+                    label="Fotos dos trabalhos (opcional)"
+                    hint="Cortes, barbas e o ambiente. Até 12 fotos; a primeira abre a galeria."
+                    value={photos}
+                    onChange={setPhotos}
+                    max={12}
+                    onBusy={onBusy}
+                  />
+                  <div className="onboarding-field">
+                    <span className="onboarding-field-label">O que a casa oferece</span>
+                    <div className="onboarding-chips">
+                      {amenityOptions.map((item) => {
+                        const on = amenities.includes(item);
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            aria-pressed={on}
+                            className={on ? "is-on" : ""}
+                            onClick={() =>
+                              setAmenities((current) =>
+                                on ? current.filter((value) => value !== item) : [...current, item],
+                              )
+                            }
+                          >
+                            {on && <Check size={13} weight="bold" />}
+                            {item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
+          {step === 3 && (
+            <>
               <h1>O que você faz de melhor?</h1>
               <p className="onboarding-description">
-                Cadastre os primeiros serviços. Você pode ampliar o catálogo
-                depois.
+                Cadastre os serviços com foto e preço. Dá para colocar mais fotos e ampliar o catálogo depois.
               </p>
               <div className="onboarding-draft-list">
-                {services.map((service, index) => (
-                  <Card className="onboarding-draft-card" key={service.id}>
-                    <div className="onboarding-draft-header">
-                      <span>Serviço {index + 1}</span>
-                      {services.length > 1 && (
-                        <button
-                          className="management-icon-button danger"
-                          onClick={() =>
-                            setServices((current) =>
-                              current.filter((item) => item.id !== service.id),
-                            )
-                          }
-                          aria-label={`Remover serviço ${index + 1}`}
-                        >
-                          <Trash size={17} weight="duotone" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="management-form">
-                      <FormField label="Nome">
-                        <input
-                          value={service.name}
-                          placeholder="Ex.: Corte masculino"
-                          onChange={(event) =>
-                            setServices((current) =>
-                              current.map((item) =>
-                                item.id === service.id
-                                  ? { ...item, name: event.target.value }
-                                  : item,
-                              ),
-                            )
-                          }
-                          maxLength={100}
-                        />
-                      </FormField>
-                      <div className="management-form-grid">
-                        <FormField label="Duração (min)">
-                          <input
-                            type="number"
-                            min={5}
-                            max={480}
-                            step={5}
-                            value={service.duration}
-                            onChange={(event) =>
-                              setServices((current) =>
-                                current.map((item) =>
-                                  item.id === service.id
-                                    ? { ...item, duration: event.target.value }
-                                    : item,
-                                ),
-                              )
+                {services.map((service, index) => {
+                  const update = (patch: Partial<DraftService>) =>
+                    setServices((current) =>
+                      current.map((item) => (item.id === service.id ? { ...item, ...patch } : item)),
+                    );
+                  return (
+                    <Card className="onboarding-draft-card" key={service.id}>
+                      <div className="onboarding-draft-header">
+                        <span>Serviço {index + 1}</span>
+                        {services.length > 1 && (
+                          <button
+                            className="management-icon-button danger"
+                            onClick={() =>
+                              setServices((current) => current.filter((item) => item.id !== service.id))
                             }
-                          />
-                        </FormField>
-                        <FormField label="Preço (R$)">
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={service.price}
-                            placeholder="45,00"
-                            onChange={(event) =>
-                              setServices((current) =>
-                                current.map((item) =>
-                                  item.id === service.id
-                                    ? { ...item, price: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </FormField>
+                            aria-label={`Remover serviço ${index + 1}`}
+                          >
+                            <Trash size={17} weight="duotone" />
+                          </button>
+                        )}
                       </div>
-                    </div>
-                  </Card>
-                ))}
+                      <div className="onboarding-service-row">
+                        <ImageUpload
+                          label="Foto"
+                          preset="service"
+                          shape="square"
+                          value={service.image}
+                          onChange={(image) => update({ image })}
+                          onBusy={onBusy}
+                        />
+                        <div className="management-form">
+                          <FormField label="Nome">
+                            <input
+                              value={service.name}
+                              placeholder="Ex.: Corte masculino"
+                              onChange={(event) => update({ name: event.target.value })}
+                              maxLength={100}
+                            />
+                          </FormField>
+                          <div className="management-form-grid">
+                            <FormField label="Duração (min)">
+                              <input
+                                type="number"
+                                min={5}
+                                max={480}
+                                step={5}
+                                value={service.duration}
+                                onChange={(event) => update({ duration: event.target.value })}
+                              />
+                            </FormField>
+                            <FormField label="Preço (R$)">
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={service.price}
+                                placeholder="45,00"
+                                onChange={(event) => update({ price: event.target.value })}
+                              />
+                            </FormField>
+                          </div>
+                          <FormField label="Descrição (opcional)">
+                            <input
+                              value={service.description}
+                              placeholder="Ex.: Máquina e tesoura, com lavagem e finalização."
+                              onChange={(event) => update({ description: event.target.value })}
+                              maxLength={200}
+                            />
+                          </FormField>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
               <Button
                 variant="secondary"
                 onClick={() =>
                   setServices((current) => [
                     ...current,
-                    {
-                      id: crypto.randomUUID(),
-                      name: "",
-                      duration: "40",
-                      price: "",
-                    },
+                    { id: crypto.randomUUID(), name: "", duration: "40", price: "", image: "", description: "" },
                   ])
                 }
                 disabled={services.length >= 30}
@@ -375,67 +521,77 @@ export default function OnboardingPage() {
               </Button>
             </>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <>
               <h1>Quem faz parte da equipe?</h1>
               <p className="onboarding-description">
-                Se você trabalha sozinho, inclua apenas seu nome.
+                Com o WhatsApp de cada um, quem vai atender recebe um aviso a cada agendamento.
               </p>
               <Card className="onboarding-form-card">
                 <div className="management-form">
-                  {professionals.map((professional, index) => (
-                    <div className="onboarding-team-row" key={index}>
-                      <FormField label={`Profissional ${index + 1}`}>
-                        <input
-                          value={professional}
-                          onChange={(event) =>
-                            setProfessionals((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index ? event.target.value : item,
-                              ),
-                            )
-                          }
-                          placeholder="Nome completo"
-                          maxLength={100}
+                  {team.map((member, index) => {
+                    const update = (patch: Partial<DraftMember>) =>
+                      setTeam((current) =>
+                        current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)),
+                      );
+                    return (
+                      <div className="onboarding-member" key={index}>
+                        <ImageUpload
+                          label="Foto"
+                          preset="person"
+                          shape="round"
+                          value={member.photo}
+                          onChange={(photo) => update({ photo })}
+                          onBusy={onBusy}
                         />
-                      </FormField>
-                      {professionals.length > 1 && (
-                        <button
-                          className="management-icon-button danger"
-                          onClick={() =>
-                            setProfessionals((current) =>
-                              current.filter(
-                                (_, itemIndex) => itemIndex !== index,
-                              ),
-                            )
-                          }
-                          aria-label={`Remover profissional ${index + 1}`}
-                        >
-                          <Trash size={17} weight="duotone" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        <div className="management-form-grid">
+                          <FormField label={`Profissional ${index + 1}`}>
+                            <input
+                              value={member.name}
+                              onChange={(event) => update({ name: event.target.value })}
+                              placeholder="Nome completo"
+                              maxLength={100}
+                            />
+                          </FormField>
+                          <FormField label="WhatsApp (opcional)">
+                            <input
+                              value={member.phone}
+                              onChange={(event) => update({ phone: formatPhone(event.target.value) })}
+                              type="tel"
+                              inputMode="tel"
+                              placeholder="(11) 99999-9999"
+                            />
+                          </FormField>
+                        </div>
+                        {team.length > 1 && (
+                          <button
+                            className="management-icon-button danger"
+                            onClick={() => setTeam((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                            aria-label={`Remover profissional ${index + 1}`}
+                          >
+                            <Trash size={17} weight="duotone" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                   <Button
                     variant="secondary"
-                    onClick={() =>
-                      setProfessionals((current) => [...current, ""])
-                    }
-                    disabled={professionals.length >= 30}
+                    onClick={() => setTeam((current) => [...current, { name: "", phone: "", photo: "" }])}
+                    disabled={team.length >= 30}
                   >
                     <Plus size={16} weight="bold" />
                     Adicionar profissional
                   </Button>
                   <p className="management-info">
-                    Inicialmente, todos poderão realizar os serviços
-                    cadastrados. Especialidades, intervalos e comissões podem
-                    ser ajustados no painel.
+                    Todos começam fazendo os serviços cadastrados. Especialidades, intervalos e comissões
+                    se ajustam no painel.
                   </p>
                 </div>
               </Card>
             </>
           )}
-          {step === 4 && (
+          {step === 5 && (
             <>
               <h1>Quando as portas estão abertas?</h1>
               <p className="onboarding-description">
@@ -473,8 +629,8 @@ export default function OnboardingPage() {
                     <div>
                       <strong>{name}</strong>
                       <p>
-                        {category} • {services.length} serviços •{" "}
-                        {professionals.length} profissionais
+                        {category} • {services.length} {services.length === 1 ? "serviço" : "serviços"} •{" "}
+                        {team.length} {team.length === 1 ? "profissional" : "profissionais"}
                       </p>
                       <p>
                         {days.map((day) => dayNames[day]).join(", ")} • {start}{" "}
@@ -487,7 +643,7 @@ export default function OnboardingPage() {
             </>
           )}
           <FormError error={error} />
-          {step < 5 && (
+          {step < done && (
             <div className="onboarding-actions">
               {step > 0 ? (
                 <Button
@@ -504,8 +660,8 @@ export default function OnboardingPage() {
               ) : (
                 <span />
               )}
-              {step === 4 ? (
-                <Button disabled={busy} onClick={() => void finish()}>
+              {step === last ? (
+                <Button disabled={busy || uploading} onClick={() => void finish()}>
                   {busy ? (
                     <CircleNotch
                       size={16}
@@ -525,7 +681,7 @@ export default function OnboardingPage() {
               )}
             </div>
           )}
-          {step === 5 && (
+          {step === done && (
             <div className="onboarding-success">
               <div className="onboarding-success-icon">
                 <Check size={36} weight="bold" />
@@ -564,11 +720,17 @@ export default function OnboardingPage() {
             StudioFlow · agenda online para barbearias e salões
           </footer>
         </div>
-        {step < 5 && (
+        {step < done && (
           <OnboardingPreview
             category={category}
             name={name}
             cover={cover}
+            logo={logo}
+            color={color}
+            description={description}
+            photos={photos}
+            address={address}
+            phone={phone}
             services={services}
             professionals={professionals}
             days={days}

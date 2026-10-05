@@ -284,6 +284,11 @@ Cada estabelecimento conecta a **própria conta Asaas**; o dinheiro cai direto c
 - Lembretes no WhatsApp: Vercel Cron diário (`vercel.json`, 9h de Brasília) chama `/api/cron/billing` com `CRON_SECRET`; manda 3 dias antes, no último dia e depois de vencer (até 7 dias), uma vez por vencimento (`platform_billing_notices`), com o link da fatura ou do painel. Saem pelo WhatsApp do próprio StudioFlow, conectado com QR Code no topo de `/admin` (instância `EVOLUTION_PLATFORM_INSTANCE`, padrão `sf-studioflow`).
 - Migration `20261010140000_studioflow_billing.sql`. Teste: `tests/billing.test.ts`.
 
+## Cadastro completo da loja (5 de outubro de 2026)
+
+- O cadastro (`/onboarding`) agora tem 6 etapas e a página já nasce completa: Negócio; Contato (nome, frase, WhatsApp e endereço obrigatórios, Instagram); Identidade (capa obrigatória, logo, cor dos botões, até 12 fotos dos trabalhos e comodidades); Serviços com foto e descrição; Equipe com foto e WhatsApp (para os avisos de agendamento); Horários. A prévia ao lado mostra "Sua página está X% pronta".
+- O servidor continua criando com `create_workspace` e completa em seguida o que a RPC não recebe (contato, identidade, fotos dos serviços, foto e WhatsApp da equipe) em `completeWorkspace` (`src/app/api/onboarding/route.ts`); os campos novos do `onboardingSchema` são opcionais no servidor para não quebrar integrações antigas.
+
 ## Próximos passos para terminar o piloto
 
 1. ~~Corrigir a divergência de permissões~~ (feito em 3/10).

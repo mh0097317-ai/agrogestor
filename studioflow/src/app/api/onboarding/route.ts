@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/server";
 import { DomainError } from "@/lib/availability";
 import type { Store } from "@/types";
+import type { z } from "zod";
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
@@ -23,13 +24,14 @@ export async function POST(request: Request) {
     if (isDemo()) {
       const businessId = randomUUID(),
         tenantId = randomUUID();
+      const member = (name: string) => input.team.find((person) => person.name === name);
       const professionals: Store["professionals"] = input.professionalNames.map(
         (name) => ({
           id: randomUUID(),
           businessId,
           name,
-          photo: "",
-          phone: "",
+          photo: member(name)?.photo || "",
+          phone: member(name)?.phone || "",
           specialties: [],
           commission: 0,
           active: true,
@@ -47,20 +49,21 @@ export async function POST(request: Request) {
           slug,
           name: input.name,
           category: input.category,
-          description: "",
-          address: "",
-          phone: "",
-          instagram: "",
+          description: input.description,
+          address: input.address,
+          phone: input.phone || "",
+          instagram: input.instagram,
           cover: input.cover,
-          amenities: [],
+          logo: input.logo,
+          color: input.color,
+          photos: input.photos,
+          amenities: input.amenities,
         },
         services: input.services.map((service) => ({
           ...service,
           id: randomUUID(),
           businessId,
           category: input.category,
-          description: "",
-          image: "",
           active: true,
           professionalIds: professionals.map((person) => person.id),
         })),
@@ -139,6 +142,7 @@ export async function POST(request: Request) {
       .select("id")
       .eq("slug", data)
       .single();
+    if (business) await completeWorkspace(business.id, input);
     if (business)
       (await cookies()).set("studioflow-business", business.id, {
         httpOnly: true,
@@ -150,5 +154,55 @@ export async function POST(request: Request) {
     return respond({ slug: data }, 201);
   } catch (error) {
     return failure(error);
+  }
+}
+
+/**
+ * What create_workspace does not take: contact, identity, photos and the
+ * team's WhatsApp. Same business, written right after it is created.
+ */
+async function completeWorkspace(
+  businessId: string,
+  input: z.infer<typeof onboardingSchema>,
+) {
+  const admin = createSupabaseAdmin();
+  await admin
+    .from("businesses")
+    .update({
+      description: input.description,
+      phone: input.phone || "",
+      address: input.address,
+      instagram: input.instagram,
+      logo: input.logo || null,
+      color: input.color || null,
+      photos: input.photos,
+      amenities: input.amenities,
+    })
+    .eq("id", businessId);
+  const [{ data: services }, { data: people }] = await Promise.all([
+    admin.from("services").select("id,name").eq("business_id", businessId),
+    admin.from("professionals").select("id,name").eq("business_id", businessId),
+  ]);
+  const used = new Set<string>();
+  for (const item of input.services) {
+    if (!item.image && !item.description) continue;
+    const match = services?.find((service) => service.name === item.name && !used.has(service.id));
+    if (!match) continue;
+    used.add(match.id);
+    await admin
+      .from("services")
+      .update({ image: item.image, description: item.description })
+      .eq("business_id", businessId)
+      .eq("id", match.id);
+  }
+  for (const person of input.team) {
+    if (!person.phone && !person.photo) continue;
+    const match = people?.find((item) => item.name === person.name);
+    if (match)
+      await admin
+        .from("professionals")
+        .update({ phone: person.phone, photo: person.photo })
+        .eq("business_id", businessId)
+        .eq("id", match.id);
   }
 }

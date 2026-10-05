@@ -195,17 +195,34 @@ export const mutationSchema = z.object({
   action: z.enum(["create", "update", "delete"]),
   data: z.record(z.string(), z.unknown()),
 });
+const digits = (value: string) => value.replace(/\D/g, "");
 export const onboardingSchema = z
   .object({
     category: z.string().min(2).max(80),
     name: z.string().trim().min(2).max(100),
     cover: image.default(""),
+    // Everything the page shows, filled in at sign-up so it opens complete.
+    description: z.string().trim().max(1000).default(""),
+    phone: z
+      .string()
+      .max(25)
+      .transform(digits)
+      .refine((value) => /^[1-9][0-9]{9,10}$/.test(value), "Informe o WhatsApp da loja com DDD.")
+      .optional(),
+    address: z.string().trim().max(300).default(""),
+    instagram: z.string().trim().max(100).default(""),
+    logo: image.default(""),
+    color: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]).default(""),
+    photos: z.array(image).max(12).default([]),
+    amenities: z.array(z.string().trim().min(1).max(50)).max(30).default([]),
     services: z
       .array(
         z.object({
           name: z.string().min(2).max(100),
           duration: z.number().int().min(5).max(480),
           price: z.number().min(0).max(100000),
+          image: image.default(""),
+          description: z.string().trim().max(500).default(""),
         }),
       )
       .min(1)
@@ -214,6 +231,21 @@ export const onboardingSchema = z
       .array(z.string().trim().min(2).max(100))
       .min(1)
       .max(30),
+    team: z
+      .array(
+        z.object({
+          name: z.string().trim().min(2).max(100),
+          phone: z
+            .string()
+            .max(25)
+            .transform(digits)
+            .refine((value) => value === "" || /^[1-9][0-9]{9,10}$/.test(value), "Confira o WhatsApp do profissional.")
+            .default(""),
+          photo: image.default(""),
+        }),
+      )
+      .max(30)
+      .default([]),
     openDays: days,
     openStart: clock,
     openEnd: clock,

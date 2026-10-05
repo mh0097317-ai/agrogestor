@@ -32,6 +32,7 @@
 }
 .onboarding-preview-cover {
   height: 180px;
+  overflow: hidden;
   background: #16130f;
   display: grid;
   place-items: center;
@@ -39,12 +40,15 @@
   position: relative;
 }
 .onboarding-preview-cover img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 .onboarding-preview-cover > span {
   position: absolute;
+  z-index: 1;
   left: 20px;
   bottom: 16px;
   font-size: 12px;
@@ -157,4 +161,51 @@
   .onboarding-layout {
     padding: 28px 20px 24px;
   }
+}
+
+.onboarding-score {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.onboarding-score span {
+  color: #433a31;
+  font-size: 13px;
+}
+.onboarding-score b {
+  color: #16130f;
+  font-family: var(--serif);
+  font-size: 16px;
+}
+.onboarding-score i {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #e2d9ca;
+}
+.onboarding-score em {
+  display: block;
+  height: 100%;
+  background: #a47a3c;
+  transition: width 500ms var(--ease-out, ease);
+}
+.onboarding-preview-logo {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 0 8px;
+  object-fit: contain;
+}
+.onboarding-preview-photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0 0 16px;
+}
+.onboarding-preview-photos img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 2px;
 }
