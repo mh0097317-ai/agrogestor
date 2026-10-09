@@ -1,7 +1,16 @@
 "use client";
+import "./experience.css";
+import "./modules.css";
+import { onlineBookingEnabled } from "@/lib/online-booking";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  Fragment,
+  type ReactNode,
+} from "react";
 import {
   ArrowSquareOut,
   ArrowUpRight,
@@ -22,7 +31,6 @@ import {
   Question,
   Scissors,
   ShieldCheck,
-  ShieldStar,
   ShoppingBagOpen,
   SignOut,
   SquaresFour,
@@ -76,6 +84,26 @@ const links = [
   },
   { path: "/dashboard/divulgar", label: "Divulgar", icon: Megaphone },
   { path: "/dashboard/configuracoes", label: "Configurações", icon: GearSix },
+];
+const navigationGroups: Record<string, string> = {
+  "/dashboard": "Dia a dia",
+  "/dashboard/agenda": "Dia a dia",
+  "/dashboard/clientes": "Dia a dia",
+  "/dashboard/conversas": "Dia a dia",
+  "/dashboard/servicos": "Seu negócio",
+  "/dashboard/produtos": "Seu negócio",
+  "/dashboard/equipe": "Seu negócio",
+  "/dashboard/financeiro": "Seu negócio",
+  "/dashboard/relatorios": "Seu negócio",
+  "/dashboard/clube": "Crescimento",
+  "/dashboard/divulgar": "Crescimento",
+  "/dashboard/configuracoes": "Preferências",
+};
+const navigationOrder = [
+  "Dia a dia",
+  "Seu negócio",
+  "Crescimento",
+  "Preferências",
 ];
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -201,10 +229,22 @@ function Shell({ children }: { children: ReactNode }) {
   // Only what the business's plan includes shows up in the menu.
   const menu = links.filter(
     (link) =>
-      !("module" in link && link.module) ||
-      hasModule(data?.access?.modules, link.module),
+      (data?.viewer?.role !== "professional" ||
+        [
+          "/dashboard",
+          "/dashboard/agenda",
+          "/dashboard/clientes",
+          "/dashboard/conversas",
+          "/dashboard/configuracoes",
+        ].includes(link.path)) &&
+      (!("module" in link && link.module) ||
+        (!!data && hasModule(data.access?.modules, link.module))),
   );
   const ownerName = data?.viewer?.name || "Seu perfil";
+  const mobileInbox = menu.some((link) => link.path === "/dashboard/conversas");
+  const mobileContactPath = mobileInbox
+    ? "/dashboard/conversas"
+    : "/dashboard/clientes";
   const ownerRole =
     data?.viewer?.role === "owner"
       ? "Proprietário"
@@ -212,6 +252,7 @@ function Shell({ children }: { children: ReactNode }) {
         ? "Administrador"
         : "Equipe";
   const slug = data?.business.slug || "barber-011";
+  const online = !!data && onlineBookingEnabled(data.settings);
   async function copyLink() {
     const url = `${location.origin}/${slug}`;
     try {
@@ -225,7 +266,7 @@ function Shell({ children }: { children: ReactNode }) {
     path === "/dashboard" ? pathname === path : pathname.startsWith(path);
   return (
     <div
-      className="app-shell"
+      className={`app-shell ${pathname === "/dashboard/conversas" ? "is-conversations" : ""}`}
       data-home={pathname === "/dashboard" ? "" : undefined}
     >
       <aside className="sidebar">
@@ -233,30 +274,46 @@ function Shell({ children }: { children: ReactNode }) {
           <Brand tone="on-dark" size={30} />
         </Link>
         <nav aria-label="Navegação principal" ref={navRef} className="side-nav">
-          {menu.map((link) => (
-            <Link
-              key={link.path}
-              href={link.path}
-              className={`nav-link ${active(link.path) ? "active" : ""}`}
-            >
-              <link.icon
-                size={20}
-                weight={active(link.path) ? "fill" : "regular"}
-              />
-              {link.label}
-              {link.label === "Agenda" && data && (
-                <span className="nav-badge">
-                  {
-                    data.appointments.filter(
-                      (a) =>
-                        a.status === "confirmed" &&
-                        businessDay(a.start) === businessDay(),
-                    ).length
-                  }
-                </span>
-              )}
-            </Link>
-          ))}
+          {[...menu]
+            .sort(
+              (a, b) =>
+                navigationOrder.indexOf(navigationGroups[a.path]) -
+                navigationOrder.indexOf(navigationGroups[b.path]),
+            )
+            .map((link, index, visible) => (
+              <Fragment key={link.path}>
+                {(index === 0 ||
+                  navigationGroups[link.path] !==
+                    navigationGroups[visible[index - 1].path]) && (
+                  <span className="nav-section-label">
+                    {navigationGroups[link.path]}
+                  </span>
+                )}
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  className={`nav-link ${active(link.path) ? "active" : ""}`}
+                  aria-current={active(link.path) ? "page" : undefined}
+                >
+                  <link.icon
+                    size={20}
+                    weight={active(link.path) ? "fill" : "regular"}
+                  />
+                  {link.label}
+                  {link.label === "Agenda" && data && (
+                    <span className="nav-badge">
+                      {
+                        data.appointments.filter(
+                          (a) =>
+                            a.status === "confirmed" &&
+                            businessDay(a.start) === businessDay(),
+                        ).length
+                      }
+                    </span>
+                  )}
+                </Link>
+              </Fragment>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-business">
@@ -278,27 +335,30 @@ function Shell({ children }: { children: ReactNode }) {
               <small>{data?.business.category || "Agenda e gestão"}</small>
             </span>
             <div className="sidebar-business-actions">
-              <Link href={`/${slug}`} target="_blank">
-                Ver página pública <ArrowUpRight size={13} weight="bold" />
-              </Link>
-              <button
-                type="button"
-                onClick={() => void copyLink()}
-                aria-label="Copiar link de agendamento"
-                title="Copiar link de agendamento"
-              >
-                <Copy size={15} />
-              </button>
+              {online ? (
+                <>
+                  <Link href={`/${slug}`} target="_blank">
+                    Ver página pública <ArrowUpRight size={13} weight="bold" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void copyLink()}
+                    aria-label="Copiar link de agendamento"
+                    title="Copiar link de agendamento"
+                  >
+                    <Copy size={15} />
+                  </button>
+                </>
+              ) : (
+                <Link href="/dashboard/configuracoes?aba=onlineBooking">
+                  Agendamento online desativado
+                </Link>
+              )}
             </div>
           </div>
-          {hasModule(data?.access?.modules, "recepcao") && (
+          {data && hasModule(data.access?.modules, "recepcao") && (
             <Link className="sidebar-support" href="/tv" target="_blank">
               <Television size={16} /> Modo TV da recepção
-            </Link>
-          )}
-          {data?.viewer?.platformAdmin && (
-            <Link className="sidebar-support" href="/admin">
-              <ShieldStar size={16} /> Plataforma
             </Link>
           )}
           <button className="sidebar-support" onClick={() => setHelp(true)}>
@@ -333,8 +393,17 @@ function Shell({ children }: { children: ReactNode }) {
               />
               <kbd>↵</kbd>
             </form>
-            <Link href={`/${slug}`} target="_blank" className="my-page">
-              <ArrowSquareOut size={13} /> Minha página
+            <Link
+              href={
+                online
+                  ? `/${slug}`
+                  : "/dashboard/configuracoes?aba=onlineBooking"
+              }
+              target={online ? "_blank" : undefined}
+              className="my-page"
+            >
+              <ArrowSquareOut size={13} />{" "}
+              {online ? "Minha página" : "Agendamento online desativado"}
             </Link>
             <button
               className="icon-button notification-toggle"
@@ -405,8 +474,13 @@ function Shell({ children }: { children: ReactNode }) {
             )}
             <span>{data?.business.name || "Seu estabelecimento"}</span>
           </Link>
-          <Link href={`/${slug}`}>
-            <ArrowSquareOut size={13} /> Sua página
+          <Link
+            href={
+              online ? `/${slug}` : "/dashboard/configuracoes?aba=onlineBooking"
+            }
+          >
+            <ArrowSquareOut size={13} />{" "}
+            {online ? "Sua página" : "Online desativado"}
           </Link>
         </header>
         <main className="dashboard-content" key={pathname}>
@@ -427,7 +501,10 @@ function Shell({ children }: { children: ReactNode }) {
           href="/dashboard"
           className={active("/dashboard") ? "active" : ""}
         >
-          <SquaresFour size={24} weight={active("/dashboard") ? "fill" : "regular"} />
+          <SquaresFour
+            size={24}
+            weight={active("/dashboard") ? "fill" : "regular"}
+          />
           Início
         </Link>
         <Link
@@ -450,14 +527,21 @@ function Shell({ children }: { children: ReactNode }) {
           </button>
         )}
         <Link
-          href="/dashboard/clientes"
-          className={active("/dashboard/clientes") ? "active" : ""}
+          href={mobileContactPath}
+          className={active(mobileContactPath) ? "active" : ""}
         >
-          <UsersThree
-            size={24}
-            weight={active("/dashboard/clientes") ? "fill" : "regular"}
-          />
-          Clientes
+          {mobileInbox ? (
+            <ChatCircleDots
+              size={24}
+              weight={active(mobileContactPath) ? "fill" : "regular"}
+            />
+          ) : (
+            <UsersThree
+              size={24}
+              weight={active(mobileContactPath) ? "fill" : "regular"}
+            />
+          )}
+          {mobileInbox ? "Conversas" : "Clientes"}
         </Link>
         <button onClick={() => setMore(!more)} aria-label="Mais opções">
           <DotsThree size={24} weight="bold" />
@@ -466,21 +550,25 @@ function Shell({ children }: { children: ReactNode }) {
       </nav>
       {more && (
         <Card className="mobile-more">
-          {menu.slice(3).map((link) => (
-            <Link
-              key={link.path}
-              href={link.path}
-              onClick={() => setMore(false)}
-            >
-              <link.icon size={20} weight="regular" />
-              {link.label}
-            </Link>
-          ))}
-          {data?.viewer?.platformAdmin && (
-            <Link href="/admin" onClick={() => setMore(false)}>
-              <ShieldStar size={20} weight="regular" /> Plataforma
-            </Link>
-          )}
+          {menu
+            .filter(
+              (link) =>
+                ![
+                  "/dashboard",
+                  "/dashboard/agenda",
+                  mobileContactPath,
+                ].includes(link.path),
+            )
+            .map((link) => (
+              <Link
+                key={link.path}
+                href={link.path}
+                onClick={() => setMore(false)}
+              >
+                <link.icon size={20} weight="regular" />
+                {link.label}
+              </Link>
+            ))}
           <Link href="/login" onClick={() => setMore(false)}>
             <SignOut size={17} /> Conta
           </Link>
@@ -510,7 +598,11 @@ function Shell({ children }: { children: ReactNode }) {
           <ol>
             <li>Cadastre serviços e os profissionais que os realizam.</li>
             <li>Configure o expediente e os intervalos da equipe.</li>
-            <li>Compartilhe o link público com seus clientes.</li>
+            <li>
+              {online
+                ? "Compartilhe o link público com seus clientes."
+                : "O agendamento online está desativado. Agende normalmente pelo painel."}
+            </li>
             <li>Acompanhe atendimentos e pagamentos pelo painel.</li>
           </ol>
           <div className="support-contact">

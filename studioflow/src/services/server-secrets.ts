@@ -66,6 +66,49 @@ export function decryptSecret(sealed: string) {
   }
 }
 
+/** Dedicated authenticated encryption for the admin vault. Tenant/purpose
+ * binding prevents a ciphertext copied to another customer from decrypting. */
+export function sealVault(plain: string, scope: string) {
+  const iv = randomBytes(12);
+  const key = Buffer.from(
+    hkdfSync("sha256", encryptionKey(), "studioflow", "admin-vault:v1", 32),
+  );
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  cipher.setAAD(Buffer.from(scope));
+  const data = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  return [
+    "vault1",
+    iv.toString("base64"),
+    cipher.getAuthTag().toString("base64"),
+    data.toString("base64"),
+  ].join(":");
+}
+export function openVault(sealed: string, scope: string) {
+  try {
+    const [version, iv, tag, data] = sealed.split(":");
+    if (version !== "vault1" || !iv || !tag || !data) throw new Error();
+    const key = Buffer.from(
+      hkdfSync("sha256", encryptionKey(), "studioflow", "admin-vault:v1", 32),
+    );
+    const cipher = createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(iv, "base64"),
+    );
+    cipher.setAAD(Buffer.from(scope));
+    cipher.setAuthTag(Buffer.from(tag, "base64"));
+    return Buffer.concat([
+      cipher.update(Buffer.from(data, "base64")),
+      cipher.final(),
+    ]).toString("utf8");
+  } catch {
+    throw new DomainError(
+      "A credencial precisa ser configurada novamente no cofre.",
+      409,
+    );
+  }
+}
+
 export const sha256 = (value: string) =>
   createHash("sha256").update(value).digest();
 

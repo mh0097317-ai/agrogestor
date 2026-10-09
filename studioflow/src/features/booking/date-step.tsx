@@ -17,6 +17,11 @@ import {
   Lightning,
 } from "@phosphor-icons/react/dist/ssr";
 import { useMemo, useState, type CSSProperties } from "react";
+import {
+  timePeriods,
+  matchesTimePeriod,
+  type TimePeriod,
+} from "@/lib/time-period";
 import type { Settings, Slot } from "@/types";
 import { usePublicData } from "@/features/public/use-public-catalog";
 import type { PublicProfessional } from "@/features/public/types";
@@ -55,6 +60,8 @@ export function DateStep({
   /** Offer the waitlist on full days (new bookings only). */
   waitlist?: boolean;
 }) {
+  const [periodFilter, setPeriodFilter] = useState<TimePeriod>("all");
+  const [showCalendar, setShowCalendar] = useState(false);
   const [monthStep, setMonthStep] = useState<"next" | "previous" | "">("");
   const [month, setMonthState] = useState(() =>
     startOfMonth(new Date(`${selectedDate || bookingDate()}T12:00:00`)),
@@ -108,11 +115,11 @@ export function DateStep({
     (slot, index, list) =>
       list.findIndex((other) => other.time === slot.time) === index,
   );
-  const periods = [
-    { label: "Manhã", start: 0, end: 12 },
-    { label: "Tarde", start: 12, end: 18 },
-    { label: "Noite", start: 18, end: 24 },
-  ];
+  const periods = timePeriods;
+  const quickDays = Object.keys(days)
+    .sort()
+    .filter((day) => days[day].length > 0)
+    .slice(0, 7);
 
   /** Open day inside the booking window with every time taken. */
   function isFull(day: Date, key: string) {
@@ -145,12 +152,16 @@ export function DateStep({
   function chooseDate(date: Date) {
     onDate(format(date, "yyyy-MM-dd"));
     onSlot(undefined);
+    setShowCalendar(false);
   }
-  const periodOf = (slot: Slot) => Number(slot.time.split(":")[0]);
-  const earliest = firstAvailable ? days[firstAvailable][0] : undefined;
+  const earliest = Object.keys(days)
+    .sort()
+    .flatMap((day) => days[day])
+    .find((slot) => matchesTimePeriod(slot.time, periodFilter));
   const earliestWith =
     earliest && professionalId === "any"
-      ? professionals?.find((person) => person.id === earliest.professionalId)
+      ? professionals
+          ?.find((person) => person.id === earliest.professionalId)
           ?.name.split(" ")[0]
       : "";
   return (
@@ -183,8 +194,38 @@ export function DateStep({
           <ArrowRight weight="bold" size={18} />
         </button>
       )}
+      <div className="bk-quick-dates" aria-label="Próximas datas disponíveis">
+        <span className="bk-label">Escolha um dia</span>
+        <div>
+          {quickDays.map((day) => (
+            <button
+              type="button"
+              key={day}
+              aria-pressed={activeDate === day}
+              onClick={() => chooseDate(new Date(day + "T12:00:00"))}
+            >
+              <small>
+                {format(new Date(day + "T12:00:00"), "EEE", { locale: ptBR })}
+              </small>
+              <strong>{day.slice(-2)}</strong>
+              <span>
+                {format(new Date(day + "T12:00:00"), "MMM", { locale: ptBR })}
+              </span>
+            </button>
+          ))}
+        </div>
+        <button
+          className="bk-calendar-toggle"
+          type="button"
+          aria-expanded={showCalendar}
+          onClick={() => setShowCalendar((value) => !value)}
+        >
+          <CalendarBlank size={16} />
+          {showCalendar ? "Fechar calendário" : "Escolher outra data"}
+        </button>
+      </div>
       <div className="bk-schedule">
-        <div className="bk-calendar">
+        <div className={`bk-calendar ${showCalendar ? "is-expanded" : ""}`}>
           <div className="bk-calendar-head">
             <button
               type="button"
@@ -259,43 +300,82 @@ export function DateStep({
                 locale: ptBR,
               })}
             </h2>
-            {periods.map((period) => {
-              const slots = uniqueSlots.filter(
-                (slot) =>
-                  periodOf(slot) >= period.start && periodOf(slot) < period.end,
-              );
-              return (
-                slots.length > 0 && (
-                  <div className="bk-period" key={period.label}>
-                    <h3>{period.label}</h3>
-                    <div className="bk-slot-grid">
-                      {slots.map((slot, index) => (
-                        <button
-                          key={`${slot.time}-${slot.professionalId}`}
-                          type="button"
-                          style={{ "--i": index } as CSSProperties}
-                          className={
-                            selectedSlot?.start === slot.start
-                              ? "is-selected"
-                              : ""
-                          }
-                          aria-pressed={selectedSlot?.start === slot.start}
-                          onClick={() => {
-                            if (selectedDate !== activeDate) onDate(activeDate);
-                            onSlot(slot);
-                          }}
-                        >
-                          <span>{slot.time}</span>
-                          {selectedSlot?.start === slot.start && (
-                            <small>até {bookingTime(slot.end)}</small>
-                          )}
-                        </button>
-                      ))}
+            <div
+              className="bk-period-filter"
+              role="group"
+              aria-label="Filtrar horários por período"
+            >
+              {[{ id: "all" as const, label: "Todos" }, ...periods].map(
+                (period) => (
+                  <button
+                    type="button"
+                    key={period.id}
+                    aria-pressed={periodFilter === period.id}
+                    onClick={() => {
+                      setPeriodFilter(period.id);
+                      if (
+                        selectedSlot &&
+                        !matchesTimePeriod(selectedSlot.time, period.id)
+                      )
+                        onSlot(undefined);
+                    }}
+                  >
+                    {period.label}
+                  </button>
+                ),
+              )}
+            </div>
+            {periodFilter !== "all" &&
+              !uniqueSlots.some((slot) =>
+                matchesTimePeriod(slot.time, periodFilter),
+              ) && (
+                <p className="bk-period-empty" role="status">
+                  Não há horários neste período. Escolha outro período ou outra
+                  data.
+                </p>
+              )}
+            {periods
+              .filter(
+                (period) =>
+                  periodFilter === "all" || periodFilter === period.id,
+              )
+              .map((period) => {
+                const slots = uniqueSlots.filter((slot) =>
+                  matchesTimePeriod(slot.time, period.id),
+                );
+                return (
+                  slots.length > 0 && (
+                    <div className="bk-period" key={period.label}>
+                      <h3>{period.label}</h3>
+                      <div className="bk-slot-grid">
+                        {slots.map((slot, index) => (
+                          <button
+                            key={`${slot.time}-${slot.professionalId}`}
+                            type="button"
+                            style={{ "--i": index } as CSSProperties}
+                            className={
+                              selectedSlot?.start === slot.start
+                                ? "is-selected"
+                                : ""
+                            }
+                            aria-pressed={selectedSlot?.start === slot.start}
+                            onClick={() => {
+                              if (selectedDate !== activeDate)
+                                onDate(activeDate);
+                              onSlot(slot);
+                            }}
+                          >
+                            <span>{slot.time}</span>
+                            {selectedSlot?.start === slot.start && (
+                              <small>até {bookingTime(slot.end)}</small>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )
-              );
-            })}
+                  )
+                );
+              })}
             {uniqueSlots.length === 0 &&
               (waitlistForm(true) || (
                 <div className="bk-empty">

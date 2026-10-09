@@ -16,7 +16,7 @@ export const moduleCatalog = {
     detail: "Planos mensais com serviços inclusos.",
   },
   recepcionista: {
-    label: "Recepcionista com IA",
+    label: "StudioFlow no WhatsApp",
     detail: "Chat da página, WhatsApp e Instagram, com áudio.",
   },
   produtos: {
@@ -47,7 +47,14 @@ export const planCatalog = {
   },
   profissional: {
     label: "Profissional",
-    modules: ["fidelidade", "espera", "pagamentos", "clube", "produtos", "recepcao"] as ModuleKey[],
+    modules: [
+      "fidelidade",
+      "espera",
+      "pagamentos",
+      "clube",
+      "produtos",
+      "recepcao",
+    ] as ModuleKey[],
   },
   premium: {
     label: "Premium",
@@ -61,7 +68,10 @@ export function enabledModules(modules?: string[] | null): ModuleKey[] {
   if (!modules) return allModules;
   return allModules.filter((key) => modules.includes(key));
 }
-export function hasModule(modules: string[] | null | undefined, key: ModuleKey) {
+export function hasModule(
+  modules: string[] | null | undefined,
+  key: ModuleKey,
+) {
   return enabledModules(modules).includes(key);
 }
 /** Nome do plano que bate com os módulos, ou "Personalizado". */
@@ -71,7 +81,10 @@ export function planFor(modules: string[] | null | undefined) {
     if (plan.modules.slice().sort().join(",") === list) return key as PlanKey;
   return null;
 }
-export function assertModule(modules: string[] | null | undefined, key: ModuleKey) {
+export function assertModule(
+  modules: string[] | null | undefined,
+  key: ModuleKey,
+) {
   if (!hasModule(modules, key))
     throw new DomainError(
       `${moduleCatalog[key].label} não está incluído no plano deste estabelecimento.`,
@@ -83,7 +96,10 @@ export function assertModule(modules: string[] | null | undefined, key: ModuleKe
  * Desliga no próprio cadastro o que o plano não inclui, para que página
  * pública, agendamento e atendente sigam as mesmas regras sem exceções.
  */
-export function applyModules(store: Store, modules: string[] | null | undefined): Store {
+export function applyModules(
+  store: Store,
+  modules: string[] | null | undefined,
+): Store {
   const on = (key: ModuleKey) => hasModule(modules, key);
   const settings = { ...store.settings };
   if (!on("pagamentos")) settings.depositMode = "off";

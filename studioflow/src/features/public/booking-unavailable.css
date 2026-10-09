@@ -1,0 +1,33 @@
+.booking-unavailable {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.booking-unavailable-card {
+  width: min(100%, 480px);
+  padding: clamp(24px, 5vw, 48px);
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
+  background: #fffdf9;
+  border: 1px solid var(--public-line);
+  border-radius: 8px;
+}
+.booking-unavailable-card h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(26px, 5vw, 34px);
+  line-height: 1.2;
+}
+.booking-unavailable-card p {
+  color: var(--public-muted);
+}
+.booking-unavailable-card .booking-unavailable-business {
+  color: var(--public-ink);
+  font-weight: 600;
+}
+.booking-unavailable-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}

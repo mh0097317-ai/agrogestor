@@ -41,6 +41,7 @@ export interface Service {
   professionalIds: string[];
 }
 export interface Professional {
+  userId?: string | null;
   id: string;
   businessId: string;
   name: string;
@@ -70,6 +71,15 @@ export interface Customer {
   createdAt: string;
 }
 export interface Appointment {
+  /** Trusted server attribution; old bookings have no recoverable channel. */
+  bookingChannel?:
+    | "legacy"
+    | "manual"
+    | "public_link"
+    | "assistant_web"
+    | "assistant_whatsapp"
+    | "assistant_instagram";
+  conversationId?: string | null;
   id: string;
   businessId: string;
   customerId: string;
@@ -150,6 +160,8 @@ export interface BlockedTime {
   reason: string;
 }
 export interface Settings {
+  /** New reservations from the public website; other channels stay independent. */
+  onlineBookingEnabled: boolean;
   businessId: string;
   minNotice: number;
   maxDays: number;
@@ -258,12 +270,16 @@ export interface ConversationMessage {
 export interface ConversationSummary {
   id: string;
   channel: ConversationChannel;
+  whatsappProfessionalId?: string | null;
   contactName: string;
   contactPhone: string;
   status: ConversationStatus;
   unread: number;
   lastMessageAt: string;
   preview?: string;
+  latestRole?: ConversationMessage["role"];
+  latestMessageAt?: string;
+  runState?: string | null;
 }
 /** Demo only: the live database keeps these in their own tables. */
 export interface DemoConversation extends ConversationSummary {
@@ -300,6 +316,7 @@ export interface Store {
   instagram?: { username: string; igUserId: string } | null;
   /** WhatsApp da loja conectado por QR Code (Evolution API do StudioFlow). */
   whatsappLink?: WhatsAppLink | null;
+  professionalWhatsAppLinks?: (WhatsAppLink & { professionalId: string })[];
   /** O servidor tem a Evolution API configurada. */
   evolutionReady?: boolean;
   /** Demonstração: faturas da mensalidade do StudioFlow. */
@@ -312,7 +329,12 @@ export interface Store {
   transcriptionReady?: boolean;
   /** The server has Claude credentials for the AI receptionist. */
   aiReady?: boolean;
-  viewer?: { name: string; role: string; platformAdmin?: boolean };
+  viewer?: {
+    name: string;
+    role: string;
+    professionalId?: string;
+    platformAdmin?: boolean;
+  };
   mode?: "demo" | "live";
   /** Liberação pela equipe StudioFlow (no modo demonstração, guardada no arquivo). */
   access?: BusinessAccess & { state?: AccessState };
@@ -333,6 +355,17 @@ export interface WhatsAppLink {
   status: "connecting" | "open" | "close";
   phone: string;
   profileName: string;
+}
+export interface ManualInvoice {
+  id: string;
+  value: number;
+  dueDate: string;
+  status: "pending" | "paid" | "cancelled";
+  method: "pix" | "cash" | "card" | "transfer" | "other";
+  note: string;
+  days: number;
+  paidAt: string | null;
+  createdAt: string;
 }
 export interface Slot {
   time: string;

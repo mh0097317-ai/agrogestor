@@ -21,7 +21,9 @@ export async function POST(
     const appointment = await bookWithPayments(slug, input);
     // Whoever will attend gets a WhatsApp, after the answer goes back.
     const origin = requestOrigin(request);
-    after(() => notifyNewBooking(slug, appointment.id, origin));
+    after(async () => {
+      await notifyNewBooking(slug, appointment.id, origin);
+    });
     return respond(appointment, 201);
   } catch (error) {
     return failure(error);

@@ -3,6 +3,179 @@
   display: grid;
   gap: 24px;
 }
+.ov-workday {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  background: #ece4d6;
+  border: 1px solid #dcd2c2;
+  border-radius: 8px;
+}
+.ov-workday > div:first-child {
+  display: grid;
+  gap: 7px;
+}
+.ov-workday > div > span {
+  color: #786d60;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+}
+.ov-workday strong {
+  font-family: var(--serif);
+  font-size: 23px;
+  font-weight: 500;
+}
+.ov-workday strong i {
+  color: #b7a789;
+  font-style: normal;
+  padding: 0 8px;
+}
+.ov-workday small {
+  color: #786d60;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ov-workday-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.ov-workday-actions > a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+  color: #433a31;
+  font-size: 13px;
+}
+.ov-whatsapp {
+  padding: 20px 24px;
+  background: #fffdf9;
+  border: 1px solid #dcd2c2;
+  border-radius: 8px;
+}
+.ov-whatsapp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ov-whatsapp-head > span {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ov-whatsapp-head > span > svg {
+  color: #396547;
+}
+.ov-whatsapp h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.ov-whatsapp small {
+  color: #786d60;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ov-whatsapp-head button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e2d9ca;
+  border-radius: 50%;
+  background: transparent;
+  color: #433a31;
+  cursor: pointer;
+}
+.ov-whatsapp-head button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.ov-whatsapp-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 18px 0;
+  gap: 18px;
+}
+.ov-whatsapp-counts > div {
+  display: grid;
+  gap: 7px;
+  border-right: 1px solid #e8dfd2;
+}
+.ov-whatsapp-counts > div:last-child {
+  border: 0;
+}
+.ov-whatsapp-counts strong {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+}
+.ov-whatsapp-counts span {
+  color: #786d60;
+  font-size: 12px;
+}
+.ov-whatsapp-counts > div:first-child span {
+  color: #995127;
+}
+.ov-whatsapp footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e8dfd2;
+}
+.ov-whatsapp footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #433a31;
+}
+.ov-whatsapp-error {
+  color: #9a3412;
+  font-size: 13px;
+  margin-top: 12px;
+}
+@media (max-width: 767px) {
+  .ov-workday,
+  .ov-whatsapp {
+    padding: 16px;
+  }
+  .ov-workday strong {
+    font-size: 21px;
+  }
+  .ov-workday-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .ov-whatsapp h2 {
+    font-size: 20px;
+  }
+  .ov-whatsapp-counts {
+    gap: 10px;
+  }
+  .ov-whatsapp-counts span {
+    font-size: 11px;
+  }
+  .ov-whatsapp-head > span {
+    gap: 8px;
+  }
+  .ov-whatsapp footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 .ov {
   display: grid;
   gap: 24px;
@@ -626,19 +799,6 @@
 .ov-kpi:hover .ov-kpi-icon {
   transform: scale(1.1) rotate(-6deg);
 }
-.ov-main > *,
-.ov-aside > * {
-  animation: sf-fade-up 600ms var(--ease-out) both;
-}
-.ov-main > :nth-child(1) {
-  animation-delay: 180ms;
-}
-.ov-aside > :nth-child(1) {
-  animation-delay: 260ms;
-}
-.ov-aside > :nth-child(2) {
-  animation-delay: 340ms;
-}
 .ov-table-row {
   transition:
     background var(--motion-fast),
@@ -917,7 +1077,6 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #d9be8c, #ffffff);
-  transition: width 600ms var(--ease-out);
 }
 .ov-now-actions {
   display: flex;
@@ -1000,7 +1159,6 @@
   padding: 10px 12px;
   border-radius: 4px;
   background: #f7f3ec;
-  animation: sf-fade-up 420ms var(--ease-out) both;
 }
 .ov-rev-head {
   display: flex;
@@ -1098,7 +1256,6 @@
 .ov-bar-fill {
   background: linear-gradient(180deg, #a47a3c, #1f1a15);
   transform-origin: bottom;
-  animation: ov-grow 700ms var(--ease-out) both;
 }
 .ov-bar.is-today .ov-bar-fill {
   background: linear-gradient(180deg, #d9be8c, #a47a3c);
@@ -1188,7 +1345,6 @@
   border-radius: inherit;
   background: linear-gradient(90deg, #1f1a15, #a47a3c);
   transform-origin: left;
-  animation: ov-grow-x 800ms var(--ease-out) both;
 }
 .ov-occ-track span.is-full {
   background: linear-gradient(90deg, #b45309, #f59e0b);
@@ -1540,7 +1696,6 @@
   gap: 10px;
   padding: 9px 0;
   border-top: 1px solid #efe9df;
-  animation: sf-fade-up 380ms var(--ease-out) both;
 }
 .ov-growth-list li:first-child {
   border-top: 0;
@@ -1770,7 +1925,6 @@
   display: block;
   height: 100%;
   background: #a47a3c;
-  transition: width 600ms var(--ease-out, ease);
 }
 .ov-checklist ul {
   display: grid;
@@ -1834,5 +1988,30 @@ a.ov-checklist-row:hover {
 @media (max-width: 720px) {
   .ov-checklist ul {
     grid-template-columns: 1fr;
+  }
+}
+
+/* The full agenda already shows these appointments on larger screens. */
+@media (min-width: 768px) {
+  .ov-upcoming {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .ov-whatsapp {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 1fr);
+    align-items: center;
+    gap: 12px 24px;
+  }
+  .ov-whatsapp-counts {
+    margin: 0;
+  }
+  .ov-whatsapp-counts strong {
+    font-size: 25px;
+  }
+  .ov-whatsapp footer {
+    grid-column: 1 / -1;
   }
 }

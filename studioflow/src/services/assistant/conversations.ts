@@ -16,14 +16,37 @@ import { decryptSecret, newToken, sha256 } from "../server-secrets";
 import { camel, getPublicStore } from "../server-store";
 import { accessOpen } from "@/lib/access";
 import { hasModule } from "@/lib/modules";
-import { claudeCreate, runAssistant, type CreateMessage } from "./agent";
+import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
+import { businessCreate } from "./provider";
 import { sendWhatsApp } from "./whatsapp";
 import { sendInstagram, type InstagramMessage } from "./instagram";
 import { audioText, downloadUrl, downloadWhatsAppMedia } from "./transcribe";
+import {
+  contextText,
+  conversationContext,
+  customerBookingContext,
+  referencesPreviousBooking,
+  vagueBookingRequest,
+  understandMessage,
+  personalSubject,
+  hasBusinessSubject,
+  canUnderstand,
+  nameAnswer,
+} from "./understanding";
+import { failureCode, retryable, type RunProgress } from "./pipeline";
+import { professionalStore } from "./agent";
+import { n8nWhatsAppTurn } from "./n8n-whatsapp-contract";
+import {
+  n8nWhatsAppConfiguration,
+  requestN8nTurn,
+  N8nTurnError,
+} from "./n8n-whatsapp";
+import { verifiedN8nReply } from "./n8n-reply";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 export interface Conversation {
   id: string;
+  whatsappProfessionalId?: string | null;
   channel: ConversationChannel;
   contactPhone: string;
   contactName: string;
@@ -33,6 +56,7 @@ export interface Conversation {
   unread: number;
   history: History;
   aiCursor: string;
+  processingUntil?: string | null;
 }
 type Role = ConversationMessage["role"];
 
@@ -40,9 +64,16 @@ type Role = ConversationMessage["role"];
 export interface ConversationRepo {
   businessId: string;
   byToken(tokenHash: string): Promise<Conversation | null>;
-  byPhone(channel: ConversationChannel, phone: string): Promise<Conversation | null>;
+  byPhone(
+    channel: ConversationChannel,
+    phone: string,
+    professionalId?: string,
+  ): Promise<Conversation | null>;
   /** Instagram: a conversa de quem escreveu. */
-  byRef(channel: ConversationChannel, ref: string): Promise<Conversation | null>;
+  byRef(
+    channel: ConversationChannel,
+    ref: string,
+  ): Promise<Conversation | null>;
   get(id: string): Promise<Conversation | null>;
   create(input: {
     channel: ConversationChannel;
@@ -50,33 +81,69 @@ export interface ConversationRepo {
     contactName: string;
     contactRef?: string;
     tokenHash?: string;
+    professionalId?: string;
   }): Promise<Conversation>;
   /** False when this provider message was already stored. */
-  addMessage(id: string, role: Role, body: string, providerId?: string): Promise<boolean>;
+  addMessage(
+    id: string,
+    role: Role,
+    body: string,
+    providerId?: string,
+    createdAt?: string,
+  ): Promise<boolean>;
   messages(id: string, since?: string): Promise<ConversationMessage[]>;
   lease(id: string): Promise<boolean>;
   release(id: string): Promise<void>;
   update(
     id: string,
-    patch: Partial<Pick<Conversation, "history" | "aiCursor" | "status" | "contactName" | "contactPhone">> & {
+    patch: Partial<
+      Pick<
+        Conversation,
+        "history" | "aiCursor" | "status" | "contactName" | "contactPhone"
+      >
+    > & {
       unreadDelta?: number;
       unread?: number;
     },
   ): Promise<void>;
   takeTurn(): Promise<boolean>;
   addTokens(input: number, output: number): Promise<void>;
+  startRun?(id: string, cursor: string): Promise<number>;
+  progress?(id: string, patch: RunProgress): Promise<void>;
+  run?(id: string): Promise<{
+    state: string;
+    attempts: number;
+    interpretation?: unknown;
+    error_code?: string | null;
+    updated_at?: string;
+  } | null>;
+  seen?(providerId: string): Promise<boolean>;
+  bookedSince?(id: string, since: string): Promise<boolean>;
 }
 
 const hex = (token: string) => sha256(token).toString("hex");
 const toBytea = (value: string) => `\\x${value}`;
 
-export function liveRepo(businessId: string, tenantId: string): ConversationRepo {
+/** Provider history is an opaque protocol payload, not database columns. */
+export function conversationFromRow(data: unknown): Conversation | null {
+  if (!data) return null;
+  const { history, ...columns } = data as Record<string, unknown>;
+  return {
+    ...(camel(columns) as Omit<Conversation, "history">),
+    history: (history || []) as History,
+  };
+}
+
+export function liveRepo(
+  businessId: string,
+  tenantId: string,
+): ConversationRepo {
   const admin = createSupabaseAdmin();
   const columns =
-    "id,channel,contact_phone,contact_name,contact_ref,status,unread,history,ai_cursor";
+    "id,channel,contact_phone,contact_name,contact_ref,status,unread,history,ai_cursor,whatsapp_professional_id,processing_until";
   const one = async (query: PromiseLike<{ data: unknown }>) => {
     const { data } = await query;
-    return data ? (camel(data) as Conversation) : null;
+    return conversationFromRow(data);
   };
   return {
     businessId,
@@ -89,7 +156,7 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
           .eq("token_hash", toBytea(tokenHash))
           .maybeSingle(),
       ),
-    byPhone: (channel, phone) =>
+    byPhone: (channel, phone, professionalId) =>
       one(
         admin
           .from("conversations")
@@ -97,6 +164,11 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
           .eq("business_id", businessId)
           .eq("channel", channel)
           .eq("contact_phone", phone)
+          .or(
+            professionalId
+              ? `whatsapp_professional_id.eq.${professionalId}`
+              : "whatsapp_professional_id.is.null",
+          )
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -128,6 +200,7 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
           tenant_id: tenantId,
           business_id: businessId,
           channel: input.channel,
+          whatsapp_professional_id: input.professionalId || null,
           contact_phone: input.contactPhone,
           contact_name: input.contactName.slice(0, 100),
           contact_ref: input.contactRef || "",
@@ -136,17 +209,26 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
         .select(columns)
         .single();
       if (error?.code === "23505" && input.channel === "whatsapp") {
-        const existing = await this.byPhone("whatsapp", input.contactPhone);
+        const existing = await this.byPhone(
+          "whatsapp",
+          input.contactPhone,
+          input.professionalId,
+        );
         if (existing) return existing;
       }
-      if (error?.code === "23505" && input.channel === "instagram" && input.contactRef) {
+      if (
+        error?.code === "23505" &&
+        input.channel === "instagram" &&
+        input.contactRef
+      ) {
         const existing = await this.byRef("instagram", input.contactRef);
         if (existing) return existing;
       }
-      if (error || !data) throw new DomainError("Não foi possível abrir a conversa.", 503);
+      if (error || !data)
+        throw new DomainError("Não foi possível abrir a conversa.", 503);
       return camel(data) as Conversation;
     },
-    async addMessage(id, role, body, providerId) {
+    async addMessage(id, role, body, providerId, createdAt) {
       const { error } = await admin.from("conversation_messages").insert({
         tenant_id: tenantId,
         business_id: businessId,
@@ -154,9 +236,11 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
         role,
         body: body.slice(0, 4000),
         provider_message_id: providerId || null,
+        ...(createdAt ? { created_at: createdAt } : {}),
       });
       if (error?.code === "23505") return false;
-      if (error) throw new DomainError("Não foi possível guardar a mensagem.", 503);
+      if (error)
+        throw new DomainError("Não foi possível guardar a mensagem.", 503);
       await admin
         .from("conversations")
         .update({ last_message_at: new Date().toISOString() })
@@ -169,11 +253,13 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
         .select("id,role,body,created_at")
         .eq("business_id", businessId)
         .eq("conversation_id", id)
-        .order("created_at")
+        .order("created_at", { ascending: false })
         .limit(500);
       if (since) query = query.gt("created_at", since);
-      const { data } = await query;
-      return (camel(data || []) as ConversationMessage[]);
+      const { data, error } = await query;
+      if (error)
+        throw new DomainError("Não foi possível ler o histórico.", 503);
+      return camel((data || []).reverse()) as ConversationMessage[];
     },
     async lease(id) {
       const { data } = await admin.rpc("conversation_lease", {
@@ -182,15 +268,20 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
       return data === true;
     },
     async release(id) {
-      await admin.from("conversations").update({ processing_until: null }).eq("id", id);
+      await admin
+        .from("conversations")
+        .update({ processing_until: null })
+        .eq("id", id);
     },
     async update(id, patch) {
       const row: Record<string, unknown> = {};
       if (patch.history) row.history = patch.history;
       if (patch.aiCursor) row.ai_cursor = patch.aiCursor;
       if (patch.status) row.status = patch.status;
-      if (patch.contactName !== undefined) row.contact_name = patch.contactName.slice(0, 100);
-      if (patch.contactPhone !== undefined) row.contact_phone = patch.contactPhone;
+      if (patch.contactName !== undefined)
+        row.contact_name = patch.contactName.slice(0, 100);
+      if (patch.contactPhone !== undefined)
+        row.contact_phone = patch.contactPhone;
       if (patch.unread !== undefined) row.unread = patch.unread;
       if (patch.unreadDelta) {
         const { data } = await admin
@@ -201,7 +292,11 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
         row.unread = Math.max(0, (data?.unread || 0) + patch.unreadDelta);
       }
       if (Object.keys(row).length)
-        await admin.from("conversations").update(row).eq("business_id", businessId).eq("id", id);
+        await admin
+          .from("conversations")
+          .update(row)
+          .eq("business_id", businessId)
+          .eq("id", id);
     },
     async takeTurn() {
       const { data } = await admin.rpc("assistant_take_turn", {
@@ -215,6 +310,63 @@ export function liveRepo(businessId: string, tenantId: string): ConversationRepo
         p_input: input,
         p_output: output,
       });
+    },
+    async seen(providerId) {
+      const { data, error } = await admin
+        .from("conversation_messages")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("provider_message_id", providerId)
+        .limit(1);
+      if (error) throw new Error("message-dedup-unavailable");
+      return !!data?.length;
+    },
+    async bookedSince(id, since) {
+      const { data, error } = await admin
+        .from("appointments")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("conversation_id", id)
+        .gte("created_at", since)
+        .limit(1);
+      if (error) throw new Error("booking-recovery-check-unavailable");
+      return !!data?.length;
+    },
+    async startRun(id, cursor) {
+      const { data, error } = await admin.rpc("start_assistant_run", {
+        p_id: id,
+        p_cursor: cursor,
+      });
+      if (error || typeof data !== "number")
+        throw new Error("pipeline-unavailable");
+      return data;
+    },
+    async progress(id, patch) {
+      const { error } = await admin
+        .from("assistant_runs")
+        .update({
+          state: patch.state,
+          ...(patch.interpretation !== undefined
+            ? { interpretation: patch.interpretation }
+            : {}),
+          ...(patch.errorCode !== undefined
+            ? { error_code: patch.errorCode }
+            : {}),
+          ...(patch.retryAt !== undefined ? { retry_at: patch.retryAt } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("business_id", businessId)
+        .eq("conversation_id", id);
+      if (error) throw new Error("pipeline-unavailable");
+    },
+    async run(id) {
+      const { data } = await admin
+        .from("assistant_runs")
+        .select("state,attempts,interpretation,error_code,updated_at")
+        .eq("business_id", businessId)
+        .eq("conversation_id", id)
+        .maybeSingle();
+      return data;
     },
   };
 }
@@ -237,11 +389,13 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
           aiCursor: item.aiCursor,
         }
       : null;
-  const read = async <T,>(fn: (store: Store) => T) => fn(await readDemo(slug));
+  const read = async <T>(fn: (store: Store) => T) => fn(await readDemo(slug));
   return {
     businessId,
     byToken: (tokenHash) =>
-      read((store) => view(store.conversations?.find((item) => item.tokenHash === tokenHash))),
+      read((store) =>
+        view(store.conversations?.find((item) => item.tokenHash === tokenHash)),
+      ),
     byPhone: (channel, phone) =>
       read((store) =>
         view(
@@ -286,7 +440,12 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
         const item = pick(store, id);
         if (!item) return false;
         const createdAt = new Date().toISOString();
-        item.messages.push({ id: randomUUID(), role, body: body.slice(0, 4000), createdAt });
+        item.messages.push({
+          id: randomUUID(),
+          role,
+          body: body.slice(0, 4000),
+          createdAt,
+        });
         item.lastMessageAt = createdAt;
         return true;
       }, slug),
@@ -305,10 +464,13 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
         if (patch.history) item.history = patch.history;
         if (patch.aiCursor) item.aiCursor = patch.aiCursor;
         if (patch.status) item.status = patch.status;
-        if (patch.contactName !== undefined) item.contactName = patch.contactName;
-        if (patch.contactPhone !== undefined) item.contactPhone = patch.contactPhone;
+        if (patch.contactName !== undefined)
+          item.contactName = patch.contactName;
+        if (patch.contactPhone !== undefined)
+          item.contactPhone = patch.contactPhone;
         if (patch.unread !== undefined) item.unread = patch.unread;
-        if (patch.unreadDelta) item.unread = Math.max(0, item.unread + patch.unreadDelta);
+        if (patch.unreadDelta)
+          item.unread = Math.max(0, item.unread + patch.unreadDelta);
       }, slug),
     takeTurn: async () => true,
     addTokens: async () => undefined,
@@ -317,7 +479,7 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
 
 export interface Delivery {
   /** Sends the assistant's answer out (WhatsApp); the web chat polls. */
-  send?: (body: string) => Promise<void>;
+  send?: (body: string) => Promise<string | void>;
   origin: string;
   slug: string;
 }
@@ -333,18 +495,58 @@ export async function processConversation(
   repo: ConversationRepo,
   conversationId: string,
   delivery: Delivery,
-  create: CreateMessage | null = claudeCreate(),
+  create?: CreateMessage | null,
 ) {
   for (let round = 0; round < 3; round++) {
     if (!(await repo.lease(conversationId))) return;
     let say: string | null = null;
     try {
-      say = await answerPending(repo, conversationId, delivery, create);
-    } catch (error) {
-      console.error(
-        "StudioFlow assistant error:",
-        error instanceof Error ? error.message : "unknown",
+      say = await answerPending(
+        repo,
+        conversationId,
+        delivery,
+        create === undefined ? await businessCreate(repo.businessId) : create,
       );
+    } catch (error) {
+      const code = failureCode(error);
+      const run = await repo.run?.(conversationId);
+      // Only retry generation/understanding. An uncertain outbound send must
+      // never be resent automatically, and a person taking over keeps control.
+      if (
+        run &&
+        run.state !== "SENDING" &&
+        !(error instanceof N8nTurnError) &&
+        run.attempts < 3 &&
+        retryable(error) &&
+        (await repo.get(conversationId))?.status === "ai"
+      ) {
+        await repo.progress?.(conversationId, {
+          state: "RETRY",
+          errorCode: code,
+          retryAt: new Date(Date.now() + 30_000).toISOString(),
+        });
+        await repo.addMessage(
+          conversationId,
+          "event",
+          "StudioFlow está tentando novamente após uma falha temporária.",
+        );
+        return;
+      }
+      console.error("StudioFlow assistant error:", {
+        category: code,
+        status:
+          error &&
+          typeof error === "object" &&
+          "status" in error &&
+          typeof error.status === "number"
+            ? error.status
+            : null,
+        timeout: error instanceof Error && /Timeout/i.test(error.name),
+      });
+      await repo.progress?.(conversationId, {
+        state: "FAILED",
+        errorCode: run?.state === "SENDING" ? "delivery-unconfirmed" : code,
+      });
       await repo
         .update(conversationId, { status: "human", unreadDelta: 1 })
         .catch(() => undefined);
@@ -352,16 +554,20 @@ export async function processConversation(
         .addMessage(
           conversationId,
           "event",
-          "A atendente virtual teve um problema e passou a conversa para a equipe.",
+          `StudioFlow precisa de atenção: ${run?.state === "SENDING" ? "envio sem confirmação; confira o WhatsApp antes de reenviar" : code}. A conversa está com a equipe.`,
         )
         .catch(() => undefined);
-      say = handoffNotice;
-      await repo.addMessage(conversationId, "assistant", say).catch(() => undefined);
+      const failed = await repo.get(conversationId).catch(() => null);
+      say = failed && failed.channel !== "whatsapp" ? handoffNotice : null;
+      if (say)
+        await repo
+          .addMessage(conversationId, "assistant", say)
+          .catch(() => undefined);
     } finally {
       await repo.release(conversationId);
     }
-    if (say === null) return;
-    if (delivery.send) await delivery.send(say).catch(() => undefined);
+    if (!say) return;
+    // Delivery happens inside the lease, before recording a successful answer.
   }
 }
 
@@ -374,7 +580,9 @@ async function answerPending(
 ): Promise<string | null> {
   const conversation = await repo.get(conversationId);
   if (!conversation || conversation.status !== "ai") return null;
-  const pending = (await repo.messages(conversationId, conversation.aiCursor)).filter(
+  const pending = (
+    await repo.messages(conversationId, conversation.aiCursor)
+  ).filter(
     (message) => message.role === "customer" || message.role === "staff",
   );
   if (!pending.some((message) => message.role === "customer")) return null;
@@ -384,49 +592,304 @@ async function answerPending(
       ? pending[0].body
       : pending
           .slice(-20)
-          .map((message) => `${message.role === "staff" ? "Equipe" : "Cliente"}: ${message.body}`)
+          .map(
+            (message) =>
+              `${message.role === "staff" ? "Equipe" : "Cliente"}: ${message.body}`,
+          )
           .join("\n");
   const toHuman = async (reason: string) => {
-    await repo.update(conversationId, { aiCursor: cursor, status: "human", unreadDelta: 1 });
-    await repo.addMessage(conversationId, "assistant", handoffNotice);
+    await repo.update(conversationId, {
+      aiCursor: cursor,
+      status: "human",
+      unreadDelta: 1,
+    });
     await repo.addMessage(conversationId, "event", reason);
+    // Without subject verification, a configuration/cost problem must not
+    // trigger an unsolicited WhatsApp reply to a personal conversation.
+    if (conversation.channel === "whatsapp") return null;
+    await repo.addMessage(conversationId, "assistant", handoffNotice);
     return handoffNotice;
   };
-  if (!create) return toHuman("Atendente virtual sem chave de IA configurada no servidor.");
+  const store = await loadStore(delivery.slug);
+  if (
+    conversation.channel === "whatsapp" &&
+    (await repo.run?.(conversationId))?.state === "SENDING"
+  )
+    return toHuman(
+      "Execução anterior sem conclusão. Confira o WhatsApp antes de retomar; nenhum reenvio automático foi feito.",
+    );
+  // A crash after booking but before the reply must not execute the same
+  // commercial mutation again when the recovery scanner picks up this cursor.
+  if (
+    conversation.channel === "whatsapp" &&
+    (await repo.bookedSince?.(conversationId, cursor))
+  ) {
+    await repo.progress?.(conversationId, {
+      state: "FAILED",
+      errorCode: "appointment-created",
+    });
+    return toHuman(
+      "O agendamento já está registrado. Confira a agenda para confirmar o atendimento ao cliente; a recuperação não criou outro horário.",
+    );
+  }
+  let understanding: Awaited<ReturnType<typeof understandMessage>> | undefined;
+  const scopedStore = professionalStore(
+    store,
+    conversation.whatsappProfessionalId || undefined,
+  );
+  const bookingContext =
+    conversation.channel === "whatsapp" &&
+    (referencesPreviousBooking(text) || vagueBookingRequest(text))
+      ? customerBookingContext(
+          scopedStore,
+          conversation.contactPhone,
+          conversation.whatsappProfessionalId || undefined,
+          pending[0].createdAt,
+        )
+      : "";
+  const recent = conversationContext(
+    await repo.messages(conversationId),
+    pending[0].createdAt,
+    text,
+    scopedStore,
+  );
+  if (
+    conversation.channel === "whatsapp" &&
+    !canUnderstand(
+      text.replace(/^🎤\s*/, ""),
+      scopedStore,
+      recent,
+      pending[0].createdAt,
+      bookingContext,
+    )
+  ) {
+    await repo.startRun?.(conversationId, cursor);
+    await repo.update(conversationId, { aiCursor: cursor });
+    await repo.progress?.(conversationId, { state: "SILENT" });
+    return null;
+  }
+  if (!create) {
+    await repo.progress?.(conversationId, {
+      state: "FAILED",
+      errorCode: "missing-key",
+    });
+    return toHuman(
+      "Atendente virtual sem chave de IA configurada no servidor.",
+    );
+  }
   if (conversation.history.length > 160)
     return toHuman("Conversa longa: a atendente virtual passou para a equipe.");
-  if (!(await repo.takeTurn())) return toHuman("Limite diário da atendente virtual atingido.");
-  const store = await loadStore(delivery.slug);
+  if (!(await repo.takeTurn())) {
+    await repo.progress?.(conversationId, {
+      state: "FAILED",
+      errorCode: "daily-limit",
+    });
+    return toHuman("Limite diário da atendente virtual atingido.");
+  }
+  if (conversation.channel === "whatsapp") {
+    await repo.startRun?.(conversationId, cursor);
+    understanding = await understandMessage(
+      create,
+      text,
+      scopedStore,
+      recent,
+      pending[0].createdAt,
+      bookingContext,
+      store.customers.find(
+        (customer) =>
+          customer.phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") ===
+          conversation.contactPhone,
+      )?.name || "",
+    );
+    await repo.addTokens(understanding.usage.input, understanding.usage.output);
+    await repo.progress?.(conversationId, {
+      state: "UNDERSTOOD",
+      interpretation: understanding.interpretation,
+    });
+    if (understanding.interpretation.nextAction === "SILENCE") {
+      await repo.update(conversationId, { aiCursor: cursor });
+      await repo.progress?.(conversationId, { state: "SILENT" });
+      return null;
+    }
+    await repo.progress?.(conversationId, { state: "DECIDING" });
+  }
   const payments = isDemo()
     ? !!store.paymentAccount
     : !!(await getPaymentAccount(store.business.id));
+  const n8n =
+    conversation.channel === "whatsapp"
+      ? n8nWhatsAppConfiguration(
+          repo.businessId,
+          conversation.whatsappProfessionalId,
+        )
+      : null;
+  if (n8n && understanding) {
+    if (store.business.id !== repo.businessId) throw new N8nTurnError();
+    if (!repo.startRun || !repo.progress || !repo.run) throw new N8nTurnError();
+    if (pending.some((message) => message.role === "staff"))
+      return toHuman(
+        "A equipe participou deste turno; continue o atendimento manualmente.",
+      );
+    const turn = n8nWhatsAppTurn({
+      businessId: repo.businessId,
+      professionalId: conversation.whatsappProfessionalId || null,
+      conversationId,
+      channel: "whatsapp",
+      status: "ai",
+      messages: pending.slice(-20).map((message) => ({
+        id: message.id,
+        text: message.body,
+        createdAt: message.createdAt,
+      })),
+    });
+    const timeLeft = conversation.processingUntil
+      ? Date.parse(conversation.processingUntil) - Date.now() - 5000
+      : 45_000;
+    if (timeLeft < 5000) throw new N8nTurnError();
+    // Persist the uncertain boundary BEFORE dispatch. Recovery must not repeat
+    // a charged external turn after a process crash, timeout or malformed reply.
+    await repo.progress(conversationId, {
+      state: "SENDING",
+      interpretation: {
+        ...understanding.interpretation,
+        engine: "n8n",
+        requestId: turn.requestId,
+        externalUsage: "available-in-n8n-and-provider",
+      },
+    });
+    // External usage is not returned by v1. Do not fabricate measured tokens:
+    // the workflow caps iterations/output and shares the daily turn budget.
+    try {
+      const proposed = await requestN8nTurn(turn, n8n, fetch, timeLeft);
+      const fresh = await repo.get(conversationId);
+      if (fresh?.status !== "ai") return null;
+      if (
+        fresh.aiCursor !== conversation.aiCursor ||
+        (fresh.processingUntil &&
+          Date.parse(fresh.processingUntil) <= Date.now())
+      )
+        throw new N8nTurnError();
+      const freshStore = await loadStore(delivery.slug);
+      if (
+        !freshStore.settings.assistantEnabled ||
+        freshStore.business.id !== repo.businessId
+      )
+        throw new N8nTurnError();
+      const verified = verifiedN8nReply(
+        proposed.output,
+        understanding.interpretation,
+        professionalStore(
+          freshStore,
+          conversation.whatsappProfessionalId || undefined,
+        ),
+        text,
+      );
+      if ((await repo.get(conversationId))?.status !== "ai") return null;
+      const handoff = proposed.handoff || verified.handoff;
+      let sentId = await delivery.send?.(verified.reply);
+      if (
+        sentId &&
+        conversation.whatsappProfessionalId &&
+        !sentId.startsWith(`${conversation.whatsappProfessionalId}:`)
+      )
+        sentId = `${conversation.whatsappProfessionalId}:${sentId}`;
+      await repo.addMessage(
+        conversationId,
+        "assistant",
+        verified.reply,
+        sentId || undefined,
+      );
+      await repo.update(conversationId, {
+        aiCursor: cursor,
+        history: [
+          ...conversation.history,
+          { role: "user", content: text },
+          { role: "assistant", content: verified.reply },
+        ].slice(-40) as History,
+        ...(handoff ? { status: "human", unreadDelta: 1 } : {}),
+      });
+      await repo.progress(conversationId, { state: "SENT" });
+      if (handoff)
+        await repo.addMessage(
+          conversationId,
+          "event",
+          "Pedido encaminhado à equipe; n8n não realiza reservas.",
+        );
+      return verified.reply;
+    } catch {
+      throw new N8nTurnError();
+    }
+  }
   const result = await runAssistant({
     create,
     store,
     history: conversation.history,
+    interpretation: understanding?.interpretation,
+    transcript: contextText(recent),
+    bookingContext,
+    onStage: async (state) => {
+      if (understanding) await repo.progress?.(conversationId, { state });
+    },
     customerText: text,
     ctx: {
       channel: conversation.channel,
-      verifiedPhone: conversation.channel === "whatsapp" ? conversation.contactPhone : undefined,
+      professionalId: conversation.whatsappProfessionalId || undefined,
+      customerName:
+        store.customers.find(
+          (customer) =>
+            customer.phone
+              .replace(/\D/g, "")
+              .replace(/^55(?=\d{10,11}$)/, "") === conversation.contactPhone,
+        )?.name || nameAnswer(text, recent),
+      verifiedPhone:
+        conversation.channel === "whatsapp"
+          ? conversation.contactPhone
+          : undefined,
       origin: delivery.origin,
       payments,
       loadStore: () => loadStore(delivery.slug),
       book: async (input) => {
-        const appointment = await bookWithPayments(delivery.slug, {
-          serviceIds: input.serviceIds,
-          professionalId: input.professionalId,
-          start: input.start,
-          name: input.name,
-          phone: input.phone,
-          email: "",
-          reminder: true,
-          cpf: input.cpf,
-        });
+        if ((await repo.get(conversationId))?.status !== "ai")
+          throw new DomainError("A equipe assumiu esta conversa.", 409);
+        const appointment = await bookWithPayments(
+          delivery.slug,
+          {
+            serviceIds: input.serviceIds,
+            professionalId: input.professionalId,
+            start: input.start,
+            name: input.name,
+            phone: input.phone,
+            email: "",
+            reminder: true,
+            cpf: input.cpf,
+          },
+          conversation.channel === "web" ? "public_link" : "receptionist",
+          {
+            channel: conversation.channel,
+            conversationId: conversation.id,
+          },
+        );
         await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
         return appointment;
       },
     },
   });
+  // A person may take over while the provider is generating a response.
+  // Keep their control and charge the actual usage without publishing that reply.
+  await repo.addTokens(result.usage.input, result.usage.output);
+  if ((await repo.get(conversationId))?.status !== "ai") return null;
+  let sentId: string | void = undefined;
+  if (result.reply && delivery.send) {
+    if (understanding)
+      await repo.progress?.(conversationId, { state: "SENDING" });
+    sentId = await delivery.send(result.reply);
+    if (
+      sentId &&
+      conversation.whatsappProfessionalId &&
+      !sentId.startsWith(`${conversation.whatsappProfessionalId}:`)
+    )
+      sentId = `${conversation.whatsappProfessionalId}:${sentId}`;
+  }
   await repo.update(conversationId, {
     history: result.history,
     aiCursor: cursor,
@@ -438,12 +901,29 @@ async function answerPending(
       ? { contactPhone: result.booked.customerPhone || "" }
       : {}),
   });
-  await repo.addMessage(conversationId, "assistant", result.reply);
+  if (result.reply)
+    await repo.addMessage(
+      conversationId,
+      "assistant",
+      result.reply,
+      sentId || undefined,
+    );
+  if (understanding)
+    await repo.progress?.(conversationId, {
+      state: result.reply ? "SENT" : "SILENT",
+    });
   if (result.booked)
-    await repo.addMessage(conversationId, "event", "Horário marcado pela atendente virtual.");
+    await repo.addMessage(
+      conversationId,
+      "event",
+      "Horário marcado pela atendente virtual.",
+    );
   if (result.handoff)
-    await repo.addMessage(conversationId, "event", `Pediu a equipe: ${result.handoff}`);
-  await repo.addTokens(result.usage.input, result.usage.output);
+    await repo.addMessage(
+      conversationId,
+      "event",
+      `Pediu a equipe: ${result.handoff}`,
+    );
   return result.reply;
 }
 
@@ -464,7 +944,10 @@ export interface ChatView {
 async function businessRepo(slug: string) {
   const store = await loadStore(slug);
   if (!store.settings.assistantEnabled)
-    throw new DomainError("O atendimento por chat não está disponível agora.", 404);
+    throw new DomainError(
+      "O atendimento por chat não está disponível agora.",
+      404,
+    );
   const repo = isDemo()
     ? demoRepo(slug, store.business.id)
     : liveRepo(store.business.id, store.business.tenantId);
@@ -495,10 +978,16 @@ export async function webChat(
     (message) => message.role === "customer",
   ).length;
   if (sent >= 60)
-    throw new DomainError("Esta conversa ficou longa. Fale com o estabelecimento pelo WhatsApp.", 429);
+    throw new DomainError(
+      "Esta conversa ficou longa. Fale com o estabelecimento pelo WhatsApp.",
+      429,
+    );
   await repo.addMessage(conversation.id, "customer", input.message);
   if (conversation.status !== "ai")
-    await repo.update(conversation.id, { unreadDelta: 1, ...(conversation.status === "closed" ? { status: "human" as const } : {}) });
+    await repo.update(conversation.id, {
+      unreadDelta: 1,
+      ...(conversation.status === "closed" ? { status: "human" as const } : {}),
+    });
   else await processConversation(repo, conversation.id, { origin, slug });
   const fresh = await repo.get(conversation.id);
   return {
@@ -509,7 +998,10 @@ export async function webChat(
   };
 }
 
-export async function webChatView(slug: string, token: string): Promise<ChatView> {
+export async function webChatView(
+  slug: string,
+  token: string,
+): Promise<ChatView> {
   const { store, repo } = await businessRepo(slug);
   const conversation = await repo.byToken(hex(token));
   if (!conversation) throw new DomainError("Conversa não encontrada.", 404);
@@ -534,10 +1026,14 @@ export interface WhatsAppAccount {
   verifyTokenHash: Buffer;
 }
 
-export async function whatsappAccount(businessId: string): Promise<WhatsAppAccount | null> {
+export async function whatsappAccount(
+  businessId: string,
+): Promise<WhatsAppAccount | null> {
   const { data } = await createSupabaseAdmin()
     .from("whatsapp_accounts")
-    .select("business_id,tenant_id,phone_number_id,access_token_enc,app_secret_enc,verify_token_hash")
+    .select(
+      "business_id,tenant_id,phone_number_id,access_token_enc,app_secret_enc,verify_token_hash",
+    )
     .eq("business_id", businessId)
     .maybeSingle();
   if (!data) return null;
@@ -547,7 +1043,10 @@ export async function whatsappAccount(businessId: string): Promise<WhatsAppAccou
     phoneNumberId: data.phone_number_id,
     token: decryptSecret(data.access_token_enc),
     appSecret: decryptSecret(data.app_secret_enc),
-    verifyTokenHash: Buffer.from(String(data.verify_token_hash).replace(/^\\x/, ""), "hex"),
+    verifyTokenHash: Buffer.from(
+      String(data.verify_token_hash).replace(/^\\x/, ""),
+      "hex",
+    ),
   };
 }
 
@@ -568,6 +1067,8 @@ export interface IncomingWhatsApp {
   from: string;
   name: string;
   text: string;
+  fromMe?: boolean;
+  createdAt?: string;
   /** Voice note: transcribed before it is stored, when the server can. */
   loadAudio?: () => Promise<{ audio: ArrayBuffer; mime: string }>;
 }
@@ -582,7 +1083,8 @@ export async function receiveWhatsAppMessages(input: {
   tenantId: string;
   origin: string;
   messages: IncomingWhatsApp[];
-  send: (to: string, body: string) => Promise<void>;
+  professionalId?: string;
+  send: (to: string, body: string) => Promise<string | void>;
 }) {
   const slug = await slugOf(input.businessId);
   // Sem acesso liberado ou sem a recepcionista no plano: a mensagem não é tratada.
@@ -599,33 +1101,116 @@ export async function receiveWhatsAppMessages(input: {
   // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
   const touched = new Map<string, string>();
   for (const message of input.messages) {
+    const providerId = input.professionalId
+      ? `${input.professionalId}:${message.id}`
+      : message.id;
+    if (await repo.seen?.(providerId)) continue;
     const phone = brazilPhone(message.from);
+    const existing = await repo.byPhone(
+      "whatsapp",
+      phone,
+      input.professionalId,
+    );
+    if (message.fromMe) {
+      // Only mirror an existing channel. A personal outgoing chat must not create
+      // a lead or cause the assistant to answer the account owner's message.
+      if (!existing) continue;
+      if (
+        !(await repo.addMessage(
+          existing.id,
+          "staff",
+          message.text,
+          providerId,
+          message.createdAt,
+        ))
+      )
+        continue;
+      if (
+        !message.createdAt ||
+        !existing.aiCursor ||
+        message.createdAt >= existing.aiCursor
+      )
+        await repo.update(existing.id, {
+          status: "human",
+          unread: 0,
+          aiCursor: message.createdAt || new Date().toISOString(),
+          history: resumeHistory([], await repo.messages(existing.id)),
+        });
+      continue;
+    }
+    // Transcribe before checking intent, including a new customer's first audio.
+    const body = message.loadAudio
+      ? await audioText(message.loadAudio, input.businessId)
+      : message.text;
+    if (!existing) {
+      const { data: customer, error } = await createSupabaseAdmin()
+        .from("customers")
+        .select("id")
+        .eq("business_id", input.businessId)
+        .in("phone", [phone, `55${phone}`])
+        .limit(1);
+      if (error) continue; // Fail closed: do not answer an unverified contact.
+      if (!customer?.length) {
+        if (
+          !settings?.assistant_enabled ||
+          personalSubject(body) ||
+          /^\[O cliente enviou/.test(body)
+        )
+          continue;
+        const catalog = await loadStore(slug);
+        if (!hasBusinessSubject(body, catalog)) continue;
+      }
+    }
     const conversation =
-      (await repo.byPhone("whatsapp", phone)) ||
+      existing ||
       (await repo.create({
         channel: "whatsapp",
+        professionalId: input.professionalId,
         contactPhone: phone,
         contactName: message.name,
       }));
-    const body = message.loadAudio ? await audioText(message.loadAudio) : message.text;
-    if (!(await repo.addMessage(conversation.id, "customer", body, message.id))) continue;
+    if (
+      !(await repo.addMessage(
+        conversation.id,
+        "customer",
+        body,
+        providerId,
+        message.createdAt,
+      ))
+    )
+      continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
     if (conversation.status === "closed")
-      await repo.update(conversation.id, { status: settings?.assistant_enabled ? "ai" : "human" });
+      await repo.update(conversation.id, {
+        status: settings?.assistant_enabled ? "ai" : "human",
+      });
     if (conversation.status !== "ai" || !settings?.assistant_enabled)
       await repo.update(conversation.id, { unreadDelta: 1 });
     touched.set(conversation.id, message.from);
   }
   return async () => {
     if (!settings?.assistant_enabled) return;
+    // Let short WhatsApp bursts arrive before one leased answer is generated.
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    const { data: freshSettings } = await createSupabaseAdmin()
+      .from("business_settings")
+      .select("assistant_enabled")
+      .eq("business_id", input.businessId)
+      .maybeSingle();
+    if (freshSettings?.assistant_enabled !== true) return;
     for (const [id, to] of touched) {
       const conversation = await repo.get(id);
       if (!conversation || conversation.status !== "ai") continue;
       await processConversation(repo, id, {
         origin: input.origin,
         slug,
-        send: (body) => input.send(to, body),
+        send: async (body) => {
+          const id = await input.send(to, body);
+          return id && input.professionalId
+            ? `${input.professionalId}:${id}`
+            : id;
+        },
       });
     }
   };
@@ -642,7 +1227,11 @@ export async function receiveWhatsApp(
     tenantId: account.tenantId,
     origin,
     messages: messages
-      .filter((message) => !message.phoneNumberId || message.phoneNumberId === account.phoneNumberId)
+      .filter(
+        (message) =>
+          !message.phoneNumberId ||
+          message.phoneNumberId === account.phoneNumberId,
+      )
       .map((message) => ({
         id: message.id,
         from: message.from,
@@ -653,7 +1242,12 @@ export async function receiveWhatsApp(
           : undefined,
       })),
     send: (to, body) =>
-      sendWhatsApp({ phoneNumberId: account.phoneNumberId, token: account.token, to, body }),
+      sendWhatsApp({
+        phoneNumberId: account.phoneNumberId,
+        token: account.token,
+        to,
+        body,
+      }),
   });
 }
 
@@ -670,10 +1264,14 @@ export interface InstagramAccount {
   verifyTokenHash: Buffer;
 }
 
-export async function instagramAccount(businessId: string): Promise<InstagramAccount | null> {
+export async function instagramAccount(
+  businessId: string,
+): Promise<InstagramAccount | null> {
   const { data } = await createSupabaseAdmin()
     .from("instagram_accounts")
-    .select("business_id,tenant_id,ig_user_id,access_token_enc,app_secret_enc,verify_token_hash")
+    .select(
+      "business_id,tenant_id,ig_user_id,access_token_enc,app_secret_enc,verify_token_hash",
+    )
     .eq("business_id", businessId)
     .maybeSingle();
   if (!data) return null;
@@ -683,7 +1281,10 @@ export async function instagramAccount(businessId: string): Promise<InstagramAcc
     igUserId: data.ig_user_id,
     token: decryptSecret(data.access_token_enc),
     appSecret: decryptSecret(data.app_secret_enc),
-    verifyTokenHash: Buffer.from(String(data.verify_token_hash).replace(/^\\x/, ""), "hex"),
+    verifyTokenHash: Buffer.from(
+      String(data.verify_token_hash).replace(/^\\x/, ""),
+      "hex",
+    ),
   };
 }
 
@@ -698,7 +1299,8 @@ export async function receiveInstagram(
 ) {
   const slug = await slugOf(account.businessId);
   const access = await readBusinessAccess(account.businessId);
-  if (!accessOpen(access) || !hasModule(access.modules, "recepcionista")) return async () => {};
+  if (!accessOpen(access) || !hasModule(access.modules, "recepcionista"))
+    return async () => {};
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
@@ -719,9 +1321,12 @@ export async function receiveInstagram(
     const body = message.audioUrl
       ? await audioText(() => downloadUrl(message.audioUrl!))
       : message.text;
-    if (!(await repo.addMessage(conversation.id, "customer", body, message.id))) continue;
+    if (!(await repo.addMessage(conversation.id, "customer", body, message.id)))
+      continue;
     if (conversation.status === "closed")
-      await repo.update(conversation.id, { status: settings?.assistant_enabled ? "ai" : "human" });
+      await repo.update(conversation.id, {
+        status: settings?.assistant_enabled ? "ai" : "human",
+      });
     if (conversation.status !== "ai" || !settings?.assistant_enabled)
       await repo.update(conversation.id, { unreadDelta: 1 });
     touched.set(conversation.id, message.from);
@@ -735,7 +1340,12 @@ export async function receiveInstagram(
         origin,
         slug,
         send: (body) =>
-          sendInstagram({ igUserId: account.igUserId, token: account.token, to, body }),
+          sendInstagram({
+            igUserId: account.igUserId,
+            token: account.token,
+            to,
+            body,
+          }),
       });
     }
   };

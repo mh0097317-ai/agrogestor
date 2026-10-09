@@ -1,4 +1,6 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
+import { OnlineBookingNotice } from "@/features/management/online-booking-settings";
 
 import Link from "next/link";
 import { ArrowRight, Check, Sparkle } from "@phosphor-icons/react/dist/ssr";
@@ -69,6 +71,7 @@ export function pageChecklist(data: Store): Item[] {
 }
 
 export function PageChecklist({ data }: { data: Store }) {
+  if (!onlineBookingEnabled(data.settings)) return <OnlineBookingNotice />;
   const items = pageChecklist(data);
   const done = items.filter((item) => item.done).length;
   if (done === items.length) return null;
@@ -84,10 +87,15 @@ export function PageChecklist({ data }: { data: Store }) {
           <strong>Complete sua página</strong>
           <span>
             Está <b>{score}%</b> pronta. Faltam {missing.length}{" "}
-            {missing.length === 1 ? "detalhe" : "detalhes"} para o cliente ver tudo.
+            {missing.length === 1 ? "detalhe" : "detalhes"} para o cliente ver
+            tudo.
           </span>
         </div>
-        <Link href={`/${data.business.slug}`} target="_blank" className="ov-checklist-view">
+        <Link
+          href={`/${data.business.slug}`}
+          target="_blank"
+          className="ov-checklist-view"
+        >
           Ver página
         </Link>
       </div>

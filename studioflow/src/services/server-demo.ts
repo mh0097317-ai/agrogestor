@@ -86,6 +86,7 @@ async function transaction<T>(
       store = initial || createSeed();
     }
     // Fields added after a demo file was written.
+    store.settings.onlineBookingEnabled ??= true;
     store.settings.loyaltyEnabled ??= false;
     store.settings.loyaltyGoal ??= 10;
     store.settings.loyaltyReward ??= "";

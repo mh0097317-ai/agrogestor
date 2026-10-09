@@ -15,7 +15,10 @@ export function failure(error: unknown) {
       400,
     );
   if (error instanceof AccessError)
-    return respond({ error: error.message, access: error.access }, error.status);
+    return respond(
+      { error: error.message, access: error.access },
+      error.status,
+    );
   if (error instanceof DomainError)
     return respond({ error: error.message }, error.status);
   console.error(
@@ -54,16 +57,20 @@ export function requestOrigin(request: Request) {
   return new URL(`${protocol}//${host}`).origin;
 }
 const rateBuckets = new Map<string, { count: number; expires: number }>();
-export function limitPublicMutation(request: Request) {
+export function limitPublicMutation(
+  request: Request,
+  options: { scope: string; max: number } = { scope: "public", max: 20 },
+) {
   const now = Date.now();
   if (rateBuckets.size > 5000)
     for (const [key, bucket] of rateBuckets)
       if (bucket.expires < now) rateBuckets.delete(key);
-  const key = request.headers.get("x-forwarded-for")?.split(",")[0] || "local";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "local";
+  const key = `${options.scope}:${ip}`;
   const bucket = rateBuckets.get(key);
   if (!bucket || bucket.expires < now)
     rateBuckets.set(key, { count: 1, expires: now + 60000 });
-  else if (++bucket.count > 20)
+  else if (++bucket.count > options.max)
     throw new DomainError(
       "Muitas tentativas. Aguarde um minuto e tente novamente.",
       429,

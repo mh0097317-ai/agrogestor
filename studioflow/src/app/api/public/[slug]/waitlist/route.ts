@@ -1,3 +1,4 @@
+import { getOnlineBookingStore } from "@/services/server-online-booking";
 import { joinWaitlist, waitlistJoinSchema } from "@/services/server-growth";
 import {
   assertSameOrigin,
@@ -13,6 +14,7 @@ export async function POST(
   try {
     assertSameOrigin(request);
     limitPublicMutation(request);
+    await getOnlineBookingStore((await params).slug);
     const input = waitlistJoinSchema.parse(await request.json());
     return respond(await joinWaitlist((await params).slug, input), 201);
   } catch (error) {

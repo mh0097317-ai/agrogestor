@@ -112,6 +112,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       controller?.abort();
     };
   }, [refresh]);
+  // Admin changes must reach an already-open tenant panel without a reload.
+  useEffect(() => {
+    const sync = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const timer = window.setInterval(sync, 30_000);
+    const channel =
+      "BroadcastChannel" in window
+        ? new BroadcastChannel("studioflow-workspace-update")
+        : null;
+    if (channel) channel.onmessage = sync;
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      window.clearInterval(timer);
+      channel?.close();
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [refresh]);
   const mutate = useCallback(
     async (
       entity: string,

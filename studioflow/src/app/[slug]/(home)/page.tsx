@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { PublicPage } from "@/features/public/public-page";
 import { publicCatalog } from "@/services/public-catalog";
 

@@ -1,0 +1,128 @@
+# Evolution only. StudioFlow stays on Vercel and its tenant database on Supabase.
+# Applying this Blueprint creates PAID resources: review the Render estimate first.
+# No secrets are stored in Git; Render generates the key and database credentials.
+previews:
+  generation: "off"
+
+services:
+  - type: web
+    name: studioflow-evolution
+    runtime: image
+    plan: 1c-2g
+    region: virginia
+    numInstances: 1
+    image:
+      url: docker.io/evoapicloud/evolution-api:v2.3.7
+    healthCheckPath: /
+    disk:
+      name: evolution-sessions
+      mountPath: /evolution/instances
+      sizeGB: 5
+    envVars:
+      - key: SERVER_TYPE
+        value: http
+      - key: SERVER_PORT
+        value: "10000"
+      - key: PORT
+        value: "10000"
+      - key: SERVER_URL
+        fromService:
+          type: web
+          name: studioflow-evolution
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: SERVER_DISABLE_MANAGER
+        value: "true"
+      - key: AUTHENTICATION_API_KEY
+        generateValue: true
+      - key: AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES
+        value: "false"
+      - key: DATABASE_ENABLED
+        value: "true"
+      - key: DATABASE_PROVIDER
+        value: postgresql
+      - key: DATABASE_CONNECTION_URI
+        fromDatabase:
+          name: studioflow-evolution-db
+          property: connectionString
+      - key: DATABASE_CONNECTION_CLIENT_NAME
+        value: studioflow_whatsapp
+      - key: DATABASE_SAVE_DATA_INSTANCE
+        value: "true"
+      - key: DATABASE_SAVE_DATA_NEW_MESSAGE
+        value: "true"
+      - key: DATABASE_SAVE_MESSAGE_UPDATE
+        value: "true"
+      - key: DATABASE_SAVE_DATA_CONTACTS
+        value: "true"
+      - key: DATABASE_SAVE_DATA_CHATS
+        value: "true"
+      - key: DATABASE_SAVE_DATA_HISTORIC
+        value: "true"
+      - key: CACHE_REDIS_ENABLED
+        value: "true"
+      - key: CACHE_REDIS_URI
+        fromService:
+          type: keyvalue
+          name: studioflow-evolution-cache
+          property: connectionString
+      - key: CACHE_REDIS_PREFIX_KEY
+        value: studioflow
+      - key: CACHE_REDIS_SAVE_INSTANCES
+        value: "false"
+      - key: CACHE_LOCAL_ENABLED
+        value: "false"
+      - key: DEL_INSTANCE
+        value: "false"
+      - key: WEBHOOK_GLOBAL_ENABLED
+        value: "false"
+      - key: WEBSOCKET_ENABLED
+        value: "false"
+      - key: RABBITMQ_ENABLED
+        value: "false"
+      - key: SQS_ENABLED
+        value: "false"
+      - key: TYPEBOT_ENABLED
+        value: "false"
+      - key: CHATWOOT_ENABLED
+        value: "false"
+      - key: OPENAI_ENABLED
+        value: "false"
+      - key: TELEMETRY_ENABLED
+        value: "false"
+      - key: METRICS_ENABLED
+        value: "false"
+      - key: CORS_ORIGIN
+        # Evolution also checks requests without Origin (Render health checks
+        # and StudioFlow server calls). Protected endpoints still require apikey.
+        value: "*"
+      - key: CORS_CREDENTIALS
+        value: "false"
+      - key: LOG_LEVEL
+        value: ERROR,WARN,INFO
+      - key: LOG_BAILEYS
+        value: error
+      - key: CONFIG_SESSION_PHONE_CLIENT
+        value: StudioFlow
+      - key: CONFIG_SESSION_PHONE_NAME
+        value: Chrome
+      - key: TZ
+        value: America/Sao_Paulo
+
+  - type: keyvalue
+    name: studioflow-evolution-cache
+    plan: 256mb
+    region: virginia
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: studioflow-evolution-db
+    databaseName: evolution
+    user: studioflow
+    plan: 0.5c-1g
+    region: virginia
+    postgresMajorVersion: "15"
+    diskSizeGB: 5
+    storageAutoscalingEnabled: false
+    ipAllowList: []

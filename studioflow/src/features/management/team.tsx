@@ -28,6 +28,9 @@ import Link from "next/link";
 import { usePermissions } from "@/hooks/use-permissions";
 import { businessDay, dateLabel, formatPhone } from "@/lib/utils";
 import type { Professional } from "@/types";
+import { ProfessionalConnection } from "./professional-whatsapp";
+import "./whatsapp-settings.css";
+import { ProfessionalAccess } from "./professional-access";
 import {
   ManagementBoundary,
   ManagementSummary,
@@ -42,7 +45,7 @@ import {
 } from "./shared";
 
 export default function TeamPage() {
-  const { data, mutate } = useWorkspace();
+  const { data, mutate, refresh } = useWorkspace();
   const { canMutate, canManage } = usePermissions();
   const editable = canMutate("professionals");
   const today = businessDay();
@@ -475,6 +478,56 @@ export default function TeamPage() {
                     </div>
                   )}
                 </div>
+                {professional.active && data && (
+                  <details className="team-connection">
+                    <summary>
+                      <span>WhatsApp do profissional</span>
+                      <b
+                        className={
+                          data.professionalWhatsAppLinks?.find(
+                            (link) => link.professionalId === professional.id,
+                          )?.status === "open"
+                            ? "is-connected"
+                            : ""
+                        }
+                      >
+                        {data.professionalWhatsAppLinks?.find(
+                          (link) => link.professionalId === professional.id,
+                        )?.status === "open"
+                          ? "Conectado"
+                          : "Configurar"}
+                      </b>
+                    </summary>
+                    <ProfessionalConnection
+                      id={professional.id}
+                      name={professional.name}
+                      link={data.professionalWhatsAppLinks?.find(
+                        (link) => link.professionalId === professional.id,
+                      )}
+                      canManage={
+                        canManage ||
+                        data.viewer?.professionalId === professional.id
+                      }
+                      onSaved={refresh}
+                      demo={data.mode === "demo"}
+                      ready={data.evolutionReady !== false}
+                    />
+                  </details>
+                )}
+                {canManage && (
+                  <details className="team-connection team-access">
+                    <summary>
+                      <span>Acesso à própria agenda</span>
+                      <b>{professional.userId ? "Vinculado" : "Convidar"}</b>
+                    </summary>
+                    <ProfessionalAccess
+                      id={professional.id}
+                      name={professional.name}
+                      linked={!!professional.userId}
+                      demo={data?.mode === "demo"}
+                    />
+                  </details>
+                )}
               </Card>
             );
           })}

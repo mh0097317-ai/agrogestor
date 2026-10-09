@@ -105,7 +105,7 @@
   font-size: 10px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #776c5f;
+  color: #b8ad9c;
 }
 .sidebar-business-actions {
   display: flex;
@@ -234,7 +234,7 @@ a.sidebar-support {
   align-items: center;
   gap: 11px;
   font-size: 12px;
-  color: #928f8a;
+  color: #6e655b;
 }
 .breadcrumb strong {
   font-weight: 500;
@@ -253,9 +253,13 @@ a.sidebar-support {
   background: #f7f3ec;
   border: 1px solid #efe9df;
   padding: 0 12px;
-  color: #aeaba5;
+  color: #6e655b;
   width: 248px;
   height: 39px;
+}
+.top-search:focus-within {
+  border-color: #8a6430;
+  box-shadow: 0 0 0 3px #a47a3c1f;
 }
 .top-search input {
   padding: 0;
@@ -270,7 +274,7 @@ a.sidebar-support {
   border: 1px solid #eae7e1;
   border-radius: 3px;
   padding: 2px 4px;
-  color: #a7a49f;
+  color: #6e655b;
   white-space: nowrap;
 }
 .topbar-separator {
@@ -290,7 +294,7 @@ a.sidebar-support {
 }
 .top-profile small {
   font-size: 12px;
-  color: #8d8a85;
+  color: #6e655b;
   display: block;
   margin-top: 3px;
 }
@@ -405,26 +409,11 @@ a.sidebar-support {
   white-space: nowrap;
 }
 
-/* Motion */
-.dashboard-content {
-  animation: sf-fade-up 420ms var(--ease-out) both;
-}
+/* Frequent navigation stays immediate; occasional panels keep a short entrance. */
 .nav-link {
   transition:
-    background var(--motion-base),
-    color var(--motion-base);
-}
-.nav-link svg {
-  transition: transform 320ms var(--ease-spring);
-}
-.nav-link:hover svg {
-  transform: translateX(2px) scale(1.08);
-}
-.nav-link.active svg {
-  animation: sf-pop 420ms var(--ease-spring);
-}
-.sidebar-business-mark {
-  transition: transform 360ms var(--ease-spring);
+    background 120ms ease,
+    color 120ms ease;
 }
 .bottom-nav > a,
 .bottom-nav > button {
@@ -435,10 +424,7 @@ a.sidebar-support {
 }
 .bottom-nav > a:active,
 .bottom-nav > button:active {
-  transform: scale(0.92);
-}
-.bottom-nav > a.active svg {
-  animation: sf-pop 420ms var(--ease-spring);
+  transform: scale(0.97);
 }
 .bottom-nav > a.active::after {
   content: "";
@@ -450,18 +436,14 @@ a.sidebar-support {
   margin-left: -2.5px;
   border-radius: 50%;
   background: #1f1a15;
-  animation: sf-pop 420ms var(--ease-spring);
 }
 .bottom-nav .mobile-add {
   transition:
-    transform var(--motion-base) var(--ease-spring),
-    box-shadow var(--motion-base);
-}
-.bottom-nav .mobile-add:hover {
-  transform: translateY(-2px) rotate(90deg);
+    transform 140ms var(--ease-out),
+    box-shadow 140ms ease;
 }
 .bottom-nav .mobile-add:active {
-  transform: scale(0.9);
+  transform: scale(0.97);
 }
 .mobile-more {
   animation: sf-scale-in 220ms var(--ease-out) both;
@@ -487,9 +469,7 @@ a.sidebar-support {
   background: #f4f0e812;
   box-shadow: none;
   transform: translateY(var(--ind-y, 0));
-  transition:
-    transform 460ms var(--ease-spring),
-    height 300ms var(--ease-out);
+  transition: none;
 }
 .side-nav[data-indicator]::after {
   content: "";
@@ -503,7 +483,7 @@ a.sidebar-support {
   background: #b08a4e;
   box-shadow: none;
   transform: translateY(var(--ind-y, 0));
-  transition: transform 460ms var(--ease-spring);
+  transition: none;
 }
 .side-nav[data-indicator] .nav-link {
   position: relative;
@@ -537,4 +517,107 @@ a.sidebar-support {
 }
 .mobile-more svg {
   color: #8a6430;
+}
+
+/* Clear destinations, grouped by the work they support. */
+.nav-section-label {
+  display: block;
+  padding: 15px 14px 6px;
+  color: #b8ad9c;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Visible keyboard focus and restrained feedback across the workspace. */
+.app-shell :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #8a6430;
+  outline-offset: 3px;
+  transition: none;
+}
+.app-shell .sidebar :is(a, button):focus-visible {
+  outline-color: #e1c796;
+}
+.app-shell :is(.btn, .icon-button):not(:disabled):active {
+  transform: scale(0.97);
+}
+.app-shell .breadcrumb {
+  min-width: 0;
+}
+.app-shell .breadcrumb strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .app-shell :is(input, select, textarea) {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .app-shell :is(.btn, .icon-button):not(:disabled):active,
+  .app-shell .bottom-nav > :active {
+    transform: none;
+  }
+}
+.nav-section-label:first-child {
+  padding-top: 0;
+}
+.side-nav {
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+.sidebar-brand {
+  margin-bottom: 22px;
+}
+.sidebar-bottom {
+  padding-top: 18px;
+  flex-shrink: 0;
+}
+.side-nav .nav-link {
+  min-height: 40px;
+  padding: 9px 14px;
+  margin: 2px 0;
+}
+@media (min-width: 768px) and (max-height: 950px) {
+  .sidebar {
+    padding-top: 24px;
+  }
+  .sidebar-business {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 10px;
+    text-align: left;
+  }
+  .sidebar-business-mark {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+  }
+  .sidebar-business-name {
+    flex: 1;
+    align-items: flex-start;
+  }
+  .sidebar-business-name strong {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .sidebar-business-name small {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+  .sidebar-business-actions {
+    margin-top: 0;
+  }
 }

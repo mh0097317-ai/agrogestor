@@ -1,4 +1,6 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
+import { BookingUnavailable } from "@/features/public/booking-unavailable";
 
 import Link from "next/link";
 import {
@@ -67,7 +69,10 @@ export function PublicPage({
   slug: string;
   initialCatalog?: PublicCatalog | null;
 }) {
-  const { catalog, loading, error, reload } = usePublicCatalog(slug, initialCatalog);
+  const { catalog, loading, error, reload } = usePublicCatalog(
+    slug,
+    initialCatalog,
+  );
   const [toast, setToast] = useState("");
   const [showDock, setShowDock] = useState(false);
   const [sheet, setSheet] = useState<"location" | "instagram" | null>(null);
@@ -78,7 +83,8 @@ export function PublicPage({
     function onClick(event: MouseEvent) {
       // Next's Link prevents the default to navigate in place: still ours.
       if (event.button !== 0) return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return;
       const link = (event.target as Element | null)?.closest?.("a[href]");
       if (link?.getAttribute("target") === "_blank") return;
       const href = link?.getAttribute("href") || "";
@@ -108,6 +114,9 @@ export function PublicPage({
         retry={reload}
       />
     );
+
+  if (!onlineBookingEnabled(catalog.settings))
+    return <BookingUnavailable business={catalog.business} />;
 
   const { business, services, professionals, settings } = catalog;
   const activeServices = services.filter((service) => service.active);
@@ -347,7 +356,9 @@ export function PublicPage({
                       )
                     )}
                     <strong>{product.name}</strong>
-                    {product.description && <small>{product.description}</small>}
+                    {product.description && (
+                      <small>{product.description}</small>
+                    )}
                     <b>{money(product.price)}</b>
                   </li>
                 ))}

@@ -1,4 +1,77 @@
 /* Settings with section drafts */
+.settings-channel-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+.settings-channel-summary > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #dcd2c2;
+  border-radius: 8px;
+  background: #fffdf9;
+  color: #433a31;
+  text-align: left;
+  cursor: pointer;
+}
+.settings-channel-summary > button > span {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+.settings-channel-summary small {
+  color: #786d60;
+  font-size: 11px;
+}
+.settings-channel-summary strong {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.settings-channel-summary em {
+  color: #786d60;
+  font-size: 11px;
+  font-style: normal;
+}
+.settings-channel-summary > button > svg {
+  flex: none;
+}
+.settings-channel-summary > button:hover {
+  border-color: #a47a3c;
+  background: #f7f3ec;
+}
+.settings-channel-summary > button:focus-visible {
+  outline: 2px solid #a47a3c;
+  outline-offset: 3px;
+}
+.settings-channel-summary > button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+@media (min-width: 861px) {
+  .settings-section-nav {
+    position: sticky;
+    top: 86px;
+  }
+}
+@media (max-width: 640px) {
+  .settings-channel-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .settings-channel-summary > button {
+    padding: 14px;
+  }
+  .settings-channel-summary em {
+    display: none;
+  }
+}
 .settings-layout {
   display: grid;
   grid-template-columns: 195px minmax(0, 1fr);
@@ -503,4 +576,108 @@
 }
 .payment-account strong svg {
   vertical-align: -2px;
+}
+
+.online-booking-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.online-booking-toggle input {
+  appearance: none;
+  position: relative;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-radius: 24px;
+  background: #b3aaa0;
+  border: 0;
+  cursor: pointer;
+}
+.online-booking-toggle input::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+.online-booking-toggle input:checked {
+  background: #2c251e;
+}
+.online-booking-toggle input:checked::after {
+  left: 21px;
+}
+.online-booking-toggle input:focus-visible {
+  outline: 2px solid #2c251e;
+  outline-offset: 3px;
+}
+.online-booking-toggle input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.online-booking-url {
+  overflow-wrap: anywhere;
+}
+
+.settings-nav-label {
+  padding: 18px 12px 5px;
+  color: #897b69;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.settings-nav-label:first-child {
+  padding-top: 3px;
+}
+@media (min-width: 1001px) {
+  .settings-section-nav {
+    align-self: start;
+    padding: 12px 8px;
+    border: 1px solid #e5dccf;
+    border-radius: 12px;
+    background: #fffdf9;
+  }
+}
+@media (max-width: 1000px) {
+  .settings-nav-label {
+    display: none;
+  }
+  .settings-section-nav {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5dccf;
+  }
+}
+.settings-mobile-select {
+  display: none;
+}
+@media (max-width: 767px) {
+  .settings-section-nav > button {
+    display: none;
+  }
+  .settings-mobile-select {
+    display: grid;
+    gap: 7px;
+    width: 100%;
+    color: #786d60;
+    font-size: 12px;
+  }
+  .settings-mobile-select select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid #dcd2c2;
+    border-radius: 8px;
+    background: #fffdf9;
+    color: #433a31;
+    font: inherit;
+    font-size: 14px;
+  }
 }

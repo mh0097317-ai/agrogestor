@@ -10,6 +10,7 @@ import { PublicImage } from "@/features/public/public-ui";
 import { publicAccentStyle } from "@/features/public/public-branding";
 import "@/features/public/public.css";
 import "./booking.css";
+import "./booking-refinement.css";
 
 export const bookingSteps = [
   "Serviço",

@@ -11,13 +11,20 @@ import {
   type BusinessAccess,
 } from "@/lib/access";
 import { DomainError } from "@/lib/availability";
-import { allModules, type ModuleKey } from "@/lib/modules";
+import { allModules, hasModule, type ModuleKey } from "@/lib/modules";
+import { onlineBookingEnabled } from "@/lib/online-booking";
 import {
-  createSupabaseAdmin,
-  createSupabaseServer,
-  isPlatformAdmin,
-} from "@/lib/supabase/server";
+  activityPeriod,
+  demoActivity,
+  emptyActivity,
+  type ActivityPeriod,
+  type PlatformActivity,
+} from "@/lib/platform-activity";
+import { evolutionReady } from "./whatsapp/evolution";
+import { assistantModel } from "./assistant/agent";
+import { createSupabaseAdmin, isPlatformAdmin } from "@/lib/supabase/server";
 import type { Store } from "@/types";
+import { createPlatformServer } from "./server-platform-auth";
 import { isDemo, mutateDemo, readDemo } from "./server-demo";
 
 /** Uma linha do painel da plataforma. */
@@ -43,6 +50,113 @@ export interface PlatformBusiness {
   modules: string[] | null;
   plan: string;
   price: number | null;
+  onlineBookingEnabled: boolean;
+  assistantEnabled: boolean;
+  aiConfigured?: boolean;
+  whatsappStatus: "open" | "connecting" | "close";
+  activity: PlatformActivity;
+}
+
+export async function platformIntegrations() {
+  return {
+    evolution: await evolutionReady(),
+    ai: !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
+    model: assistantModel,
+  };
+}
+
+export const platformChannelSchema = z
+  .object({
+    businessId: z.string().uuid(),
+    channel: z.enum(["public_link", "receptionist"]),
+    enabled: z.boolean(),
+  })
+  .strict();
+
+export async function platformChannel(
+  input: z.infer<typeof platformChannelSchema>,
+) {
+  const { userId } = await requirePlatformAdmin();
+  if (isDemo()) {
+    for (const slug of await demoSlugs()) {
+      const store = await readDemo(slug);
+      if (store.business.id !== input.businessId) continue;
+      if (
+        input.channel === "receptionist" &&
+        input.enabled &&
+        !hasModule(store.access?.modules, "recepcionista")
+      )
+        throw new DomainError(
+          "Libere o módulo Recepcionista no plano primeiro.",
+          409,
+        );
+      await mutateDemo((draft) => {
+        if (input.channel === "public_link")
+          draft.settings.onlineBookingEnabled = input.enabled;
+        else draft.settings.assistantEnabled = input.enabled;
+      }, slug);
+      return;
+    }
+    throw new DomainError("Estabelecimento não encontrado.", 404);
+  }
+  if (input.channel === "receptionist" && input.enabled) {
+    const { data, error } = await createSupabaseAdmin()
+      .from("platform_access")
+      .select("modules")
+      .eq("business_id", input.businessId)
+      .maybeSingle();
+    if (error)
+      throw new DomainError("Não foi possível consultar o plano.", 503);
+    if (!hasModule(data?.modules, "recepcionista"))
+      throw new DomainError(
+        "Libere o módulo Recepcionista no plano primeiro.",
+        409,
+      );
+  }
+  const { error } = await createSupabaseAdmin().rpc("platform_set_channel", {
+    p_business_id: input.businessId,
+    p_actor: userId,
+    p_channel: input.channel,
+    p_enabled: input.enabled,
+  });
+  if (error)
+    throw new DomainError(
+      error.message === "business not found"
+        ? "Estabelecimento não encontrado."
+        : "Não foi possível salvar o canal.",
+      error.message === "business not found" ? 404 : 503,
+    );
+}
+
+export interface ChannelEvent {
+  id: string;
+  channel: "public_link" | "receptionist";
+  enabled: boolean;
+  createdAt: string;
+}
+export async function platformChannelEvents(
+  businessId: string,
+): Promise<ChannelEvent[]> {
+  await requirePlatformAdmin();
+  z.string().uuid().parse(businessId);
+  if (isDemo()) return [];
+  const { data, error } = await createSupabaseAdmin()
+    .from("platform_channel_events")
+    .select("id,channel,enabled,created_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error)
+    throw new DomainError(
+      "Não foi possível carregar as mudanças de canais.",
+      503,
+    );
+  return (data || []).map((row) => ({
+    id: row.id,
+    channel: row.channel,
+    enabled: row.enabled,
+    createdAt: row.created_at,
+  }));
 }
 
 /** No modo demonstração o acesso fica no próprio arquivo; sem registro, liberado. */
@@ -52,7 +166,7 @@ export const demoAccess = (store: Store): BusinessAccess =>
 /** Só a equipe StudioFlow entra no painel da plataforma. */
 export async function requirePlatformAdmin() {
   if (isDemo()) return { userId: null as string | null };
-  const client = await createSupabaseServer();
+  const client = await createPlatformServer();
   const {
     data: { user },
   } = await client.auth.getUser();
@@ -62,7 +176,7 @@ export async function requirePlatformAdmin() {
   return { userId: user.id as string | null };
 }
 
-async function demoSlugs() {
+export async function demoSlugs() {
   const directory = join(process.cwd(), ".data");
   await mkdir(directory, { recursive: true });
   const files = (await readdir(directory)).filter((file) =>
@@ -71,7 +185,11 @@ async function demoSlugs() {
   const slugs = files.map((file) => file.slice(9, -5));
   return slugs.includes("barber-011") ? slugs : ["barber-011", ...slugs];
 }
-function demoRow(store: Store, now: Date): PlatformBusiness {
+function demoRow(
+  store: Store,
+  now: Date,
+  period: ActivityPeriod,
+): PlatformBusiness {
   const access = demoAccess(store);
   const since = now.getTime() - 30 * 86_400_000;
   return {
@@ -97,24 +215,80 @@ function demoRow(store: Store, now: Date): PlatformBusiness {
     ).length,
     customers: store.customers.length,
     lastAppointmentAt:
-      store.appointments.map((item) => item.createdAt).sort().at(-1) || null,
+      store.appointments
+        .map((item) => item.createdAt)
+        .sort()
+        .at(-1) || null,
     modules: access.modules ?? null,
     plan: access.plan || "",
     price: access.price ?? null,
+    onlineBookingEnabled: onlineBookingEnabled(store.settings),
+    assistantEnabled: store.settings.assistantEnabled === true,
+    whatsappStatus: store.whatsappLink?.status || "close",
+    activity: demoActivity(store, period),
   };
 }
 
-export async function platformOverview(now = new Date()) {
+export async function platformOverview(
+  now = new Date(),
+  period = activityPeriod(null, null, now),
+) {
   await requirePlatformAdmin();
   if (isDemo()) {
     const rows: PlatformBusiness[] = [];
     for (const slug of await demoSlugs())
-      rows.push(demoRow(await readDemo(slug), now));
+      rows.push(demoRow(await readDemo(slug), now, period));
     return rows;
   }
   const { data, error } = await createSupabaseAdmin().rpc("platform_overview");
   if (error)
-    throw new DomainError("Não foi possível carregar os estabelecimentos.", 503);
+    throw new DomainError(
+      "Não foi possível carregar os estabelecimentos.",
+      503,
+    );
+  const { data: settings, error: settingsError } = await createSupabaseAdmin()
+    .from("business_settings")
+    .select("business_id,online_booking_enabled,assistant_enabled");
+  if (settingsError)
+    throw new DomainError(
+      "Não foi possível consultar os canais de agendamento.",
+      503,
+    );
+  const { data: activity, error: activityError } =
+    await createSupabaseAdmin().rpc("platform_activity", {
+      p_from: period.from,
+      p_to: period.to,
+    });
+  if (activityError)
+    throw new DomainError("Não foi possível consultar os indicadores.", 503);
+  const { data: links, error: linkError } = await createSupabaseAdmin()
+    .from("whatsapp_links")
+    .select("business_id,status");
+  if (linkError)
+    throw new DomainError(
+      "Não foi possível consultar as conexões do WhatsApp.",
+      503,
+    );
+  const online = new Map((settings || []).map((row) => [row.business_id, row]));
+  const activities = new Map(
+    (activity as (PlatformActivity & { businessId: string })[]).map((row) => [
+      row.businessId,
+      row,
+    ]),
+  );
+  const connections = new Map(
+    (links || []).map((row) => [row.business_id, row.status]),
+  );
+  const { data: credentials, error: credentialsError } =
+    await createSupabaseAdmin()
+      .from("business_ai_credentials")
+      .select("business_id");
+  if (credentialsError)
+    throw new DomainError(
+      "Não foi possível conferir as credenciais da recepcionista.",
+      503,
+    );
+  const configured = new Set((credentials || []).map((row) => row.business_id));
   return (data as Record<string, unknown>[]).map((row): PlatformBusiness => {
     const access: BusinessAccess = {
       status: row.status as BusinessAccess["status"],
@@ -122,6 +296,10 @@ export async function platformOverview(now = new Date()) {
     };
     return {
       id: row.id as string,
+      onlineBookingEnabled: online.get(row.id)?.online_booking_enabled === true,
+      assistantEnabled: online.get(row.id)?.assistant_enabled === true,
+      whatsappStatus: connections.get(row.id) || "close",
+      activity: activities.get(row.id as string) || emptyActivity(),
       name: row.name as string,
       slug: row.slug as string,
       category: row.category as string,
@@ -138,6 +316,7 @@ export async function platformOverview(now = new Date()) {
       appointments30d: Number(row.appointments_30d) || 0,
       customers: Number(row.customers) || 0,
       lastAppointmentAt: (row.last_appointment_at as string | null) ?? null,
+      aiConfigured: configured.has(row.id),
       modules: (row.modules as string[] | null | undefined) ?? null,
       plan: (row.plan as string) || "",
       price:
@@ -148,7 +327,9 @@ export async function platformOverview(now = new Date()) {
   });
 }
 
-export async function platformEvents(businessId: string): Promise<AccessEvent[]> {
+export async function platformEvents(
+  businessId: string,
+): Promise<AccessEvent[]> {
   await requirePlatformAdmin();
   z.string().uuid().parse(businessId);
   if (isDemo()) {
@@ -165,7 +346,8 @@ export async function platformEvents(businessId: string): Promise<AccessEvent[]>
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
     .limit(50);
-  if (error) throw new DomainError("Não foi possível carregar o histórico.", 503);
+  if (error)
+    throw new DomainError("Não foi possível carregar o histórico.", 503);
   return (data || []).map((row) => ({
     id: row.id,
     action: row.action,
@@ -201,11 +383,16 @@ export const platformPlanSchema = z.object({
   businessId: z.string().uuid(),
   plan: z.string().trim().max(40),
   price: z.number().min(0).max(100000).nullable(),
-  modules: z.array(z.enum(allModules as [ModuleKey, ...ModuleKey[]])).max(allModules.length),
+  modules: z
+    .array(z.enum(allModules as [ModuleKey, ...ModuleKey[]]))
+    .max(allModules.length),
 });
 
 /** Plano, mensalidade e módulos que o cliente contratou. */
-export async function platformPlan(input: z.infer<typeof platformPlanSchema>, now = new Date()) {
+export async function platformPlan(
+  input: z.infer<typeof platformPlanSchema>,
+  now = new Date(),
+) {
   const { userId } = await requirePlatformAdmin();
   const modules = [...new Set(input.modules)].sort();
   if (isDemo()) {
@@ -221,7 +408,13 @@ export async function platformPlan(input: z.infer<typeof platformPlanSchema>, no
         };
         draft.accessEvents = [
           ...(draft.accessEvents || []),
-          { id: randomUUID(), action: "plan" as const, days: null, until: draft.access.until, createdAt: now.toISOString() },
+          {
+            id: randomUUID(),
+            action: "plan" as const,
+            days: null,
+            until: draft.access.until,
+            createdAt: now.toISOString(),
+          },
         ].slice(-50);
       }, slug);
       return;
@@ -249,8 +442,7 @@ export async function platformAction(
   now = new Date(),
 ) {
   const { userId } = await requirePlatformAdmin();
-  const until =
-    input.action === "until" ? endOfBusinessDay(input.date) : null;
+  const until = input.action === "until" ? endOfBusinessDay(input.date) : null;
   if (until && new Date(until) <= now)
     throw new DomainError("Escolha uma data a partir de hoje.");
   if (isDemo()) {

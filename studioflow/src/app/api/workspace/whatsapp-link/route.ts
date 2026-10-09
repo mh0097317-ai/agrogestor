@@ -16,9 +16,13 @@ import {
 export const dynamic = "force-dynamic";
 
 /** Status of the QR Code connection (the panel asks every few seconds). */
-export async function GET() {
+function professional(request: Request) {
+  const value = new URL(request.url).searchParams.get("professionalId");
+  return value ? z.string().uuid().parse(value) : undefined;
+}
+export async function GET(request: Request) {
   try {
-    return respond(await pollWhatsAppLink());
+    return respond(await pollWhatsAppLink(professional(request)));
   } catch (error) {
     return failure(error);
   }
@@ -30,7 +34,9 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     if (z.object({ simulate: z.literal(true) }).safeParse(body).success)
       return respond(await simulateDemoScan());
-    return respond(await startWhatsAppLink(requestOrigin(request)));
+    return respond(
+      await startWhatsAppLink(requestOrigin(request), professional(request)),
+    );
   } catch (error) {
     return failure(error);
   }
@@ -39,7 +45,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await updateNotify(notifySchema.parse(await request.json())));
+    return respond(
+      await updateNotify(notifySchema.parse(await request.json())),
+    );
   } catch (error) {
     return failure(error);
   }
@@ -47,7 +55,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await unlinkWhatsApp());
+    return respond(await unlinkWhatsApp(professional(request)));
   } catch (error) {
     return failure(error);
   }

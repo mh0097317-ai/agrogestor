@@ -1,4 +1,5 @@
 import { graphVersion } from "./whatsapp";
+import { audioCredential } from "./audio-vault";
 
 /**
  * Áudio → texto por um serviço compatível com /audio/transcriptions
@@ -9,15 +10,30 @@ export const transcriptionReady = () => !!process.env.TRANSCRIBE_API_KEY;
 
 const maxBytes = 16 * 1024 * 1024;
 
-export async function transcribe(audio: ArrayBuffer, mime: string): Promise<string> {
-  const key = process.env.TRANSCRIBE_API_KEY;
-  if (!key) throw new Error("transcription off");
+export async function transcribe(
+  audio: ArrayBuffer,
+  mime: string,
+  businessId?: string,
+): Promise<string> {
+  const credential = await audioCredential(businessId);
+  if (!credential) throw new Error("transcription off");
+  const { key, model } = credential;
   if (audio.byteLength > maxBytes) throw new Error("audio too large");
-  const base = (process.env.TRANSCRIBE_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const extension = mime.includes("mpeg") ? "mp3" : mime.includes("mp4") ? "m4a" : mime.includes("wav") ? "wav" : "ogg";
+  const base = credential.base.replace(/\/$/, "");
+  const extension = mime.includes("mpeg")
+    ? "mp3"
+    : mime.includes("mp4")
+      ? "m4a"
+      : mime.includes("wav")
+        ? "wav"
+        : "ogg";
   const form = new FormData();
-  form.append("file", new Blob([audio], { type: mime || "audio/ogg" }), `audio.${extension}`);
-  form.append("model", process.env.TRANSCRIBE_MODEL || "whisper-1");
+  form.append(
+    "file",
+    new Blob([audio], { type: mime || "audio/ogg" }),
+    `audio.${extension}`,
+  );
+  form.append("model", model);
   form.append("language", "pt");
   form.append("response_format", "json");
   const response = await fetch(`${base}/audio/transcriptions`, {
@@ -35,17 +51,28 @@ export async function transcribe(audio: ArrayBuffer, mime: string): Promise<stri
 export async function downloadWhatsAppMedia(mediaId: string, token: string) {
   const meta = await fetch(
     `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(mediaId)}`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8_000) },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8_000),
+    },
   );
   if (!meta.ok) throw new Error(`media ${meta.status}`);
-  const info = (await meta.json()) as { url?: string; mime_type?: string; file_size?: number };
-  if (!info.url || (info.file_size || 0) > maxBytes) throw new Error("media unavailable");
+  const info = (await meta.json()) as {
+    url?: string;
+    mime_type?: string;
+    file_size?: number;
+  };
+  if (!info.url || (info.file_size || 0) > maxBytes)
+    throw new Error("media unavailable");
   const file = await fetch(info.url, {
     headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(10_000),
   });
   if (!file.ok) throw new Error(`media file ${file.status}`);
-  return { audio: await file.arrayBuffer(), mime: info.mime_type || "audio/ogg" };
+  return {
+    audio: await file.arrayBuffer(),
+    mime: info.mime_type || "audio/ogg",
+  };
 }
 
 /** Mídia do Instagram: o webhook já traz um link público temporário. */
@@ -62,17 +89,22 @@ export async function downloadUrl(url: string) {
 export const audioPlaceholder = "[O cliente enviou um áudio.]";
 
 /** Texto da mensagem de áudio: a transcrição marcada com 🎤, ou o aviso. */
-export async function audioText(load: () => Promise<{ audio: ArrayBuffer; mime: string }>) {
-  if (!transcriptionReady()) return audioPlaceholder;
+export async function audioText(
+  load: () => Promise<{ audio: ArrayBuffer; mime: string }>,
+  businessId?: string,
+) {
   try {
+    if (!(await audioCredential(businessId))) return audioPlaceholder;
     const { audio, mime } = await load();
-    const text = await transcribe(audio, mime);
+    const text = await transcribe(audio, mime, businessId);
     return text ? `🎤 ${text}` : audioPlaceholder;
   } catch (error) {
-    console.error(
-      "StudioFlow transcription error:",
-      error instanceof Error ? error.message : "unknown",
-    );
+    console.error("StudioFlow transcription error:", {
+      code:
+        error instanceof Error && /too large/.test(error.message)
+          ? "audio-too-large"
+          : "transcription-unavailable",
+    });
     return audioPlaceholder;
   }
 }

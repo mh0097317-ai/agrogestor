@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { inviteRedirect } from "@/lib/invite-redirect";
 import "./login.css";
 export function LoginForm() {
   const router = useRouter();
@@ -28,6 +29,9 @@ export function LoginForm() {
     setMessage("");
     try {
       const client = createSupabaseBrowser();
+      const next = inviteRedirect(
+        new URLSearchParams(window.location.search).get("next"),
+      );
       if (!client)
         throw new Error(
           "O acesso por conta está em preparação. Você já pode explorar a demonstração.",
@@ -38,14 +42,16 @@ export function LoginForm() {
           password,
           options: {
             data: { name },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
           },
         });
         if (error) throw error;
-        if (data.session) router.push("/onboarding");
+        if (data.session) router.push(next || "/onboarding");
         else
           setMessage(
-            "Confira seu e-mail para confirmar a conta e criar seu estabelecimento.",
+            next
+              ? "Confira seu e-mail para confirmar a conta e volte ao convite da sua barbearia."
+              : "Confira seu e-mail para confirmar a conta e criar seu estabelecimento.",
           );
       } else {
         const { error } = await client.auth.signInWithPassword({
@@ -62,7 +68,7 @@ export function LoginForm() {
           .eq("user_id", user!.id)
           .eq("active", true)
           .limit(1);
-        router.push(data?.length ? "/dashboard" : "/onboarding");
+        router.push(next || (data?.length ? "/dashboard" : "/onboarding"));
         router.refresh();
       }
     } catch (error) {

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 const base = process.env.SMOKE_URL || "http://localhost:3000";
+if (!["localhost", "127.0.0.1"].includes(new URL(base).hostname))
+  throw new Error(
+    "HTTP smoke creates isolated fictional data and must run on localhost.",
+  );
 let cookie = "",
   slug = "";
 async function request(route, method = "GET", data, withCookie = false) {
@@ -21,7 +25,9 @@ try {
   assert.equal(catalog.response.status, 200);
   assert(!("customers" in catalog.body));
   assert(!("payments" in catalog.body));
-  assert(!("paymentAccount" in catalog.body) && !("memberships" in catalog.body));
+  assert(
+    !("paymentAccount" in catalog.body) && !("memberships" in catalog.body),
+  );
   assert(
     catalog.body.professionals.every(
       (p) => !("phone" in p) && !("commission" in p),
@@ -76,6 +82,73 @@ try {
   const receipt = await request(`/api/booking/${appointment.token}`);
   assert.equal(receipt.body.appointment.id, appointment.id);
   assert(!("commission" in receipt.body.professional));
+  assert.equal(workspace.body.settings.onlineBookingEnabled, true);
+  const disabled = await request(
+    "/api/workspace/online-booking",
+    "PATCH",
+    { onlineBookingEnabled: false },
+    true,
+  );
+  assert.equal(disabled.response.status, 200);
+  const disabledCatalog = await request(`/api/public/${slug}`);
+  assert.equal(disabledCatalog.body.settings.onlineBookingEnabled, false);
+  // A stale tab or a forged channel in the body cannot bypass the server guard.
+  const denied = await request(`/api/public/${slug}/book`, "POST", {
+    ...booking,
+    start: slots.body.at(-1).start,
+    channel: "receptionist",
+    onlineBookingEnabled: true,
+  });
+  assert.equal(denied.response.status, 403);
+  for (const route of [
+    `slots?serviceId=${serviceId}&date=${date}`,
+    `availability?serviceId=${serviceId}&month=${date.slice(0, 7)}`,
+    `next-free?serviceId=${serviceId}`,
+  ])
+    assert.equal(
+      (await request(`/api/public/${slug}/${route}`)).response.status,
+      403,
+    );
+  for (const route of [`/${slug}`, `/${slug}/agendar`]) {
+    const html = await (await fetch(base + route)).text();
+    assert.match(html, /Agendamento online indisponível no momento/);
+    // This QA establishment has no configured WhatsApp number.
+    assert.doesNotMatch(html, /Falar pelo WhatsApp/);
+  }
+  const protectedWorkspace = await request(
+    "/api/workspace",
+    "GET",
+    undefined,
+    true,
+  );
+  assert.equal(protectedWorkspace.body.appointments.length, 1);
+  assert.equal(protectedWorkspace.body.customers.length, 1);
+  assert.equal(protectedWorkspace.body.business.slug, slug);
+  assert.equal(
+    (await request("/api/public/barber-011")).body.settings
+      .onlineBookingEnabled,
+    true,
+  );
+  const manual = await request(
+    "/api/workspace",
+    "POST",
+    {
+      entity: "appointments",
+      action: "create",
+      data: {
+        customerName: appointment.customerName,
+        customerPhone: appointment.customerPhone,
+        serviceIds: [serviceId],
+        professionalId,
+        start: slots.body.at(-1).start,
+        status: "confirmed",
+        reminder: false,
+      },
+    },
+    true,
+  );
+  assert.equal(manual.response.status, 200);
+  assert.equal(manual.body.appointments.length, 2);
   const foreign = await request(
     "/api/workspace",
     "POST",
@@ -112,6 +185,14 @@ try {
   assert.equal(final.body.appointments[0].status, "cancelled");
   assert.equal(final.body.customers.length, 1);
   assert.equal(final.body.payments.length, 0);
+  assert.equal(final.body.settings.onlineBookingEnabled, false);
+  const enabled = await request(
+    "/api/workspace/online-booking",
+    "PATCH",
+    { onlineBookingEnabled: true },
+    true,
+  );
+  assert.equal(enabled.response.status, 200);
   const serviceEdit = await request(
     "/api/workspace",
     "POST",
@@ -232,7 +313,15 @@ try {
     businessId,
     plan: "Premium",
     price: 149.9,
-    modules: ["pagamentos", "clube", "recepcionista", "produtos", "recepcao", "fidelidade", "espera"],
+    modules: [
+      "pagamentos",
+      "clube",
+      "recepcionista",
+      "produtos",
+      "recepcao",
+      "fidelidade",
+      "espera",
+    ],
   });
   assert.equal(premium.response.status, 200);
   const product = await request(
@@ -242,10 +331,109 @@ try {
     true,
   );
   assert.equal(product.response.status, 200);
+  const adminOff = await request("/api/admin/platform", "PATCH", {
+    businessId,
+    channel: "public_link",
+    enabled: false,
+  });
+  assert.equal(adminOff.response.status, 200);
+  assert.equal(
+    adminOff.body.businesses.find((item) => item.id === businessId)
+      .onlineBookingEnabled,
+    false,
+  );
+  assert.equal(
+    (
+      await request(
+        `/api/public/${slug}/slots?serviceId=${serviceId}&date=${date}`,
+      )
+    ).response.status,
+    403,
+  );
+  assert.equal(
+    (await request("/api/workspace", "GET", undefined, true)).response.status,
+    200,
+  );
+  const aiOn = await request("/api/admin/platform", "PATCH", {
+    businessId,
+    channel: "receptionist",
+    enabled: true,
+  });
+  assert.equal(aiOn.response.status, 200);
+  assert.equal(
+    aiOn.body.businesses.find((item) => item.id === businessId)
+      .assistantEnabled,
+    true,
+  );
+  const aiOff = await request("/api/admin/platform", "PATCH", {
+    businessId,
+    channel: "receptionist",
+    enabled: false,
+  });
+  assert.equal(aiOff.response.status, 200);
+  const adminOn = await request("/api/admin/platform", "PATCH", {
+    businessId,
+    channel: "public_link",
+    enabled: true,
+  });
+  assert.equal(adminOn.response.status, 200);
+  const realActivity = adminOn.body.businesses.find(
+    (item) => item.id === businessId,
+  ).activity;
+  const currentWorkspace = (
+    await request("/api/workspace", "GET", undefined, true)
+  ).body;
+  assert.equal(
+    realActivity.received,
+    currentWorkspace.payments.reduce((sum, payment) => sum + payment.amount, 0),
+  );
+  assert.equal(
+    realActivity.publicBookings,
+    currentWorkspace.appointments.filter(
+      (item) =>
+        item.status !== "cancelled" && item.bookingChannel === "public_link",
+    ).length,
+  );
+  assert.equal(
+    realActivity.manualBookings,
+    currentWorkspace.appointments.filter(
+      (item) => item.status !== "cancelled" && item.bookingChannel === "manual",
+    ).length,
+  );
   const original = await request("/api/workspace");
   assert.equal(original.body.business.slug, "barber-011");
+  const report = await request("/api/admin/platform");
+  assert.equal(report.response.status, 200);
+  assert.ok(
+    report.body.monitoring && Array.isArray(report.body.monitoring.invoices),
+  );
+  assert.equal(report.body.monitoringError, "");
+  assert.ok(
+    report.body.monitoring.events.some(
+      (event) => event.businessId === businessId && event.kind === "access",
+    ),
+  );
+  assert(!JSON.stringify(report.body.monitoring).includes("asaas_charge_id"));
+  const custom = await request(`/api/admin/platform?from=${date}&to=${date}`);
+  assert.equal(custom.response.status, 200);
+  assert.equal(custom.body.period.from, date);
+  assert.equal(
+    custom.body.businesses.find((item) => item.id === businessId).activity
+      .appointments,
+    0,
+  );
+  assert.equal(
+    (await request("/api/admin/platform?from=2026-02-30&to=2026-03-01"))
+      .response.status,
+    400,
+  );
+  assert.equal(
+    (await request("/api/admin/platform?from=2025-01-01&to=2026-10-07"))
+      .response.status,
+    400,
+  );
   console.log(
-    "HTTP smoke PASS: isolated onboarding, public projection, tenant isolation, concurrent booking, token receipt, service editing, attendance actions, partial payments, overpayment rejection, reschedule, cancellation, platform access and plan modules.",
+    "HTTP smoke PASS: isolated onboarding, public projection, tenant isolation, concurrent booking, token receipt, online booking toggle and guarded APIs, unavailable pages, internal booking, reactivation, service editing, attendance actions, partial payments, overpayment rejection, reschedule, cancellation, platform access, plan modules, admin channel switches and real activity metrics.",
   );
 } finally {
   if (slug && /^studioflow-qa-[a-f0-9]{6}$/.test(slug)) {

@@ -1,4 +1,6 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
+import { BookingUnavailable } from "@/features/public/booking-unavailable";
 
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -97,6 +99,8 @@ export function BookingFlow({
         retry={reload}
       />
     );
+  if (!onlineBookingEnabled(catalog.settings))
+    return <BookingUnavailable business={catalog.business} />;
   return (
     <>
       <PublicRefreshNotice error={error} refreshing={loading} retry={reload} />

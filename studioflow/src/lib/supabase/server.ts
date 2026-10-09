@@ -2,7 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { DomainError } from "@/lib/availability";
-import { accessState, assertWorkspaceOpen, type BusinessAccess } from "@/lib/access";
+import {
+  accessState,
+  assertWorkspaceOpen,
+  type BusinessAccess,
+} from "@/lib/access";
 
 export async function createSupabaseServer() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,7 +51,9 @@ export function createSupabaseAdmin() {
  * Who is signed in and in which business. `allowClosed` is only for what an
  * owner still needs with the access closed (paying the monthly fee).
  */
-export async function requireMembership(options: { allowClosed?: boolean } = {}) {
+export async function requireMembership(
+  options: { allowClosed?: boolean } = {},
+) {
   const client = await createSupabaseServer();
   const {
     data: { user },
@@ -71,6 +77,27 @@ export async function requireMembership(options: { allowClosed?: boolean } = {})
   if (!membership)
     throw new DomainError("Conclua o cadastro do seu estabelecimento.", 403);
   const businessId = membership.business_id as string;
+  let professionalId: string | undefined;
+  if (membership.role === "professional") {
+    const { data: person, error: personError } = await client
+      .from("professionals")
+      .select("id")
+      .eq("business_id", businessId)
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .maybeSingle();
+    if (personError)
+      throw new DomainError(
+        "Não foi possível verificar seu acesso profissional.",
+        503,
+      );
+    if (!person)
+      throw new DomainError(
+        "Seu acesso ainda não está vinculado a um profissional ativo. Fale com o responsável pela barbearia.",
+        403,
+      );
+    professionalId = person.id as string;
+  }
   // Painel só abre com o acesso liberado pela equipe StudioFlow.
   const [access, business] = await Promise.all([
     readBusinessAccess(businessId),
@@ -83,6 +110,7 @@ export async function requireMembership(options: { allowClosed?: boolean } = {})
     client,
     businessId,
     role: membership.role as string,
+    professionalId,
     user,
     access: { ...access, state },
   };
@@ -98,13 +126,18 @@ export async function readBusinessAccess(
       .select(columns)
       .eq("business_id", businessId)
       .maybeSingle<Record<string, unknown>>();
-  let { data, error } = await read("status,access_until,note,modules,plan,monthly_price");
+  let { data, error } = await read(
+    "status,access_until,note,modules,plan,monthly_price",
+  );
   // Before the modules migration: every module stays on.
   if (error && (error.code === "42703" || error.code === "PGRST204"))
     ({ data, error } = await read("status,access_until,note"));
   if (error) {
     if (missingTable(error.code)) return { status: "active", until: null };
-    throw new DomainError("Não foi possível conferir o acesso. Tente novamente.", 503);
+    throw new DomainError(
+      "Não foi possível conferir o acesso. Tente novamente.",
+      503,
+    );
   }
   return data
     ? {

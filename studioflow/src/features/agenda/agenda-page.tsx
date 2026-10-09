@@ -34,6 +34,7 @@ import type { Appointment, BlockedTime } from "@/types";
 import { AppointmentForm } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
 import { MobileDayAgenda } from "./mobile-day-agenda";
+import { DayFocus } from "./day-focus";
 import { DayTimeline } from "./day-timeline";
 import { AgendaWeekStrip, WeekOverview, MonthOverview } from "./period-views";
 import {
@@ -46,6 +47,11 @@ export function AgendaPage() {
   const { data, loading, error, refresh, mutate } = useWorkspace();
   const { canMutate } = usePermissions();
   const { toast } = useToast();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const [view, setView] = useState<AgendaView>("day");
   const [date, setDate] = useState(businessToday);
   const [filter, setFilter] = useState("all");
@@ -54,6 +60,7 @@ export function AgendaPage() {
     date?: string;
     time?: string;
     professionalId?: string;
+    initialServiceId?: string;
   }>({});
   const [detail, setDetail] = useState<Appointment | null>(null);
   const [block, setBlock] = useState<BlockedTime | null>(null);
@@ -281,6 +288,27 @@ export function AgendaPage() {
             onSelect={(nextDate) => changeCalendar({ date: nextDate })}
           />
         </div>
+      )}
+      {view === "day" && (
+        <DayFocus
+          data={data}
+          date={date}
+          filter={activeFilter}
+          appointments={selectedAppointments}
+          now={now}
+          canEdit={canEdit}
+          onDetail={setDetail}
+          onAdd={(day, time, professionalId, serviceId) => {
+            if (!canEdit) return;
+            setInitial({
+              date: localDay(day),
+              time,
+              professionalId,
+              initialServiceId: serviceId,
+            });
+            setCreate(true);
+          }}
+        />
       )}
       <Card className="calendar-main-card">
         <div className="calendar-card-heading">

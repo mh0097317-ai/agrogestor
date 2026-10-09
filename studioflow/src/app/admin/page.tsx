@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { PlatformAdmin } from "@/features/platform/platform-admin";
+import { isDemo } from "@/services/server-demo";
 import { requirePlatformAdmin } from "@/services/platform";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default async function AdminPage() {
   } catch (cause) {
     status = (cause as { status?: number }).status || 403;
   }
-  if (status === 401) redirect("/login");
-  if (status) redirect("/dashboard");
-  return <PlatformAdmin />;
+  if (status === 401) redirect("/admin/login");
+  if (status) redirect("/admin/login");
+  return <PlatformAdmin demo={isDemo()} />;
 }

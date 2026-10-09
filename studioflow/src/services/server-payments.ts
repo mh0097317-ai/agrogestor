@@ -1,3 +1,8 @@
+import {
+  assertOnlineBookingEnabled,
+  onlineBookingUnavailable,
+  type BookingChannel,
+} from "@/lib/online-booking";
 import { randomBytes, randomUUID } from "node:crypto";
 import QRCode from "qrcode";
 import { z } from "zod";
@@ -160,8 +165,7 @@ export async function connectPayments(
     webhook_token_hash: webhookId ? toBytea(sha256(webhookToken)) : null,
     connected_by: user.id,
   });
-  if (error)
-    throw new DomainError("Não foi possível salvar a conexão.", 503);
+  if (error) throw new DomainError("Não foi possível salvar a conexão.", 503);
   return { account: await getPaymentAccount(businessId), warning };
 }
 
@@ -258,11 +262,17 @@ const cpfRequired =
 export async function bookWithPayments(
   slug: string,
   input: z.infer<typeof bookSchema>,
+  channel: BookingChannel = "public_link",
+  attribution?: {
+    channel: "web" | "whatsapp" | "instagram";
+    conversationId: string;
+  },
 ): Promise<BookingOutcome> {
   const cpf = input.cpf || "";
   if (isDemo())
     return mutateDemo((store) => {
       assertPublicOpen(store.access ?? { status: "active", until: null });
+      if (channel === "public_link") assertOnlineBookingEnabled(store.settings);
       expireHolds(store);
       const ready = !!store.paymentAccount;
       const price = servicesFor(store, input.serviceIds).reduce(
@@ -276,6 +286,10 @@ export async function bookWithPayments(
       if (planned && !input.membershipToken && !isValidCpf(cpf))
         throw new DomainError(cpfRequired, 400);
       const appointment = createBooking(store, input) as BookingOutcome;
+      appointment.bookingChannel = attribution
+        ? `assistant_${attribution.channel}`
+        : "public_link";
+      appointment.conversationId = attribution?.conversationId || null;
       let coverage: CoverageResult | undefined;
       if (input.membershipToken && hasModule(store.access?.modules, "clube"))
         coverage = applyMembership(
@@ -311,6 +325,7 @@ export async function bookWithPayments(
     }, slug);
 
   const store = await getPublicStore(slug);
+  if (channel === "public_link") assertOnlineBookingEnabled(store.settings);
   const businessId = store.business.id;
   const account = await getPaymentAccount(businessId);
   const price = servicesFor(store, input.serviceIds).reduce(
@@ -321,7 +336,7 @@ export async function bookWithPayments(
   if (planned && !input.membershipToken && !isValidCpf(cpf))
     throw new DomainError(cpfRequired, 400);
   const admin = createSupabaseAdmin();
-  const { data, error } = await admin.rpc("book_appointment", {
+  const { data, error } = await admin.rpc("book_tracked_appointment", {
     p_business_id: businessId,
     p_service_ids: input.serviceIds,
     p_professional_id:
@@ -331,7 +346,11 @@ export async function bookWithPayments(
     p_phone: input.phone,
     p_email: input.email || null,
     p_reminder: input.reminder,
+    p_channel: attribution ? `assistant_${attribution.channel}` : "public_link",
+    p_conversation_id: attribution?.conversationId || null,
   });
+  if (error?.message === "online booking disabled")
+    throw new DomainError(onlineBookingUnavailable, 403);
   if (error)
     throw new DomainError(
       error.message.includes("unavailable")
@@ -356,7 +375,9 @@ export async function bookWithPayments(
       return appointment;
     }
     appointment.membershipNotice =
-      coverageMessages[(result || "invalid") as Exclude<CoverageResult, "covered">];
+      coverageMessages[
+        (result || "invalid") as Exclude<CoverageResult, "covered">
+      ];
   }
   if (!planned) return appointment;
   if (!isValidCpf(cpf)) {
@@ -669,7 +690,9 @@ export const subscribeSchema = z.object({
       "Informe um WhatsApp válido com DDD.",
     ),
   cpf: cpfField,
-  email: z.union([z.string().email("E-mail inválido."), z.literal("")]).optional(),
+  email: z
+    .union([z.string().email("E-mail inválido."), z.literal("")])
+    .optional(),
 });
 
 /** Public projection of the active plans. */
@@ -806,11 +829,7 @@ function usageByMonth(appointments: Appointment[], membershipId: string) {
     if (item.membershipId === membershipId) {
       const month = monthKey(item.start);
       if (month >= now && !usage[month])
-        usage[month] = membershipUsage(
-          appointments,
-          membershipId,
-          item.start,
-        );
+        usage[month] = membershipUsage(appointments, membershipId, item.start);
     }
   return usage;
 }

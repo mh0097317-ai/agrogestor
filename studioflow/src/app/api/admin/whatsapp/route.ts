@@ -1,4 +1,8 @@
-import { platformLinkView, startPlatformLink, unlinkPlatform } from "@/services/whatsapp/platform";
+import {
+  platformLinkView,
+  startPlatformLink,
+  unlinkPlatform,
+} from "@/services/whatsapp/platform";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 

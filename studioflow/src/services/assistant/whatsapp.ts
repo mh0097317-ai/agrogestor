@@ -19,11 +19,17 @@ export interface InboundMessage {
  * Meta signs every delivery with the app secret:
  * `X-Hub-Signature-256: sha256=<hex hmac of the raw body>`.
  */
-export function validSignature(raw: string, header: string | null, secret: string) {
+export function validSignature(
+  raw: string,
+  header: string | null,
+  secret: string,
+) {
   if (!header?.startsWith("sha256=")) return false;
   const expected = createHmac("sha256", secret).update(raw).digest();
   const received = Buffer.from(header.slice(7), "hex");
-  return received.length === expected.length && timingSafeEqual(received, expected);
+  return (
+    received.length === expected.length && timingSafeEqual(received, expected)
+  );
 }
 
 /**
@@ -52,7 +58,9 @@ export function inboundMessages(body: unknown): InboundMessage[] {
       const phoneNumberId = String(
         (value.metadata as { phone_number_id?: string })?.phone_number_id || "",
       );
-      const contacts = (value.contacts as { wa_id?: string; profile?: { name?: string } }[]) || [];
+      const contacts =
+        (value.contacts as { wa_id?: string; profile?: { name?: string } }[]) ||
+        [];
       const messages = (value.messages as Record<string, unknown>[]) || [];
       for (const message of messages) {
         const from = String(message.from || "");
@@ -64,18 +72,31 @@ export function inboundMessages(body: unknown): InboundMessage[] {
               ? String((message.button as { text?: string })?.text || "")
               : type === "interactive"
                 ? String(
-                    ((message.interactive as { button_reply?: { title?: string }; list_reply?: { title?: string } })?.button_reply?.title ||
-                      (message.interactive as { list_reply?: { title?: string } })?.list_reply?.title) ??
+                    ((
+                      message.interactive as {
+                        button_reply?: { title?: string };
+                        list_reply?: { title?: string };
+                      }
+                    )?.button_reply?.title ||
+                      (
+                        message.interactive as {
+                          list_reply?: { title?: string };
+                        }
+                      )?.list_reply?.title) ??
                       "",
                   )
                 : `[O cliente enviou ${type === "audio" ? "um áudio" : type === "image" ? "uma imagem" : "uma mensagem que não é texto"}.]`;
         if (!from || !message.id || !text.trim()) continue;
         const audioId =
-          type === "audio" ? String((message.audio as { id?: string })?.id || "") : "";
+          type === "audio"
+            ? String((message.audio as { id?: string })?.id || "")
+            : "";
         found.push({
           phoneNumberId,
           from,
-          name: contacts.find((contact) => contact.wa_id === from)?.profile?.name || "",
+          name:
+            contacts.find((contact) => contact.wa_id === from)?.profile?.name ||
+            "",
           id: String(message.id),
           text: text.slice(0, 2000),
           ...(audioId ? { audioId } : {}),
@@ -126,6 +147,10 @@ export async function sendWhatsApp(input: {
       response.status === 401 ? 400 : 502,
     );
   }
+  const sent = (await response.json().catch(() => null)) as {
+    messages?: { id?: string }[];
+  } | null;
+  return sent?.messages?.[0]?.id;
 }
 
 /** Confirms the phone number id and token before saving them. */
@@ -137,7 +162,8 @@ export async function checkWhatsApp(phoneNumberId: string, token: string) {
       signal: AbortSignal.timeout(15_000),
     },
   ).catch(() => null);
-  if (!response) throw new DomainError("A Meta não respondeu. Tente de novo.", 502);
+  if (!response)
+    throw new DomainError("A Meta não respondeu. Tente de novo.", 502);
   const data = (await response.json().catch(() => ({}))) as {
     display_phone_number?: string;
     error?: { message?: string };

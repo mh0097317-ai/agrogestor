@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { requestOrigin } from "@/services/server-http";
+import { inviteRedirect } from "@/lib/invite-redirect";
 export async function GET(request: Request) {
   const url = new URL(request.url),
     code = url.searchParams.get("code"),
@@ -19,7 +20,11 @@ export async function GET(request: Request) {
         .eq("active", true)
         .limit(1);
       return NextResponse.redirect(
-        new URL(data?.length ? "/dashboard" : "/onboarding", origin),
+        new URL(
+          inviteRedirect(url.searchParams.get("next")) ||
+            (data?.length ? "/dashboard" : "/onboarding"),
+          origin,
+        ),
       );
     }
   }

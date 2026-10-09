@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowClockwise,
@@ -14,6 +15,7 @@ import { useToast } from "@/components/toast";
 import { formatPhone } from "@/lib/utils";
 import type { Store } from "@/types";
 import { FormError } from "./shared";
+import { ProfessionalWhatsApp } from "./professional-whatsapp";
 import "./whatsapp-settings.css";
 
 interface LinkView {
@@ -38,13 +40,15 @@ async function send<T>(method: string, body?: unknown): Promise<T> {
 
 /** WhatsApp's *bold* as it shows on the phone. */
 const waText = (text: string) =>
-  text.split(/(\*[^*\n]+\*)/g).map((part, index) =>
-    part.startsWith("*") && part.endsWith("*") && part.length > 2 ? (
-      <b key={index}>{part.slice(1, -1)}</b>
-    ) : (
-      part
-    ),
-  );
+  text
+    .split(/(\*[^*\n]+\*)/g)
+    .map((part, index) =>
+      part.startsWith("*") && part.endsWith("*") && part.length > 2 ? (
+        <b key={index}>{part.slice(1, -1)}</b>
+      ) : (
+        part
+      ),
+    );
 
 const shownPhone = (phone: string) => {
   const local = phone.startsWith("55") ? phone.slice(2) : phone;
@@ -64,6 +68,39 @@ export function WhatsAppSettings({
   canManage: boolean;
   onSaved: () => Promise<void>;
 }) {
+  if (store.viewer?.role === "professional")
+    return (
+      <ProfessionalWhatsApp store={store} canManage={false} onSaved={onSaved} />
+    );
+  return (
+    <>
+      <ShopWhatsAppSettings
+        store={store}
+        canManage={canManage}
+        onSaved={onSaved}
+      />
+      <div className="wa-team-shortcut">
+        <span>
+          <strong>WhatsApp de cada profissional</strong>
+          <small>
+            Conexão, horários e serviços ficam juntos no perfil da equipe.
+          </small>
+        </span>
+        <Link href="/dashboard/equipe">Gerenciar na Equipe →</Link>
+      </div>
+    </>
+  );
+}
+
+function ShopWhatsAppSettings({
+  store,
+  canManage,
+  onSaved,
+}: {
+  store: Store;
+  canManage: boolean;
+  onSaved: () => Promise<void>;
+}) {
   const { toast } = useToast();
   const [view, setView] = useState<LinkView | null>(
     store.whatsappLink
@@ -72,7 +109,11 @@ export function WhatsAppSettings({
   );
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [notify, setNotify] = useState(store.settings.notifyProfessionals !== false);
+  const [notify, setNotify] = useState(
+    store.settings.notifyProfessionals !== false,
+  );
+  const [reminders, setReminders] = useState(store.settings.notifications);
+  const [savingNotice, setSavingNotice] = useState(false);
   const qrAt = useRef(0);
   const connected = view?.status === "open";
   const waiting = view?.status === "connecting" && !!view.qr;
@@ -85,9 +126,15 @@ export function WhatsAppSettings({
       qrAt.current = Date.now();
       setView(next);
       if (!next.ready)
-        setError("O WhatsApp por QR Code ainda está sendo ligado pela equipe StudioFlow. Tente mais tarde.");
+        setError(
+          "O WhatsApp por QR Code ainda está sendo ligado pela equipe StudioFlow. Tente mais tarde.",
+        );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível gerar o QR Code.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível gerar o QR Code.",
+      );
     } finally {
       setBusy("");
     }
@@ -123,7 +170,11 @@ export function WhatsAppSettings({
       toast("WhatsApp desconectado.");
       await onSaved();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível desconectar.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível desconectar.",
+      );
     } finally {
       setBusy("");
     }
@@ -131,7 +182,9 @@ export function WhatsAppSettings({
   async function simulate() {
     setBusy("sim");
     try {
-      const next = await send<Omit<LinkView, "ready">>("POST", { simulate: true });
+      const next = await send<Omit<LinkView, "ready">>("POST", {
+        simulate: true,
+      });
       setView({ ...next, ready: true });
       toast("WhatsApp da loja conectado (demonstração).");
       await onSaved();
@@ -141,20 +194,52 @@ export function WhatsAppSettings({
   }
   async function toggleNotify(value: boolean) {
     setNotify(value);
+    setSavingNotice(true);
     try {
       await send("PATCH", { notifyProfessionals: value });
-      toast(value ? "Os profissionais vão receber os avisos." : "Avisos aos profissionais desligados.");
+      await onSaved();
+      toast(
+        value
+          ? "Os profissionais vão receber os avisos."
+          : "Avisos aos profissionais desligados.",
+      );
     } catch (cause) {
       setNotify(!value);
-      setError(cause instanceof Error ? cause.message : "Não foi possível salvar.");
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível salvar.",
+      );
+    } finally {
+      setSavingNotice(false);
+    }
+  }
+
+  async function toggleReminders(value: boolean) {
+    setReminders(value);
+    setSavingNotice(true);
+    setError("");
+    try {
+      await send("PATCH", { notifications: value });
+      await onSaved();
+      toast(
+        value
+          ? "Lembretes aos clientes ativados."
+          : "Lembretes aos clientes pausados.",
+      );
+    } catch (cause) {
+      setReminders(!value);
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível salvar.",
+      );
+    } finally {
+      setSavingNotice(false);
     }
   }
 
   return (
     <>
       <FormSection
-        title="Conexão"
-        description="Conecte o WhatsApp da barbearia lendo um QR Code, como no WhatsApp Web. Por ele a recepcionista responde os clientes e saem os avisos automáticos."
+        title="Número do estabelecimento"
+        description="Conecte o WhatsApp da loja por QR Code. O atendimento automático e os avisos usam este número; os números dos profissionais ficam separados abaixo."
       >
         {connected ? (
           <div className="wa-linked">
@@ -164,10 +249,17 @@ export function WhatsAppSettings({
             </span>
             <div>
               <strong>{view.profileName || "WhatsApp conectado"}</strong>
-              <span>{view.phone ? shownPhone(view.phone) : "Número da loja"}</span>
+              <span>
+                {view.phone ? shownPhone(view.phone) : "Número da loja"}
+              </span>
             </div>
             {canManage && (
-              <Button type="button" variant="secondary" disabled={!!busy} onClick={unlink}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!!busy}
+                onClick={unlink}
+              >
                 <LinkBreak size={16} />
                 {busy === "off" ? "Desconectando…" : "Desconectar"}
               </Button>
@@ -176,30 +268,40 @@ export function WhatsAppSettings({
         ) : waiting ? (
           <div className="wa-qr">
             <figure>
-              <img src={view.qr} alt="QR Code para conectar o WhatsApp da loja" />
+              <img
+                src={view.qr}
+                alt="QR Code para conectar o WhatsApp da loja"
+              />
               <span className="wa-qr-scan" aria-hidden="true" />
             </figure>
             <div>
               <ol className="payment-steps">
                 <li>Abra o WhatsApp no celular da loja.</li>
                 <li>
-                  Toque em <b>Mais opções</b> (ou <b>Configurações</b> no iPhone) e em{" "}
-                  <b>Aparelhos conectados</b>.
+                  Toque em <b>Mais opções</b> (ou <b>Configurações</b> no
+                  iPhone) e em <b>Aparelhos conectados</b>.
                 </li>
                 <li>
-                  Toque em <b>Conectar um aparelho</b> e aponte a câmera para este código.
+                  Toque em <b>Conectar um aparelho</b> e aponte a câmera para
+                  este código.
                 </li>
               </ol>
               {view.pairingCode && (
                 <p className="wa-pair">
-                  Ou use o código <b>{view.pairingCode}</b> em “Conectar com número de telefone”.
+                  Ou use o código <b>{view.pairingCode}</b> em “Conectar com
+                  número de telefone”.
                 </p>
               )}
               <p className="wa-wait" role="status">
                 <i /> Esperando a leitura do código…
               </p>
               <div className="wa-actions">
-                <Button type="button" variant="secondary" disabled={!!busy} onClick={start}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!!busy}
+                  onClick={start}
+                >
                   <ArrowClockwise size={16} /> Gerar outro código
                 </Button>
                 {store.mode === "demo" && (
@@ -216,19 +318,26 @@ export function WhatsAppSettings({
               <WhatsAppIcon size={34} />
             </span>
             <div>
-              <strong>Sem chave, sem cadastro na Meta.</strong>
+              <strong>Seu WhatsApp conectado ao StudioFlow</strong>
               <p>
-                Use o mesmo número que a barbearia já usa. O WhatsApp continua funcionando
-                normal no celular.
+                Use o número que seus clientes já conhecem. Você continua usando
+                o WhatsApp normalmente no celular.
               </p>
             </div>
-            {canManage ? (
+            {view?.ready === false ? (
+              <p className="payment-warning">
+                A conexão por QR Code aguarda a configuração do servidor
+                WhatsApp pelo StudioFlow.
+              </p>
+            ) : canManage ? (
               <Button type="button" disabled={!!busy} onClick={start}>
                 <QrCode size={17} />
                 {busy === "qr" ? "Gerando código…" : "Conectar com QR Code"}
               </Button>
             ) : (
-              <p className="payment-copy">Peça para o dono conectar o WhatsApp da loja.</p>
+              <p className="payment-copy">
+                Peça para o dono conectar o WhatsApp da loja.
+              </p>
             )}
           </div>
         )}
@@ -236,28 +345,69 @@ export function WhatsAppSettings({
       </FormSection>
       <FormSection
         title="Avisos automáticos"
-        description="Mensagens que saem sozinhas pelo WhatsApp da loja."
+        description="Avisos de agendamento, sem consumo de IA. Podem sair pelo número da loja ou pelo número conectado do profissional."
       >
         <label className="wa-toggle">
           <input
             type="checkbox"
             checked={notify}
-            disabled={!canManage}
+            disabled={!canManage || savingNotice}
             onChange={(event) => void toggleNotify(event.target.checked)}
           />
           <span>
             <strong>Avisar o profissional a cada agendamento</strong>
             <small>
-              Quem vai atender recebe no WhatsApp dele o cliente, o serviço, o dia e o horário.
-              Cadastre o WhatsApp de cada um em Equipe.
+              Quem vai atender recebe no WhatsApp dele o cliente, o serviço, o
+              dia e o horário. Cadastre o WhatsApp de cada um em Equipe.
             </small>
           </span>
         </label>
-        {!connected && (
-          <p className="payment-warning">
-            Os avisos começam a sair assim que o WhatsApp da loja estiver conectado.
-          </p>
-        )}
+        <label className="wa-toggle">
+          <input
+            type="checkbox"
+            checked={reminders}
+            disabled={!canManage || savingNotice}
+            onChange={(event) => void toggleReminders(event.target.checked)}
+          />
+          <span>
+            <strong>Lembrar o cliente 2 horas antes</strong>
+            <small>
+              Uma mensagem com serviço, profissional e horário. Apenas
+              agendamentos confirmados com autorização do cliente recebem o
+              lembrete.
+            </small>
+          </span>
+        </label>
+        <div className="wa-notice-flow">
+          <div>
+            <span className="sheet-eyebrow">Ao marcar</span>
+            <strong>O barbeiro fica sabendo</strong>
+            <p>
+              Recebe cliente, serviço, data e horário no WhatsApp cadastrado. Se
+              não havia conexão, o sistema procura avisos pendentes a cada 5
+              minutos.
+            </p>
+          </div>
+          <div>
+            <span className="sheet-eyebrow">Antes do atendimento</span>
+            <strong>O cliente recebe um lembrete</strong>
+            <p>
+              Cerca de 2 horas antes, pelo número do profissional ou da loja.
+              Cancelados não recebem aviso; um envio já registrado não é
+              repetido.
+            </p>
+          </div>
+        </div>
+        <FormError error={error} />
+        {!connected &&
+          !store.professionalWhatsAppLinks?.some(
+            (link) => link.status === "open",
+          ) && (
+            <p className="payment-warning">
+              Os avisos começam a sair assim que o WhatsApp da loja estiver
+              conectado.
+            </p>
+          )}
         {store.mode === "demo" && !!store.outbox?.length && (
           <div className="wa-outbox">
             <span className="sheet-eyebrow">Últimos avisos (demonstração)</span>

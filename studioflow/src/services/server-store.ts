@@ -20,17 +20,22 @@ import {
   servicesFor,
 } from "@/lib/availability";
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
+import { professionalWorkspace } from "@/lib/professional-scope";
 import { transcriptionReady } from "./assistant/transcribe";
 import { readInstagramFeedStatus } from "./instagram-feed";
-import { readWhatsAppLink } from "./whatsapp/link";
+import { readWhatsAppLink, readProfessionalLinks } from "./whatsapp/link";
 import { evolutionReady } from "./whatsapp/evolution";
 import {
   createSupabaseAdmin,
-  isPlatformAdmin,
   readBusinessAccess,
   requireMembership,
 } from "@/lib/supabase/server";
-import { accessState, assertPublicOpen, assertWorkspaceOpen } from "@/lib/access";
+import {
+  accessState,
+  assertPublicOpen,
+  assertWorkspaceOpen,
+} from "@/lib/access";
+import { aiConfigured } from "./admin-vault";
 import { applyModules } from "@/lib/modules";
 import {
   appointmentSchema,
@@ -81,6 +86,7 @@ export function normalizeStoreTimes(store: Store): Store {
     professional.breakEnd = professional.breakEnd?.slice(0, 5) || "";
   }
   // Older stores (and projects before the loyalty columns) lack these.
+  store.settings.onlineBookingEnabled ??= true;
   store.settings.loyaltyEnabled ??= false;
   store.settings.loyaltyGoal ??= 10;
   store.settings.loyaltyReward ??= "";
@@ -292,10 +298,16 @@ async function loadProducts(client: SupabaseClient, businessId: string) {
       .gte("created_at", since)
       .order("created_at", { ascending: false }),
   ]);
-  const toNumber = <T extends { price?: unknown; cost?: unknown; total?: unknown }>(row: T) => ({
+  const toNumber = <
+    T extends { price?: unknown; cost?: unknown; total?: unknown },
+  >(
+    row: T,
+  ) => ({
     ...row,
     ...(row.price !== undefined ? { price: Number(row.price) } : {}),
-    ...(row.cost !== undefined && row.cost !== null ? { cost: Number(row.cost) } : {}),
+    ...(row.cost !== undefined && row.cost !== null
+      ? { cost: Number(row.cost) }
+      : {}),
     ...(row.total !== undefined ? { total: Number(row.total) } : {}),
   });
   return {
@@ -383,28 +395,40 @@ export async function getWorkspace() {
     return {
       ...withoutSecrets(withCustomerMetrics(store)),
       access: demoWorkspaceAccess(store),
-      viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
+      viewer: { name: "João Pedro", role: "owner" },
       aiReady: aiReady(),
       transcriptionReady: transcriptionReady(),
       evolutionReady: true,
       mode: "demo",
     } as Store;
   }
-  const { client, businessId, role, user, access } = await requireMembership();
-  return {
+  const { client, businessId, role, user, access, professionalId } =
+    await requireMembership();
+  const workspace = {
     ...(await loadSupabaseStore(client, businessId)),
-    paymentAccount: await readPaymentAccount(businessId),
-    whatsapp: await readWhatsAppAccount(businessId),
-    instagram: await readInstagramAccount(businessId),
-    instagramFeed: await readInstagramFeedStatus(businessId),
-    whatsappLink: await readWhatsAppLink(businessId),
-    evolutionReady: evolutionReady(),
+    paymentAccount: professionalId
+      ? null
+      : await readPaymentAccount(businessId),
+    whatsapp: professionalId ? null : await readWhatsAppAccount(businessId),
+    instagram: professionalId ? null : await readInstagramAccount(businessId),
+    instagramFeed: professionalId
+      ? null
+      : await readInstagramFeedStatus(businessId),
+    whatsappLink: professionalId ? null : await readWhatsAppLink(businessId),
+    professionalWhatsAppLinks: await readProfessionalLinks(
+      businessId,
+      professionalId,
+    ),
+    evolutionReady: await evolutionReady(),
     transcriptionReady: transcriptionReady(),
-    aiReady: aiReady(),
+    aiReady: await aiConfigured(businessId),
     access,
-    viewer: await viewerOf(client, user, role),
+    viewer: { ...(await viewerOf(client, user, role)), professionalId },
     mode: "live",
   } as Store;
+  return professionalId
+    ? professionalWorkspace(workspace, professionalId)
+    : workspace;
 }
 /** Fields the workspace RPC predates: extra service photos and the Maps link. */
 async function saveExtraFields(
@@ -429,21 +453,24 @@ async function saveExtraFields(
       .update({ maps_url: store.business.mapsUrl || "" })
       .eq("id", businessId);
   if (result?.error)
-    throw new DomainError("Salvo em parte: tente salvar as fotos de novo.", 503);
+    throw new DomainError(
+      "Salvo em parte: tente salvar as fotos de novo.",
+      503,
+    );
 }
 async function viewerOf(
   client: SupabaseClient,
   user: { id: string; user_metadata?: { name?: string } },
   role: string,
 ) {
-  const [{ data: profile }, platformAdmin] = await Promise.all([
-    client.from("profiles").select("name").eq("id", user.id).maybeSingle(),
-    isPlatformAdmin(user.id),
-  ]);
+  const { data: profile } = await client
+    .from("profiles")
+    .select("name")
+    .eq("id", user.id)
+    .maybeSingle();
   return {
     name: profile?.name || user.user_metadata?.name || "Você",
     role,
-    platformAdmin,
   };
 }
 const aiReady = () =>
@@ -525,6 +552,7 @@ export function createBooking(
     store.customers.push(customer);
   }
   const appointment: Appointment = {
+    bookingChannel: "manual",
     id: randomUUID(),
     businessId: store.business.id,
     customerId: customer.id,
@@ -611,7 +639,9 @@ export function mutateStore(
     // Main photo first; without it, the next one takes its place.
     const photos = [
       ...new Set(
-        [validated.image as string, ...(validated.photos as string[])].filter(Boolean),
+        [validated.image as string, ...(validated.photos as string[])].filter(
+          Boolean,
+        ),
       ),
     ].slice(0, 3);
     validated.image = photos[0] || "";
@@ -817,7 +847,7 @@ export async function mutateWorkspace(
     return {
       ...withoutSecrets(store),
       access,
-      viewer: { name: "João Pedro", role: "owner", platformAdmin: true },
+      viewer: { name: "João Pedro", role: "owner" },
       mode: "demo",
     } as Store;
   }
@@ -883,9 +913,10 @@ export async function mutateWorkspace(
     instagram: await readInstagramAccount(businessId),
     instagramFeed: await readInstagramFeedStatus(businessId),
     whatsappLink: await readWhatsAppLink(businessId),
-    evolutionReady: evolutionReady(),
+    professionalWhatsAppLinks: await readProfessionalLinks(businessId),
+    evolutionReady: await evolutionReady(),
     transcriptionReady: transcriptionReady(),
-    aiReady: aiReady(),
+    aiReady: await aiConfigured(businessId),
     access,
     viewer: await viewerOf(client, user, role),
     mode: "live",

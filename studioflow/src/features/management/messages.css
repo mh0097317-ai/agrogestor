@@ -1,0 +1,400 @@
+/* Correspondence: quieter tools, generous reading space, clear authorship. */
+.app-shell .chat-page {
+  gap: 22px;
+}
+.app-shell .chat-page .sf-module-header {
+  min-height: 130px;
+  padding-block: 10px 23px;
+}
+.app-shell .chat-page .sf-module-header h1 {
+  font-size: clamp(40px, 3.7vw, 52px);
+}
+.app-shell .chat-page .chat-layout {
+  grid-template-columns: minmax(285px, 330px) minmax(0, 1fr);
+  height: max(540px, calc(100dvh - 290px));
+  min-height: 540px;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px #30281708;
+}
+.app-shell .chat-page .chat-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #fffdf8;
+}
+.app-shell .chat-page .chat-inbox-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c7bdab transparent;
+}
+.app-shell .chat-page .chat-list-tools {
+  position: static;
+  flex: none;
+  padding: 22px 18px 18px;
+  gap: 12px;
+  border-bottom: 1px solid #ded6c9;
+}
+.app-shell .chat-page .chat-list-title strong {
+  font-size: 23px;
+  color: #243d34;
+}
+.app-shell .chat-page .chat-search {
+  background: #f7f3eb;
+  border-color: #e3dccf;
+  border-radius: 8px;
+  min-height: 44px;
+}
+.app-shell .chat-page .chat-search input {
+  background: transparent;
+}
+.app-shell .chat-page .chat-list-tools select {
+  border-radius: 7px;
+  background: #fffdf8;
+  border-color: #e3dccf;
+}
+.app-shell .chat-page .chat-inbox-tabs {
+  padding: 4px;
+  border-radius: 8px;
+  background: #eee9df;
+}
+.app-shell .chat-page .chat-inbox-tabs button {
+  border-radius: 5px;
+}
+.app-shell .chat-page .chat-inbox-tabs button[aria-pressed="true"] {
+  color: #243d34;
+  box-shadow: 0 2px 6px #30281709;
+}
+.app-shell .chat-page .chat-item {
+  padding: 18px;
+  align-items: flex-start;
+  gap: 11px;
+  border-bottom-color: #eee8dd;
+}
+.app-shell .chat-page .chat-item:hover {
+  background: #f3f3eb;
+}
+.app-shell .chat-page .chat-item.is-active {
+  background: #e9eee8;
+  box-shadow: inset 3px 0 #9b7743;
+}
+.app-shell .chat-page .chat-item-main {
+  gap: 5px;
+}
+.app-shell .chat-page .chat-item-main strong {
+  color: #243d34;
+  font-size: 15px;
+}
+.app-shell .chat-page .chat-item-main > span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.app-shell .chat-page .chat-item-status {
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.app-shell .chat-page .chat-item-side {
+  gap: 10px;
+  padding-top: 3px;
+}
+.app-shell .chat-page .chat-item-side b {
+  background: #243d34;
+}
+.app-shell .chat-page .chat-thread-head {
+  padding: 18px 22px;
+  gap: 12px;
+  background: #fffdf8;
+}
+.app-shell .chat-page .chat-thread-head strong {
+  font-size: 24px;
+  color: #243d34;
+  line-height: 1.2;
+}
+.app-shell .chat-page .chat-thread-head small {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.app-shell .chat-page .chat-status {
+  border-radius: 5px;
+  background: #f3efe6;
+  font-size: 10px;
+  padding: 5px 8px;
+}
+.app-shell .chat-page .chat-status.is-ai {
+  background: #f3ebdc;
+}
+.app-shell .chat-page .chat-status.is-human {
+  background: #e9eee8;
+}
+.app-shell .chat-page .chat-controls-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: none;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid #ded6c9;
+  border-radius: 7px;
+  background: #fffdf8;
+  color: #243d34;
+  cursor: pointer;
+  font-size: 11px;
+}
+.app-shell .chat-page .chat-controls-toggle[aria-expanded="true"],
+.app-shell .chat-page .chat-context-toggle[aria-expanded="true"] {
+  background: #e9eee8;
+  border-color: #b8c9b8;
+}
+.app-shell .chat-page .chat-thread-controls {
+  display: none;
+}
+.app-shell .chat-page .chat-thread-controls.is-open {
+  display: block;
+  max-height: 45%;
+  overflow-y: auto;
+  background: #fcf9f2;
+  border-bottom: 1px solid #ded6c9;
+}
+.app-shell .chat-page .chat-actions {
+  padding: 14px 20px;
+  gap: 8px;
+}
+.app-shell .chat-page .chat-thread-mode {
+  line-height: 1.6;
+}
+.app-shell .chat-page .chat-messages {
+  padding: 24px 28px;
+  gap: 18px;
+  background-color: #efeae2;
+  background-image: radial-gradient(#243d3409 1px, transparent 1px);
+  background-size: 22px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: #c7bdab transparent;
+}
+.app-shell .chat-page .chat-day {
+  margin: 6px 0 12px;
+  padding: 6px 14px;
+  border: 1px solid #ded6c9;
+  border-radius: 20px;
+  background: #fcf9f2;
+  color: #74644d;
+  font-size: 10px;
+  font-weight: 600;
+}
+.app-shell .chat-page .chat-bubble {
+  max-width: min(84%, 520px);
+}
+.app-shell .chat-page .chat-bubble.is-customer {
+  align-self: flex-start;
+}
+.app-shell .chat-page .chat-bubble.is-grouped {
+  margin-top: -12px;
+}
+.app-shell .chat-page .chat-message-author {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.035em;
+  margin: 0 4px 6px;
+  color: #70634f;
+}
+.app-shell .chat-page .chat-bubble p {
+  padding: 9px 12px;
+  border-color: transparent;
+  border-radius: 0 9px 9px;
+  background: #fff;
+  box-shadow: 0 1px 2px #30281718;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.app-shell .chat-page .chat-bubble.is-staff p {
+  background: #d9f4cf;
+  color: #192d24;
+  border-color: transparent;
+  border-radius: 9px 0 9px 9px;
+}
+.app-shell .chat-page .chat-bubble.is-assistant p {
+  background: #d9f4cf;
+  color: #192d24;
+  border-color: transparent;
+  border-radius: 9px 0 9px 9px;
+}
+.app-shell .chat-page .chat-message-time {
+  display: inline-block;
+  float: right;
+  margin: 9px 0 -2px 14px;
+  color: #6b796e;
+  font-size: 10px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .chat-page .chat-bubble.is-assistant .chat-message-time,
+.app-shell .chat-page .chat-bubble.is-staff .chat-message-time {
+  text-align: right;
+}
+.app-shell .chat-page .chat-reply {
+  padding: 17px 20px 10px;
+  gap: 12px;
+  background: #fffdf8;
+  border-top-color: #ded6c9;
+}
+.app-shell .chat-page .chat-reply textarea {
+  min-height: 48px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: #f7f3eb;
+  border-color: #e0d7c8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.app-shell .chat-page .chat-reply textarea:focus {
+  outline: 2px solid #9b7743;
+  outline-offset: 2px;
+}
+.app-shell .chat-page .chat-reply button {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #243d34;
+  transition: background 160ms;
+}
+.app-shell .chat-page .chat-reply button:not(:disabled):hover {
+  background: #345346;
+}
+.app-shell .chat-page .chat-composer-note {
+  display: grid;
+  gap: 4px;
+  padding: 0 20px 14px;
+  background: #fffdf8;
+  font-size: 10px;
+}
+.app-shell .chat-page .chat-keyboard-hint {
+  color: #70634f;
+}
+.app-shell .chat-page .chat-empty {
+  background: #f2eee5;
+  gap: 16px;
+}
+.app-shell .chat-page .chat-empty > svg {
+  width: 70px;
+  height: 70px;
+  padding: 16px;
+  border: 1px solid #dcd2c1;
+  border-radius: 20px;
+  background: #fcf9f2;
+}
+.app-shell .chat-page .chat-empty strong {
+  font-size: 34px;
+  color: #243d34;
+  max-width: 370px;
+  line-height: 1.15;
+}
+.app-shell .chat-page .chat-empty-note {
+  padding-top: 17px;
+  margin-top: 2px;
+  border-top: 1px solid #ded6c9;
+}
+.app-shell .chat-page .chat-controls-toggle:focus-visible {
+  outline: 2px solid #9b7743;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) and (min-width: 861px) {
+  .app-shell .chat-page .chat-layout {
+    grid-template-columns: 285px minmax(0, 1fr);
+  }
+  .app-shell .chat-page .chat-controls-toggle span {
+    display: none;
+  }
+  .app-shell .chat-page .chat-thread-head {
+    padding: 15px;
+    gap: 9px;
+  }
+  .app-shell .chat-page .chat-status {
+    display: none;
+  }
+  .app-shell .chat-page .chat-messages {
+    padding: 22px;
+  }
+}
+@media (max-width: 860px) {
+  .app-shell .chat-page .chat-layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: 320px;
+  }
+  .app-shell .chat-page.has-thread .chat-layout {
+    height: var(--chat-viewport-height, 100dvh);
+    min-height: 0;
+    border-radius: 0;
+  }
+  .app-shell .chat-page.has-thread .chat-list {
+    display: none;
+  }
+  .app-shell .chat-page .chat-list-tools {
+    padding: 18px 16px;
+  }
+  .app-shell .chat-page .chat-thread-head {
+    padding: max(8px, env(safe-area-inset-top)) 8px 10px;
+    gap: 7px;
+  }
+  .app-shell .chat-page .chat-thread-head strong {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 650;
+  }
+  .app-shell .chat-page .chat-thread-head small {
+    font-size: 10px;
+  }
+  .app-shell .chat-page .chat-controls-toggle {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .app-shell .chat-page .chat-controls-toggle span {
+    display: none;
+  }
+  .app-shell .chat-page .chat-messages {
+    padding: 18px 14px;
+  }
+  .app-shell .chat-page .chat-bubble {
+    max-width: 90%;
+  }
+  .app-shell .chat-page .chat-bubble p {
+    font-size: 15px;
+    padding: 11px 14px;
+    line-height: 1.6;
+  }
+  .app-shell .chat-page .chat-reply {
+    padding: 12px 12px 9px;
+    gap: 9px;
+  }
+  .app-shell .chat-page .chat-reply textarea {
+    min-height: 52px;
+    font-size: 16px;
+  }
+  .app-shell .chat-page .chat-composer-note {
+    padding: 0 14px max(10px, env(safe-area-inset-bottom));
+  }
+  .app-shell .chat-page .chat-keyboard-hint {
+    display: none;
+  }
+  .app-shell .chat-page .chat-empty strong {
+    font-size: 29px;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .app-shell .chat-page .chat-keyboard-hint {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .chat-page .chat-reply button {
+    transition: none;
+  }
+}

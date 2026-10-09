@@ -1,4 +1,5 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -295,7 +296,7 @@ export function AttentionCard({
   const items = attention(data, now);
   if (!items.pendingTotal && !items.lapsedTotal) return null;
   const pageUrl =
-    typeof window === "undefined"
+    typeof window === "undefined" || !onlineBookingEnabled(data.settings)
       ? ""
       : `${window.location.origin}/${data.business.slug}`;
   return (

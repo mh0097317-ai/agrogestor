@@ -1,0 +1,762 @@
+/* Atelier: the same paper identity, with a more deliberate module composition. */
+.app-shell {
+  --sf-green: #243d34;
+  --sf-green-soft: #e9eee8;
+  --sf-line: #ded6c9;
+  --gradient: var(--sf-green);
+  --radius: 10px;
+  background: #f5f1e9;
+}
+.app-shell .sidebar {
+  background: #1b2d27;
+  color: #c3c9ba;
+  border-right: 1px solid #ffffff0c;
+}
+.app-shell .sidebar-business {
+  background: #ffffff05;
+  border-color: #ffffff1a;
+}
+.app-shell .sidebar-business-name small,
+.app-shell .nav-section-label {
+  color: #a4b3a3;
+}
+.app-shell .nav-link.active {
+  color: #f9f3e8;
+}
+.app-shell .topbar {
+  background: #fcf9f2;
+}
+.app-shell .dashboard-content {
+  padding-top: 30px;
+}
+.app-shell .sf-module-header {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 168px;
+  padding: 22px 0 28px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #cfc4b2;
+}
+.app-shell .sf-module-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 74px;
+  height: 3px;
+  background: #9b7743;
+}
+.app-shell .sf-module-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #75664e;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.app-shell .sf-module-eyebrow > span {
+  color: #9c7a45;
+  padding-right: 12px;
+  border-right: 1px solid #cfc4b2;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell .sf-module-header h1 {
+  font-size: clamp(40px, 4.2vw, 60px);
+  font-weight: 450;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  color: #243d34;
+}
+.app-shell .sf-module-header p {
+  max-width: 520px;
+  margin-top: 13px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.app-shell .sf-module-header .page-actions {
+  padding-bottom: 4px;
+}
+.app-shell .btn-primary {
+  background: #243d34;
+  box-shadow: none;
+}
+.app-shell .btn-primary:hover {
+  background: #345346;
+}
+.app-shell .btn-secondary {
+  background: #fffdf8;
+  border-color: #dcd3c5;
+}
+.app-shell .card,
+.app-shell .crm-directory,
+.app-shell .chat-layout {
+  background: #fffdf8;
+  border-color: #ded6c9;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px #30281704;
+}
+.app-shell .management-page {
+  gap: 28px;
+}
+.app-shell .metric-strip {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 12px;
+}
+.app-shell .management-page .metric-strip {
+  border: 0;
+  background: transparent;
+}
+.app-shell .metric-item {
+  padding: 22px 24px;
+  background: #fffdf8;
+  border: 1px solid #ded6c9;
+  border-radius: 8px;
+  position: relative;
+  min-width: 0;
+}
+.app-shell .metric-item + .metric-item {
+  border-left: 1px solid #ded6c9;
+}
+.app-shell .metric-item:last-child {
+  border-right: 1px solid #ded6c9;
+}
+.app-shell .metric-item:first-child {
+  background: #e9eee8;
+  border-color: #d6dfd3;
+}
+.app-shell .metric-item > span {
+  color: #716a5f;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.app-shell .metric-item strong {
+  font-size: clamp(28px, 2.5vw, 38px);
+  color: #243d34;
+  line-height: 1.2;
+}
+.app-shell .metric-item small {
+  color: #777064;
+  font-size: 11px;
+  margin-top: 8px;
+}
+.app-shell .management-toolbar,
+.app-shell .crm-controls {
+  gap: 16px;
+  padding: 0;
+  margin-bottom: 0;
+}
+.app-shell .management-search {
+  background: #fffdf8;
+  border-color: #d9d0c1;
+  border-radius: 8px;
+  min-height: 48px;
+}
+.app-shell .management-filters,
+.app-shell .crm-filters {
+  padding: 5px;
+  gap: 4px;
+  background: #eae5da;
+  border-radius: 8px;
+}
+.app-shell .management-filters button,
+.app-shell .crm-filters button {
+  background: transparent;
+  border-radius: 5px;
+  min-height: 38px;
+}
+.app-shell .management-filters button.selected,
+.app-shell .crm-filters button.selected {
+  background: #fffdf8;
+  color: #243d34;
+  border-color: transparent;
+  box-shadow: 0 2px 5px #30281709;
+  font-weight: 650;
+}
+.app-shell .management-filters button:not(.selected):hover,
+.app-shell .crm-filters button:not(.selected):hover {
+  background: #f4f0e7;
+}
+.app-shell .management-section-heading h2,
+.app-shell .catalog-group-heading h2 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 450;
+  letter-spacing: -0.035em;
+}
+.app-shell .management-panel {
+  padding: 28px;
+}
+.app-shell .management-table th,
+.app-shell .crm-list-head {
+  background: #f4f0e7;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.app-shell .management-table td {
+  padding-block: 21px;
+}
+.app-shell .management-table tbody tr:hover {
+  background: #f8f5ee;
+}
+.app-shell .management-table td strong {
+  color: #243d34;
+}
+.app-shell .management-period {
+  border-radius: 10px;
+  background: #fffdf8;
+  padding: 14px 18px;
+}
+.app-shell .management-period-dates input {
+  border-radius: 5px;
+  background: #fcf9f3;
+}
+.app-shell .management-period .management-filters button.selected {
+  background: #fffdf8;
+  color: #243d34;
+  box-shadow: 0 2px 5px #30281709;
+}
+.app-shell .management-pill {
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 10px;
+}
+.app-shell .management-pill.success {
+  background: #e9eee8;
+  color: #365642;
+}
+
+/* Services are a portfolio, rather than a narrow administration table. */
+.app-shell .catalog-group-heading {
+  margin-bottom: 18px;
+}
+.app-shell .catalog-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.app-shell .catalog-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px 20px;
+  padding: 24px;
+  border: 1px solid #ded6c9;
+  border-radius: 10px;
+  background: #fffdf8;
+  transition:
+    border-color 180ms,
+    box-shadow 180ms;
+  min-width: 0;
+}
+.app-shell .catalog-row:last-child {
+  border-bottom: 1px solid #ded6c9;
+}
+.app-shell .catalog-row:hover {
+  border-color: #b7a68a;
+  background: #fffdf8;
+  box-shadow: 0 8px 24px #30281708;
+}
+.app-shell .catalog-image {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100px;
+  height: 116px;
+  border-radius: 6px;
+  background: #eee7d9;
+  color: #8a6b3e;
+}
+.app-shell .catalog-image > svg {
+  width: 35px;
+  height: 35px;
+}
+.app-shell .catalog-service {
+  grid-column: 2;
+  grid-row: 1;
+}
+.app-shell .catalog-service > div:first-child {
+  gap: 8px;
+  align-items: baseline;
+}
+.app-shell .catalog-service h3 {
+  font-family: var(--serif);
+  font-size: 27px;
+  line-height: 1.15;
+  font-weight: 450;
+}
+.app-shell .catalog-service p {
+  font-size: 12px;
+  min-height: 35px;
+  margin: 10px 0 12px;
+}
+.app-shell .catalog-duration {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+  padding-top: 12px;
+}
+.app-shell .catalog-price {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 450;
+  color: #243d34;
+  padding-top: 8px;
+}
+.app-shell .catalog-actions {
+  grid-column: 1/-1;
+  grid-row: 3;
+  padding-top: 15px;
+  margin-top: 2px;
+  border-top: 1px solid #e9e1d4;
+  justify-content: flex-end;
+}
+.app-shell .catalog-actions .btn {
+  margin-right: auto;
+  min-height: 40px;
+  font-size: 12px;
+}
+.app-shell .management-icon-button {
+  border-radius: 6px;
+}
+.app-shell .shop-grid {
+  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+}
+.app-shell .shop-photo {
+  aspect-ratio: 5 / 4;
+  background: #eae4d8;
+}
+.app-shell .shop-info {
+  padding: 20px 22px 10px;
+  gap: 8px;
+}
+.app-shell .shop-info h3 {
+  font-size: 24px;
+}
+.app-shell .shop-price {
+  color: #243d34;
+  font-size: 29px;
+}
+
+/* Relationships and team profiles get more space than their secondary data. */
+.app-shell .crm-page {
+  display: grid;
+  gap: 24px;
+}
+.app-shell .crm-context {
+  margin: 0;
+  padding: 17px 20px;
+  border: 1px solid #d6dfd3;
+  border-radius: 8px;
+  background: #e9eee8;
+}
+.app-shell .crm-context > span strong {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 450;
+  margin-right: 8px;
+  color: #243d34;
+}
+.app-shell .crm-person > div > strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.app-shell .crm-row {
+  padding-block: 22px;
+}
+.app-shell .crm-row:hover {
+  background: #f7f3e9;
+}
+.app-shell .crm-spent {
+  color: #243d34;
+}
+.app-shell .avatar {
+  background: #e8eddf;
+  color: #405445;
+}
+.app-shell .team-card {
+  padding: 27px;
+  border-top: 3px solid #9b7743;
+}
+.app-shell .team-identity {
+  align-items: center;
+  padding-bottom: 22px;
+}
+.app-shell .team-identity h3 {
+  font-size: 30px;
+}
+.app-shell .team-today {
+  background: #f1ede3;
+  border-radius: 8px;
+  padding: 22px;
+}
+.app-shell .team-today strong {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 450;
+  color: #243d34;
+}
+.app-shell .team-week span {
+  background: transparent;
+  border: 1px solid #e5ddcf;
+  border-radius: 5px;
+}
+.app-shell .team-week span.working {
+  background: #e9eee8;
+  color: #365642;
+  border-color: #d6dfd3;
+}
+.app-shell .team-connection > summary {
+  min-height: 62px;
+}
+
+/* Cash gets a distinct, calm focal point; charts and tables stay on paper. */
+.app-shell .finance-overview {
+  background: #243d34;
+  border-color: #243d34;
+  color: #f9f3e8;
+  padding: 35px;
+  min-height: 210px;
+}
+.app-shell .finance-overview::before {
+  background: #b69965;
+}
+.app-shell .finance-overview .management-eyebrow {
+  color: #d2dccb;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.app-shell .finance-overview > div:first-child > strong {
+  font-family: var(--serif);
+  font-size: clamp(38px, 4vw, 58px);
+  font-weight: 450;
+  color: #fff8e9;
+}
+.app-shell .finance-overview p,
+.app-shell .finance-overview-balance > span,
+.app-shell .finance-overview-balance small {
+  color: #c1cebc;
+}
+.app-shell .finance-overview-balance {
+  border-left-color: #ffffff22;
+}
+.app-shell .finance-overview-balance > strong {
+  font-family: var(--serif);
+  color: #f3e2b8;
+  font-size: 36px;
+  font-weight: 450;
+}
+.app-shell .management-bar-track > span {
+  background: #6c8270;
+}
+.app-shell .management-rank-number {
+  font-family: var(--serif);
+  font-size: 27px;
+  color: #a08659;
+}
+
+/* An inbox should feel like a focused place to work. */
+.app-shell .chat-page {
+  gap: 22px;
+}
+.app-shell .chat-overview {
+  border-radius: 8px;
+  padding: 21px 24px;
+  background: #e9eee8;
+  border-color: #d6dfd3;
+}
+.app-shell .chat-layout {
+  min-height: 540px;
+}
+.app-shell .chat-list {
+  background: #fcf9f2;
+}
+.app-shell .chat-item {
+  padding: 18px 20px;
+  border-bottom-color: #e7dfd1;
+}
+.app-shell .chat-item.is-active {
+  background: #e9eee8;
+  box-shadow: inset 3px 0 #52735c;
+}
+.app-shell .chat-thread {
+  background: #f5f1e8;
+}
+.app-shell .chat-thread-head {
+  background: #fffdf8;
+}
+.app-shell .chat-reply {
+  background: #fffdf8;
+}
+.app-shell .chat-bubble.is-staff p {
+  background: #243d34;
+}
+.app-shell .chat-bubble.is-assistant p {
+  background: #e9eee8;
+  border-color: #d6dfd3;
+}
+.app-shell .chat-empty {
+  background: #f5f1e8;
+}
+.app-shell .chat-empty strong {
+  color: #243d34;
+  font-size: 32px;
+}
+.app-shell .settings-section-nav .management-tab.selected {
+  background: #e9eee8;
+  color: #243d34;
+}
+.app-shell .management-settings-card {
+  padding: 30px;
+}
+.app-shell .settings-section-heading h2 {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 450;
+}
+.app-shell .calendar-main-card {
+  overflow: hidden;
+}
+.app-shell .calendar-toolbar {
+  padding: 15px 18px;
+  background: #fffdf8;
+  border: 1px solid #ded6c9;
+  border-radius: 10px;
+}
+.app-shell .segmented .selected {
+  background: #243d34;
+  color: #fffdf8;
+}
+.app-shell .calendar-card-heading {
+  background: #faf7ef;
+}
+.app-shell .empty-state {
+  padding: 55px 24px;
+}
+.app-shell .empty-state h3 {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 450;
+  color: #243d34;
+}
+body:has(.app-shell) .detail-panel {
+  background: #fffdf8;
+}
+body:has(.app-shell) .modal > header {
+  padding: 26px 28px;
+  background: #f3eee4;
+}
+body:has(.app-shell) .modal > header h2 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 450;
+}
+body:has(.app-shell) .modal .btn-primary {
+  background: #243d34;
+}
+.app-shell .club-plans {
+  gap: 22px;
+}
+.app-shell .club-plan {
+  padding: 30px 28px 24px;
+  gap: 13px;
+}
+.app-shell .club-plan::after {
+  inset: 7px;
+  border-radius: 5px;
+}
+.app-shell .club-plan h3 {
+  font-size: 28px;
+}
+.app-shell .club-plan-price {
+  font-size: 38px;
+  color: #243d34;
+}
+.app-shell .share-card {
+  padding: 28px;
+  gap: 18px;
+}
+.app-shell .share-card h2 {
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 450;
+}
+.app-shell .share-url {
+  border-style: solid;
+  border-radius: 7px;
+  background: #e9eee8;
+  border-color: #d6dfd3;
+  color: #243d34;
+}
+body:has(.app-shell) .modal input,
+body:has(.app-shell) .modal select,
+body:has(.app-shell) .modal textarea {
+  border-radius: 6px;
+  background: #fcf9f3;
+}
+
+@media (max-width: 1100px) {
+  .app-shell .catalog-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell .catalog-row {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+  .app-shell .catalog-image {
+    width: 110px;
+    height: 120px;
+  }
+}
+@media (max-width: 767px) {
+  .app-shell .dashboard-content {
+    padding-top: 12px;
+  }
+  .app-shell .sf-module-header {
+    flex-direction: column;
+    min-height: 0;
+    padding: 18px 0 22px;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .app-shell .sf-module-header h1 {
+    font-size: 42px;
+  }
+  .app-shell .sf-module-eyebrow {
+    font-size: 9px;
+    margin-bottom: 12px;
+  }
+  .app-shell .sf-module-header p {
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .app-shell .sf-module-header .page-actions {
+    padding-bottom: 0;
+    width: 100%;
+  }
+  .app-shell .sf-module-header .page-actions .btn {
+    flex: 1;
+  }
+  .app-shell .management-page {
+    gap: 22px;
+  }
+  .app-shell .metric-strip {
+    gap: 8px;
+  }
+  .app-shell .metric-item {
+    padding: 16px 14px;
+    border-bottom: 1px solid #ded6c9;
+  }
+  .app-shell .metric-item strong {
+    font-size: 28px;
+  }
+  .app-shell .metric-item > span {
+    font-size: 9px;
+    letter-spacing: 0.025em;
+  }
+  .app-shell .metric-item:nth-child(even) {
+    border-right: 1px solid #ded6c9;
+  }
+  .app-shell .management-panel {
+    padding: 21px 18px;
+  }
+  .app-shell .management-search {
+    width: 100%;
+  }
+  .app-shell .management-filters,
+  .app-shell .crm-filters {
+    max-width: 100%;
+  }
+  .app-shell .crm-controls {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .app-shell .crm-filters {
+    overflow-x: auto;
+  }
+  .app-shell .crm-context {
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 15px;
+  }
+  .app-shell .crm-row {
+    padding: 18px 16px;
+  }
+  .app-shell .catalog-row {
+    padding: 19px;
+    gap: 16px;
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+  .app-shell .catalog-image {
+    width: 82px;
+    height: 106px;
+  }
+  .app-shell .catalog-service h3 {
+    font-size: 25px;
+  }
+  .app-shell .catalog-service p {
+    font-size: 12px;
+  }
+  .app-shell .catalog-service > div:first-child {
+    gap: 7px;
+  }
+  .app-shell .catalog-price {
+    font-size: 28px;
+  }
+  .app-shell .catalog-assigned {
+    font-size: 11px;
+  }
+  .app-shell .shop-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell .team-card {
+    padding: 22px;
+  }
+  .app-shell .finance-overview {
+    padding: 25px;
+    min-height: 0;
+  }
+  .app-shell .finance-overview-balance {
+    border-left: 0;
+    border-top: 1px solid #ffffff22;
+    padding: 20px 0 0;
+  }
+  .app-shell .chat-overview {
+    padding: 17px;
+  }
+  .app-shell .chat-layout {
+    min-height: 480px;
+  }
+  .app-shell .chat-item {
+    padding: 17px 16px;
+  }
+  .app-shell .management-settings-card {
+    padding: 22px 18px;
+  }
+  .app-shell .calendar-toolbar {
+    padding: 12px;
+  }
+  body:has(.app-shell) .modal > header {
+    padding: 22px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .catalog-row {
+    transition: none;
+  }
+}

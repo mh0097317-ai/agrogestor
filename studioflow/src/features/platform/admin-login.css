@@ -1,0 +1,170 @@
+.admin-access {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #f4f0e8;
+  color: #16130f;
+}
+.admin-access-story {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: clamp(32px, 5vw, 72px);
+  background: #16130f;
+  color: #f4f0e8;
+}
+.admin-access-eyebrow {
+  color: #8a6430;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.admin-access-story .admin-access-eyebrow {
+  color: #d9b77a;
+}
+.admin-access-story h1 {
+  margin: 22px 0;
+  max-width: 600px;
+  font: 500 clamp(36px, 4.7vw, 66px)/1.1 var(--serif);
+  letter-spacing: -0.035em;
+}
+.admin-access-story h1 em {
+  color: #d9b77a;
+  font-weight: 400;
+}
+.admin-access-story p {
+  max-width: 360px;
+  color: #c7bcad;
+  line-height: 1.8;
+}
+.admin-access-security {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b7aa98;
+  font-size: 12px;
+}
+.admin-access-panel {
+  align-self: center;
+  width: min(440px, 100%);
+  justify-self: center;
+  padding: 48px 32px;
+}
+.admin-access-panel h2 {
+  margin: 18px 0 12px;
+  font: 500 34px/1.15 var(--serif);
+  letter-spacing: -0.025em;
+}
+.admin-access-panel > p {
+  margin-bottom: 32px;
+  color: #6e655b;
+  font-size: 14px;
+}
+.admin-access-panel form {
+  display: grid;
+  gap: 20px;
+}
+.admin-access-panel input {
+  margin-top: 3px;
+  min-height: 48px;
+  background: #fffdf9;
+  border-color: #dcd2c2;
+}
+.admin-password {
+  position: relative;
+}
+.admin-password input {
+  padding-right: 48px;
+}
+.admin-password button {
+  position: absolute;
+  right: 0;
+  top: 3px;
+  height: 48px;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: #6e655b;
+  cursor: pointer;
+}
+.admin-access-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 3px;
+  background: #16130f;
+  color: #fffdf9;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-access-submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.admin-access-error {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #e8c1b7;
+  background: #fff0eb;
+  color: #923b26;
+  font-size: 13px;
+}
+.admin-access-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+  font-size: 13px;
+  color: #6e655b;
+}
+.admin-access-demo {
+  padding: 12px;
+  margin-top: 16px;
+  border: 1px solid #dcd2c2;
+}
+.admin-access-demo a {
+  text-decoration: underline;
+}
+.admin-access-submit .is-spinning {
+  animation: admin-spin 1s linear infinite;
+}
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 760px) {
+  .admin-access {
+    grid-template-columns: 1fr;
+  }
+  .admin-access-story {
+    padding: 24px;
+    gap: 32px;
+  }
+  .admin-access-story h1 {
+    font-size: 34px;
+    margin: 12px 0;
+  }
+  .admin-access-story p {
+    margin: 0;
+  }
+  .admin-access-security {
+    display: none;
+  }
+  .admin-access-panel {
+    padding: 32px 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-access-submit .is-spinning {
+    animation: none;
+  }
+}

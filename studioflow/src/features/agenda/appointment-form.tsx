@@ -15,6 +15,7 @@ export function AppointmentForm({
   date,
   time,
   professionalId,
+  initialServiceId,
   appointment,
 }: {
   open: boolean;
@@ -22,6 +23,7 @@ export function AppointmentForm({
   date?: string;
   time?: string;
   professionalId?: string;
+  initialServiceId?: string;
   appointment?: Appointment;
 }) {
   const { data, mutate } = useWorkspace();
@@ -37,11 +39,11 @@ export function AppointmentForm({
       queueMicrotask(() => {
         setKind("appointment");
         setError("");
-        setServiceId(appointment?.serviceIds[0] || "");
+        setServiceId(appointment?.serviceIds[0] || initialServiceId || "");
         setProId(appointment?.professionalId || professionalId || "");
       });
     }
-  }, [open, appointment, professionalId]);
+  }, [open, appointment, professionalId, initialServiceId]);
   if (!data) return null;
   const service = data.services.find((s) => s.id === serviceId);
   const professionals = data.professionals.filter(

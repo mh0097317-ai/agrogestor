@@ -8,46 +8,178 @@ test("painel prioriza atendimento em andamento e ignora horários já encerrados
   const store = createSeed();
   const base = store.appointments[0];
   store.appointments = [
-    {...base, id:"past", start:"2026-10-02T09:00:00-03:00", end:"2026-10-02T09:40:00-03:00", status:"confirmed"},
-    {...base, id:"future", start:"2026-10-02T14:00:00-03:00", end:"2026-10-02T14:40:00-03:00", status:"confirmed"},
-    {...base, id:"active", start:"2026-10-02T10:00:00-03:00", end:"2026-10-02T10:40:00-03:00", status:"in_progress"},
+    {
+      ...base,
+      id: "past",
+      start: "2026-10-02T09:00:00-03:00",
+      end: "2026-10-02T09:40:00-03:00",
+      status: "confirmed",
+    },
+    {
+      ...base,
+      id: "future",
+      start: "2026-10-02T14:00:00-03:00",
+      end: "2026-10-02T14:40:00-03:00",
+      status: "confirmed",
+    },
+    {
+      ...base,
+      id: "active",
+      start: "2026-10-02T10:00:00-03:00",
+      end: "2026-10-02T10:40:00-03:00",
+      status: "in_progress",
+    },
   ];
   const now = Date.parse("2026-10-02T12:00:00-03:00");
-  assert.equal(overviewModel(store,"2026-10-02",now).next?.id,"active");
-  store.appointments = store.appointments.filter(a=>a.id!=="active");
-  assert.equal(overviewModel(store,"2026-10-02",now).next?.id,"future");
-  store.appointments = store.appointments.filter(a=>a.id==="past");
-  assert.equal(overviewModel(store,"2026-10-02",now).next,undefined);
+  assert.equal(overviewModel(store, "2026-10-02", now).next?.id, "active");
+  store.appointments = store.appointments.filter((a) => a.id !== "active");
+  assert.equal(overviewModel(store, "2026-10-02", now).next?.id, "future");
+  store.appointments = store.appointments.filter((a) => a.id === "past");
+  assert.equal(overviewModel(store, "2026-10-02", now).next, undefined);
 });
 test("painel separa receita prevista de recebimentos e exclui faltas do ticket", () => {
   const store = createSeed();
   const base = store.appointments[0];
-  store.appointments = [{...base,id:"done",price:65,start:"2026-10-02T09:00:00-03:00",end:"2026-10-02T10:00:00-03:00",status:"completed"},{...base,id:"missed",price:45,start:"2026-10-02T10:00:00-03:00",end:"2026-10-02T10:40:00-03:00",status:"no_show"}];
-  store.payments = [{id:"partial",businessId:store.business.id,appointmentId:"done",amount:25,method:"pix",createdAt:"2026-10-02T02:30:00Z"}];
-  const model = overviewModel(store,"2026-10-02",Date.parse("2026-10-02T12:00:00-03:00"));
-  assert.equal(model.revenue,65);
-  assert.equal(model.ticket,65);
-  assert.equal(model.collected,0);
+  store.appointments = [
+    {
+      ...base,
+      id: "done",
+      price: 65,
+      start: "2026-10-02T09:00:00-03:00",
+      end: "2026-10-02T10:00:00-03:00",
+      status: "completed",
+    },
+    {
+      ...base,
+      id: "missed",
+      price: 45,
+      start: "2026-10-02T10:00:00-03:00",
+      end: "2026-10-02T10:40:00-03:00",
+      status: "no_show",
+    },
+  ];
+  store.payments = [
+    {
+      id: "partial",
+      businessId: store.business.id,
+      appointmentId: "done",
+      amount: 25,
+      method: "pix",
+      createdAt: "2026-10-02T02:30:00Z",
+    },
+  ];
+  const model = overviewModel(
+    store,
+    "2026-10-02",
+    Date.parse("2026-10-02T12:00:00-03:00"),
+  );
+  assert.equal(model.revenue, 65);
+  assert.equal(model.ticket, 65);
+  assert.equal(model.collected, 0);
 });
 test("controles de gestão seguem os papéis autorizados pelo servidor", () => {
-  for(const role of ["owner","admin","manager"]) assert.equal(canMutateEntity(role,"payments"),true);
-  for(const entity of ["services","professionals","business","settings","payments"]) assert.equal(canMutateEntity("staff",entity),false);
-  assert.equal(canMutateEntity("staff","appointments"),true);
-  assert.equal(canMutateEntity("staff","customers"),true);
-  assert.equal(canMutateEntity(undefined,"appointments"),false);
-  assert.equal(canMutateEntity("receptionist","appointments"),true);
-  assert.equal(canMutateEntity("receptionist","payments"),false);
+  for (const role of ["owner", "admin", "manager"])
+    assert.equal(canMutateEntity(role, "payments"), true);
+  for (const entity of [
+    "services",
+    "professionals",
+    "business",
+    "settings",
+    "payments",
+  ])
+    assert.equal(canMutateEntity("staff", entity), false);
+  assert.equal(canMutateEntity("staff", "appointments"), true);
+  assert.equal(canMutateEntity("staff", "customers"), true);
+  assert.equal(canMutateEntity(undefined, "appointments"), false);
+  assert.equal(canMutateEntity("receptionist", "appointments"), true);
+  assert.equal(canMutateEntity("receptionist", "payments"), false);
   // workspace_mutation rejects every mutation from the professional role.
-  for(const entity of ["appointments","customers","blockedTimes","services","payments"]) assert.equal(canMutateEntity("professional",entity),false);
+  for (const entity of [
+    "appointments",
+    "customers",
+    "blockedTimes",
+    "services",
+    "payments",
+  ])
+    assert.equal(canMutateEntity("professional", entity), false);
 });
 test("painel conta cliente novo cadastrado no próprio dia, com data simples ou horário", () => {
   const store = createSeed();
   store.appointments = [];
   store.customers = [
-    {...store.customers[0], id:"date-only", createdAt:"2026-10-02"},
-    {...store.customers[1], id:"late-night", createdAt:"2026-10-03T01:30:00Z"},
-    {...store.customers[2], id:"yesterday", createdAt:"2026-10-01"},
+    { ...store.customers[0], id: "date-only", createdAt: "2026-10-02" },
+    {
+      ...store.customers[1],
+      id: "late-night",
+      createdAt: "2026-10-03T01:30:00Z",
+    },
+    { ...store.customers[2], id: "yesterday", createdAt: "2026-10-01" },
   ];
-  const model = overviewModel(store,"2026-10-02",Date.parse("2026-10-02T22:00:00-03:00"));
-  assert.equal(model.newCustomers,2);
+  const model = overviewModel(
+    store,
+    "2026-10-02",
+    Date.parse("2026-10-02T22:00:00-03:00"),
+  );
+  assert.equal(model.newCustomers, 2);
+});
+
+test("daily StudioFlow attribution excludes cancelled, no-show, manual and legacy bookings", () => {
+  const store = createSeed();
+  const base = store.appointments[0];
+  store.appointments = [
+    {
+      ...base,
+      id: "wa",
+      bookingChannel: "assistant_whatsapp",
+      start: "2026-10-08T14:00:00-03:00",
+      status: "confirmed",
+    },
+    {
+      ...base,
+      id: "web",
+      bookingChannel: "assistant_web",
+      start: "2026-10-08T15:00:00-03:00",
+      status: "completed",
+    },
+    {
+      ...base,
+      id: "cancelled",
+      bookingChannel: "assistant_whatsapp",
+      start: "2026-10-08T16:00:00-03:00",
+      status: "cancelled",
+    },
+    {
+      ...base,
+      id: "missed",
+      bookingChannel: "assistant_whatsapp",
+      start: "2026-10-08T17:00:00-03:00",
+      status: "no_show",
+    },
+    {
+      ...base,
+      id: "manual",
+      bookingChannel: "manual",
+      start: "2026-10-08T18:00:00-03:00",
+      status: "confirmed",
+    },
+    {
+      ...base,
+      id: "legacy",
+      bookingChannel: "legacy",
+      start: "2026-10-08T19:00:00-03:00",
+      status: "confirmed",
+    },
+    {
+      ...base,
+      id: "other-date",
+      bookingChannel: "assistant_whatsapp",
+      start: "2026-10-09T19:00:00-03:00",
+      status: "confirmed",
+    },
+  ];
+  assert.equal(
+    overviewModel(store, "2026-10-08", Date.parse("2026-10-08T12:00:00-03:00"))
+      .assistantBookings,
+    2,
+  );
 });

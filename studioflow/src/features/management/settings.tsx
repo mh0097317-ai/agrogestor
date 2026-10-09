@@ -1,8 +1,16 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
+import { OnlineBookingSettings } from "./online-booking-settings";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  Fragment,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import {
   ArrowRight,
   ArrowSquareOut,
@@ -20,11 +28,9 @@ import {
   Storefront,
   Users,
   Wallet,
-  Robot,
 } from "@phosphor-icons/react/dist/ssr";
 import { PaymentSettings } from "./payment-settings";
 import { AssistantSettings } from "./assistant-settings";
-import { InstagramFeedSettings } from "./instagram-feed-settings";
 import { WhatsAppSettings } from "./whatsapp-settings";
 import { FeePayment } from "@/features/dashboard/fee-payment";
 import {
@@ -63,6 +69,7 @@ type EditableTab =
   "business" | "identity" | "agenda" | "loyalty" | "notifications";
 type Tab =
   | EditableTab
+  | "onlineBooking"
   | "professionals"
   | "payments"
   | "assistant"
@@ -109,15 +116,36 @@ type LoyaltyDraft = {
   loyaltyGoal: string;
   loyaltyReward: string;
 };
+const settingsGroups: Record<Tab, string> = {
+  business: "Seu negócio",
+  identity: "Seu negócio",
+  agenda: "Agendamento",
+  onlineBooking: "Agendamento",
+  loyalty: "Relacionamento",
+  payments: "Integrações",
+  whatsapp: "Integrações",
+  assistant: "Integrações",
+  professionals: "Administração",
+  notifications: "Administração",
+  plan: "Administração",
+};
 const tabs = [
   { id: "business" as const, label: "Empresa", icon: Storefront },
-  { id: "identity" as const, label: "Identidade", icon: ImageSquare },
-  { id: "agenda" as const, label: "Agenda", icon: CalendarBlank },
+  { id: "identity" as const, label: "Aparência", icon: ImageSquare },
+  { id: "agenda" as const, label: "Horários e regras", icon: CalendarBlank },
+  {
+    id: "onlineBooking" as const,
+    label: "Agendamento online",
+    icon: CalendarBlank,
+  },
   { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
   { id: "payments" as const, label: "Pagamentos", icon: Wallet },
   { id: "whatsapp" as const, label: "WhatsApp", icon: ChatCircleText },
-  { id: "assistant" as const, label: "Recepcionista", icon: Robot },
-  { id: "professionals" as const, label: "Profissionais", icon: Users },
+  {
+    id: "assistant" as const,
+    label: "Atendimento automático",
+    icon: ChatCircleText,
+  },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
   { id: "plan" as const, label: "Plano", icon: CreditCard },
 ];
@@ -237,14 +265,34 @@ function SettingsContent({ store }: { store: Store }) {
   const router = useRouter();
   const { mutate, refresh } = useWorkspace();
   const { canManage } = usePermissions();
+  const professionalView = store.viewer?.role === "professional";
   const { toast } = useToast();
   const action = useFormAction();
   // "?aba=identity" opens a section directly (links from the checklist).
   const query = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() => {
+  useEffect(() => {
+    if (query.get("aba") === "professionals")
+      router.replace("/dashboard/equipe");
+  }, [query, router]);
+  const [selectedTab, setTab] = useState<Tab>(() => {
     const wanted = query.get("aba");
-    return tabs.some((item) => item.id === wanted) ? (wanted as Tab) : "business";
+    return tabs.some((item) => item.id === wanted)
+      ? (wanted as Tab)
+      : "business";
   });
+  const tabNeeds = {
+    loyalty: "fidelidade",
+    payments: "pagamentos",
+    assistant: "recepcionista",
+  } as const;
+  const tab: Tab =
+    selectedTab in tabNeeds &&
+    !hasModule(
+      store.access?.modules,
+      tabNeeds[selectedTab as keyof typeof tabNeeds],
+    )
+      ? "business"
+      : selectedTab;
   const [drafts, setDrafts] = useState<Drafts>({
     business: null,
     identity: null,
@@ -264,6 +312,7 @@ function SettingsContent({ store }: { store: Store }) {
   const notifications = drafts.notifications ?? saved.notifications;
   const loyalty = drafts.loyalty ?? saved.loyalty;
   const editable =
+    tab !== "onlineBooking" &&
     tab !== "professionals" &&
     tab !== "plan" &&
     tab !== "payments" &&
@@ -538,11 +587,12 @@ function SettingsContent({ store }: { store: Store }) {
     business: "Dados da empresa",
     identity: "Identidade visual",
     agenda: "Regras da agenda",
+    onlineBooking: "Agendamento online",
     loyalty: "Cartão fidelidade",
     professionals: "Agendas dos profissionais",
     notifications: "Notificações",
     payments: "Pagamentos online",
-    assistant: "Recepcionista com IA",
+    assistant: "StudioFlow no WhatsApp",
     whatsapp: "WhatsApp da loja",
     plan: "Seu espaço de gestão",
   }[tab];
@@ -550,9 +600,12 @@ function SettingsContent({ store }: { store: Store }) {
     business: "As informações que apresentam seu estabelecimento aos clientes.",
     identity: "Capa, logo, galeria de fotos e cor da sua página.",
     agenda: "Defina os limites que deixam sua rotina organizada.",
+    onlineBooking:
+      "Escolha se os clientes podem agendar pelo seu link público.",
     payments:
       "Sinal via Pix no agendamento e cobrança do clube, direto na sua conta.",
-    assistant: "Atendente virtual no chat da página e no WhatsApp, 24 horas.",
+    assistant:
+      "Configure o atendimento, a voz da casa e o limite de respostas.",
     whatsapp: "Conecte com QR Code e deixe os avisos saírem sozinhos.",
     loyalty:
       "Recompense quem volta. O cliente acompanha os carimbos no comprovante.",
@@ -561,6 +614,17 @@ function SettingsContent({ store }: { store: Store }) {
     notifications: "Preferências de contato com o consentimento do cliente.",
     plan: "Recursos e situação do seu ambiente de gestão.",
   }[tab];
+  const visibleTabs = tabs.filter((item) => {
+    const needs = {
+      loyalty: "fidelidade",
+      payments: "pagamentos",
+      assistant: "recepcionista",
+    } as const;
+    return (
+      !(item.id in needs) ||
+      hasModule(store.access?.modules, needs[item.id as keyof typeof needs])
+    );
+  });
   const saveBar = (
     <SaveBar
       dirty={dirty}
@@ -570,16 +634,34 @@ function SettingsContent({ store }: { store: Store }) {
     />
   );
 
+  if (professionalView)
+    return (
+      <>
+        <PageHeader
+          title="Meu WhatsApp"
+          description="Seu número, seus contatos e suas conversas, vinculados à barbearia."
+        />
+        <Card>
+          <WhatsAppSettings store={store} canManage={false} onSaved={refresh} />
+        </Card>
+      </>
+    );
+
   return (
     <>
       <PageHeader
         title="Configurações"
         description="Dados, aparência e regras do seu estabelecimento."
         actions={
-          <Button variant="secondary" onClick={() => void copyLink()}>
-            <Copy size={14} />
-            Copiar link público
-          </Button>
+          onlineBookingEnabled(store.settings) ? (
+            <Button variant="secondary" onClick={() => void copyLink()}>
+              <Copy size={14} /> Copiar link público
+            </Button>
+          ) : (
+            <span className="management-pill">
+              Agendamento online desativado
+            </span>
+          )
         }
       />
       <div className="management-settings settings-layout">
@@ -587,22 +669,30 @@ function SettingsContent({ store }: { store: Store }) {
           className="management-tabs settings-section-nav"
           aria-label="Seções das configurações"
         >
-          {tabs
-            .filter((item) => {
-              const needs = {
-                loyalty: "fidelidade",
-                payments: "pagamentos",
-                assistant: "recepcionista",
-              } as const;
-              return (
-                !(item.id in needs) ||
-                hasModule(
-                  store.access?.modules,
-                  needs[item.id as keyof typeof needs],
-                )
-              );
-            })
-            .map((item) => (
+          <label className="settings-mobile-select">
+            <span>Seção</span>
+            <select
+              aria-label="Seção das configurações"
+              value={tab}
+              disabled={busy}
+              onChange={(event) => switchTab(event.target.value as Tab)}
+            >
+              {visibleTabs.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {visibleTabs.map((item, index, visible) => (
+            <Fragment key={item.id}>
+              {(index === 0 ||
+                settingsGroups[item.id] !==
+                  settingsGroups[visible[index - 1].id]) && (
+                <span className="settings-nav-label">
+                  {settingsGroups[item.id]}
+                </span>
+              )}
               <button
                 key={item.id}
                 type="button"
@@ -620,7 +710,8 @@ function SettingsContent({ store }: { store: Store }) {
                   <span aria-label="Alterações não salvas">•</span>
                 )}
               </button>
-            ))}
+            </Fragment>
+          ))}
         </nav>
         <Card className="management-settings-card">
           <div className="settings-section-heading">
@@ -740,13 +831,6 @@ function SettingsContent({ store }: { store: Store }) {
               <FormError error={action.error} />
               {saveBar}
             </form>
-          )}
-          {tab === "business" && (
-            <InstagramFeedSettings
-              store={store}
-              canManage={canManage}
-              onSaved={refresh}
-            />
           )}
           {tab === "identity" && (
             <form className="management-form" onSubmit={save}>
@@ -1145,44 +1229,30 @@ function SettingsContent({ store }: { store: Store }) {
             </form>
           )}
           {tab === "notifications" && (
-            <form className="management-form" onSubmit={save}>
-              <fieldset
-                className="management-form settings-fields"
-                disabled={!canManage || busy}
+            <FormSection
+              title="Avisos de agendamento"
+              description="Os avisos automáticos são gerenciados junto aos números conectados, na aba WhatsApp."
+            >
+              <div className="management-info">
+                O barbeiro recebe um aviso ao marcar. O cliente, quando
+                autorizou, recebe um lembrete 2 horas antes. Estes envios não
+                consomem IA.
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => switchTab("whatsapp")}
               >
-                <FormSection
-                  title="Consentimento para lembretes"
-                  description="O cliente decide se deseja receber mensagens ao agendar."
-                >
-                  <label className="management-check">
-                    <input
-                      type="checkbox"
-                      name="notifications"
-                      checked={notifications.notifications}
-                      onChange={(event) =>
-                        updateDraft("notifications", {
-                          notifications: event.target.checked,
-                        })
-                      }
-                    />
-                    Habilitar consentimento para lembretes pelo WhatsApp
-                  </label>
-                </FormSection>
-              </fieldset>
-              <FormSection
-                title="Envio de mensagens"
-                description="O envio automático ainda depende de um provedor conectado."
-              >
-                <div className="management-info">
-                  O consentimento fica registrado no agendamento. Esta
-                  preferência não ativa o envio automático pelo WhatsApp. Até a
-                  conexão de um provedor ao servidor, use o botão de contato no
-                  perfil do cliente.
-                </div>
-              </FormSection>
-              <FormError error={action.error} />
-              {saveBar}
-            </form>
+                Gerenciar avisos no WhatsApp <ArrowRight size={15} />
+              </Button>
+            </FormSection>
+          )}
+          {tab === "onlineBooking" && (
+            <OnlineBookingSettings
+              store={store}
+              canManage={canManage}
+              onSaved={refresh}
+            />
           )}
           {tab === "payments" && (
             <PaymentSettings
@@ -1196,6 +1266,7 @@ function SettingsContent({ store }: { store: Store }) {
               store={store}
               canManage={canManage}
               onSaved={refresh}
+              onOpenWhatsApp={() => switchTab("whatsapp")}
             />
           )}
           {tab === "whatsapp" && (

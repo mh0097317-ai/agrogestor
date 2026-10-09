@@ -1,3 +1,4 @@
+import { getOnlineBookingStore } from "@/services/server-online-booking";
 import { z } from "zod";
 import { webChat, webChatView } from "@/services/assistant/conversations";
 import { tokenSchema } from "@/services/server-validation";
@@ -24,6 +25,7 @@ export async function POST(
   try {
     assertSameOrigin(request);
     limitPublicMutation(request);
+    await getOnlineBookingStore((await params).slug);
     const input = messageSchema.parse(await request.json());
     return respond(
       await webChat((await params).slug, input, requestOrigin(request)),

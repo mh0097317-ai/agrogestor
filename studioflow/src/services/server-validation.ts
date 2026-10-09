@@ -60,7 +60,10 @@ export const serviceSchema = z.object({
   duration: z.number().int().min(5).max(480),
   price: z.number().min(0).max(100000),
   image: image.default(""),
-  photos: z.array(image).max(2, "Use no máximo 3 fotos por serviço.").default([]),
+  photos: z
+    .array(image)
+    .max(2, "Use no máximo 3 fotos por serviço.")
+    .default([]),
   active: z.boolean().default(true),
   professionalIds: z.array(id).max(100),
 });
@@ -157,7 +160,7 @@ export const appointmentSchema = z.object({
       "no_show",
     ])
     .default("confirmed"),
-  reminder: z.boolean().default(false),
+  reminder: z.boolean().default(true),
 });
 export const blockSchema = z
   .object({
@@ -207,12 +210,17 @@ export const onboardingSchema = z
       .string()
       .max(25)
       .transform(digits)
-      .refine((value) => /^[1-9][0-9]{9,10}$/.test(value), "Informe o WhatsApp da loja com DDD.")
+      .refine(
+        (value) => /^[1-9][0-9]{9,10}$/.test(value),
+        "Informe o WhatsApp da loja com DDD.",
+      )
       .optional(),
     address: z.string().trim().max(300).default(""),
     instagram: z.string().trim().max(100).default(""),
     logo: image.default(""),
-    color: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]).default(""),
+    color: z
+      .union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")])
+      .default(""),
     photos: z.array(image).max(12).default([]),
     amenities: z.array(z.string().trim().min(1).max(50)).max(30).default([]),
     services: z
@@ -239,7 +247,10 @@ export const onboardingSchema = z
             .string()
             .max(25)
             .transform(digits)
-            .refine((value) => value === "" || /^[1-9][0-9]{9,10}$/.test(value), "Confira o WhatsApp do profissional.")
+            .refine(
+              (value) => value === "" || /^[1-9][0-9]{9,10}$/.test(value),
+              "Confira o WhatsApp do profissional.",
+            )
             .default(""),
           photo: image.default(""),
         }),

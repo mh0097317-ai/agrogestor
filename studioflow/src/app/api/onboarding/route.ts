@@ -73,6 +73,7 @@ export async function POST(request: Request) {
         blockedTimes: [],
         payments: [],
         settings: {
+          onlineBookingEnabled: true,
           businessId,
           minNotice: 30,
           maxDays: 60,

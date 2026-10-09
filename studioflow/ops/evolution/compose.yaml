@@ -1,0 +1,124 @@
+name: studioflow-whatsapp
+
+services:
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      EVOLUTION_HOST: ${EVOLUTION_HOST:?Defina o dominio da Evolution}
+      ACME_EMAIL: ${ACME_EMAIL:?Defina o email para o certificado}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [evolution]
+    depends_on: [api]
+
+  api:
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}
+    restart: unless-stopped
+    environment:
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+      SERVER_URL: https://${EVOLUTION_HOST:?Defina o dominio da Evolution}
+      AUTHENTICATION_API_KEY: ${AUTHENTICATION_API_KEY:?Gere uma chave forte}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://studioflow:${POSTGRES_PASSWORD:?Gere a senha do banco}@postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: studioflow_whatsapp
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_HISTORIC: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/0
+      CACHE_REDIS_PREFIX_KEY: studioflow
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      DEL_INSTANCE: "false"
+      WEBHOOK_GLOBAL_ENABLED: "false"
+      WEBSOCKET_ENABLED: "false"
+      RABBITMQ_ENABLED: "false"
+      SQS_ENABLED: "false"
+      TYPEBOT_ENABLED: "false"
+      CHATWOOT_ENABLED: "false"
+      OPENAI_ENABLED: "false"
+      TELEMETRY_ENABLED: "false"
+      CORS_ORIGIN: ${STUDIOFLOW_ORIGIN:?Defina a origem HTTPS do StudioFlow}
+      CORS_CREDENTIALS: "false"
+      LOG_LEVEL: ERROR,WARN,INFO
+      LOG_BAILEYS: error
+      CONFIG_SESSION_PHONE_CLIENT: StudioFlow
+      CONFIG_SESSION_PHONE_NAME: Chrome
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks: [evolution]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: studioflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Gere a senha do banco}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [evolution]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U studioflow -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        redis-server,
+        --appendonly,
+        "yes",
+        --maxmemory,
+        256mb,
+        --maxmemory-policy,
+        allkeys-lru,
+      ]
+    volumes:
+      - redis_data:/data
+    networks: [evolution]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  evolution:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  evolution_instances:
+  postgres_data:
+  redis_data:

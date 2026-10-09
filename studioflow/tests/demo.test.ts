@@ -23,7 +23,8 @@ test("duas confirmações simultâneas persistem apenas uma reserva", async () =
   store.payments = [];
   store.settings.minNotice = 0;
   const target = new Date(Date.now() + 3 * 86400000);
-  while (target.getUTCDay() === 0) target.setUTCDate(target.getUTCDate() + 1);
+  while (brazilTime(localDate(target), "12:00").getUTCDay() === 0)
+    target.setUTCDate(target.getUTCDate() + 1);
   const input = {
     serviceIds: [store.services[2].id],
     professionalId: store.professionals[0].id,

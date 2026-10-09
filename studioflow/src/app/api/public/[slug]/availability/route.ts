@@ -1,4 +1,4 @@
-import { getPublicStore } from "@/services/server-store";
+import { getOnlineBookingStore } from "@/services/server-online-booking";
 import { availableSlots, DomainError } from "@/lib/availability";
 import { failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET(
       month = query.get("month") || "";
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))
       throw new DomainError("Mês inválido.");
-    const store = await getPublicStore((await params).slug);
+    const store = await getOnlineBookingStore((await params).slug);
     const dates = Array.from(
       {
         length: new Date(

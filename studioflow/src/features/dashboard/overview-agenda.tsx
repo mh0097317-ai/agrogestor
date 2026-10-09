@@ -1,4 +1,5 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
 import { useState } from "react";
 import Link from "next/link";
 import { addDays } from "date-fns";
@@ -75,7 +76,7 @@ export function OverviewAgenda({
             </Link>
           ))}
         </nav>
-        {onCreate && (
+        {onCreate && rows.length > 0 && (
           <Button onClick={onCreate}>
             <Plus size={16} weight="bold" /> Novo agendamento
           </Button>
@@ -186,7 +187,11 @@ export function OverviewAgenda({
       ) : (
         <EmptyState
           title="Nenhum agendamento neste dia."
-          description="Crie um agendamento ou compartilhe sua página com os clientes."
+          description={
+            onlineBookingEnabled(data.settings)
+              ? "Crie um agendamento ou compartilhe sua página com os clientes."
+              : "Crie um agendamento manual ou acompanhe seus atendimentos no WhatsApp."
+          }
           action={
             onCreate && (
               <Button variant="secondary" onClick={onCreate}>

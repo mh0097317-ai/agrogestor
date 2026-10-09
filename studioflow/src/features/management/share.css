@@ -319,3 +319,30 @@
     max-width: 240px;
   }
 }
+.share-channel-summary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 22px;
+}
+.share-channel-summary span {
+  padding: 8px 13px;
+  border: 1px solid #ded5c8;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #70695f;
+}
+.share-channel-summary .is-active {
+  background: #ede9df;
+  color: #16130f;
+}
+.reception-other-channels {
+  padding-top: 18px;
+  border-top: 1px solid #ded5c8;
+}
+.reception-other-channels summary {
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}

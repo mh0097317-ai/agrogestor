@@ -284,6 +284,7 @@ export function nextFreeByProfessional(
   serviceIds: string[],
   now = new Date(),
   horizonDays = 14,
+  matches?: (slot: Slot) => boolean,
 ) {
   const result: Record<string, Slot> = {};
   const people = store.professionals.filter(
@@ -293,7 +294,9 @@ export function nextFreeByProfessional(
   for (const person of people) {
     for (let offset = 0; offset <= days; offset++) {
       const date = localDate(new Date(now.getTime() + offset * 86_400_000));
-      const [slot] = availableSlots(store, serviceIds, person.id, date, now);
+      const slot = availableSlots(store, serviceIds, person.id, date, now).find(
+        (item) => !matches || matches(item),
+      );
       if (slot) {
         result[person.id] = slot;
         break;

@@ -1,4 +1,4 @@
-import { getPublicStore } from "@/services/server-store";
+import { getOnlineBookingStore } from "@/services/server-online-booking";
 import { nextFreeByProfessional } from "@/lib/availability";
 import { failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const query = new URL(request.url).searchParams;
-    const store = await getPublicStore((await params).slug);
+    const store = await getOnlineBookingStore((await params).slug);
     return respond(
       nextFreeByProfessional(store, (query.get("serviceId") || "").split(",")),
     );

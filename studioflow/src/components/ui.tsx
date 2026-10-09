@@ -97,9 +97,29 @@ export function PageHeader({
   description?: string;
   actions?: ReactNode;
 }) {
+  const identities: Record<string, [string, string]> = {
+    Agenda: ["01", "Seu tempo, bem cuidado"],
+    Clientes: ["02", "Relacionamento"],
+    Conversas: ["03", "Atendimento"],
+    Serviços: ["04", "Seu catálogo"],
+    Produtos: ["05", "Sua vitrine"],
+    Equipe: ["06", "Quem faz acontecer"],
+    Financeiro: ["07", "Gestão de recebimentos"],
+    "Clube de assinatura": ["08", "Planos e recorrência"],
+    Relatórios: ["09", "A visão do negócio"],
+    Divulgar: ["10", "Sua presença online"],
+    Configurações: ["11", "Do seu jeito"],
+  };
+  const identity = identities[title];
   return (
-    <div className="page-heading">
-      <div>
+    <div className={`page-heading ${identity ? "sf-module-header" : ""}`}>
+      <div className="page-heading-copy">
+        {identity && (
+          <span className="sf-module-eyebrow">
+            <span aria-hidden="true">{identity[0]}</span>
+            {identity[1]}
+          </span>
+        )}
         <h1>{title}</h1>
         {description && <p>{description}</p>}
       </div>

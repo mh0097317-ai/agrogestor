@@ -1,4 +1,4 @@
-import { platformEvents } from "@/services/platform";
+import { platformEvents, platformChannelEvents } from "@/services/platform";
 import { failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,12 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> },
 ) {
   try {
-    return respond({ events: await platformEvents((await params).businessId) });
+    const businessId = (await params).businessId;
+    const events = await platformEvents(businessId);
+    return respond({
+      events,
+      channelEvents: await platformChannelEvents(businessId),
+    });
   } catch (error) {
     return failure(error);
   }

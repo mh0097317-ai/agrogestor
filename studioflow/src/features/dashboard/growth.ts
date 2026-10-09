@@ -1,3 +1,4 @@
+import { onlineBookingEnabled } from "@/lib/online-booking";
 import { addDays, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Appointment, Store, WaitlistEntry } from "@/types";
@@ -75,7 +76,7 @@ export function waitlistMessage(
   const day = format(parseISO(entry.desiredDate), "EEEE, dd/MM", {
     locale: ptBR,
   });
-  return `Olá, ${firstName(entry.customerName)}! Aqui é da ${data.business.name}. Abriu um horário em ${day} para ${serviceNames(data, [entry.serviceId]) || "o seu serviço"}. Quer garantir? Agende aqui: ${bookingUrl}`;
+  return `Olá, ${firstName(entry.customerName)}! Aqui é da ${data.business.name}. Abriu um horário em ${day} para ${serviceNames(data, [entry.serviceId]) || "o seu serviço"}. ${onlineBookingEnabled(data.settings) ? `Quer garantir? Agende aqui: ${bookingUrl}` : "Quer garantir? Responda esta mensagem para combinar com a equipe."}`;
 }
 
 export function waitlistWhen(entry: WaitlistEntry) {

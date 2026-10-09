@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { BookingFlow } from "@/features/booking/booking-flow";
 import { BookingLoader } from "@/features/booking/booking-intro";

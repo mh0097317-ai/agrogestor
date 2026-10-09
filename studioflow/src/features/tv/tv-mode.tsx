@@ -1,4 +1,5 @@
 "use client";
+import { onlineBookingEnabled } from "@/lib/online-booking";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -85,6 +86,9 @@ function TvScreen({ store }: { store: Store }) {
     typeof window === "undefined" ? "" : window.location.origin,
   );
   const [slide, setSlide] = useState(0);
+  const [queuePage, setQueuePage] = useState(0);
+  const [queueSize, setQueueSize] = useState(6);
+  const queueRef = useRef<HTMLOListElement>(null);
   const [announce, setAnnounce] = useState<{
     id: string;
     name: string;
@@ -99,7 +103,49 @@ function TvScreen({ store }: { store: Store }) {
     () => tvBoard(store, new Date(tick * 30_000)),
     [store, tick],
   );
-  const bookQr = useQr(origin ? `${origin}/${business.slug}` : "");
+  const queuePages = Math.max(1, Math.ceil(board.upcoming.length / queueSize));
+  const visibleQueue = board.upcoming.slice(
+    (queuePage % queuePages) * queueSize,
+    ((queuePage % queuePages) + 1) * queueSize,
+  );
+  useEffect(() => {
+    const list = queueRef.current;
+    if (!list) return;
+    const fit = () => {
+      if (
+        window.matchMedia("(max-width: 900px), (orientation: portrait)").matches
+      ) {
+        setQueueSize(6);
+        return;
+      }
+      const rowHeight =
+        list.firstElementChild?.getBoundingClientRect().height || 0;
+      if (rowHeight && list.clientHeight)
+        setQueueSize(
+          Math.max(1, Math.min(6, Math.floor(list.clientHeight / rowHeight))),
+        );
+    };
+    const frame = requestAnimationFrame(fit);
+    const observer =
+      "ResizeObserver" in window ? new ResizeObserver(fit) : null;
+    observer?.observe(list);
+    window.addEventListener("resize", fit);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [board.upcoming.length]);
+  useEffect(() => {
+    if (queuePages < 2) return;
+    const timer = window.setInterval(
+      () => setQueuePage((page) => page + 1),
+      15000,
+    );
+    return () => window.clearInterval(timer);
+  }, [queuePages]);
+  const online = onlineBookingEnabled(settings);
+  const bookQr = useQr(online && origin ? `${origin}/${business.slug}` : "");
   const checkinQr = useQr(origin ? `${origin}/${business.slug}/checkin` : "");
 
   useEffect(() => {
@@ -162,7 +208,11 @@ function TvScreen({ store }: { store: Store }) {
       .slice(0, 6)
       .map((src) => ({ kind: "photo" as const, src }));
     const products = (store.products || []).filter(
-      (item) => item.active && item.showPublic && item.stock > 0,
+      (item) =>
+        hasModule(store.access?.modules, "produtos") &&
+        item.active &&
+        item.showPublic &&
+        item.stock > 0,
     );
     if (products.length)
       list.splice(1, 0, {
@@ -171,13 +221,19 @@ function TvScreen({ store }: { store: Store }) {
           .slice(0, 4)
           .map(({ name, price, image }) => ({ name, price, image })),
       });
-    const plans = (store.plans || []).filter((plan) => plan.active);
+    const plans = (store.plans || []).filter(
+      (plan) => hasModule(store.access?.modules, "clube") && plan.active,
+    );
     if (plans.length && store.paymentAccount)
       list.splice(3, 0, {
         kind: "club",
         items: plans.slice(0, 3).map(({ name, price }) => ({ name, price })),
       });
-    if (settings.loyaltyEnabled && settings.loyaltyReward)
+    if (
+      hasModule(store.access?.modules, "fidelidade") &&
+      settings.loyaltyEnabled &&
+      settings.loyaltyReward
+    )
       list.push({
         kind: "loyalty",
         goal: settings.loyaltyGoal,
@@ -186,7 +242,14 @@ function TvScreen({ store }: { store: Store }) {
     if (!list.length && business.cover)
       list.push({ kind: "photo", src: business.cover });
     return list;
-  }, [business, settings, store.products, store.plans, store.paymentAccount]);
+  }, [
+    business,
+    settings,
+    store.products,
+    store.plans,
+    store.paymentAccount,
+    store.access?.modules,
+  ]);
 
   useEffect(() => {
     if (slides.length < 2) return;
@@ -232,6 +295,21 @@ function TvScreen({ store }: { store: Store }) {
           </time>
         </header>
 
+        <div className="tv-day-strip">
+          <span>
+            <strong>{board.serving}</strong> em atendimento
+          </span>
+          <span>
+            <strong>{board.arrivals.length}</strong> aguardando na recepção
+          </span>
+          <span>
+            <strong>{board.expected}</strong> ainda vão chegar
+          </span>
+          <span>
+            <strong>{board.completed}</strong> atendidos hoje
+          </span>
+        </div>
+
         <div className="tv-team">
           {board.team.length === 0 ? (
             <p className="tv-quiet">Equipe de folga hoje.</p>
@@ -252,7 +330,10 @@ function TvScreen({ store }: { store: Store }) {
                   <strong>{seat.professional.name.split(" ")[0]}</strong>
                   {seat.state === "busy" && seat.current ? (
                     <span>
-                      <Scissors size={16} weight="fill" /> Atendendo{" "}
+                      <Scissors size={16} weight="fill" />{" "}
+                      {seat.current.status === "in_progress"
+                        ? "Atendendo"
+                        : "Horário de"}{" "}
                       {tvName(seat.current.customerName)}
                       <small>
                         {" "}
@@ -274,14 +355,24 @@ function TvScreen({ store }: { store: Store }) {
         </div>
 
         <div className="tv-list">
-          <h2>Próximos horários</h2>
+          <h2>
+            Quem chega em seguida{" "}
+            {queuePages > 1 && (
+              <small>
+                {(queuePage % queuePages) + 1} / {queuePages}
+              </small>
+            )}
+          </h2>
           {board.upcoming.length === 0 ? (
             <p className="tv-quiet">
-              Sem mais horários marcados hoje. Agende pelo QR Code ao lado.
+              Sem mais horários marcados hoje.{" "}
+              {online
+                ? "Agende pelo QR Code ao lado."
+                : "Fale com a equipe para agendar."}
             </p>
           ) : (
-            <ol>
-              {board.upcoming.map((item) => {
+            <ol ref={queueRef}>
+              {visibleQueue.map((item) => {
                 const person = store.professionals.find(
                   (p) => p.id === item.professionalId,
                 );
@@ -298,7 +389,19 @@ function TvScreen({ store }: { store: Store }) {
                         <DoorOpen size={16} weight="fill" /> Chegou
                       </em>
                     ) : (
-                      <i />
+                      <em
+                        className={
+                          new Date(item.start).getTime() < now.getTime()
+                            ? "is-late"
+                            : ""
+                        }
+                      >
+                        {new Date(item.start).getTime() < now.getTime()
+                          ? "Horário passou"
+                          : item.status === "pending"
+                            ? "A confirmar"
+                            : "Esperado"}
+                      </em>
                     )}
                   </li>
                 );
@@ -316,12 +419,14 @@ function TvScreen({ store }: { store: Store }) {
               <strong>Chegou?</strong> Faça seu check-in
             </figcaption>
           </figure>
-          <figure>
-            {bookQr && <img src={bookQr} alt="QR Code de agendamento" />}
-            <figcaption>
-              <strong>Próximo corte?</strong> Agende pelo celular
-            </figcaption>
-          </figure>
+          {online && (
+            <figure>
+              {bookQr && <img src={bookQr} alt="QR Code de agendamento" />}
+              <figcaption>
+                <strong>Próximo corte?</strong> Agende pelo celular
+              </figcaption>
+            </figure>
+          )}
         </div>
         <div className="tv-slide" key={slide}>
           {current?.kind === "photo" && (
@@ -394,8 +499,8 @@ function TvScreen({ store }: { store: Store }) {
             <strong>{announce.name} chegou</strong>
             <span>
               {announce.who
-                ? `${announce.who} já foi avisado.`
-                : "A equipe já foi avisada."}
+                ? `Atendimento com ${announce.who}. Aguarde ser chamado.`
+                : "Aguarde ser chamado pela equipe."}
             </span>
           </div>
         </div>

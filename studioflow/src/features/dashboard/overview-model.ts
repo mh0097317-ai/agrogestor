@@ -62,6 +62,9 @@ export function overviewModel(data: Store, day: string, now: number) {
     freeSlots,
     revenue,
     ticket: expected.length ? revenue / expected.length : 0,
+    assistantBookings: expected.filter((a) =>
+      a.bookingChannel?.startsWith("assistant_"),
+    ).length,
     newCustomers: data.customers.filter((c) => businessDay(c.createdAt) === day)
       .length,
   };

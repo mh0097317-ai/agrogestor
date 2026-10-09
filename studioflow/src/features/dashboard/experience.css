@@ -1,0 +1,688 @@
+/* StudioFlow: an editorial workspace, with ink, warm paper and brass. */
+.app-shell {
+  --sf-line: #ded4c5;
+  --sf-accent: #936939;
+}
+.app-shell .dashboard-content {
+  max-width: 1700px;
+  margin-inline: auto;
+}
+.app-shell .page-heading {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--sf-line);
+  gap: 20px;
+}
+.app-shell .page-heading h1 {
+  font-size: clamp(32px, 3vw, 43px);
+  letter-spacing: -0.045em;
+}
+.app-shell .page-heading p {
+  margin-top: 9px;
+  max-width: 580px;
+  color: #7b7063;
+  line-height: 1.6;
+}
+.app-shell .page-actions .btn {
+  min-height: 46px;
+  padding-inline: 19px;
+}
+.app-shell .management-page .metric-strip {
+  border: 1px solid var(--sf-line);
+  background: #fffdf9;
+  border-radius: 8px;
+}
+.app-shell .metric-item {
+  padding: 19px 22px;
+}
+.app-shell .metric-item > span {
+  font-size: 11px;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.app-shell .metric-item strong {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 32px;
+  letter-spacing: -0.04em;
+}
+.app-shell .management-toolbar {
+  padding: 8px 0;
+}
+.app-shell .team-card {
+  border: 1px solid var(--sf-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.app-shell .team-identity {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e8dfd2;
+}
+.app-shell .team-identity h3 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.app-shell .team-actions {
+  padding-top: 18px;
+  border-top: 1px solid #e8dfd2;
+}
+.team-connection {
+  margin-top: 16px;
+  border-top: 1px solid #e8dfd2;
+}
+.team-connection > summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  font-size: 12px;
+  list-style: none;
+}
+.team-connection > summary::after {
+  content: "+";
+  color: #8a6430;
+  font-size: 20px;
+}
+.team-connection[open] > summary::after {
+  content: "−";
+}
+.team-connection > summary b {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a6430;
+}
+.team-connection > summary b.is-connected {
+  color: #396547;
+}
+.team-connection .professional-connection {
+  border-radius: 4px;
+}
+.wa-team-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid #ded4c5;
+  background: #f6f1e8;
+}
+.wa-team-shortcut > span {
+  display: grid;
+  gap: 5px;
+}
+.wa-team-shortcut strong {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 21px;
+}
+.wa-team-shortcut small {
+  color: #786d60;
+}
+.wa-team-shortcut a {
+  white-space: nowrap;
+  color: #8a6430;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 600;
+}
+.ov .ov-command {
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  color: #f4f0e8;
+  background: #1c1915;
+  border-radius: 12px;
+  min-height: 280px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 0;
+}
+.ov-command-intro {
+  padding: 28px 32px 24px;
+  position: relative;
+  z-index: 1;
+}
+.ov-command-date {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: #c9bdab;
+}
+.ov-command-date > span {
+  color: #dac59f;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 9px;
+}
+.ov-command-date time {
+  border-left: 1px solid #f4f0e826;
+  padding-left: 10px;
+}
+.ov-command-intro h1 {
+  margin: 20px 0 15px;
+  font-size: clamp(36px, 3.4vw, 50px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+  color: #fff8ed;
+}
+.ov-command-intro h1 em {
+  color: #dac59f;
+  font-weight: 400;
+}
+.ov-command-intro > p {
+  max-width: 320px;
+  color: #beb2a1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ov-command-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 22px 0 20px;
+}
+.app-shell .ov .ov-command-actions .btn {
+  background: #dec9a7;
+  color: #201a13;
+  border-color: #dec9a7;
+  border-radius: 4px;
+  min-height: 44px;
+  padding-inline: 18px;
+  font-size: 12px;
+}
+.app-shell .ov .ov-command-actions .btn:hover {
+  background: #e9d8bc;
+}
+.ov-command-actions > a,
+.ov-command-empty > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ead9be;
+  font-size: 12px;
+  border-bottom: 1px solid #ead9be55;
+  padding-bottom: 4px;
+}
+.ov-command-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #ffffff17;
+  padding-top: 15px;
+  font-size: 10px;
+  color: #a99b88;
+}
+.ov-command-focus {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 32px;
+  border-left: 1px solid #ffffff14;
+  min-width: 0;
+  background: #26221c;
+}
+.ov-command-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.ov .ov-command-focus .ov-now {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 25px 22px;
+  background: #fff9ef;
+  color: #201a13;
+  border: 1px solid #e0d0b5;
+  box-shadow: none;
+  border-radius: 5px;
+}
+.ov .ov-command-focus .ov-now::after {
+  display: none;
+}
+.ov .ov-command-focus .ov-now-tag,
+.ov .ov-command-focus .ov-now-time {
+  color: #776447;
+}
+.ov .ov-command-focus .ov-now-info strong {
+  color: #201a13;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+}
+.ov .ov-command-focus .ov-now-info > span {
+  color: #756959;
+}
+.ov .ov-command-focus .ov-now-body b {
+  color: #8a6430;
+}
+.ov .ov-command-focus .ov-now-body {
+  padding: 23px 0;
+}
+.ov .ov-command-focus .ov-now-primary {
+  color: #fff9ef;
+  background: #201a13;
+  border-color: #201a13;
+}
+.ov .ov-command-focus .ov-now-secondary {
+  color: #201a13;
+  border-color: #d6c6ac;
+}
+.ov-command-empty {
+  position: relative;
+  max-width: 340px;
+}
+.ov-command-empty .sf-eyebrow {
+  color: #b7a17e;
+}
+.ov-command-empty > strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: clamp(30px, 3vw, 43px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  margin: 22px 0 16px;
+  color: #eadfcb;
+}
+.ov-command-empty p {
+  color: #b7aa95;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-bottom: 22px;
+  max-width: 260px;
+}
+.ov .ov-kpis {
+  gap: 0;
+  border: 1px solid #ded4c5;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffdf9;
+  margin-bottom: 0;
+}
+.ov .ov-kpi {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid #ded4c5;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 23px 25px;
+  min-height: 110px;
+}
+.ov .ov-kpi:last-child {
+  border-right: 0;
+}
+.ov .ov-kpi::after,
+.ov .ov-kpi::before {
+  display: none;
+}
+.ov .ov-kpi strong {
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+}
+.ov .ov-kpi > div > span {
+  font-size: 12px;
+  color: #6e655b;
+}
+.ov .ov-kpi-icon {
+  color: #8a6430;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.ov .ov-operating-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.12fr;
+  gap: 20px;
+  margin-bottom: 0;
+}
+.ov .ov-operating-grid .ov-whatsapp {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 18px;
+  padding: 25px;
+  border-radius: 7px;
+}
+.ov .ov-operating-grid .ov-whatsapp-head {
+  width: 100%;
+}
+.ov .ov-operating-grid .ov-whatsapp h2 {
+  font-size: 24px;
+}
+.ov .ov-operating-grid .ov-whatsapp-counts {
+  width: 100%;
+  margin: 0;
+  gap: 14px;
+}
+.ov .ov-operating-grid .ov-whatsapp-counts strong {
+  font-size: 30px;
+}
+.ov .ov-operating-grid .ov-whatsapp footer {
+  width: 100%;
+}
+.sf-results {
+  min-width: 0;
+  padding: 25px;
+  background: #eae1d1;
+  border: 1px solid #daceb9;
+  border-radius: 7px;
+}
+.sf-results header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #786345;
+}
+.sf-results header > span:last-child {
+  font-size: 10px;
+}
+.sf-results h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 29px;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  margin: 18px 0 22px;
+}
+.sf-results h2 em {
+  font-weight: 400;
+  color: #8a6430;
+}
+.sf-results dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 16px;
+  margin: 0;
+}
+.sf-results dl > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 5px;
+  min-width: 0;
+}
+.sf-results dt {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #786a56;
+}
+.sf-results dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.04em;
+}
+.sf-results footer {
+  margin-top: 19px;
+  padding-top: 13px;
+  border-top: 1px solid #d4c6af;
+}
+.sf-results footer p {
+  font-size: 10px;
+  color: #786a56;
+  line-height: 1.7;
+  max-width: 440px;
+}
+.sf-results footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 10px;
+  color: #68502f;
+}
+.ov .ov-body {
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+.ov .ov-card {
+  border-radius: 7px;
+  border-color: #ded4c5;
+  box-shadow: none;
+}
+.ov .ov-card-head h2,
+.ov .ov-summary h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 23px;
+  letter-spacing: -0.035em;
+}
+.ov .ov-setup,
+.ov .ov-extra {
+  border: 1px solid #ded4c5;
+  background: #fffdf9;
+  border-radius: 7px;
+}
+.ov-setup > summary,
+.ov-extra > summary {
+  padding: 17px 20px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #796b59;
+}
+.ov-setup[open] > summary,
+.ov-extra[open] > summary {
+  border-bottom: 1px solid #ded4c5;
+}
+.ov-extra .ov-card {
+  border: 0;
+  border-radius: 0;
+}
+.ov-extra {
+  order: 7;
+}
+@media (max-width: 1100px) {
+  .ov .ov-body {
+    grid-template-columns: minmax(0, 1fr) 270px;
+  }
+  .ov-command-intro {
+    padding: 28px;
+  }
+  .ov-command-focus {
+    padding: 24px;
+  }
+  .ov .ov-kpi {
+    padding: 19px;
+  }
+  .sf-results dl {
+    gap: 10px;
+  }
+  .sf-results dd {
+    font-size: 23px;
+  }
+}
+@media (max-width: 900px) {
+  .ov .ov-body {
+    grid-template-columns: 1fr;
+  }
+  .ov .ov-aside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ov .ov-operating-grid {
+    grid-template-columns: 1fr;
+  }
+  .ov .ov-operating-grid .ov-whatsapp {
+    gap: 18px;
+  }
+}
+@media (max-width: 767px) {
+  .app-shell .metric-strip:has(> :nth-child(3):last-child) > :last-child {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--sf-line);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 14px;
+    padding-block: 16px;
+  }
+  .app-shell
+    .metric-strip:has(> :nth-child(3):last-child)
+    > :last-child
+    strong {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    align-self: center;
+  }
+  .app-shell .page-heading {
+    padding-bottom: 17px;
+    gap: 14px;
+  }
+  .app-shell .page-heading h1 {
+    font-size: 33px;
+  }
+  .app-shell .metric-item {
+    padding: 16px;
+  }
+  .app-shell .metric-item strong {
+    font-size: 27px;
+  }
+  .app-shell .team-identity h3 {
+    font-size: 23px;
+  }
+  .wa-team-shortcut {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ov .ov-command {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    border-radius: 6px;
+    order: 0;
+  }
+  .ov-command-intro {
+    padding: 20px 22px 18px;
+  }
+  .ov-command-intro h1 {
+    margin: 16px 0 12px;
+    font-size: 36px;
+  }
+  .ov-command-actions {
+    margin: 18px 0 16px;
+    gap: 15px;
+  }
+  .ov-command-foot {
+    font-size: 9px;
+    gap: 8px;
+  }
+  .ov-command-focus {
+    padding: 18px 22px;
+    border-left: 0;
+    border-top: 1px solid #ffffff17;
+  }
+  .ov-command-empty {
+    max-width: none;
+    width: 100%;
+  }
+  .ov-command-empty > strong {
+    font-size: 25px;
+    margin: 12px 0 10px;
+  }
+  .ov-command-empty p {
+    max-width: 100%;
+    margin-bottom: 15px;
+  }
+  .ov .ov-command-focus .ov-now {
+    padding: 18px;
+  }
+  .ov .ov-command-focus .ov-now-info strong {
+    font-size: 22px;
+  }
+  .ov .ov-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    order: 1;
+  }
+  .ov .ov-kpi {
+    min-height: 100px;
+    padding: 17px;
+    gap: 10px;
+  }
+  .ov .ov-kpi:nth-child(2) {
+    border-right: 0;
+  }
+  .ov .ov-kpi:nth-child(-n + 2) {
+    border-bottom: 1px solid #ded4c5;
+  }
+  .ov .ov-kpi strong {
+    font-size: 27px;
+  }
+  .ov .ov-kpi > div > span {
+    font-size: 10px;
+  }
+  .ov .ov-operating-grid {
+    gap: 16px;
+    margin-bottom: 0;
+    order: 3;
+  }
+  .ov .ov-operating-grid .ov-whatsapp,
+  .sf-results {
+    padding: 21px;
+  }
+  .ov .ov-body {
+    display: flex;
+    gap: 18px;
+    order: 2;
+  }
+  .ov .ov-main,
+  .ov .ov-aside,
+  .ov .ov-insights {
+    display: contents;
+  }
+  .ov .ov-setup {
+    order: 8;
+  }
+  .sf-results h2 {
+    font-size: 29px;
+  }
+  .sf-results dd {
+    font-size: 25px;
+  }
+  .sf-results dl {
+    grid-template-columns: 1fr 1fr;
+    gap: 17px;
+  }
+  .sf-results dl > div:last-child {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #d4c6af;
+    padding-top: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-command * {
+    animation: none;
+    transition: none;
+  }
+}
