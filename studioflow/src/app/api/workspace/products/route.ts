@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   productActiveSchema,
@@ -12,7 +13,9 @@ export async function POST(request: Request) {
   try {
     await requireModule("produtos");
     assertSameOrigin(request);
-    return respond(await saveProduct(productSchema.parse(await request.json())));
+    const result = await saveProduct(productSchema.parse(await request.json()));
+    auditPanel("Salvou um produto");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -22,7 +25,9 @@ export async function PATCH(request: Request) {
   try {
     await requireModule("produtos");
     assertSameOrigin(request);
-    return respond(await setProductActive(productActiveSchema.parse(await request.json())));
+    const result = await setProductActive(productActiveSchema.parse(await request.json()));
+    auditPanel("Ativou ou pausou um produto");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

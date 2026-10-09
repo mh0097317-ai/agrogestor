@@ -7,11 +7,25 @@ import {
   mutationSchema,
 } from "@/services/server-validation";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
+import { logActivity } from "@/services/activity";
+import { describeMutation } from "@/services/activity-describe";
+
+/** "Abriu o painel" no máximo uma vez a cada 30 minutos por pessoa. */
+const opened = new Map<string, number>();
 export const dynamic = "force-dynamic";
 export async function GET() {
   const started = performance.now();
   try {
-    const response = respond(await getWorkspace());
+    const store = await getWorkspace();
+    const key = `${store.business.id}:${store.viewer?.name || ""}`;
+    if (Date.now() - (opened.get(key) || 0) > 30 * 60000) {
+      if (opened.size > 5000) opened.clear();
+      opened.set(key, Date.now());
+      after(() =>
+        logActivity(store.business.id, { source: "painel", action: "Abriu o painel", actor: store.viewer?.name || "" }),
+      );
+    }
+    const response = respond(store);
     response.headers.set(
       "Server-Timing",
       `workspace;dur=${(performance.now() - started).toFixed(1)}`,
@@ -48,6 +62,11 @@ export async function POST(request: Request) {
           );
         });
     }
+    // Everything done in the panel goes to the StudioFlow audit.
+    after(() => {
+      const { action, detail } = describeMutation(input.entity, input.action, input.data, result);
+      return logActivity(result.business.id, { source: "painel", action, detail, actor: result.viewer?.name || "" });
+    });
     return respond(result);
   } catch (error) {
     return failure(error);

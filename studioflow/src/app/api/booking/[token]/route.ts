@@ -5,10 +5,17 @@ import {
   servicesFor,
 } from "@/lib/availability";
 import { isDemo, findDemoToken, mutateDemo } from "@/services/server-demo";
-import { camel, publicProfessional } from "@/services/server-store";
+import {
+  camel,
+  customerBusyMessage,
+  customerClash,
+  publicProfessional,
+} from "@/services/server-store";
 import { randomUUID } from "node:crypto";
 import type { Appointment, Professional, Review } from "@/types";
 import { dropPendingCharge } from "@/services/server-payments";
+import { activityWhen, logActivity } from "@/services/activity";
+import { after } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { tokenSchema } from "@/services/server-validation";
 import {
@@ -104,6 +111,19 @@ export async function GET(
     return failure(error);
   }
 }
+/** Cancelou ou remarcou pelo comprovante: vai para a auditoria. */
+function auditBooking(appointment: Appointment | undefined, action: string) {
+  const label = action === "cancel" ? "Cancelou pelo comprovante" : action === "reschedule" ? "Remarcou pelo comprovante" : "";
+  if (!label || !appointment?.businessId) return;
+  after(() =>
+    logActivity(appointment.businessId, {
+      source: "cliente",
+      action: label,
+      detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
+      actor: appointment.customerName,
+    }),
+  );
+}
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ token: string }> },
@@ -115,8 +135,7 @@ export async function PATCH(
       payload = editSchema.parse(await request.json());
     if (isDemo()) {
       const { slug } = await findDemoToken(token);
-      return respond(
-        await mutateDemo((store) => {
+      const result = await mutateDemo((store) => {
           const appointment = store.appointments.find(
             (item) => item.token === token,
           );
@@ -180,6 +199,8 @@ export async function PATCH(
             (sum, service) => sum + service.duration,
             0,
           );
+          if (customerClash(store, appointment.customerPhone, payload.start, duration, appointment.id))
+            throw new DomainError(customerBusyMessage, 409);
           Object.assign(appointment, {
             professionalId: professional.id,
             start: new Date(payload.start).toISOString(),
@@ -188,8 +209,9 @@ export async function PATCH(
             ).toISOString(),
           });
           return appointment;
-        }, slug),
-      );
+        }, slug);
+      auditBooking(result as Appointment, payload.action);
+      return respond(result);
     }
     if (payload.action === "review") {
       const { data, error } = await createSupabaseAdmin().rpc("submit_review", {
@@ -223,11 +245,14 @@ export async function PATCH(
       throw new DomainError(
         error.message.includes("deposit pending")
           ? "Pague o sinal antes de reagendar, ou cancele e agende de novo."
-          : "Não foi possível alterar este agendamento. Confira a política de cancelamento e a disponibilidade.",
+          : error.message.includes("customer busy")
+            ? customerBusyMessage
+            : "Não foi possível alterar este agendamento. Confira a política de cancelamento e a disponibilidade.",
         409,
       );
     const appointment = camel(data) as Appointment;
     if (payload.action === "cancel") await dropPendingCharge(appointment);
+    auditBooking(appointment, payload.action);
     return respond(appointment);
   } catch (error) {
     return failure(error);

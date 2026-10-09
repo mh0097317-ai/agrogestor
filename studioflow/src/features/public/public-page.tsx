@@ -36,6 +36,7 @@ import { LocationSheet, mapLinks } from "./public-location";
 import { InstagramSheet } from "./public-instagram";
 import "./public-sheets.css";
 import { startHandoff } from "@/features/booking/intro-handoff";
+import { clickKind, track } from "@/lib/track";
 import {
   PublicAmenities,
   PublicTeam,
@@ -77,6 +78,17 @@ export function PublicPage({
   const [showDock, setShowDock] = useState(false);
   const [sheet, setSheet] = useState<"location" | "instagram" | null>(null);
   const mainCta = useRef<HTMLAnchorElement>(null);
+
+  // Visit and clicks for the StudioFlow audit (no personal data).
+  useEffect(() => {
+    track(slug, "view");
+    function onTrack(event: MouseEvent) {
+      const kind = clickKind(event.target as Element | null, slug);
+      if (kind) track(slug, kind);
+    }
+    document.addEventListener("click", onTrack, true);
+    return () => document.removeEventListener("click", onTrack, true);
+  }, [slug]);
 
   // Any link into the booking: the opening covers the page right away.
   useEffect(() => {
@@ -206,6 +218,7 @@ export function PublicPage({
         <button
           className="pp-cover-share"
           aria-label="Compartilhar estabelecimento"
+          data-track="compartilhar"
           onClick={shareBusiness}
         >
           <ShareNetwork size={18} weight="bold" />
@@ -259,6 +272,7 @@ export function PublicPage({
                       type="button"
                       onClick={open}
                       aria-haspopup="dialog"
+                      data-track={label === "Localização" ? "localizacao" : "instagram"}
                     >
                       <Icon size={15} /> {label}
                     </button>

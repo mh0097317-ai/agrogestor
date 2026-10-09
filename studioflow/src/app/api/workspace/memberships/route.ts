@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   changeMembership,
@@ -10,11 +11,11 @@ export async function PATCH(request: Request) {
   try {
     await requireModule("clube");
     assertSameOrigin(request);
-    return respond(
-      await changeMembership(
+    const result = await changeMembership(
         membershipActionSchema.parse(await request.json()),
-      ),
-    );
+      );
+    auditPanel("Alterou uma assinatura do clube");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

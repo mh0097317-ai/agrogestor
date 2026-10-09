@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import { z } from "zod";
 import { after } from "next/server";
@@ -41,6 +42,7 @@ export async function POST(
       requestOrigin(request),
     );
     if ("work" in result && result.work) after(result.work);
+    auditPanel("Respondeu ou assumiu uma conversa");
     return respond({
       ok: result.ok,
       ...("notice" in result ? { notice: result.notice } : {}),

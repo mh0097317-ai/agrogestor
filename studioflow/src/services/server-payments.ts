@@ -37,6 +37,7 @@ import {
   businessDayKey,
   camel,
   createBooking,
+  customerBusyMessage,
   demoWorkspaceSlug,
   getPublicStore,
   readPaymentAccount,
@@ -355,7 +356,9 @@ export async function bookWithPayments(
     throw new DomainError(
       error.message.includes("unavailable")
         ? "Este horário acabou de ficar indisponível. Escolha outro horário."
-        : "Não foi possível confirmar. Confira os dados e tente novamente.",
+        : error.message.includes("customer busy")
+          ? customerBusyMessage
+          : "Não foi possível confirmar. Confira os dados e tente novamente.",
       409,
     );
   const appointment = camel(data) as BookingOutcome;

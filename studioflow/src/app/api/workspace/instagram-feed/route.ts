@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import {
   connectInstagramFeed,
   disconnectInstagramFeed,
@@ -10,7 +11,9 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const input = instagramFeedSchema.parse(await request.json());
-    return respond(await connectInstagramFeed(input));
+    const result = await connectInstagramFeed(input);
+    auditPanel("Ligou os posts do Instagram na página");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -18,7 +21,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await disconnectInstagramFeed());
+    const result = await disconnectInstagramFeed();
+    auditPanel("Tirou os posts do Instagram da página");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

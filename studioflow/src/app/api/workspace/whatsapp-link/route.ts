@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { z } from "zod";
 import {
   notifySchema,
@@ -34,9 +35,9 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     if (z.object({ simulate: z.literal(true) }).safeParse(body).success)
       return respond(await simulateDemoScan());
-    return respond(
-      await startWhatsAppLink(requestOrigin(request), professional(request)),
-    );
+    const result = await startWhatsAppLink(requestOrigin(request), professional(request));
+    auditPanel("Gerou o QR Code do WhatsApp");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -45,9 +46,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(
-      await updateNotify(notifySchema.parse(await request.json())),
-    );
+    const result = await updateNotify(notifySchema.parse(await request.json()));
+    auditPanel("Mudou os avisos automáticos do WhatsApp");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -55,7 +56,9 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await unlinkWhatsApp(professional(request)));
+    const result = await unlinkWhatsApp(professional(request));
+    auditPanel("Desconectou o WhatsApp");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

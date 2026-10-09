@@ -11,6 +11,7 @@ import type {
 } from "@/types";
 import { isDemo, mutateDemo, readDemo } from "../server-demo";
 import { notifyNewBooking } from "../whatsapp/notify";
+import { activityWhen, logActivity } from "../activity";
 import { bookWithPayments, getPaymentAccount } from "../server-payments";
 import { decryptSecret, newToken, sha256 } from "../server-secrets";
 import { camel, getPublicStore } from "../server-store";
@@ -870,6 +871,12 @@ async function answerPending(
           },
         );
         await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
+        await logActivity(appointment.businessId, {
+          source: "recepcionista",
+          action: `Agendou pelo ${conversation.channel === "whatsapp" ? "WhatsApp" : conversation.channel === "instagram" ? "Instagram" : "chat da página"}`,
+          detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
+          actor: "Recepcionista",
+        });
         return appointment;
       },
     },

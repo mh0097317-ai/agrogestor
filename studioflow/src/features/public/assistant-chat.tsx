@@ -178,6 +178,7 @@ export function AssistantChat({
         type="button"
         className={`ac-launcher ${raised ? "is-raised" : ""} ${open ? "is-hidden" : ""}`}
         onClick={openChat}
+        data-track="chat"
         aria-label={`Conversar com ${name}`}
       >
         <ChatCircleText weight="duotone" size={22} />

@@ -57,6 +57,16 @@ export function requestOrigin(request: Request) {
   return new URL(`${protocol}//${host}`).origin;
 }
 const rateBuckets = new Map<string, { count: number; expires: number }>();
+/** Até `max` por minuto para a chave; não lança, só diz se pode. */
+export function allowRate(key: string, max: number) {
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || bucket.expires < now) {
+    rateBuckets.set(key, { count: 1, expires: now + 60000 });
+    return true;
+  }
+  return ++bucket.count <= max;
+}
 export function limitPublicMutation(
   request: Request,
   options: { scope: string; max: number } = { scope: "public", max: 20 },

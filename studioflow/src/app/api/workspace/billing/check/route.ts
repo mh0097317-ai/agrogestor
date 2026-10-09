@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { checkFee } from "@/services/billing";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -6,7 +7,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await checkFee());
+    const result = await checkFee();
+    auditPanel("Conferiu o pagamento da mensalidade");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

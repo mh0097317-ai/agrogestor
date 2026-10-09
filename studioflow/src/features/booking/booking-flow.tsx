@@ -34,6 +34,7 @@ import { flyTo, RollingMoney } from "./motion";
 import { BarberCut, markCutSeen, shouldPlayCut } from "./barber-cut";
 import { finishHandoff, handoffActive } from "./intro-handoff";
 import { haptic } from "@/lib/haptic";
+import { track } from "@/lib/track";
 import { saveLastBooking } from "@/lib/last-booking";
 import { depositFor } from "@/lib/payments";
 import {
@@ -219,12 +220,14 @@ function BookingWizard({
   const professional = professionals.find(
     (person) => person.id === (slot?.professionalId || professionalId),
   );
+  useEffect(() => track(business.slug, "etapa", "inicio"), [business.slug]);
   function changeStep(next: number) {
     if (next === 3 && step < 3 && cutPending && shouldPlayCut(business.slug)) {
       markCutSeen(business.slug);
       setCut(true);
     }
     setDirection(next > step ? "forward" : "back");
+    if (next > step) track(business.slug, "etapa", ["", "servico", "profissional", "horario", "dados", "pronto"][next] || "");
     setStep(next);
     setError("");
     setNotice("");
@@ -350,6 +353,7 @@ function BookingWizard({
             : professionals.find((p) => p.id === slot.professionalId)?.name ||
               "",
       });
+      track(business.slug, "agendou", summary.name);
       router.replace(`/booking/${appointment.token}`);
     } catch (cause) {
       const message =

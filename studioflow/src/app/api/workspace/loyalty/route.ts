@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import { loyaltySchema, updateLoyalty } from "@/services/server-growth";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
@@ -6,9 +7,9 @@ export async function PATCH(request: Request) {
   try {
     await requireModule("fidelidade");
     assertSameOrigin(request);
-    return respond(
-      await updateLoyalty(loyaltySchema.parse(await request.json())),
-    );
+    const result = await updateLoyalty(loyaltySchema.parse(await request.json()));
+    auditPanel("Alterou o cartão fidelidade");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

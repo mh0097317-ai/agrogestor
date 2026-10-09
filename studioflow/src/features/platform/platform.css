@@ -2314,3 +2314,160 @@ button.pf-back {
     overflow-wrap: anywhere;
   }
 }
+
+/* Auditoria do estabelecimento */
+.pf-audit h4 {
+  margin: 18px 0 10px;
+  color: #433a31;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.pf-audit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pf-audit-empty {
+  color: #6e655b;
+  font-size: 13px;
+}
+.pf-funnel {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-funnel li {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) 2fr auto 44px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.pf-funnel i {
+  height: 10px;
+  background: #ece4d6;
+}
+.pf-funnel em {
+  display: block;
+  height: 100%;
+  background: #16130f;
+}
+.pf-funnel b {
+  font-variant-numeric: tabular-nums;
+}
+.pf-funnel small {
+  color: #6e655b;
+  text-align: right;
+}
+.pf-daily {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 72px;
+  padding: 8px;
+  background: #f7f3ec;
+  border: 1px solid #e2d9ca;
+}
+.pf-daily span {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  height: 100%;
+}
+.pf-daily i {
+  width: 100%;
+  background: #a47a3c;
+}
+.pf-audit-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.pf-audit-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.pf-audit-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dotted #dcd2c2;
+  padding-bottom: 4px;
+}
+.pf-timeline {
+  display: grid;
+  max-height: 420px;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border-top: 1px solid #e2d9ca;
+}
+.pf-timeline li {
+  display: grid;
+  grid-template-columns: 92px 104px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #efe8dc;
+  font-size: 13px;
+}
+.pf-timeline time {
+  color: #6e655b;
+  font-variant-numeric: tabular-nums;
+}
+.pf-timeline-tag {
+  justify-self: start;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 650;
+  background: #ece4d6;
+  color: #433a31;
+}
+.pf-timeline li.is-cliente .pf-timeline-tag {
+  background: #e3efe6;
+  color: #2f6b45;
+}
+.pf-timeline li.is-recepcionista .pf-timeline-tag {
+  background: #efe5d2;
+  color: #7a5626;
+}
+.pf-timeline li.is-sistema .pf-timeline-tag {
+  background: #e8e8ee;
+  color: #3f4a5c;
+}
+.pf-timeline p {
+  margin: 0;
+  color: #16130f;
+}
+.pf-timeline small {
+  color: #6e655b;
+}
+@media (max-width: 640px) {
+  .pf-funnel li {
+    grid-template-columns: 1fr auto 40px;
+  }
+  .pf-funnel i {
+    grid-column: 1 / -1;
+    order: 4;
+  }
+  .pf-audit-split {
+    grid-template-columns: 1fr;
+  }
+  .pf-timeline li {
+    grid-template-columns: auto 1fr;
+  }
+  .pf-timeline p {
+    grid-column: 1 / -1;
+  }
+}

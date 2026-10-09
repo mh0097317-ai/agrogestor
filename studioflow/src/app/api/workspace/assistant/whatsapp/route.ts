@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   connectWhatsApp,
@@ -17,7 +18,9 @@ export async function POST(request: Request) {
     await requireModule("recepcionista");
     assertSameOrigin(request);
     const input = whatsappSchema.parse(await request.json());
-    return respond(await connectWhatsApp(input, requestOrigin(request)));
+    const result = await connectWhatsApp(input, requestOrigin(request));
+    auditPanel("Conectou o WhatsApp oficial");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -25,7 +28,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await disconnectWhatsApp());
+    const result = await disconnectWhatsApp();
+    auditPanel("Desconectou o WhatsApp oficial");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

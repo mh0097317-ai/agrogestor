@@ -5,6 +5,7 @@ import {
   EvolutionConfiguration,
 } from "./client-configuration";
 import { PlatformWhatsApp } from "./platform-whatsapp";
+import { ClientAudit } from "./client-audit";
 import { notifyWorkspaceChange } from "@/lib/workspace-sync";
 import {
   ChannelHistory,
@@ -1134,6 +1135,7 @@ function AccessSheet({
           initialTab={initialTab}
         />
         <PlatformMetrics item={item} periodLabel={periodLabel} />
+        <ClientAudit item={item} />
         <ChannelHistory events={channelEvents} />
         <PlanEditor
           item={item}

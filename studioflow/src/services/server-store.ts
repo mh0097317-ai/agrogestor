@@ -345,6 +345,22 @@ async function loadClub(client: SupabaseClient, businessId: string) {
       : (camel(memberships.data) as Membership[]),
   };
 }
+/** Id do estabelecimento pelo endereço, sem carregar o cadastro inteiro. */
+const slugIds = new Map<string, { id: string | null; expires: number }>();
+export async function businessIdForSlug(slug: string) {
+  if (!/^[a-z0-9-]{3,80}$/.test(slug)) return null;
+  const cached = slugIds.get(slug);
+  if (cached && cached.expires > Date.now()) return cached.id;
+  let id: string | null = null;
+  if (isDemo()) id = (await readDemo(slug).catch(() => null))?.business.id ?? null;
+  else {
+    const { data } = await createSupabaseAdmin().from("businesses").select("id").eq("slug", slug).maybeSingle();
+    id = (data?.id as string | undefined) ?? null;
+  }
+  if (slugIds.size > 2000) slugIds.clear();
+  slugIds.set(slug, { id, expires: Date.now() + 5 * 60000 });
+  return id;
+}
 /** Agenda online, chat e clube só funcionam com o acesso liberado. */
 export async function getPublicStore(slug: string) {
   if (isDemo()) {
@@ -519,12 +535,43 @@ export async function readPaymentAccount(
       }
     : null;
 }
+/** O mesmo cliente não marca dois horários que se encostam. */
+export const customerBusyMessage =
+  "Você já tem um horário marcado nesse período. Para trocar, use o link do seu comprovante.";
+export function customerClash(
+  store: Pick<Store, "appointments">,
+  phone: string,
+  start: string,
+  minutes: number,
+  except?: string,
+) {
+  const from = new Date(start).getTime();
+  const to = from + minutes * 60000;
+  return store.appointments.find(
+    (item) =>
+      item.id !== except &&
+      item.customerPhone === phone &&
+      ["confirmed", "pending", "in_progress"].includes(item.status) &&
+      new Date(item.start).getTime() < to &&
+      new Date(item.end).getTime() > from,
+  );
+}
 export function createBooking(
   store: Store,
   input: z.infer<typeof bookSchema>,
   staff = false,
 ): Appointment {
   const services = servicesFor(store, input.serviceIds);
+  if (
+    !staff &&
+    customerClash(
+      store,
+      input.phone,
+      input.start,
+      services.reduce((sum, service) => sum + service.duration, 0),
+    )
+  )
+    throw new DomainError(customerBusyMessage, 409);
   const professional = chooseProfessional(
     store,
     input.serviceIds,

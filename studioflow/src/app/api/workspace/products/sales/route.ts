@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   cancelSale,
@@ -12,7 +13,9 @@ export async function POST(request: Request) {
   try {
     await requireModule("produtos");
     assertSameOrigin(request);
-    return respond(await sellProducts(saleSchema.parse(await request.json())), 201);
+    const result = await sellProducts(saleSchema.parse(await request.json()));
+    auditPanel("Vendeu produtos");
+    return respond(result, 201);
   } catch (error) {
     return failure(error);
   }
@@ -22,7 +25,9 @@ export async function PATCH(request: Request) {
   try {
     await requireModule("produtos");
     assertSameOrigin(request);
-    return respond(await cancelSale(cancelSaleSchema.parse(await request.json())));
+    const result = await cancelSale(cancelSaleSchema.parse(await request.json()));
+    auditPanel("Cancelou uma venda de produto");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

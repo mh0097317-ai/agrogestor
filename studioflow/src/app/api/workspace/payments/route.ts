@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   connectPayments,
@@ -20,7 +21,9 @@ export async function POST(request: Request) {
     await requireModule("pagamentos");
     assertSameOrigin(request);
     const input = connectSchema.parse(await request.json());
-    return respond(await connectPayments(input, requestOrigin(request)));
+    const result = await connectPayments(input, requestOrigin(request));
+    auditPanel("Conectou o Asaas");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -30,9 +33,9 @@ export async function PATCH(request: Request) {
   try {
     await requireModule("pagamentos");
     assertSameOrigin(request);
-    return respond(
-      await updateDeposit(depositSchema.parse(await request.json())),
-    );
+    const result = await updateDeposit(depositSchema.parse(await request.json()));
+    auditPanel("Alterou o sinal via Pix");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -40,7 +43,9 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await disconnectPayments());
+    const result = await disconnectPayments();
+    auditPanel("Desconectou o Asaas");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }

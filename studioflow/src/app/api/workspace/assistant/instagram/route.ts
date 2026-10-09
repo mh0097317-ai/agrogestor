@@ -1,3 +1,4 @@
+import { auditPanel } from "@/services/activity";
 import { requireModule } from "@/services/modules-guard";
 import {
   connectInstagram,
@@ -17,7 +18,9 @@ export async function POST(request: Request) {
     await requireModule("recepcionista");
     assertSameOrigin(request);
     const input = instagramSchema.parse(await request.json());
-    return respond(await connectInstagram(input, requestOrigin(request)));
+    const result = await connectInstagram(input, requestOrigin(request));
+    auditPanel("Conectou o Instagram Direct");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
@@ -25,7 +28,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertSameOrigin(request);
-    return respond(await disconnectInstagram());
+    const result = await disconnectInstagram();
+    auditPanel("Desconectou o Instagram Direct");
+    return respond(result);
   } catch (error) {
     return failure(error);
   }
