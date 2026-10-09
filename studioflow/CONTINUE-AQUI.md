@@ -317,7 +317,7 @@ O pacote inclui código, configurações, lockfile, SQL, testes, fonte local com
 
 “Leia CONTINUE-AQUI.md, README.md, AGENTS.md e a documentação do banco. Faça uma auditoria curta da aplicação existente e continue as pendências do piloto de produção, começando pelo alinhamento das permissões e pela conexão real ao Supabase. Preserve o redesign e as proteções de isolamento, concorrência e pagamentos. Execute os checks adequados, registre as verificações efetivamente feitas e não apresente integrações pendentes como concluídas.”
 
-## Trava do mesmo cliente e auditoria no /admin (12 de outubro de 2026)
+## Trava do mesmo cliente e auditoria no /admin (9 de outubro de 2026)
 
 - O mesmo telefone não marca dois horários que se sobrepõem, nem com outro profissional: `private.customer_busy` dentro de `book_appointment` e na remarcação de `manage_booking` (erro `customer busy`), com a mesma regra no modo demonstração (`customerClash` em `server-store.ts`). O painel continua podendo marcar por cima. Migration `20261012120000_studioflow_customer_lock.sql`, teste `tests/customer-lock-db.test.ts`.
 - Auditoria por estabelecimento (só servidor, RLS sem políticas): `activity_log` (o que a equipe faz no painel, o que o cliente faz pelo comprovante e o que a recepcionista agenda) e `page_events` (visitas, cliques em Agendar, WhatsApp, Instagram, Localização, Compartilhar, Chat, Clube, etapas do agendamento e agendamentos concluídos, com um código aleatório do aparelho, sem dados pessoais). Migration `20261012121000_studioflow_audit.sql`.
