@@ -51,19 +51,23 @@ function Logo({ dark }: { dark: boolean }) {
 }
 
 /** Uma tela da publicação, no visual da marca. */
+/** Tela com extras opcionais: foto de fundo ou celular com uma tela do app. */
+export type ArtSlide = Slide & { image?: string; phone?: string };
+
 export function SlideArt({
   slide,
   index,
   total,
   format,
 }: {
-  slide: Slide;
+  slide: ArtSlide;
   index: number;
   total: number;
   format: MarketingFormat;
 }) {
   const t = tone(format, index, total);
-  const dark = t === "ink" || t === "brass";
+  const photo = !!slide.image;
+  const dark = photo || t === "ink" || t === "brass";
   const bg = { ink: colors.ink, paper: colors.paper, paper2: colors.paper2, brass: colors.brass }[t];
   const text = dark ? colors.paper : colors.ink;
   const sub = dark ? colors.soft : colors.muted;
@@ -85,6 +89,49 @@ export function SlideArt({
         position: "relative",
       }}
     >
+      {photo && (
+        <img
+          src={slide.image}
+          alt=""
+          style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      )}
+      {photo && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            backgroundImage: "linear-gradient(180deg, rgba(22,19,15,0.25) 0%, rgba(22,19,15,0.55) 45%, rgba(22,19,15,0.95) 100%)",
+          }}
+        />
+      )}
+      {slide.phone && (
+        <div
+          style={{
+            position: "absolute",
+            right: -40,
+            bottom: story ? 260 : 120,
+            width: 420,
+            height: story ? 860 : 820,
+            display: "flex",
+            padding: 14,
+            borderRadius: 64,
+            background: "#0E0C0A",
+            boxShadow: "0 40px 90px rgba(0,0,0,0.45)",
+            transform: "rotate(-6deg)",
+          }}
+        >
+          <img
+            src={slide.phone}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", borderRadius: 52 }}
+          />
+        </div>
+      )}
       <div
         style={{
           display: "flex",
@@ -108,7 +155,8 @@ export function SlideArt({
           display: "flex",
           marginTop: cover || last ? 0 : 36,
           fontFamily: "Fraunces",
-          fontSize: titleSize,
+          fontSize: slide.phone ? Math.min(titleSize, 84) : titleSize,
+          maxWidth: slide.phone ? 560 : "100%",
           lineHeight: 1.05,
           letterSpacing: -0.5,
           wordSpacing: 6,
@@ -118,11 +166,13 @@ export function SlideArt({
       </div>
       <div style={{ display: "flex", width: 120, height: 4, background: colors.gold, margin: "40px 0" }} />
       {slide.body ? (
-        <div style={{ display: "flex", fontSize: 40, lineHeight: 1.4, color: sub }}>{slide.body}</div>
+        <div style={{ display: "flex", fontSize: 40, lineHeight: 1.4, color: sub, maxWidth: slide.phone ? 540 : "100%" }}>
+          {slide.body}
+        </div>
       ) : null}
       <div style={{ display: "flex", flex: 1 }} />
       {last || story ? (
-        <div style={{ display: "flex" }}>
+        <div style={{ display: "flex", marginBottom: 70 }}>
           <div
             style={{
               display: "flex",
@@ -160,7 +210,7 @@ export function SlideArt({
 
 /** JPEG da tela (o Instagram só aceita JPEG em fotos). */
 export async function renderSlideJpeg(
-  slides: Slide[],
+  slides: ArtSlide[],
   index: number,
   format: MarketingFormat,
 ) {
