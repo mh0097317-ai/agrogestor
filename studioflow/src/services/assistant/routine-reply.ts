@@ -14,10 +14,15 @@ export function exactPriceSelection(
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
+  const value = normalize(text).replace(
+    /^(?:oi|ola|bom dia|boa tarde|boa noite)[,!.\s]+/,
+    "",
+  );
   const match =
-    /^(?:qual (?:e )?o (?:valor|preco) (?:do|da|de)|quanto (?:custa|fica|ta|esta)(?: o| a)?) (.+?)[?!.\s]*$/.exec(
-      normalize(text),
-    );
+    /^(?:qual (?:e )?o (?:valor|preco) (?:do|da|de)|quanto (?:custa|fica|ta|esta|e)(?: o| a)?) (.+?)[?!.\s]*$/.exec(
+      value,
+    ) ||
+    /^(?:o |a )?(.+?) (?:e|fica|custa|ta|esta) quanto[?!.\s]*$/.exec(value);
   const services = match
     ? store.services.filter(
         (s) =>

@@ -47,6 +47,10 @@ import { finishConfirmedBooking } from "./confirmed-booking";
 import { routineReply } from "./routine-reply";
 import { availabilityReply } from "./availability-reply";
 import type { AssistantContext } from "./agent";
+import {
+  idlePriceResumeCursor,
+  whatsappBurstDelayMs,
+} from "./idle-price-resume";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 export interface Conversation {
@@ -62,6 +66,7 @@ export interface Conversation {
   history: History;
   aiCursor: string;
   processingUntil?: string | null;
+  updatedAt?: string;
 }
 type Role = ConversationMessage["role"];
 
@@ -124,6 +129,10 @@ export interface ConversationRepo {
   } | null>;
   seen?(providerId: string): Promise<boolean>;
   bookedSince?(id: string, since: string): Promise<boolean>;
+  resumeIdlePrice?(
+    conversation: Conversation,
+    cursor: string,
+  ): Promise<boolean>;
 }
 
 const hex = (token: string) => sha256(token).toString("hex");
@@ -145,7 +154,7 @@ export function liveRepo(
 ): ConversationRepo {
   const admin = createSupabaseAdmin();
   const columns =
-    "id,channel,contact_phone,contact_name,contact_ref,status,unread,history,ai_cursor,whatsapp_professional_id,processing_until";
+    "id,channel,contact_phone,contact_name,contact_ref,status,unread,history,ai_cursor,whatsapp_professional_id,processing_until,updated_at";
   const one = async (query: PromiseLike<{ data: unknown }>) => {
     const { data } = await query;
     return conversationFromRow(data);
@@ -271,6 +280,19 @@ export function liveRepo(
         p_conversation_id: id,
       });
       return data === true;
+    },
+    async resumeIdlePrice(conversation, cursor) {
+      if (!conversation.updatedAt) return false;
+      const { data, error } = await admin
+        .from("conversations")
+        .update({ status: "ai", ai_cursor: cursor, history: [], unread: 0 })
+        .eq("business_id", businessId)
+        .eq("id", conversation.id)
+        .eq("status", "human")
+        .eq("updated_at", conversation.updatedAt)
+        .select("id");
+      if (error) throw new Error("idle-price-resume-unavailable");
+      return data?.length === 1;
     },
     async release(id) {
       await admin
@@ -1243,6 +1265,32 @@ export async function receiveWhatsAppMessages(input: {
       continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
+    if (
+      conversation.status === "human" &&
+      settings?.assistant_enabled &&
+      message.createdAt &&
+      /\b(?:valor|pre[cç]o|quanto)\b/i.test(body) &&
+      repo.resumeIdlePrice
+    ) {
+      const fresh = await repo.get(conversation.id);
+      if (fresh?.status === "human") {
+        const cursor = idlePriceResumeCursor({
+          text: body,
+          createdAt: message.createdAt,
+          messages: await repo.messages(conversation.id),
+          store: professionalStore(await loadStore(slug), input.professionalId),
+          runState: (await repo.run?.(conversation.id))?.state,
+        });
+        if (cursor && (await repo.resumeIdlePrice(fresh, cursor))) {
+          conversation.status = "ai";
+          await repo.addMessage(
+            conversation.id,
+            "event",
+            "Atendimento retomado após pausa manual para uma nova consulta de preço.",
+          );
+        }
+      }
+    }
     if (conversation.status === "closed")
       await repo.update(conversation.id, {
         status: settings?.assistant_enabled ? "ai" : "human",
@@ -1254,7 +1302,7 @@ export async function receiveWhatsAppMessages(input: {
   return async () => {
     if (!settings?.assistant_enabled) return;
     // Let short WhatsApp bursts arrive before one leased answer is generated.
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    await new Promise((resolve) => setTimeout(resolve, whatsappBurstDelayMs));
     const { data: freshSettings } = await createSupabaseAdmin()
       .from("business_settings")
       .select("assistant_enabled")
