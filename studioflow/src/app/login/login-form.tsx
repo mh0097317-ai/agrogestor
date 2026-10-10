@@ -11,9 +11,9 @@ import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { inviteRedirect } from "@/lib/invite-redirect";
 import "./login.css";
-export function LoginForm() {
+export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const router = useRouter();
-  const [signup, setSignup] = useState(false),
+  const [signup, setSignup] = useState(initialSignup),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [name, setName] = useState(""),
