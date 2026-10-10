@@ -76,6 +76,7 @@ import {
   type PlatformOrder,
 } from "./platform-summary";
 import "./platform.css";
+import { MarketingPanel } from "./marketing-panel";
 import { OperationsPanel } from "./operations-panel";
 
 type Filter = "all" | AccessState | "closed";
@@ -111,6 +112,11 @@ const viewCopy: Record<string, { title: string; description: string }> = {
     title: "Mensalidades do StudioFlow.",
     description:
       "Acompanhe o que foi recebido e as faturas que ainda estão em aberto.",
+  },
+  marketing: {
+    title: "Marketing da StudioFlow.",
+    description:
+      "A IA cria posts, carrosséis e stories para o Instagram. Você aprova ou deixa no piloto automático.",
   },
   activity: {
     title: "Histórico da administração.",
@@ -363,6 +369,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             ["businesses", "Estabelecimentos"],
             ["receptionists", "StudioFlow no WhatsApp"],
             ["billing", "Cobranças"],
+            ["marketing", "Marketing"],
             ["activity", "Histórico"],
           ].map(([key, label]) => (
             <button
@@ -397,6 +404,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           <option value="businesses">Estabelecimentos</option>
           <option value="receptionists">StudioFlow no WhatsApp</option>
           <option value="billing">Cobranças</option>
+          <option value="marketing">Marketing</option>
           <option value="activity">Histórico</option>
         </select>
         <div className="pf-top-actions">
@@ -520,7 +528,10 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             </article>
           </section>
         )}
-        <div className="pf-period-bar">
+        <div
+          className="pf-period-bar"
+          style={view === "marketing" ? { display: "none" } : undefined}
+        >
           <label>
             Período dos indicadores{" "}
             <select
@@ -676,7 +687,8 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             onOpen={setOpen}
           />
         )}
-        {view !== "businesses" && !items && (
+        {view === "marketing" && <MarketingPanel />}
+        {view !== "businesses" && view !== "marketing" && !items && (
           <p className="pf-empty">
             {loading
               ? "Carregando o painel…"

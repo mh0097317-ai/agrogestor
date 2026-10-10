@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { unlink } from "node:fs/promises";
 import { join } from "node:path";
+import { nextFreeByProfessional, localDate } from "../src/lib/availability";
 import { readDemo, createDemoBusiness } from "../src/services/server-demo";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
@@ -240,6 +241,119 @@ test("n8n live pipeline: one engine, persistent uncertain boundary, no duplicate
         outcome === "success" ? "ai" : "human",
       );
     }
+  } finally {
+    await unlink(join(process.cwd(), ".data", `business-${slug}.json`)).catch(
+      () => undefined,
+    );
+    globalThis.fetch = savedFetch;
+    if (savedEnv === undefined) delete process.env.N8N_WHATSAPP;
+    else process.env.N8N_WHATSAPP = savedEnv;
+  }
+});
+
+test("n8n-confirmed choice closes through the real demo booking backend once with attribution and receipt", async () => {
+  const savedEnv = process.env.N8N_WHATSAPP;
+  const savedFetch = globalThis.fetch;
+  const slug = `confirmed-pipeline-${process.pid}`;
+  const fixture = structuredClone(await readDemo("barber-011"));
+  fixture.business.slug = slug;
+  fixture.settings.assistantEnabled = true;
+  fixture.settings.depositMode = "off";
+  const phone = "11988887777";
+  fixture.customers.push({
+    id: randomUUID(),
+    businessId: fixture.business.id,
+    phone,
+    name: "Cliente de Teste",
+    createdAt: new Date().toISOString(),
+    visits: 0,
+    totalSpent: 0,
+  });
+  const service = fixture.services.find((s) => s.active)!;
+  const slot = Object.values(
+    nextFreeByProfessional(fixture, [service.id], new Date(), 14),
+  )[0];
+  assert.ok(slot);
+  await createDemoBusiness(fixture);
+  try {
+    const { repo } = memoryRepo(true);
+    let state = "RECEIVED";
+    repo.startRun = async () => 1;
+    repo.progress = async (_id, patch) => {
+      state = patch.state;
+    };
+    repo.run = async () => ({ state, attempts: 1 });
+    process.env.N8N_WHATSAPP = JSON.stringify([
+      {
+        businessId: repo.businessId,
+        professionalId: null,
+        token: "x".repeat(32),
+        basicUser: "test",
+        basicPassword: "test",
+      },
+    ]);
+    globalThis.fetch = async () => {
+      throw Error("Confirmed closure must not pay for another external turn");
+    };
+    const conversation = await repo.create({
+      channel: "whatsapp",
+      contactPhone: phone,
+      contactName: "Display name is not consent",
+    });
+    await repo.addMessage(
+      conversation.id,
+      "customer",
+      `Pode marcar o corte dia ${localDate(slot.start)} às ${slot.time}`,
+    );
+    const sent: string[] = [];
+    let classifierCalls = 0;
+    const create: CreateMessage = async (params) => {
+      classifierCalls++;
+      assert.equal(params.max_tokens, 360);
+      return {
+        ...(await answer("unused")(params)),
+        content: [
+          {
+            type: "text",
+            citations: null,
+            text: JSON.stringify({
+              intent: "BOOK",
+              stage: "CONFIRMING",
+              confidence: 0.98,
+              serviceIds: [service.id],
+              professionalId: slot.professionalId,
+              date: localDate(slot.start),
+              time: slot.time,
+              missing: [],
+              nextAction: "CONFIRM",
+            }),
+          },
+        ],
+      } as Anthropic.Beta.BetaMessage;
+    };
+    const delivery = {
+      slug,
+      origin: "https://test.invalid",
+      send: async (body: string) => {
+        sent.push(body);
+        return "sent-once";
+      },
+    };
+    await processConversation(repo, conversation.id, delivery, create);
+    await processConversation(repo, conversation.id, delivery, create);
+    const persisted = await readDemo(slug);
+    const generated = persisted.appointments.filter(
+      (a) => a.conversationId === conversation.id,
+    );
+    assert.equal(generated.length, 1);
+    assert.equal(generated[0].bookingChannel, "assistant_whatsapp");
+    assert.equal(generated[0].customerPhone, phone);
+    assert.equal(generated[0].customerName, "Cliente de Teste");
+    assert.equal(generated[0].start, slot.start);
+    assert.equal(classifierCalls, 1);
+    assert.equal(sent.length, 1);
+    assert.match(sent[0], new RegExp(`/booking/${generated[0].token}`));
+    assert.equal(state, "SENT");
   } finally {
     await unlink(join(process.cwd(), ".data", `business-${slug}.json`)).catch(
       () => undefined,

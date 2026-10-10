@@ -63,6 +63,14 @@ test("disabled public link creates no records; staff and receptionist stay indep
     phone: "11999998888",
     reminder: false,
   };
+  // A working day of that professional, two weeks ahead (independent of today's weekday).
+  const worker = store.professionals.find((p) => p.id === slot.professionalId)!;
+  let staffDate = "";
+  for (let offset = 15; offset < 22 && !staffDate; offset++) {
+    const day = new Date(Date.now() + offset * 86400000);
+    if (worker.days.includes(new Date(`${localDate(day)}T12:00:00Z`).getUTCDay()))
+      staffDate = localDate(day);
+  }
   try {
     await createDemoBusiness(store);
     await assert.rejects(
@@ -89,10 +97,7 @@ test("disabled public link creates no records; staff and receptionist stay indep
           draft,
           {
             ...input,
-            start: brazilTime(
-              localDate(new Date(Date.now() + 15 * 86400000)),
-              "15:00",
-            ).toISOString(),
+            start: brazilTime(staffDate, "15:00").toISOString(),
           },
           true,
         ),

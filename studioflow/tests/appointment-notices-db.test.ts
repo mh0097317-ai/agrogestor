@@ -209,6 +209,24 @@ test("reminder claims enforce consent, cancellation, current time, deduplication
       ),
     );
     assert.equal(claims.filter((r) => r.rows[0].v).length, 1);
+    await db.query(
+      "update appointments set reminder=false,created_at=now(),booking_channel='public_link' where id=$1",
+      [a.id],
+    );
+    const immediate = await Promise.all(
+      [1, 2].map(() =>
+        db.query<{ v: boolean }>(
+          "select claim_appointment_notice($1,'customer_booking',$2) v",
+          [a.id, a.start],
+        ),
+      ),
+    );
+    assert.equal(
+      immediate.filter((r) => r.rows[0].v).length,
+      1,
+      "one customer confirmation, independent of future reminder consent",
+    );
+    await db.query("update appointments set reminder=true where id=$1", [a.id]);
     assert.equal(
       (await db.query("select * from due_appointment_reminders()")).rows.length,
       0,

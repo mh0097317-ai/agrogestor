@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { appUrl } from "@/lib/app-url";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
 import { accessOpen } from "@/lib/access";
 import { DomainError } from "@/lib/availability";
@@ -249,8 +250,8 @@ export async function notifyN8nCustomer(
   const first = name.trim().split(/\s+/)[0]?.slice(0, 50);
   const text =
     input.action === "inactive_customer"
-      ? `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Faz um tempo desde seu último atendimento. Se quiser marcar seu próximo horário: https://studioflow-three-tau.vercel.app/${store.business.slug}`
-      : `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Se ainda quiser continuar seu agendamento, veja os serviços e horários aqui: https://studioflow-three-tau.vercel.app/${store.business.slug}`;
+      ? `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Faz um tempo desde seu último atendimento. Se quiser marcar seu próximo horário: ${appUrl}/${store.business.slug}`
+      : `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Se ainda quiser continuar seu agendamento, veja os serviços e horários aqui: ${appUrl}/${store.business.slug}`;
   const receipt = () =>
     admin
       .from("n8n_notification_receipts")

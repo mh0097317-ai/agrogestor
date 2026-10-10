@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { appUrl } from "@/lib/app-url";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { DomainError } from "@/lib/availability";
 import type { Appointment, Store } from "@/types";
@@ -146,7 +147,7 @@ export async function notifyAppointment(
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(appointment.start));
-    const link = `https://studioflow-three-tau.vercel.app/${store.business.slug}/agendar`;
+    const link = `${appUrl}/${store.business.slug}/agendar`;
     text =
       input.action === "no_show_followup"
         ? `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Seu atendimento foi registrado como não comparecimento. Se houve algum engano, responda por aqui. Para marcar outro horário: ${link}`

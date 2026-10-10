@@ -43,6 +43,10 @@ import {
   N8nTurnError,
 } from "./n8n-whatsapp";
 import { verifiedN8nReply } from "./n8n-reply";
+import { finishConfirmedBooking } from "./confirmed-booking";
+import { routineReply } from "./routine-reply";
+import { availabilityReply } from "./availability-reply";
+import type { AssistantContext } from "./agent";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 export interface Conversation {
@@ -724,7 +728,103 @@ async function answerPending(
           conversation.whatsappProfessionalId,
         )
       : null;
-  if (n8n && understanding) {
+  const ctx: AssistantContext = {
+    channel: conversation.channel,
+    professionalId: conversation.whatsappProfessionalId || undefined,
+    customerName:
+      store.customers.find(
+        (customer) =>
+          customer.phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") ===
+          conversation.contactPhone,
+      )?.name || nameAnswer(text, recent),
+    verifiedPhone:
+      conversation.channel === "whatsapp"
+        ? conversation.contactPhone
+        : undefined,
+    origin: delivery.origin,
+    payments,
+    loadStore: () => loadStore(delivery.slug),
+    book: async (input) => {
+      const fresh = await repo.get(conversationId);
+      if (
+        fresh?.status !== "ai" ||
+        fresh.aiCursor !== conversation.aiCursor ||
+        (fresh.processingUntil &&
+          Date.parse(fresh.processingUntil) <= Date.now())
+      )
+        throw new DomainError(
+          "A equipe assumiu esta conversa ou o processamento expirou.",
+          409,
+        );
+      if (await repo.bookedSince?.(conversationId, cursor))
+        throw new DomainError("O pedido já possui um agendamento.", 409);
+      const appointment = await bookWithPayments(
+        delivery.slug,
+        {
+          serviceIds: input.serviceIds,
+          professionalId: input.professionalId,
+          start: input.start,
+          name: input.name,
+          phone: input.phone,
+          email: "",
+          reminder: true,
+          cpf: input.cpf,
+        },
+        conversation.channel === "web" ? "public_link" : "receptionist",
+        { channel: conversation.channel, conversationId: conversation.id },
+      );
+      await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
+      await logActivity(appointment.businessId, {
+        source: "recepcionista",
+        action: `Agendou pelo ${conversation.channel === "whatsapp" ? "WhatsApp" : conversation.channel === "instagram" ? "Instagram" : "chat da página"}`,
+        detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
+        actor: "Recepcionista",
+      });
+      return appointment;
+    },
+  };
+  const direct =
+    understanding && !pending.some((message) => message.role === "staff")
+      ? availabilityReply(
+          understanding.interpretation,
+          scopedStore,
+          text,
+          recent,
+        ) ||
+        routineReply(understanding.interpretation, scopedStore, {
+          text,
+          recent,
+        })
+      : null;
+  const closed = direct
+    ? ({
+        history: conversation.history,
+        reply: direct,
+        usage: { input: 0, output: 0 },
+      } as import("./agent").TurnResult)
+    : understanding && !pending.some((message) => message.role === "staff")
+      ? await finishConfirmedBooking({
+          selection: understanding.interpretation,
+          text,
+          recent,
+          store: scopedStore,
+          ctx,
+          beforeBooking: async () => {
+            // A crash after mutation must go to review rather than replay a booking.
+            await repo.progress?.(conversationId, {
+              state: "SENDING",
+              interpretation: understanding.interpretation,
+            });
+          },
+        })
+      : null;
+  if (closed)
+    closed.history = [
+      ...conversation.history,
+      { role: "user", content: text },
+      { role: "assistant", content: closed.reply },
+    ].slice(-40) as History;
+  if (n8n && understanding && !closed) {
     if (store.business.id !== repo.businessId) throw new N8nTurnError();
     if (!repo.startRun || !repo.progress || !repo.run) throw new N8nTurnError();
     if (pending.some((message) => message.role === "staff"))
@@ -821,66 +921,21 @@ async function answerPending(
       throw new N8nTurnError();
     }
   }
-  const result = await runAssistant({
-    create,
-    store,
-    history: conversation.history,
-    interpretation: understanding?.interpretation,
-    transcript: contextText(recent),
-    bookingContext,
-    onStage: async (state) => {
-      if (understanding) await repo.progress?.(conversationId, { state });
-    },
-    customerText: text,
-    ctx: {
-      channel: conversation.channel,
-      professionalId: conversation.whatsappProfessionalId || undefined,
-      customerName:
-        store.customers.find(
-          (customer) =>
-            customer.phone
-              .replace(/\D/g, "")
-              .replace(/^55(?=\d{10,11}$)/, "") === conversation.contactPhone,
-        )?.name || nameAnswer(text, recent),
-      verifiedPhone:
-        conversation.channel === "whatsapp"
-          ? conversation.contactPhone
-          : undefined,
-      origin: delivery.origin,
-      payments,
-      loadStore: () => loadStore(delivery.slug),
-      book: async (input) => {
-        if ((await repo.get(conversationId))?.status !== "ai")
-          throw new DomainError("A equipe assumiu esta conversa.", 409);
-        const appointment = await bookWithPayments(
-          delivery.slug,
-          {
-            serviceIds: input.serviceIds,
-            professionalId: input.professionalId,
-            start: input.start,
-            name: input.name,
-            phone: input.phone,
-            email: "",
-            reminder: true,
-            cpf: input.cpf,
-          },
-          conversation.channel === "web" ? "public_link" : "receptionist",
-          {
-            channel: conversation.channel,
-            conversationId: conversation.id,
-          },
-        );
-        await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
-        await logActivity(appointment.businessId, {
-          source: "recepcionista",
-          action: `Agendou pelo ${conversation.channel === "whatsapp" ? "WhatsApp" : conversation.channel === "instagram" ? "Instagram" : "chat da página"}`,
-          detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
-          actor: "Recepcionista",
-        });
-        return appointment;
+  const result =
+    closed ||
+    (await runAssistant({
+      create,
+      store,
+      history: conversation.history,
+      interpretation: understanding?.interpretation,
+      transcript: contextText(recent),
+      bookingContext,
+      onStage: async (state) => {
+        if (understanding) await repo.progress?.(conversationId, { state });
       },
-    },
-  });
+      customerText: text,
+      ctx,
+    }));
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);

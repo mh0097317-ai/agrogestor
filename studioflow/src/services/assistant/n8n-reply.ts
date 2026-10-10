@@ -18,6 +18,22 @@ export function verifiedN8nReply(
 ) {
   if (unverifiedBookingClaim(output))
     throw new Error("n8n-reply-booking-claim");
+  if (interpretation.intent === "BOOK" && interpretation.nextAction === "ASK") {
+    const questions: Record<string, string> = {
+      service: "Qual serviço você quer agendar?",
+      professional: "Você tem preferência por algum profissional?",
+      date: "Qual dia você prefere?",
+      time: "Qual horário você prefere?",
+      name: "Qual nome você prefere para o agendamento?",
+      confirmation: "Posso confirmar esse serviço no dia e horário escolhido?",
+    };
+    return {
+      reply:
+        questions[interpretation.missing[0]] ||
+        "Qual dia e horário você prefere?",
+      handoff: false,
+    };
+  }
   if (
     ["BOOK", "CHANGE_BOOKING"].includes(interpretation.intent) ||
     interpretation.nextAction === "CONFIRM" ||

@@ -4,6 +4,7 @@ import {
   sendAppointmentReminders,
   recoverProfessionalBookingNotices,
 } from "@/services/whatsapp/reminders";
+import { sendEmailNotices } from "@/services/email/notices";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 export async function POST(request: Request) {
@@ -19,9 +20,10 @@ export async function POST(request: Request) {
   );
   if (error || valid !== true)
     return new Response("forbidden", { status: 401 });
-  const [customers, professionals] = await Promise.all([
+  const [customers, professionals, emails] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(requestOrigin(request)),
+    sendEmailNotices().catch(() => ({ checked: 0, sent: 0, failed: 1 })),
   ]);
-  return Response.json({ ...customers, professionals });
+  return Response.json({ ...customers, professionals, emails });
 }

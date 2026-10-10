@@ -19,6 +19,7 @@ import {
   CaretDown,
   CaretRight,
   ChartLineUp,
+  CheckCircle,
   ChatCircleDots,
   Copy,
   Crown,
@@ -56,6 +57,8 @@ const links = [
   { path: "/dashboard", label: "Início", icon: SquaresFour },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDots },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
+  { path: "/dashboard/operacao", label: "Operação", icon: ShieldCheck },
+  { path: "/dashboard/ativacao", label: "Ativar espaço", icon: CheckCircle },
   {
     path: "/dashboard/conversas",
     label: "Conversas",
@@ -89,6 +92,7 @@ const navigationGroups: Record<string, string> = {
   "/dashboard": "Dia a dia",
   "/dashboard/agenda": "Dia a dia",
   "/dashboard/clientes": "Dia a dia",
+  "/dashboard/operacao": "Dia a dia",
   "/dashboard/conversas": "Dia a dia",
   "/dashboard/servicos": "Seu negócio",
   "/dashboard/produtos": "Seu negócio",
@@ -98,6 +102,7 @@ const navigationGroups: Record<string, string> = {
   "/dashboard/clube": "Crescimento",
   "/dashboard/divulgar": "Crescimento",
   "/dashboard/configuracoes": "Preferências",
+  "/dashboard/ativacao": "Preferências",
 };
 const navigationOrder = [
   "Dia a dia",

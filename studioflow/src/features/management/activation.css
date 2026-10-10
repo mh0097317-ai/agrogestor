@@ -1,0 +1,180 @@
+.activation-page {
+  display: grid;
+  gap: 24px;
+  max-width: 1120px;
+  margin: auto;
+}
+.activation-page .activation-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 28px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.activation-eyebrow {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  opacity: 0.65;
+}
+.activation-page h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1.2;
+  margin: 0 0 10px;
+}
+.activation-page p {
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 0;
+  color: var(--muted);
+}
+.activation-progress p {
+  color: inherit;
+  opacity: 0.7;
+}
+.activation-progress progress {
+  width: 180px;
+  height: 8px;
+  accent-color: #b4d4bf;
+}
+.activation-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.activation-steps > li {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.activation-steps > li:last-child {
+  border-bottom: 0;
+}
+.activation-number {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-family: var(--serif);
+  font-size: 19px;
+}
+.ready .activation-number {
+  background: #eaf2ea;
+  border-color: #bfd0c0;
+  color: #315b41;
+}
+.activation-steps h2 {
+  font-size: 23px;
+}
+.activation-steps div > a,
+.activation-test-links a {
+  display: inline-block;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  margin: 14px 18px 0 0;
+}
+.activation-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.activation-test {
+  padding: 28px;
+}
+.activation-test > ol {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  padding-left: 20px;
+  margin: 20px 0;
+}
+.activation-test li + li {
+  margin-top: 8px;
+}
+.activation-test-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  margin-bottom: 26px;
+}
+.activation-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 20px 0;
+}
+.activation-check input {
+  margin-top: 4px;
+  accent-color: #315b41;
+}
+.activation-test > .btn {
+  margin-bottom: 12px;
+}
+.activation-confirmed {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: #eaf2ea;
+  padding: 20px;
+  border-radius: 8px;
+}
+.activation-confirmed p {
+  margin-top: 6px;
+}
+.activation-confirmed .btn {
+  margin: 10px 0 0;
+  padding-left: 0;
+}
+@media (max-width: 800px) {
+  .activation-progress {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px;
+    gap: 16px;
+  }
+  .activation-progress progress {
+    width: 100%;
+  }
+  .activation-steps > li {
+    grid-template-columns: 32px 1fr;
+    gap: 16px;
+    padding: 22px;
+  }
+  .activation-number {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .activation-action {
+    grid-column: 2;
+    margin-top: 4px;
+    white-space: normal;
+  }
+  .activation-test {
+    padding: 22px;
+  }
+  .activation-page h2 {
+    font-size: 24px;
+  }
+}

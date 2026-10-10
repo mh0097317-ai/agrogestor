@@ -10,7 +10,7 @@ begin
   end if;
   perform cron.schedule('studioflow-appointment-reminders','*/5 * * * *',
     $job$select net.http_post(
-      url:='https://studioflow-three-tau.vercel.app/api/cron/appointments',
+      url:='https://app.studioflowapp.tech/api/cron/appointments',
       headers:=jsonb_build_object('Content-Type','application/json','Authorization',
         'Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='studioflow_appointment_scheduler')),
       body:='{}'::jsonb,timeout_milliseconds:=60000

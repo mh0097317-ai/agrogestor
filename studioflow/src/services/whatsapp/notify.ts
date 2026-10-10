@@ -9,6 +9,7 @@ import {
   readProfessionalLinks,
 } from "./link";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { notifyCustomerBooking } from "./booking-confirmation";
 import {
   bookingCreatedEvent,
   bookingWebhookConfiguration,
@@ -96,6 +97,11 @@ export async function notifyNewBooking(
   appointmentId: string,
   origin: string,
 ): Promise<"sent" | "skipped" | "failed"> {
+  // Customer confirmation is independent of the n8n event/data-table receipt.
+  const [, professional] = await Promise.all([
+    notifyCustomerBooking(slug, appointmentId),
+    notifyProfessionalBooking(slug, appointmentId, origin),
+  ]);
   if (!isDemo() && process.env.N8N_BOOKING_EVENTS) {
     try {
       const store = await getPublicStore(slug);
@@ -116,7 +122,7 @@ export async function notifyNewBooking(
       });
     }
   }
-  return notifyProfessionalBooking(slug, appointmentId, origin);
+  return professional;
 }
 
 async function notifyProfessionalBooking(

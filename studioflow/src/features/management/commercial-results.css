@@ -1,0 +1,56 @@
+.commercial-results {
+  padding: 28px;
+}
+.commercial-eyebrow {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.commercial-results .management-section-heading h2 {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 400;
+}
+.commercial-results .metrics-strip {
+  margin: 24px 0;
+}
+.commercial-caption {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 20px 0 12px;
+}
+.commercial-method {
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+  color: var(--muted);
+  margin-top: 18px;
+}
+.commercial-error {
+  padding: 16px;
+  background: #fff4e6;
+  border: 1px solid #dfc7a0;
+  margin: 16px 0;
+}
+.commercial-error p {
+  margin: 0 0 10px;
+}
+@media (max-width: 800px) {
+  .commercial-results {
+    padding: 20px;
+  }
+  .commercial-results .management-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .commercial-results .management-section-heading h2 {
+    font-size: 26px;
+  }
+  .commercial-results .management-table {
+    min-width: 650px;
+  }
+}

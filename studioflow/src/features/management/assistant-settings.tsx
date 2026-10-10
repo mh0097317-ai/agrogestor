@@ -12,6 +12,7 @@ import { useToast } from "@/components/toast";
 import type { Store } from "@/types";
 import { FormError, FormField } from "./shared";
 import "./assistant-settings.css";
+import { AssistantUsage } from "./assistant-usage";
 
 async function send(url: string, method: string, body?: unknown) {
   const response = await fetch(url, {
@@ -85,6 +86,7 @@ export function AssistantSettings({
   }
   return (
     <div className="management-form payment-settings">
+      {canManage && <AssistantUsage limit={settings.assistantDailyLimit} />}
       <div className="assistant-overview">
         <div className="assistant-overview-main">
           <span className="sheet-eyebrow">Atendimento no WhatsApp</span>

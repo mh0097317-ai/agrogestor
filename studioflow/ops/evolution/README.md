@@ -20,7 +20,7 @@ O StudioFlow permanece na Vercel e seu banco na Supabase. Este PostgreSQL guarda
 Na pasta `ops/evolution`, executar com o domínio e o e-mail reais:
 
 ```sh
-node configure.mjs DOMINIO_DA_EVOLUTION EMAIL_DO_ADMIN https://studioflow-three-tau.vercel.app
+node configure.mjs DOMINIO_DA_EVOLUTION EMAIL_DO_ADMIN https://app.studioflowapp.tech
 docker compose config --quiet
 docker compose pull
 docker compose up -d

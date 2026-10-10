@@ -27,6 +27,7 @@ import {
   type FinancePreset,
 } from "./finance-helpers";
 import { PeriodControl } from "./period-control";
+import { CommercialResults } from "./commercial-results";
 export default function ReportsPage() {
   const { data } = useWorkspace(),
     { toast } = useToast();
@@ -87,6 +88,7 @@ export default function ReportsPage() {
       {!validPeriod(period) && (
         <FormError error="Selecione um período válido." />
       )}
+      <CommercialResults period={period} />
       {summary && (
         <>
           <MetricStrip
