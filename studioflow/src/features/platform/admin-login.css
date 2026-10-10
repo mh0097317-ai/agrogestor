@@ -168,3 +168,11 @@
     animation: none;
   }
 }
+.ac-submit .is-spinning {
+  animation: admin-spin 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-submit .is-spinning {
+    animation: none;
+  }
+}

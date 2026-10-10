@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
+import "@/components/auth-card.css";
 import "./admin-login.css";
 
 export function AdminLogin({ demo }: { demo: boolean }) {
@@ -43,32 +44,37 @@ export function AdminLogin({ demo }: { demo: boolean }) {
       setBusy(false);
     }
   }
+  const [owner, setOwner] = useState(false);
   return (
-    <main className="admin-access">
-      <aside className="admin-access-story">
-        <Link href="/" aria-label="StudioFlow">
-          <Brand tone="on-dark" size={40} />
-        </Link>
-        <div>
-          <span className="admin-access-eyebrow">ADMINISTRAÇÃO STUDIOFLOW</span>
-          <h1>
-            Uma visão clara.
-            <br />
-            <em>Todos os seus clientes.</em>
-          </h1>
-          <p>Acompanhe estabelecimentos, planos e acessos em um só lugar.</p>
+    <main className="ac-page is-admin">
+      <Link href="/" className="ac-home" aria-label="StudioFlow">
+        <Brand tone="on-dark" size={34} />
+      </Link>
+      <div className={`ac-card is-intro ${owner ? "is-register" : ""}`}>
+        <div className="ac-bg" aria-hidden="true" />
+
+        <div className="ac-hero is-register" aria-hidden={!owner}>
+          <span className="ac-hero-eyebrow">Equipe StudioFlow</span>
+          <h2>Uma visão clara de todos os clientes.</h2>
+          <p>Acessos, planos, canais, cobranças, auditoria e marketing num só lugar.</p>
+          <button type="button" className="ac-switch" onClick={() => setOwner(false)} tabIndex={owner ? 0 : -1}>
+            Entrar no admin
+          </button>
         </div>
-        <span className="admin-access-security">
-          <ShieldCheck size={18} /> Acesso exclusivo à administração da
-          plataforma.
-        </span>
-      </aside>
-      <section className="admin-access-panel">
-        <span className="admin-access-eyebrow">PAINEL ADMINISTRATIVO</span>
-        <h2>Bem-vindo à administração.</h2>
-        <p>Entre com sua conta autorizada do StudioFlow.</p>
-        <form onSubmit={submit} aria-busy={busy}>
-          <label>
+        <div className="ac-hero is-login" aria-hidden={owner}>
+          <span className="ac-hero-eyebrow">Administração da plataforma</span>
+          <h2>Bem-vindo de volta ao comando.</h2>
+          <p>Acesso exclusivo da equipe autorizada. Cada entrada fica registrada.</p>
+          <button type="button" className="ac-switch" onClick={() => setOwner(true)} tabIndex={owner ? -1 : 0}>
+            Sou dono de barbearia
+          </button>
+        </div>
+
+        <form className="ac-form is-login" onSubmit={submit} aria-busy={busy} aria-hidden={owner}>
+          <span className="ac-eyebrow">Painel administrativo</span>
+          <h1>Entrar no admin.</h1>
+          <p className="ac-sub">Use sua conta autorizada do StudioFlow.</p>
+          <label className="ac-field">
             E-mail do administrador
             <input
               type="email"
@@ -77,11 +83,13 @@ export function AdminLogin({ demo }: { demo: boolean }) {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="voce@studioflowapp.tech"
+              tabIndex={owner ? -1 : 0}
             />
           </label>
-          <label>
+          <label className="ac-field">
             Senha
-            <div className="admin-password">
+            <span className="ac-password">
               <input
                 type={visible ? "text" : "password"}
                 required
@@ -89,23 +97,25 @@ export function AdminLogin({ demo }: { demo: boolean }) {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                tabIndex={owner ? -1 : 0}
               />
               <button
                 type="button"
                 aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
                 aria-pressed={visible}
                 onClick={() => setVisible(!visible)}
+                tabIndex={owner ? -1 : 0}
               >
                 {visible ? <EyeSlash size={20} /> : <Eye size={20} />}
               </button>
-            </div>
+            </span>
           </label>
           {error && (
-            <p className="admin-access-error" role="alert">
+            <p className="ac-alert is-error" role="alert">
               {error}
             </p>
           )}
-          <button className="admin-access-submit" disabled={busy || demo}>
+          <button className="ac-submit" disabled={busy || demo} tabIndex={owner ? -1 : 0}>
             {busy ? (
               <>
                 <CircleNotch size={18} className="is-spinning" /> Entrando…
@@ -116,17 +126,37 @@ export function AdminLogin({ demo }: { demo: boolean }) {
               </>
             )}
           </button>
+          {demo && (
+            <p className="ac-terms">
+              Ambiente local de demonstração. <Link href="/admin">Explorar painel admin</Link>
+            </p>
+          )}
+          <button type="button" className="ac-mobile-switch" onClick={() => setOwner(true)}>
+            É dono de barbearia? <b>Acessar meu estabelecimento</b>
+          </button>
         </form>
-        {demo && (
-          <p className="admin-access-demo">
-            Ambiente local de demonstração.{" "}
-            <Link href="/admin">Explorar painel admin</Link>
+
+        <div className="ac-form is-register" aria-hidden={!owner}>
+          <span className="ac-eyebrow">Dono de barbearia</span>
+          <h1>Seu painel fica em outro lugar.</h1>
+          <p className="ac-sub">
+            Esta entrada é só da equipe StudioFlow. A agenda, os clientes e o caixa da sua barbearia ficam no painel do
+            estabelecimento.
           </p>
-        )}
-        <Link className="admin-access-back" href="/login">
-          Acessar meu estabelecimento <ArrowRight size={14} />
-        </Link>
-      </section>
+          <Link href="/login" className="ac-submit" tabIndex={owner ? 0 : -1}>
+            Acessar meu estabelecimento <ArrowRight size={18} />
+          </Link>
+          <Link href="/login?cadastro=1" className="ac-secondary" tabIndex={owner ? 0 : -1}>
+            Ainda não tem conta? Criar agora
+          </Link>
+          <button type="button" className="ac-mobile-switch" onClick={() => setOwner(false)}>
+            Sou da equipe <b>Entrar no admin</b>
+          </button>
+        </div>
+      </div>
+      <p className="ac-foot">
+        <ShieldCheck size={15} /> Acesso exclusivo à administração da plataforma.
+      </p>
     </main>
   );
 }

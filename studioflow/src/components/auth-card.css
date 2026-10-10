@@ -1,0 +1,146 @@
+/* Cartão de acesso com o painel de foto que desliza (dono e admin). */
+.ac-page {
+  --ink: #16130f; --paper: #f4f0e8; --card: #fffdf9; --gold: #a47a3c; --gold-l: #d9b77a; --muted: #6b6157; --line: #e4dacb;
+  min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  padding: 88px 16px 32px; color: var(--ink);
+  background:
+    radial-gradient(900px 500px at 15% 10%, rgba(164, 122, 60, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 90% 90%, rgba(164, 122, 60, 0.12), transparent 60%),
+    #16130f;
+  position: relative; overflow: hidden;
+}
+.ac-page::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.25;
+  background-image: linear-gradient(rgba(244, 240, 232, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(244, 240, 232, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.ac-home { position: absolute; top: 24px; left: 28px; z-index: 2; }
+.ac-card {
+  position: relative; z-index: 1; overflow: hidden; width: min(980px, 100%); height: 640px;
+  border-radius: 28px; background: var(--card); border: 8px solid var(--card);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(244, 240, 232, 0.06);
+  animation: ac-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes ac-in { from { opacity: 0; transform: translateY(18px) scale(0.98); } }
+
+.ac-bg {
+  position: absolute; z-index: 2; top: 0; left: 0; bottom: 0; width: 50%; border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(22, 19, 15, 0.35), rgba(22, 19, 15, 0.88)),
+    url("/demo/cover.jpg") center / cover no-repeat;
+  translate: 100% 0;
+  transition: translate 0.75s cubic-bezier(0.7, 0, 0.2, 1), border-radius 0.75s;
+}
+.ac-card.is-register .ac-bg { translate: 0 0; }
+
+.ac-hero, .ac-form {
+  position: absolute; top: 0; width: 50%; height: 100%;
+  opacity: 0; visibility: hidden;
+  transition: translate 0.75s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.5s ease, visibility 0.75s;
+}
+.ac-hero {
+  z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; gap: 14px;
+  padding: 48px 44px; color: var(--paper);
+}
+.ac-hero h2 { margin: 0; font-family: var(--serif); font-weight: 450; font-size: 40px; line-height: 1.04; letter-spacing: -0.02em; }
+.ac-hero p { margin: 0 0 8px; color: #e1d6c4; font-size: 16px; line-height: 1.5; max-width: 340px; }
+.ac-hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-l); }
+.ac-switch {
+  align-self: flex-start; font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; color: var(--paper);
+  padding: 13px 40px; border-radius: 999px; border: 1px solid rgba(244, 240, 232, 0.35);
+  background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  transition: background 0.3s, color 0.3s;
+}
+.ac-switch:hover { background: var(--paper); color: var(--ink); }
+
+.ac-hero.is-login { left: 50%; translate: 0 0; }
+.ac-card.is-register .ac-hero.is-login { translate: 100% 0; }
+.ac-hero.is-register { left: 0; translate: -100% 0; }
+.ac-card.is-register .ac-hero.is-register { translate: 0 0; }
+.ac-hero.is-login, .ac-card.is-register .ac-hero.is-register { opacity: 1; visibility: visible; }
+.ac-card.is-register .ac-hero.is-login { opacity: 0; visibility: hidden; }
+
+.ac-form {
+  z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  padding: 40px 48px; background: var(--card);
+}
+.ac-form.is-login { left: 0; translate: 0 0; opacity: 1; visibility: visible; }
+.ac-card.is-register .ac-form.is-login { translate: 100% 0; opacity: 0; visibility: hidden; }
+.ac-form.is-register { left: 50%; translate: -100% 0; }
+.ac-card.is-register .ac-form.is-register { translate: 0 0; opacity: 1; visibility: visible; }
+
+.ac-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #8a6430; }
+.ac-form h1 { margin: 0; font-family: var(--serif); font-weight: 450; font-size: 36px; line-height: 1.05; letter-spacing: -0.02em; }
+.ac-sub { margin: -4px 0 6px; color: var(--muted); font-size: 15px; }
+.ac-field { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; color: #3d362f; }
+.ac-field input {
+  width: 100%; font: inherit; font-weight: 400; font-size: 15px; color: var(--ink);
+  padding: 13px 15px; border-radius: 12px; border: 1px solid #ddd2c1; background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ac-field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(164, 122, 60, 0.15); }
+.ac-submit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+  font: inherit; font-size: 15.5px; font-weight: 650; color: var(--paper); cursor: pointer;
+  padding: 14px 20px; border-radius: 999px; border: 0; background: var(--ink);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.ac-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(22, 19, 15, 0.22); }
+.ac-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.ac-alert { margin: 0; padding: 11px 13px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+.ac-alert.is-error { background: #fbeeea; color: #9b2c1f; }
+.ac-alert.is-ok { background: #e8f3ec; color: #24563a; }
+.ac-terms { margin: 0; font-size: 12.5px; color: #8c8276; line-height: 1.5; }
+.ac-terms a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.ac-mobile-switch { display: none; }
+.ac-demo { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: center; max-width: 980px; color: #c9bfae; font-size: 14px; text-align: center; }
+.ac-demo p { margin: 0; }
+.ac-demo-link { display: inline-flex; align-items: center; gap: 6px; color: var(--gold-l); font-weight: 650; }
+.ac-foot { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; margin: 0; color: #9c9182; font-size: 13px; }
+.ac-foot svg { color: var(--gold-l); }
+.ac-foot a { color: #d8ccb9; }
+
+@media (max-width: 860px) {
+  .ac-page { justify-content: flex-start; padding-top: 80px; }
+  .ac-card { height: auto; border-width: 6px; }
+  .ac-bg { position: relative; display: block; width: 100%; height: 150px; translate: none !important; }
+  .ac-hero { display: none; }
+  .ac-form { position: relative; width: 100%; height: auto; padding: 26px 18px 22px; translate: none !important; }
+  .ac-form.is-login, .ac-form.is-register { left: 0; }
+  .ac-card.is-register .ac-form.is-login, .ac-card:not(.is-register) .ac-form.is-register { display: none; }
+  .ac-card .ac-form[aria-hidden="false"] { animation: ac-fade 420ms ease both; }
+  .ac-form h1 { font-size: 30px; }
+  .ac-mobile-switch {
+    display: block; margin-top: 4px; font: inherit; font-size: 14px; color: var(--muted);
+    background: none; border: 0; cursor: pointer; padding: 8px;
+  }
+  .ac-mobile-switch b { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+}
+@keyframes ac-fade { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) {
+  .ac-card, .ac-bg, .ac-hero, .ac-form { transition: none; animation: none; }
+}
+
+/* Admin: senha com botão de mostrar, link secundário e a foto entrando ao abrir. */
+.ac-page.is-admin .ac-bg {
+  background:
+    linear-gradient(180deg, rgba(22, 19, 15, 0.4), rgba(22, 19, 15, 0.9)),
+    url("/demo/work-4.jpg") center / cover no-repeat;
+}
+.ac-card.is-intro .ac-bg { animation: ac-reveal 1.1s cubic-bezier(0.7, 0, 0.2, 1) both; }
+@keyframes ac-reveal { from { translate: 0 0; } }
+.ac-card.is-intro .ac-hero.is-login { animation: ac-hero-in 1.2s 0.5s ease both; }
+@keyframes ac-hero-in { from { opacity: 0; translate: 0 16px; } }
+.ac-password { position: relative; display: block; }
+.ac-password input { padding-right: 48px; }
+.ac-password button {
+  position: absolute; right: 6px; top: 50%; translate: 0 -50%; display: grid; place-items: center;
+  width: 38px; height: 38px; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer;
+}
+.ac-password button:hover { background: #f1ebe0; color: var(--ink); }
+a.ac-submit { text-decoration: none; }
+.ac-secondary { align-self: center; color: var(--muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.ac-terms a { color: #8a6430; }
+@media (max-width: 860px) {
+  .ac-card.is-intro .ac-bg { animation: none; }
+}

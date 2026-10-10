@@ -11,6 +11,7 @@ import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { inviteRedirect } from "@/lib/invite-redirect";
 import "./login.css";
+import "@/components/auth-card.css";
 export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const router = useRouter();
   const [signup, setSignup] = useState(initialSignup),
@@ -79,160 +80,146 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
       setBusy(false);
     }
   }
+  function switchMode(next: boolean) {
+    setSignup(next);
+    setError("");
+    setMessage("");
+  }
+  const feedback = (
+    <>
+      {error && (
+        <p role="alert" className="ac-alert is-error">
+          {error}
+        </p>
+      )}
+      {message && (
+        <p role="status" className="ac-alert is-ok">
+          {message}
+        </p>
+      )}
+    </>
+  );
+  const credentials = (mode: "login" | "register") => (
+    <>
+      <label className="ac-field">
+        E-mail
+        <input
+          required
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="voce@barbearia.com"
+          tabIndex={(mode === "register") === signup ? 0 : -1}
+        />
+      </label>
+      <label className="ac-field">
+        Senha
+        <input
+          required
+          type="password"
+          minLength={8}
+          autoComplete={mode === "register" ? "new-password" : "current-password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Pelo menos 8 caracteres"
+          tabIndex={(mode === "register") === signup ? 0 : -1}
+        />
+      </label>
+    </>
+  );
   return (
-    <main className="access-page">
-      <div className="access-layout">
-        <aside className="access-story">
-          <Link href="/" className="access-brand" aria-label="StudioFlow">
-            <Brand tone="on-dark" size={40} animated />
-          </Link>
-          <div>
-            <p className="access-eyebrow">Para barbearias e salões</p>
-            <h1>
-              Agenda online
-              <br />
-              do seu salão.
-            </h1>
-            <p className="access-story-description">
-              Seus clientes marcam pelo link. Você acompanha horários, equipe e
-              caixa no painel, pelo celular ou computador.
-            </p>
-          </div>
-          <p className="access-story-footer">
-            <ShieldCheck size={16} />
-            Os dados de cada estabelecimento ficam separados e protegidos.
+    <main className="ac-page">
+      <Link href="/" className="ac-home" aria-label="StudioFlow">
+        <Brand tone="on-dark" size={34} animated />
+      </Link>
+      <div className={`ac-card ${signup ? "is-register" : ""}`}>
+        <div className="ac-bg" aria-hidden="true" />
+
+        <div className="ac-hero is-register" aria-hidden={!signup}>
+          <span className="ac-hero-eyebrow">Já é da casa?</span>
+          <h2>Bom ter você de volta.</h2>
+          <p>Entre para ver a agenda do dia, o caixa e o que a recepcionista resolveu.</p>
+          <button type="button" className="ac-switch" onClick={() => switchMode(false)} tabIndex={signup ? 0 : -1}>
+            Entrar
+          </button>
+        </div>
+        <div className="ac-hero is-login" aria-hidden={signup}>
+          <span className="ac-hero-eyebrow">Primeira vez por aqui?</span>
+          <h2>Sua barbearia agendando sozinha.</h2>
+          <p>Crie sua conta e tenha página, agenda e lembretes funcionando hoje.</p>
+          <button type="button" className="ac-switch" onClick={() => switchMode(true)} tabIndex={signup ? -1 : 0}>
+            Criar conta
+          </button>
+        </div>
+
+        <form className="ac-form is-login" onSubmit={submit} aria-busy={busy} aria-hidden={signup}>
+          <span className="ac-eyebrow">Entrar</span>
+          <h1>Bom ter você aqui.</h1>
+          <p className="ac-sub">Entre para acompanhar o seu estabelecimento.</p>
+          {credentials("login")}
+          {!signup && feedback}
+          <button disabled={busy || !configured} className="ac-submit" tabIndex={signup ? -1 : 0}>
+            {busy && !signup ? <CircleNotch size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+            Entrar no painel
+          </button>
+          <button type="button" className="ac-mobile-switch" onClick={() => switchMode(true)}>
+            Primeira vez por aqui? <b>Criar conta</b>
+          </button>
+        </form>
+
+        <form className="ac-form is-register" onSubmit={submit} aria-busy={busy} aria-hidden={!signup}>
+          <span className="ac-eyebrow">Criar conta</span>
+          <h1>Seu espaço começa aqui.</h1>
+          <p className="ac-sub">Leva uns minutos. Depois é só divulgar o link.</p>
+          <label className="ac-field">
+            Seu nome
+            <input
+              required={signup}
+              minLength={2}
+              maxLength={100}
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Como podemos chamar você?"
+              tabIndex={signup ? 0 : -1}
+            />
+          </label>
+          {credentials("register")}
+          {signup && feedback}
+          <button disabled={busy || !configured} className="ac-submit" tabIndex={signup ? 0 : -1}>
+            {busy && signup ? <CircleNotch size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+            Criar minha conta
+          </button>
+          <p className="ac-terms">
+            Ao criar a conta, você concorda com os <Link href="/termos" target="_blank">Termos de Uso</Link> e a{" "}
+            <Link href="/privacidade" target="_blank">Política de Privacidade</Link>.
           </p>
-        </aside>
-        <section className="access-form-section">
-          <Link
-            href="/"
-            className="access-mobile-brand"
-            aria-label="StudioFlow"
-          >
-            <Brand size={34} animated />
-          </Link>
-          <span className="access-form-eyebrow">
-            {signup ? "CRIAR CONTA" : "ENTRAR"}
-          </span>
-          <h2>{signup ? "Seu espaço começa aqui." : "Bom ter você aqui."}</h2>
-          <p className="access-form-description">
-            {signup
-              ? "Crie sua conta e organize seu próximo capítulo."
-              : "Entre para acompanhar o seu estabelecimento."}
-          </p>
-          <form onSubmit={submit} className="access-form" aria-busy={busy}>
-            {signup && (
-              <label className="block text-sm text-slate-700">
-                Seu nome
-                <input
-                  required
-                  minLength={2}
-                  maxLength={100}
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
-                  placeholder="Como podemos chamar você?"
-                />
-              </label>
-            )}
-            <label className="block text-sm text-slate-700">
-              E-mail
-              <input
-                required
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
-                placeholder="voce@empresa.com"
-              />
-            </label>
-            <label className="block text-sm text-slate-700">
-              Senha
-              <input
-                required
-                type="password"
-                minLength={8}
-                autoComplete={signup ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-blue-700"
-                placeholder="Pelo menos 8 caracteres"
-              />
-            </label>
-            {error && (
-              <p
-                role="alert"
-                className="rounded-xl bg-red-50 text-red-700 p-3 text-sm"
-              >
-                {error}
-              </p>
-            )}
-            {message && (
-              <p
-                role="status"
-                className="rounded-xl bg-emerald-50 text-emerald-700 p-3 text-sm"
-              >
-                {message}
-              </p>
-            )}
-            <button disabled={busy || !configured} className="access-submit">
-              {busy ? (
-                <CircleNotch size={18} className="animate-spin" />
-              ) : (
-                <ArrowRight size={18} />
-              )}{" "}
-              {signup ? "Criar minha conta" : "Entrar no painel"}
-            </button>
-            {signup && (
-              <p className="access-terms">
-                Ao criar a conta, você concorda com os{" "}
-                <Link href="/termos" target="_blank">
-                  Termos de Uso
-                </Link>{" "}
-                e a{" "}
-                <Link href="/privacidade" target="_blank">
-                  Política de Privacidade
-                </Link>
-                .
-              </p>
-            )}
-          </form>
-          <p className="access-switch">
-            {signup ? "Já tem uma conta?" : "Primeira vez por aqui?"}{" "}
-            <button
-              className="access-link-button"
-              onClick={() => {
-                setSignup(!signup);
-                setError("");
-                setMessage("");
-              }}
-            >
-              {signup ? "Entrar" : "Criar conta"}
-            </button>
-          </p>
-          {!configured && (
-            <div className="access-demo">
-              <p>
-                O acesso por conta está em preparação.
-                {dev
-                  ? " Explore a demonstração para conhecer o painel."
-                  : " Entre em contato com o responsável pelo sistema para habilitar seu acesso."}
-              </p>
-              {dev && (
-                <Link href="/dashboard" className="access-demo-link">
-                  Explorar demonstração
-                  <ArrowRight size={16} />
-                </Link>
-              )}
-            </div>
-          )}
-          <Link href="/barber-011" className="access-customer-link">
-            Conhecer a experiência do cliente
-          </Link>
-        </section>
+          <button type="button" className="ac-mobile-switch" onClick={() => switchMode(false)}>
+            Já tem uma conta? <b>Entrar</b>
+          </button>
+        </form>
       </div>
+
+      {!configured && (
+        <div className="ac-demo">
+          <p>
+            O acesso por conta está em preparação.
+            {dev
+              ? " Explore a demonstração para conhecer o painel."
+              : " Entre em contato com o responsável pelo sistema para habilitar seu acesso."}
+          </p>
+          {dev && (
+            <Link href="/dashboard" className="ac-demo-link">
+              Explorar demonstração <ArrowRight size={16} />
+            </Link>
+          )}
+        </div>
+      )}
+      <p className="ac-foot">
+        <ShieldCheck size={15} /> Os dados de cada estabelecimento ficam separados e protegidos.
+        <Link href="/barber-011">Ver a experiência do cliente</Link>
+      </p>
     </main>
   );
 }
