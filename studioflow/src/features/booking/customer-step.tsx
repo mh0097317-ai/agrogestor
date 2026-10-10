@@ -326,7 +326,10 @@ export function CustomerStep({
         </BusyButton>
         <p className="bk-safe">
           <LockSimple weight="duotone" size={14} /> Seus dados são usados só
-          para este agendamento.
+          para este agendamento.{" "}
+          <a href="/privacidade" target="_blank" rel="noreferrer">
+            Privacidade
+          </a>
         </p>
       </form>
     </section>

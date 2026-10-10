@@ -185,6 +185,19 @@ export function LoginForm() {
               )}{" "}
               {signup ? "Criar minha conta" : "Entrar no painel"}
             </button>
+            {signup && (
+              <p className="access-terms">
+                Ao criar a conta, você concorda com os{" "}
+                <Link href="/termos" target="_blank">
+                  Termos de Uso
+                </Link>{" "}
+                e a{" "}
+                <Link href="/privacidade" target="_blank">
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
+            )}
           </form>
           <p className="access-switch">
             {signup ? "Já tem uma conta?" : "Primeira vez por aqui?"}{" "}

@@ -32,6 +32,7 @@ import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
 import { RepeatBooking } from "./repeat-booking";
+import { InstallApp } from "./install-app";
 import { LocationSheet, mapLinks } from "./public-location";
 import { InstagramSheet } from "./public-instagram";
 import "./public-sheets.css";
@@ -290,6 +291,7 @@ export function PublicPage({
               professionals={availableTeam}
             />
           </section>
+          <InstallApp slug={slug} name={business.name} />
 
           <PublicServices
             services={activeServices}
@@ -434,6 +436,10 @@ export function PublicPage({
       <footer className="pp-footer">
         <span className="pp-powered">
           Agenda online por <BrandLogo size={18} /> <strong>StudioFlow</strong>
+        </span>
+        <span className="pp-legal">
+          <Link href="/termos">Termos</Link>
+          <Link href="/privacidade">Privacidade</Link>
         </span>
         <Link href="/login">
           Acesso do estabelecimento <ArrowRight size={14} weight="bold" />

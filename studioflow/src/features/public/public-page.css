@@ -1026,3 +1026,12 @@
 .pp-products.is-list strong {
   font-size: 18px;
 }
+.pp-legal {
+  display: flex;
+  gap: 14px;
+}
+.pp-legal a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

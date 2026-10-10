@@ -259,3 +259,15 @@
 .access-form-section > :nth-child(n + 5) {
   animation-delay: 260ms;
 }
+.access-terms {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8c8276;
+  text-align: center;
+}
+.access-terms a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

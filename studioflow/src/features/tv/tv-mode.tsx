@@ -16,6 +16,7 @@ import { ModuleGate } from "@/features/dashboard/module-lock";
 import { hasModule } from "@/lib/modules";
 import { dateLabel, money, monogram } from "@/lib/utils";
 import type { Store } from "@/types";
+import { availableSlots, localDate } from "@/lib/availability";
 import { tvBoard, tvName } from "./tv-model";
 import "./tv.css";
 
@@ -72,7 +73,18 @@ function useQr(url: string) {
 }
 
 type Slide =
-  | { kind: "photo"; src: string }
+  | { kind: "photo"; src: string; caption: string }
+  | {
+      kind: "service";
+      name: string;
+      price: number;
+      duration: number;
+      image: string;
+      popular: boolean;
+    }
+  | { kind: "free"; times: { time: string; who: string }[]; service: string }
+  | { kind: "reviews"; average: number; count: number; quote: string; who: string }
+  | { kind: "instagram"; handle: string; photos: string[] }
   | {
       kind: "products";
       items: { name: string; price: number; image: string }[];
@@ -203,10 +215,78 @@ function TvScreen({ store }: { store: Store }) {
   }, [announce]);
 
   const slides = useMemo<Slide[]>(() => {
-    const list: Slide[] = (business.photos || [])
-      .filter(Boolean)
-      .slice(0, 6)
-      .map((src) => ({ kind: "photo" as const, src }));
+    const clock = new Date(tick * 30_000);
+    const photos = (business.photos || []).filter(Boolean);
+    const caption =
+      business.description?.split(/(?<=[.!?])\s/)[0]?.slice(0, 90) ||
+      "Seu próximo corte começa aqui.";
+    const list: Slide[] = photos
+      .slice(0, 3)
+      .map((src) => ({ kind: "photo" as const, src, caption }));
+    // Vitrine: os serviços com foto, do mais pedido para o menos.
+    const since = clock.getTime() - 90 * 86_400_000;
+    const counts = new Map<string, number>();
+    for (const item of store.appointments)
+      if (item.status !== "cancelled" && new Date(item.start).getTime() >= since)
+        for (const id of item.serviceIds) counts.set(id, (counts.get(id) || 0) + 1);
+    const ranked = store.services
+      .filter((service) => service.active)
+      .sort((a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
+    ranked
+      .filter((service) => service.image)
+      .slice(0, 4)
+      .forEach((service, index) =>
+        list.splice(Math.min(list.length, index * 2 + 1), 0, {
+          kind: "service",
+          name: service.name,
+          price: service.price,
+          duration: service.duration,
+          image: service.image,
+          popular: index === 0 && (counts.get(service.id) || 0) >= 3,
+        }),
+      );
+    // Vagas que ainda dá para pegar hoje, com o serviço mais pedido.
+    if (online && ranked[0]) {
+      const today = localDate(clock);
+      const seen = new Set<string>();
+      const times = availableSlots(store, [ranked[0].id], "any", today, clock)
+        .filter((slot) => !seen.has(slot.time) && seen.add(slot.time))
+        .slice(0, 4)
+        .map((slot) => ({
+          time: slot.time,
+          who:
+            store.professionals
+              .find((p) => p.id === slot.professionalId)
+              ?.name.split(" ")[0] || "",
+        }));
+      if (times.length)
+        list.splice(1, 0, { kind: "free", times, service: ranked[0].name });
+    }
+    const good = (store.reviews || []).filter((review) => review.rating >= 1);
+    if (good.length >= 3) {
+      const average = good.reduce((sum, r) => sum + r.rating, 0) / good.length;
+      const quote = good
+        .filter((r) => r.rating === 5 && r.comment.trim().length >= 12 && r.comment.length <= 140)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      list.splice(Math.min(list.length, 3), 0, {
+        kind: "reviews",
+        average,
+        count: good.length,
+        quote: quote?.comment.trim() || "",
+        who: quote ? tvName(quote.customerName) : "",
+      });
+    }
+    const handle = business.instagram
+      .trim()
+      .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+      .replace(/^@/, "")
+      .split(/[/?#]/)[0];
+    if (handle)
+      list.push({
+        kind: "instagram",
+        handle,
+        photos: [...photos, ...ranked.map((s) => s.image)].filter(Boolean).slice(0, 3),
+      });
     const products = (store.products || []).filter(
       (item) =>
         hasModule(store.access?.modules, "produtos") &&
@@ -240,16 +320,9 @@ function TvScreen({ store }: { store: Store }) {
         reward: settings.loyaltyReward,
       });
     if (!list.length && business.cover)
-      list.push({ kind: "photo", src: business.cover });
+      list.push({ kind: "photo", src: business.cover, caption });
     return list;
-  }, [
-    business,
-    settings,
-    store.products,
-    store.plans,
-    store.paymentAccount,
-    store.access?.modules,
-  ]);
+  }, [business, settings, store, online, tick]);
 
   useEffect(() => {
     if (slides.length < 2) return;
@@ -430,7 +503,72 @@ function TvScreen({ store }: { store: Store }) {
         </div>
         <div className="tv-slide" key={slide}>
           {current?.kind === "photo" && (
-            <img className="tv-slide-photo" src={current.src} alt="" />
+            <div className="tv-ad">
+              <img className="tv-slide-photo" src={current.src} alt="" />
+              <div className="tv-ad-text">
+                <small>{business.name}</small>
+                <strong>{current.caption}</strong>
+              </div>
+            </div>
+          )}
+          {current?.kind === "service" && (
+            <div className="tv-ad">
+              <img className="tv-slide-photo" src={current.image} alt="" />
+              <div className="tv-ad-text">
+                {current.popular && <span className="tv-ad-tag">O mais pedido</span>}
+                <strong>{current.name}</strong>
+                <span className="tv-ad-price">
+                  {money(current.price)} <em>· {current.duration} min</em>
+                </span>
+              </div>
+            </div>
+          )}
+          {current?.kind === "free" && (
+            <div className="tv-slide-card tv-free-card">
+              <small>Ainda hoje</small>
+              <p className="tv-big">
+                Tem vaga para <em>{current.service}</em>
+              </p>
+              <ul className="tv-times">
+                {current.times.map((item) => (
+                  <li key={item.time + item.who}>
+                    <b>{item.time}</b>
+                    <span>{item.who}</span>
+                  </li>
+                ))}
+              </ul>
+              <p>Aponte a câmera para o QR Code e garanta o seu.</p>
+            </div>
+          )}
+          {current?.kind === "reviews" && (
+            <div className="tv-slide-card tv-reviews">
+              <small>Quem vem, recomenda</small>
+              <p className="tv-score">
+                {current.average.toFixed(1).replace(".", ",")}
+                <span aria-hidden="true">★★★★★</span>
+              </p>
+              <p>{current.count} avaliações de clientes atendidos</p>
+              {current.quote && (
+                <blockquote>
+                  “{current.quote}”<cite>{current.who}</cite>
+                </blockquote>
+              )}
+            </div>
+          )}
+          {current?.kind === "instagram" && (
+            <div className="tv-slide-card tv-insta">
+              <small>Siga a casa</small>
+              <p className="tv-big">@{current.handle}</p>
+              <div className="tv-insta-grid">
+                {current.photos.map((src) => (
+                  <img key={src} src={src} alt="" />
+                ))}
+              </div>
+              <p>Cortes novos toda semana no Instagram.</p>
+            </div>
+          )}
+          {slides.length > 1 && (
+            <span className="tv-progress" aria-hidden="true" />
           )}
           {current?.kind === "products" && (
             <div className="tv-slide-card">

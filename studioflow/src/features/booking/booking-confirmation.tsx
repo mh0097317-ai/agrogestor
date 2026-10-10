@@ -7,6 +7,7 @@ import {
   Check,
   Clock,
   Copy,
+  DeviceMobile,
   ShareNetwork,
   X,
   XCircle,
@@ -409,6 +410,15 @@ function ConfirmationContent({
                   reward={catalog.settings.loyaltyReward}
                 />
               )}
+            {upcoming && (
+              <a className="bk-install" href={`/${business.slug}?instalar=1`}>
+                <DeviceMobile size={20} weight="duotone" aria-hidden="true" />
+                <span>
+                  <strong>Instale o app da {business.name}</strong>
+                  <small>Para agendar de novo em dois toques.</small>
+                </span>
+              </a>
+            )}
             {upcoming ? (
               <div className="bk-actions">
                 <button
