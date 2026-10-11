@@ -26,6 +26,7 @@ test("exact price questions bypass both paid interpretation and generation with 
     `Boa noite! O ${service.name} é quanto?`,
     `Olá, quanto é ${service.name}?`,
     `Qual o valor do ${service.name}?`,
+    `Quanto que está o ${service.name} ?`,
   ]) {
     const fast = await understandMessage(
       async () => {

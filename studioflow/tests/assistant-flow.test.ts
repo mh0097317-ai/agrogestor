@@ -15,10 +15,13 @@ import type { CreateMessage } from "../src/services/assistant/agent";
 import type { ConversationMessage } from "../src/types";
 
 /** In-memory storage with the same contract as the database. */
-function memoryRepo(realIds = false) {
+function memoryRepo(
+  realIds = false,
+  start = Date.parse("2026-10-04T12:00:00Z"),
+) {
   const conversations = new Map<string, Conversation>();
   const messages = new Map<string, ConversationMessage[]>();
-  let clock = Date.parse("2026-10-04T12:00:00Z");
+  let clock = start;
   const tick = () => new Date((clock += 1000)).toISOString();
   let leased = false;
   let turns = 0;
@@ -490,7 +493,7 @@ test("recovery does not repeat a booking committed before a reply failure", asyn
   assert.equal(repo.turns(), 0);
 });
 
-test("existing WhatsApp chat: unrelated subject advances cursor without agent reply or tools", async () => {
+test("existing WhatsApp chat: general questions receive one reply without tools or duplicate delivery", async () => {
   const { repo, messages } = memoryRepo();
   const conversation = await repo.create({
     channel: "whatsapp",
@@ -506,12 +509,19 @@ test("existing WhatsApp chat: unrelated subject advances cursor without agent re
   const create: CreateMessage = async (params) => {
     assert.equal(
       params.max_tokens,
-      8,
-      "off-topic message must never reach the response/tool loop",
+      400,
+      "general questions use one bounded reply, not a classification/tool loop",
     );
+    assert.equal(params.tools, undefined);
+    assert.equal(params.tool_choice, undefined);
     classified++;
     return {
-      content: [{ type: "text", text: "NAO" }],
+      content: [
+        {
+          type: "text",
+          text: "Não tenho acesso ao boleto do fornecedor. Você quer ajuda para conferir o documento?",
+        },
+      ],
       usage: { input_tokens: 15, output_tokens: 1 },
     } as Anthropic.Beta.BetaMessage;
   };
@@ -536,13 +546,14 @@ test("existing WhatsApp chat: unrelated subject advances cursor without agent re
   );
   assert.equal(
     classified,
-    0,
-    "obvious personal message must never spend tokens or be reclassified",
+    1,
+    "general message is answered once without a paid classification or replay",
   );
-  assert.deepEqual(sent, []);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0], /boleto/);
   assert.equal(
     messages.get(conversation.id)!.filter((m) => m.role === "assistant").length,
-    0,
+    1,
   );
   assert.equal((await repo.get(conversation.id))!.status, "ai");
 });
@@ -656,4 +667,84 @@ test("human takeover during generation suppresses the stale AI reply", async () 
     messages.get(conversation.id)!.some((m) => m.role === "assistant"),
     false,
   );
+});
+
+test("a burst containing the photographed slot choice and product question sends one catalog reply and preserves the choice without booking", async () => {
+  const slug = `choice-products-${process.pid}`;
+  const fixture = structuredClone(await readDemo("barber-011"));
+  fixture.business.slug = slug;
+  fixture.settings.assistantEnabled = true;
+  const service = fixture.services.find((s) => s.active)!;
+  service.name = "corte";
+  fixture.services = [service];
+  const professional = fixture.professionals.find((p) =>
+    service.professionalIds.includes(p.id),
+  )!;
+  fixture.professionals = [professional];
+  fixture.products = [
+    {
+      id: "pomada",
+      businessId: fixture.business.id,
+      name: "Pomada matte",
+      description: "Para cabelo",
+      price: 25,
+      stock: 3,
+      minStock: 1,
+      showPublic: true,
+      active: true,
+      image: "",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+  await createDemoBusiness(fixture);
+  try {
+    const { repo, messages } = memoryRepo(false, Date.now() - 20_000);
+    const conversation = await repo.create({
+      channel: "whatsapp",
+      contactPhone: "11987654321",
+      contactName: "Teste",
+    });
+    await repo.addMessage(
+      conversation.id,
+      "assistant",
+      `corte: Tenho 12/10/2026 às 09:00 com ${professional.name}. Qual você prefere?`,
+    );
+    await repo.update(conversation.id, {
+      aiCursor: messages.get(conversation.id)!.at(-1)!.createdAt,
+    });
+    await repo.addMessage(conversation.id, "customer", "Quero dia 12 às 09h");
+    await repo.addMessage(
+      conversation.id,
+      "customer",
+      "Vc tem produto para cabelo ?",
+    );
+    const sent: string[] = [];
+    const delivery = {
+      slug,
+      origin: "https://test.invalid",
+      send: async (body: string) => {
+        sent.push(body);
+      },
+    };
+    await processConversation(repo, conversation.id, delivery, async () => {
+      throw Error("No external engine expected");
+    });
+    assert.equal(sent.length, 1);
+    assert.match(sent[0], /Pomada matte/);
+    assert.match(sent[0], /posso confirmar em 12\/10\/2026 às 09:00/);
+    assert.doesNotMatch(sent[0], /confirmado|reservado/);
+    assert.equal((await repo.get(conversation.id))?.status, "ai");
+    assert.equal(
+      (await readDemo(slug)).appointments.length,
+      fixture.appointments.length,
+    );
+    await processConversation(repo, conversation.id, delivery, async () => {
+      throw Error("Must not replay");
+    });
+    assert.equal(sent.length, 1);
+  } finally {
+    await unlink(join(process.cwd(), ".data", `demo-${slug}.json`)).catch(
+      () => {},
+    );
+  }
 });

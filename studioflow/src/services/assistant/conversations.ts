@@ -29,9 +29,6 @@ import {
   referencesPreviousBooking,
   vagueBookingRequest,
   understandMessage,
-  personalSubject,
-  hasBusinessSubject,
-  canUnderstand,
   nameAnswer,
 } from "./understanding";
 import { failureCode, retryable, type RunProgress } from "./pipeline";
@@ -45,6 +42,8 @@ import {
 import { verifiedN8nReply } from "./n8n-reply";
 import { finishConfirmedBooking } from "./confirmed-booking";
 import { routineReply } from "./routine-reply";
+import { productReply } from "./product-reply";
+import { generalReply } from "./general-reply";
 import { availabilityReply } from "./availability-reply";
 import type { AssistantContext } from "./agent";
 import {
@@ -680,16 +679,7 @@ async function answerPending(
     text,
     scopedStore,
   );
-  if (
-    conversation.channel === "whatsapp" &&
-    !canUnderstand(
-      text.replace(/^🎤\s*/, ""),
-      scopedStore,
-      recent,
-      pending[0].createdAt,
-      bookingContext,
-    )
-  ) {
+  if (conversation.channel === "whatsapp" && !text.trim()) {
     await repo.startRun?.(conversationId, cursor);
     await repo.update(conversationId, { aiCursor: cursor });
     await repo.progress?.(conversationId, { state: "SILENT" });
@@ -807,7 +797,8 @@ async function answerPending(
   };
   const direct =
     understanding && !pending.some((message) => message.role === "staff")
-      ? availabilityReply(
+      ? productReply(text, scopedStore, recent) ||
+        availabilityReply(
           understanding.interpretation,
           scopedStore,
           text,
@@ -818,28 +809,35 @@ async function answerPending(
           recent,
         })
       : null;
-  const closed = direct
-    ? ({
-        history: conversation.history,
-        reply: direct,
-        usage: { input: 0, output: 0 },
-      } as import("./agent").TurnResult)
-    : understanding && !pending.some((message) => message.role === "staff")
-      ? await finishConfirmedBooking({
-          selection: understanding.interpretation,
-          text,
-          recent,
-          store: scopedStore,
-          ctx,
-          beforeBooking: async () => {
-            // A crash after mutation must go to review rather than replay a booking.
-            await repo.progress?.(conversationId, {
-              state: "SENDING",
-              interpretation: understanding.interpretation,
-            });
-          },
-        })
-      : null;
+  let general = null;
+  if (understanding?.interpretation.intent === "GENERAL") {
+    await repo.progress?.(conversationId, { state: "GENERATING" });
+    general = await generalReply(create, text, scopedStore, recent);
+  }
+  const closed =
+    general ||
+    (direct
+      ? ({
+          history: conversation.history,
+          reply: direct,
+          usage: { input: 0, output: 0 },
+        } as import("./agent").TurnResult)
+      : understanding && !pending.some((message) => message.role === "staff")
+        ? await finishConfirmedBooking({
+            selection: understanding.interpretation,
+            text,
+            recent,
+            store: scopedStore,
+            ctx,
+            beforeBooking: async () => {
+              // A crash after mutation must go to review rather than replay a booking.
+              await repo.progress?.(conversationId, {
+                state: "SENDING",
+                interpretation: understanding.interpretation,
+              });
+            },
+          })
+        : null);
   if (closed)
     closed.history = [
       ...conversation.history,
@@ -1226,7 +1224,8 @@ export async function receiveWhatsAppMessages(input: {
     const body = message.loadAudio
       ? await audioText(message.loadAudio, input.businessId)
       : message.text;
-    if (!existing) {
+    if (!body.trim()) continue;
+    if (!existing && !settings?.assistant_enabled) {
       const { data: customer, error } = await createSupabaseAdmin()
         .from("customers")
         .select("id")
@@ -1234,16 +1233,7 @@ export async function receiveWhatsAppMessages(input: {
         .in("phone", [phone, `55${phone}`])
         .limit(1);
       if (error) continue; // Fail closed: do not answer an unverified contact.
-      if (!customer?.length) {
-        if (
-          !settings?.assistant_enabled ||
-          personalSubject(body) ||
-          /^\[O cliente enviou/.test(body)
-        )
-          continue;
-        const catalog = await loadStore(slug);
-        if (!hasBusinessSubject(body, catalog)) continue;
-      }
+      if (!customer?.length) continue;
     }
     const conversation =
       existing ||

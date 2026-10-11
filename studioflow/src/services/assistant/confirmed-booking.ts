@@ -4,6 +4,7 @@ import { money } from "@/lib/utils";
 import type { ConversationMessage, Store } from "@/types";
 import { runTool, type AssistantContext, type TurnResult } from "./agent";
 import { nameAnswer, type Interpretation } from "./understanding";
+import { offeredChoice } from "./offered-choice";
 
 /** Closing a sale is a backend operation, never permission delegated to n8n. */
 export function completeBookingSelection(selection: Interpretation) {
@@ -45,6 +46,14 @@ export async function finishConfirmedBooking(input: {
   const { selection, text, recent, store, ctx } = input;
   if (!completeBookingSelection(selection)) return null;
   const now = ctx.now || new Date();
+  const confirmsSummary = (value: string, previous?: ConversationMessage) =>
+    /^(sim|pode sim|pode ser|confirmado)[.!]?$/i.test(value.trim()) &&
+    previous?.role === "assistant" &&
+    /Posso confirmar/i.test(previous.body) &&
+    previous.body.includes(selection.time) &&
+    previous.body.includes(selection.date.split("-").reverse().join("/")) &&
+    Date.parse(previous.createdAt) <= now.getTime() &&
+    now.getTime() - Date.parse(previous.createdAt) <= 30 * 60_000;
   let recentConsent = false;
   // Only carry consent across the requested name/CPF collection, never across
   // a refusal, changed choice or unrelated intervening customer message.
@@ -54,7 +63,15 @@ export async function finishConfirmedBooking(input: {
     const age = now.getTime() - Date.parse(message.createdAt);
     if (!Number.isFinite(age) || age < 0 || age > 30 * 60_000) break;
     if (declined(message.body)) break;
-    if (consent(message.body, selection.time)) {
+    const chosen = offeredChoice(message.body, store, recent.slice(0, i), now);
+    if (
+      consent(message.body, selection.time) ||
+      confirmsSummary(message.body, recent[i - 1]) ||
+      (chosen?.date === selection.date &&
+        chosen.time === selection.time &&
+        chosen.serviceIds.join() === selection.serviceIds.join() &&
+        chosen.professionalId === selection.professionalId)
+    ) {
       recentConsent = true;
       break;
     }
@@ -69,18 +86,19 @@ export async function finishConfirmedBooking(input: {
   const answeringCpf =
     /\bCPF\b/i.test(recent.at(-1)?.body || "") &&
     recent.at(-1)?.role === "assistant";
-  const last = recent.at(-1);
-  const confirmingSummary =
-    /^(sim|pode sim|pode ser|confirmado)[.!]?$/i.test(text.trim()) &&
-    last?.role === "assistant" &&
-    /Posso confirmar/i.test(last.body) &&
-    last.body.includes(selection.time) &&
-    last.body.includes(selection.date.split("-").reverse().join("/")) &&
-    Date.parse(last.createdAt) <= now.getTime() &&
-    now.getTime() - Date.parse(last.createdAt) <= 30 * 60_000;
+  const confirmingSummary = confirmsSummary(text, recent.at(-1));
   const authorized =
     !declined(text) &&
     (consent(text, selection.time) ||
+      (() => {
+        const chosen = offeredChoice(text, store, recent, now);
+        return (
+          chosen?.date === selection.date &&
+          chosen.time === selection.time &&
+          chosen.serviceIds.join() === selection.serviceIds.join() &&
+          chosen.professionalId === selection.professionalId
+        );
+      })() ||
       confirmingSummary ||
       (!!recentConsent && (!!answeringName || answeringCpf)));
   const response = (reply: string, handoff?: string): TurnResult => ({

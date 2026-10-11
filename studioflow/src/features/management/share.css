@@ -346,3 +346,28 @@
   cursor: pointer;
   margin-bottom: 20px;
 }
+.share-launch {
+  grid-column: 1 / -1;
+}
+.share-launch-preview {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border-radius: 6px;
+  background: #ece4d6;
+  min-height: 260px;
+}
+.share-launch-preview img {
+  display: block;
+  max-height: 520px;
+  max-width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 20px 50px rgba(22, 19, 15, 0.22);
+}
+.share-launch-preview span {
+  color: #776c5f;
+  font-size: 14px;
+}
+.share-launch-preview.is-sticker img {
+  max-height: 360px;
+}

@@ -93,22 +93,21 @@ test("a service request without a date proposes fresh next slots without booking
   )!;
   assert.match(reply, /12\/10\/2026/);
   assert.doesNotMatch(reply, /10\/10\/2026|Qual dia|confirmado|reservado/);
-  const offers = [
-    ...reply.matchAll(/(\d{2})\/(\d{2})\/(\d{4}) às (\d{2}:\d{2})/g),
-  ];
+  assert.equal((reply.match(/12\/10\/2026/g) || []).length, 1);
+  const offers = [...reply.matchAll(/\b(\d{2}:\d{2})\b/g)];
   assert.ok(offers.length > 0 && offers.length <= 3);
   for (const offer of offers) {
     assert.ok(
-      Number(offer[4].slice(0, 2)) >= 12 && Number(offer[4].slice(0, 2)) < 18,
+      Number(offer[1].slice(0, 2)) >= 12 && Number(offer[1].slice(0, 2)) < 18,
     );
     assert.ok(
       availableSlots(
         store,
         selection.serviceIds,
         selection.professionalId,
-        `${offer[3]}-${offer[2]}-${offer[1]}`,
+        "2026-10-12",
         now,
-      ).some((s) => s.time === offer[4]),
+      ).some((s) => s.time === offer[1]),
     );
   }
   assert.equal(JSON.stringify(store), original);
@@ -133,7 +132,9 @@ test("price answers propose real slots once, without an additional model request
   selection.professionalId = professional.id;
   const reply = routineReply(selection, store, { now })!;
   assert.match(reply, /12\/10\/2026/);
-  assert.ok(reply.startsWith(`${service.name}:`));
+  assert.ok(
+    reply.toLowerCase().startsWith(`${service.name.toLowerCase()} fica`),
+  );
   assert.equal((reply.match(/\?/g) || []).length, 1);
   const repeated = routineReply(selection, store, {
     now,
@@ -146,7 +147,9 @@ test("price answers propose real slots once, without an additional model request
       },
     ],
   })!;
-  assert.ok(repeated.startsWith(`${service.name}:`));
+  assert.ok(
+    repeated.toLowerCase().startsWith(`${service.name.toLowerCase()} fica`),
+  );
   assert.doesNotMatch(repeated, /Tenho|prefere|\?/);
   const keepingDate = routineReply(selection, store, {
     now,

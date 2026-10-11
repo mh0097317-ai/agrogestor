@@ -120,13 +120,37 @@ export function availabilityReply(
       )
         .filter(matchesPreference)
         .slice(0, alternatives ? 1 : 3)
-        .map(
-          (slot) =>
-            `${date.split("-").reverse().join("/")} às ${slot.time} com ${store.professionals.find((p) => p.id === slot.professionalId)?.name || "a equipe"}`,
-        ),
+        .map((slot) => ({ date, ...slot })),
     )
     .slice(0, 3);
-  return options.length
-    ? `Tenho ${options.join("; ")}. Qual você prefere?`
-    : "Não encontrei horários livres nesse período. Você prefere outro dia ou período?";
+  if (!options.length)
+    return "Não encontrei horários livres nesse período. Você prefere outro dia ou período?";
+  const groups = new Map<string, typeof options>();
+  for (const slot of options) {
+    const key = `${slot.date}:${slot.professionalId}`;
+    groups.set(key, [...(groups.get(key) || []), slot]);
+  }
+  const offers = [...groups.values()].map((slots) => {
+    const { date, professionalId } = slots[0];
+    const weekday = new Intl.DateTimeFormat("pt-BR", {
+      weekday: "long",
+      timeZone: "America/Sao_Paulo",
+    }).format(new Date(`${date}T12:00:00Z`));
+    const rawName =
+      store.professionals.find((p) => p.id === professionalId)?.name ||
+      "a equipe";
+    const name =
+      rawName === rawName.toUpperCase()
+        ? rawName
+            .toLowerCase()
+            .replace(/(^|\s)\p{L}/gu, (letter) => letter.toUpperCase())
+        : rawName;
+    const times = slots.map((s) => s.time);
+    const clocks =
+      times.length > 1
+        ? `${times.slice(0, -1).join(", ")} ou ${times.at(-1)}`
+        : times[0];
+    return `${weekday}, ${date.split("-").reverse().join("/")}, às ${clocks} com ${name}`;
+  });
+  return `Tenho ${offers.join("; ")}. Qual horário fica melhor para você?`;
 }

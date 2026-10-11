@@ -200,7 +200,7 @@ test("OpenAI preserves the forced interpretation tool and schema", async () => {
   }
 });
 
-test("explicit personal topics cannot be answered even if the model would approve them", async () => {
+test("personal topics and greetings route to an open answer without commercial interpretation or actions", async () => {
   const create: CreateMessage = async () => {
     throw new Error("must not call model");
   };
@@ -222,12 +222,12 @@ test("explicit personal topics cannot be answered even if the model would approv
     assert.equal(
       (await understandMessage(create, text, store, recent)).interpretation
         .nextAction,
-      "SILENCE",
+      "ANSWER",
     );
   assert.equal(
     (await understandMessage(create, "Boa tarde", store, [])).interpretation
       .nextAction,
-    "SILENCE",
+    "ANSWER",
   );
 });
 
@@ -289,7 +289,7 @@ test("interpretation uses exactly six visible messages and rejects fabricated en
   );
 });
 
-test("short answers continue a commercial question but never initiate an unrelated chat", async () => {
+test("short answers continue a commercial question; without context they receive clarification rather than silence", async () => {
   const create: CreateMessage = async () =>
     response(
       JSON.stringify({
@@ -315,7 +315,7 @@ test("short answers continue a commercial question but never initiate an unrelat
   assert.equal(
     (await understandMessage(create, "18h", store, [])).interpretation
       .nextAction,
-    "SILENCE",
+    "ANSWER",
   );
   assert.equal(
     (
@@ -326,7 +326,7 @@ test("short answers continue a commercial question but never initiate an unrelat
         recent,
       )
     ).interpretation.nextAction,
-    "SILENCE",
+    "ANSWER",
   );
 });
 

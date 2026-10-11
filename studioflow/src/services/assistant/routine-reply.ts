@@ -19,7 +19,7 @@ export function exactPriceSelection(
     "",
   );
   const match =
-    /^(?:qual (?:e )?o (?:valor|preco) (?:do|da|de)|quanto (?:custa|fica|ta|esta|e)(?: o| a)?) (.+?)[?!.\s]*$/.exec(
+    /^(?:qual (?:e )?o (?:valor|preco) (?:do|da|de)|quanto (?:que )?(?:custa|fica|ta|esta|e)(?: o| a)?) (.+?)[?!.\s]*$/.exec(
       value,
     ) ||
     /^(?:o |a )?(.+?) (?:e|fica|custa|ta|esta) quanto[?!.\s]*$/.exec(value);
@@ -63,7 +63,7 @@ export function routineReply(
       ),
     );
     if (services.some((s) => !s)) return null;
-    const price = `${services.map((s) => `${s!.name}: ${money(s!.price)}`).join("; ")}.`;
+    const price = `${services.map((s) => `${s!.name.charAt(0).toUpperCase()}${s!.name.slice(1).toLowerCase()} fica ${money(s!.price)}`).join("; ")}.`;
     const repeated = context.recent?.some(
       (m) =>
         m.role === "assistant" &&
