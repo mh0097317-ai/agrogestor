@@ -42,6 +42,7 @@ export interface MarketingSettings {
   postsPerWeek: number;
   postHour: number;
   voice: string;
+  weeklyReel: boolean;
 }
 
 export const settingsSchema = z
@@ -51,6 +52,7 @@ export const settingsSchema = z
     postsPerWeek: z.number().int().min(1).max(14),
     postHour: z.number().int().min(6).max(22),
     voice: z.string().trim().max(1000),
+    weeklyReel: z.boolean(),
   })
   .strict();
 

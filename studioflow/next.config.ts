@@ -13,7 +13,10 @@ const config: NextConfig = {
       "node_modules/ffmpeg-static/ffmpeg",
     ],
     "/api/admin/marketing/**": ["src/services/marketing/fonts/*.ttf"],
-    "/api/cron/marketing": ["src/services/marketing/fonts/*.ttf"],
+    "/api/cron/marketing": [
+      "src/services/marketing/fonts/*.ttf",
+      "node_modules/ffmpeg-static/ffmpeg",
+    ],
   },
 };
 export default config;

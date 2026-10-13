@@ -6,7 +6,7 @@ import { checkInstagram, instagramTokenProblem } from "../assistant/instagram";
 import { requirePlatformAdmin } from "../platform";
 import { isDemo } from "../server-demo";
 import { decryptSecret, encryptSecret } from "../server-secrets";
-import { generateIdeas, marketingAiConfigured, marketingModels, modelOf, type MarketingModel } from "./ai";
+import { generateIdeas, marketingAiConfigured, suggestIdeas, marketingModels, modelOf, type MarketingModel } from "./ai";
 import {
   nextSlots,
   rowToPost,
@@ -33,7 +33,7 @@ export interface MarketingState {
 }
 
 const columns =
-  "id,status,format,theme,slides,caption,video_url,scheduled_for,published_at,permalink,error,likes,comments,origin,created_at,updated_at";
+  "id,source_id,status,format,theme,slides,caption,video_url,scheduled_for,published_at,permalink,error,likes,comments,origin,created_at,updated_at";
 
 export const imageUrl = (post: Pick<MarketingPost, "id" | "updatedAt">, index: number) =>
   `${appUrl}/api/marketing/image/${post.id}/${index}.jpg?v=${Date.parse(post.updatedAt) || 0}`;
@@ -80,6 +80,7 @@ function settingsOf(row: Record<string, unknown> | null): MarketingSettings {
     postsPerWeek: Number(row?.posts_per_week ?? 3),
     postHour: Number(row?.post_hour ?? 12),
     voice: (row?.voice as string) || "",
+    weeklyReel: row?.weekly_reel !== false,
   };
 }
 
@@ -211,6 +212,7 @@ export async function saveMarketingSettings(input: z.infer<typeof settingsSchema
       posts_per_week: input.postsPerWeek,
       post_hour: input.postHour,
       voice: input.voice,
+      weekly_reel: input.weeklyReel,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
@@ -268,6 +270,37 @@ export async function generateMarketingPosts(input: z.infer<typeof generateSchem
     format: input.format,
   });
   return insertIdeas(ideas);
+}
+
+export const suggestSchema = z
+  .object({ note: z.string().trim().max(3000).default("") })
+  .strict();
+
+/** A IA lê o histórico e o material colado e devolve pautas. Nada é salvo. */
+export async function suggestMarketing(input: z.infer<typeof suggestSchema>) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  assertOn(account);
+  const { data } = await createSupabaseAdmin()
+    .from("marketing_posts")
+    .select("theme,format,status,likes,comments")
+    .neq("status", "discarded")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  return suggestIdeas({
+    apiKey: aiKeyOf(account)?.key,
+    model: modelOf(account?.ai_model),
+    voice: (account?.voice as string) || "",
+    note: input.note,
+    history: (data || []).map((p) => ({
+      theme: p.theme as string,
+      format: p.format as string,
+      likes: p.likes as number | null,
+      comments: p.comments as number | null,
+      published: p.status === "published",
+    })),
+  });
 }
 
 export const updateSchema = z
@@ -366,6 +399,11 @@ export async function reelFromPost(id: string) {
   const post = rowToPost(source);
   if (post.format === "reel" || !post.slides.length)
     throw new DomainError("Esse post não tem telas para virar vídeo.", 400);
+  return makeReel(post);
+}
+
+async function makeReel(post: MarketingPost, scheduledFor?: string) {
+  const admin = createSupabaseAdmin();
   let video: Buffer;
   try {
     video = await renderReelMp4(post.slides);
@@ -388,6 +426,9 @@ export async function reelFromPost(id: string) {
       video_url: storage.getPublicUrl(path).data.publicUrl,
       origin: post.origin,
       slides: [],
+      source_id: post.id,
+      status: scheduledFor ? "scheduled" : "draft",
+      scheduled_for: scheduledFor || null,
     })
     .select(columns)
     .single();
@@ -396,6 +437,50 @@ export async function reelFromPost(id: string) {
     throw new DomainError("Não foi possível salvar o Reel.", 503);
   }
   return rowToPost(data);
+}
+
+/**
+ * Piloto automático: se não saiu Reel nos últimos 7 dias, transforma o
+ * carrossel mais recente (que ainda não virou vídeo) num Reel. Zero token.
+ */
+async function weeklyReel(settings: MarketingSettings, now: Date) {
+  const admin = createSupabaseAdmin();
+  const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+  const { data: recentReel } = await admin
+    .from("marketing_posts")
+    .select("id")
+    .not("source_id", "is", null)
+    .gte("created_at", weekAgo)
+    .limit(1);
+  if (recentReel?.length) return false;
+  const { data: candidates } = await admin
+    .from("marketing_posts")
+    .select(columns)
+    .eq("format", "carousel")
+    .in("status", ["draft", "scheduled", "published"])
+    .gte("created_at", new Date(now.getTime() - 21 * 86_400_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (!candidates?.length) return false;
+  const { data: used } = await admin
+    .from("marketing_posts")
+    .select("source_id")
+    .in("source_id", candidates.map((c) => c.id as string));
+  const done = new Set((used || []).map((u) => u.source_id as string));
+  const source = candidates.find((c) => !done.has(c.id as string));
+  if (!source) return false;
+  let slot: string | undefined;
+  if (settings.autoPublish) {
+    const { data: taken } = await admin
+      .from("marketing_posts")
+      .select("scheduled_for")
+      .eq("status", "scheduled")
+      .not("scheduled_for", "is", null);
+    // Dia livre próprio: o Reel é um extra, não ocupa a cota de posts da semana.
+    slot = nextSlots(1, settings.postHour, (taken || []).map((t) => t.scheduled_for as string), 7, now)[0];
+  }
+  await makeReel(rowToPost(source), slot);
+  return true;
 }
 
 /** Link para o navegador do admin enviar o vídeo direto ao Storage. */
@@ -507,7 +592,7 @@ export async function publishMarketingNow(id: string) {
 
 /** Roda a cada 15 minutos: publica o que venceu, mantém a fila do piloto automático e lê curtidas. */
 export async function runMarketing(now = new Date()) {
-  const report = { published: 0, failed: 0, generated: 0, insights: 0 };
+  const report = { published: 0, failed: 0, generated: 0, reels: 0, insights: 0 };
   if (isDemo()) return report;
   // Desligado no /admin: nada sai, nada é criado; a fila espera.
   if (!isOn(await readAccount())) return report;
@@ -539,6 +624,7 @@ export async function runMarketing(now = new Date()) {
       .from("marketing_posts")
       .select("status,scheduled_for")
       .in("status", ["draft", "scheduled"])
+      .is("source_id", null)
       .gte("created_at", new Date(now.getTime() - 7 * 86_400_000).toISOString());
     const scheduled = (queued || []).filter(
       (p) => p.status === "scheduled" && p.scheduled_for && p.scheduled_for <= week,
@@ -569,6 +655,12 @@ export async function runMarketing(now = new Date()) {
         // A IA fora do ar não trava a publicação; tenta de novo no próximo dia.
       }
     }
+    if (settings.weeklyReel)
+      try {
+        if (await weeklyReel(settings, now)) report.reels++;
+      } catch {
+        // Vídeo falhou: tenta de novo no próximo dia.
+      }
   }
   if (now.getUTCMinutes() < 15) {
     const { data: recent } = await admin

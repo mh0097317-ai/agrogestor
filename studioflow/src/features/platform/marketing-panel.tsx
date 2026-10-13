@@ -7,6 +7,7 @@ import {
   Megaphone,
   CalendarBlank,
   FilmSlate,
+  Lightbulb,
   ChatCircle,
   Heart,
   InstagramLogo,
@@ -144,6 +145,13 @@ export function MarketingPanel() {
         </div>
         <Autopilot state={state} onSaved={(settings) => setState({ ...state, settings })} />
       </div>
+      <Suggest
+        disabled={!state.ai || state.demo || !state.enabled}
+        onCreated={(posts) => {
+          setState({ ...state, posts: [...posts, ...state.posts] });
+          setTab("draft");
+        }}
+      />
       <Create
         disabled={!state.ai || state.demo || !state.enabled}
         onCreated={(posts) => {
@@ -438,6 +446,18 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
       <label className="mk-check">
         <input
           type="checkbox"
+          checked={form.weeklyReel}
+          disabled={!form.autopilot}
+          onChange={(e) => setForm({ ...form, weeklyReel: e.target.checked })}
+        />
+        <span>
+          <b>Um Reel por semana</b>
+          <small>Transforma um carrossel da semana em vídeo com movimento. Não gasta IA.</small>
+        </span>
+      </label>
+      <label className="mk-check">
+        <input
+          type="checkbox"
           checked={form.autoPublish}
           disabled={!form.autopilot}
           onChange={(e) => setForm({ ...form, autoPublish: e.target.checked })}
@@ -481,6 +501,96 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
         </button>
         {message && <span className="mk-muted">{message}</span>}
       </div>
+    </section>
+  );
+}
+
+type Suggestion = { title: string; format: "post" | "carousel" | "story"; why: string; brief: string };
+
+/** A IA analisa o que já saiu e o que você colar, e sugere pautas. */
+function Suggest({ disabled, onCreated }: { disabled: boolean; onCreated: (posts: MarketingPost[]) => void }) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState<number | "read" | null>(null);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ reading: string; suggestions: Suggestion[] } | null>(null);
+  const [made, setMade] = useState<number[]>([]);
+  async function analyze() {
+    setBusy("read");
+    setError("");
+    try {
+      setResult(await api("/api/admin/marketing", "POST", { kind: "suggest", note }));
+      setMade([]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível analisar.");
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function create(index: number, item: Suggestion) {
+    setBusy(index);
+    setError("");
+    try {
+      const { posts } = await api<{ posts: MarketingPost[] }>("/api/admin/marketing", "POST", {
+        kind: "generate",
+        count: 1,
+        format: item.format,
+        request: `${item.title}. ${item.brief}`.slice(0, 500),
+      });
+      setMade((m) => [...m, index]);
+      onCreated(posts);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível criar.");
+    } finally {
+      setBusy(null);
+    }
+  }
+  return (
+    <section className="pf-panel mk-suggest">
+      <div className="pf-panel-head">
+        <h2><Lightbulb size={18} /> Sugestões da IA</h2>
+      </div>
+      <p className="mk-muted">
+        A IA lê os posts que já saíram, com curtidas e comentários, e o que você colar abaixo. Depois sugere o que postar e por quê.
+      </p>
+      <textarea
+        rows={3}
+        maxLength={3000}
+        placeholder="Opcional: cole uma dúvida que cliente sempre faz, um post que você viu e gostou, uma novidade do sistema, uma data especial…"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        disabled={disabled}
+        aria-label="Material para a IA analisar"
+      />
+      <div className="mk-actions">
+        <button type="button" className="mk-primary" disabled={disabled || busy !== null} onClick={() => void analyze()}>
+          <Lightbulb size={16} /> {busy === "read" ? "Analisando…" : result ? "Analisar de novo" : "Analisar e sugerir"}
+        </button>
+      </div>
+      {error && <em className="mk-error">{error}</em>}
+      {result && (
+        <div className="mk-suggest-out">
+          {result.reading && <p className="mk-reading">{result.reading}</p>}
+          <ol className="mk-ideas">
+            {result.suggestions.map((item, i) => (
+              <li key={i}>
+                <div>
+                  <span className="mk-tag">{formatLabel[item.format]}</span>
+                  <b>{item.title}</b>
+                  <small>{item.why}</small>
+                </div>
+                <button
+                  type="button"
+                  className="mk-ghost"
+                  disabled={disabled || busy !== null || made.includes(i)}
+                  onClick={() => void create(i, item)}
+                >
+                  {made.includes(i) ? "Criado" : busy === i ? "Criando…" : "Criar este"}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </section>
   );
 }

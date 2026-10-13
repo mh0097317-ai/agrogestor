@@ -95,3 +95,22 @@
 .mk-models b { font-size: 14px; }
 .mk-models small { grid-column: 2; font-size: 12.5px; color: #6f665b; line-height: 1.35; }
 .mk-card .mk-reel { justify-content: center; width: 100%; }
+
+/* Sugestões da IA */
+.mk-suggest { display: grid; gap: 10px; }
+.mk-suggest h2 { display: flex; align-items: center; gap: 8px; }
+.mk-suggest > .mk-muted { margin: 0; font-size: 14px; line-height: 1.45; }
+.mk-suggest textarea { width: 100%; }
+.mk-reading { margin: 4px 0 0; padding: 12px 14px; border-radius: 10px; background: #faf4ea; color: #3b342c; font-size: 14px; line-height: 1.5; }
+.mk-ideas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mk-ideas li {
+  display: flex; gap: 12px; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border: 1px solid #e3d8c6; border-radius: 10px;
+}
+.mk-ideas li > div { display: grid; gap: 4px; min-width: 0; justify-items: start; }
+.mk-ideas b { font-size: 15px; }
+.mk-ideas small { color: #6f665b; font-size: 13px; line-height: 1.4; }
+.mk-ideas .mk-ghost { flex: none; }
+@media (max-width: 640px) {
+  .mk-ideas li { flex-direction: column; align-items: stretch; }
+}
