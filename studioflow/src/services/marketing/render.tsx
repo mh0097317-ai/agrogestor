@@ -29,7 +29,9 @@ function loadFonts() {
 }
 
 export function slideSize(format: MarketingFormat) {
-  return format === "story" ? { width: 1080, height: 1920 } : { width: 1080, height: 1350 };
+  return format === "story" || format === "reel"
+    ? { width: 1080, height: 1920 }
+    : { width: 1080, height: 1350 };
 }
 
 type Tone = "ink" | "paper" | "paper2" | "brass";
@@ -73,7 +75,8 @@ export function SlideArt({
   const sub = dark ? colors.soft : colors.muted;
   const cover = index === 0;
   const last = total > 1 && index === total - 1;
-  const story = format === "story";
+  // Reel: tela vertical como o story, cores alternadas como o carrossel.
+  const story = format === "story" || format === "reel";
   const titleSize = slide.title.length > 52 ? 78 : slide.title.length > 34 ? 92 : 108;
   return (
     <div
@@ -171,7 +174,7 @@ export function SlideArt({
         </div>
       ) : null}
       <div style={{ display: "flex", flex: 1 }} />
-      {last || story ? (
+      {last || format === "story" ? (
         <div style={{ display: "flex", marginBottom: 70 }}>
           <div
             style={{
@@ -202,7 +205,7 @@ export function SlideArt({
         }}
       >
         <Logo dark={dark} />
-        <div style={{ display: "flex" }}>{cover && total > 1 ? "Arraste →" : "studioflowapp.tech"}</div>
+        <div style={{ display: "flex" }}>{cover && total > 1 && format !== "reel" ? "Arraste →" : "studioflowapp.tech"}</div>
       </div>
     </div>
   );

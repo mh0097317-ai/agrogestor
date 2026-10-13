@@ -4,8 +4,22 @@ import { z } from "zod";
 import { DomainError } from "@/lib/availability";
 import { ideaSchema, marketingSystemPrompt, normalizeIdea } from "./content";
 
-export const marketingModel =
-  process.env.STUDIOFLOW_MARKETING_MODEL || "claude-opus-5-5";
+/** Do mais barato ao mais caprichado; o admin escolhe no painel. */
+export const marketingModels = [
+  "claude-haiku-5-5",
+  "claude-sonnet-5-5",
+  "claude-opus-5-5",
+] as const;
+export type MarketingModel = (typeof marketingModels)[number];
+
+const isModel = (value: unknown): value is MarketingModel =>
+  marketingModels.includes(value as MarketingModel);
+
+const envModel = process.env.STUDIOFLOW_MARKETING_MODEL;
+
+/** Escolha do painel; sem ela, a do servidor; por fim, o mais capaz. */
+export const modelOf = (saved: unknown): MarketingModel =>
+  isModel(saved) ? saved : isModel(envModel) ? envModel : "claude-opus-5-5";
 
 // Formato que a IA preenche; as regras finas (tamanhos) são conferidas depois com ideaSchema.
 const output = z.object({
@@ -43,6 +57,7 @@ export async function generateIdeas(input: {
   format?: "post" | "carousel" | "story";
   /** Chave salva no /admin; sem ela vale a do servidor. */
   apiKey?: string;
+  model?: MarketingModel;
 }) {
   if (!input.apiKey && !marketingAiConfigured())
     throw new DomainError("A IA do Marketing ainda não tem chave.", 503);
@@ -67,7 +82,7 @@ export async function generateIdeas(input: {
   let response;
   try {
     response = await client.messages.parse({
-      model: marketingModel,
+      model: input.model ?? modelOf(null),
       max_tokens: 16000,
       output_config: { effort: "low", format: zodOutputFormat(output) },
       system: marketingSystemPrompt(input.voice),

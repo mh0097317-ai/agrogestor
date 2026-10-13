@@ -6,6 +6,7 @@ import {
   Key,
   Megaphone,
   CalendarBlank,
+  FilmSlate,
   ChatCircle,
   Heart,
   InstagramLogo,
@@ -30,8 +31,19 @@ interface State {
   ai: boolean;
   aiSource: "panel" | "server" | null;
   enabled: boolean;
+  model: Model;
   demo: boolean;
 }
+
+type Model = "claude-haiku-5-5" | "claude-sonnet-5-5" | "claude-opus-5-5";
+
+// Preço por milhão de tokens (entrada/saída) em dólar: Haiku 0,10/0,50,
+// Sonnet 2/10, Opus 4/20. As ideias são curtas, então a diferença é o preço.
+const models: [Model, string, string][] = [
+  ["claude-haiku-5-5", "Econômico", "Gasta o mínimo. Bom para posts do dia a dia."],
+  ["claude-sonnet-5-5", "Equilibrado", "Metade do custo do Máximo, texto mais trabalhado."],
+  ["claude-opus-5-5", "Máximo", "O texto mais caprichado, com o maior custo."],
+];
 
 async function api<T>(url: string, method = "GET", body?: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -158,7 +170,14 @@ export function MarketingPanel() {
         {list.length ? (
           <div className="mk-grid">
             {list.map((post) => (
-              <PostCard key={post.id} post={post} connected={!!state.account} onChange={replace} />
+              <PostCard
+                key={post.id}
+                post={post}
+                connected={!!state.account}
+                canReel={state.enabled && !state.demo}
+                onChange={replace}
+                onCreated={(reel) => setState((s) => (s ? { ...s, posts: [reel, ...s.posts] } : s))}
+              />
             ))}
           </div>
         ) : (
@@ -302,6 +321,25 @@ function AiKey({ state, onChange }: { state: State; onChange: () => void }) {
             {busy ? "Salvando…" : "Salvar"}
           </button>
         </form>
+      )}
+      {state.ai && (
+        <fieldset className="mk-models">
+          <legend>Quem escreve os posts</legend>
+          {models.map(([id, label, hint]) => (
+            <label key={id} className={state.model === id ? "is-on" : ""}>
+              <input
+                type="radio"
+                name="mk-model"
+                value={id}
+                checked={state.model === id}
+                disabled={busy || state.demo}
+                onChange={() => void run({ kind: "model", model: id })}
+              />
+              <b>{label}</b>
+              <small>{hint}</small>
+            </label>
+          ))}
+        </fieldset>
       )}
       {error && <em className="mk-error">{error}</em>}
     </section>
@@ -555,11 +593,15 @@ function Create({ disabled, onCreated }: { disabled: boolean; onCreated: (posts:
 function PostCard({
   post,
   connected,
+  canReel,
   onChange,
+  onCreated,
 }: {
   post: MarketingPost;
   connected: boolean;
+  canReel: boolean;
   onChange: (post: MarketingPost) => void;
+  onCreated: (post: MarketingPost) => void;
 }) {
   const [caption, setCaption] = useState(post.caption);
   const [slides, setSlides] = useState<Slide[]>(post.slides);
@@ -581,6 +623,18 @@ function PostCard({
       setError(cause instanceof Error ? cause.message : "Não foi possível.");
     } finally {
       setBusy(false);
+    }
+  }
+  const [reeling, setReeling] = useState(false);
+  async function toReel() {
+    setReeling(true);
+    setError("");
+    try {
+      onCreated(await api<MarketingPost>("/api/admin/marketing", "POST", { kind: "toReel", id: post.id }));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível montar o vídeo.");
+    } finally {
+      setReeling(false);
     }
   }
   const edits = changed ? { caption, slides: post.format === "reel" ? undefined : slides } : {};
@@ -670,6 +724,12 @@ function PostCard({
             </button>
           </div>
         )}
+        {post.format !== "reel" && post.slides.length > 0 && !editing && (
+          <button type="button" className="mk-ghost mk-reel" disabled={reeling || !canReel} onClick={() => void toReel()}>
+            <FilmSlate size={15} /> {reeling ? "Montando o vídeo…" : "Virar Reel"}
+          </button>
+        )}
+        {reeling && <span className="mk-muted">Leva uns 20 segundos. Sem gastar IA: usa as telas deste post.</span>}
         {!connected && !locked && <span className="mk-muted"><UploadSimple size={13} /> Conecte o Instagram para publicar.</span>}
         {error && <em className="mk-error">{error}</em>}
       </div>

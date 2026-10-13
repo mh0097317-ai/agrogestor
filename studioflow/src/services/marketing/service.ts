@@ -6,7 +6,7 @@ import { checkInstagram, instagramTokenProblem } from "../assistant/instagram";
 import { requirePlatformAdmin } from "../platform";
 import { isDemo } from "../server-demo";
 import { decryptSecret, encryptSecret } from "../server-secrets";
-import { generateIdeas, marketingAiConfigured } from "./ai";
+import { generateIdeas, marketingAiConfigured, marketingModels, modelOf, type MarketingModel } from "./ai";
 import {
   nextSlots,
   rowToPost,
@@ -16,6 +16,7 @@ import {
   type MarketingSettings,
 } from "./content";
 import { mediaInsights, publishToInstagram } from "./instagram";
+import { renderReelMp4 } from "./reel";
 
 export interface MarketingState {
   account: { username: string } | null;
@@ -26,6 +27,8 @@ export interface MarketingState {
   aiSource: "panel" | "server" | null;
   /** Chave geral: desligado, nada é criado, publicado ou lido. */
   enabled: boolean;
+  /** Modelo que escreve os posts: o mais barato gasta bem menos por ideia. */
+  model: MarketingModel;
   demo: boolean;
 }
 
@@ -90,6 +93,7 @@ export async function marketingState(): Promise<MarketingState> {
       ai: marketingAiConfigured(),
       aiSource: marketingAiConfigured() ? "server" : null,
       enabled: true,
+      model: modelOf(null),
       demo: true,
     };
   const account = await readAccount();
@@ -109,6 +113,7 @@ export async function marketingState(): Promise<MarketingState> {
     ai: !!aiKeyOf(account),
     aiSource: aiKeyOf(account)?.source ?? null,
     enabled: isOn(account),
+    model: modelOf(account?.ai_model),
     demo: false,
   };
 }
@@ -182,6 +187,19 @@ export async function saveMarketingAiKey(key: string | null) {
   return { ok: true };
 }
 
+export const modelSchema = z.object({ model: z.enum(marketingModels) });
+
+export async function setMarketingModel(model: MarketingModel) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({ ai_model: model, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw new DomainError("Não foi possível trocar o modelo.", 503);
+  return { model };
+}
+
 export async function saveMarketingSettings(input: z.infer<typeof settingsSchema>) {
   await requirePlatformAdmin();
   demoOnly();
@@ -242,6 +260,7 @@ export async function generateMarketingPosts(input: z.infer<typeof generateSchem
   assertOn(account);
   const ideas = await generateIdeas({
     apiKey: aiKeyOf(account)?.key,
+    model: modelOf(account?.ai_model),
     count: input.count,
     voice: (account?.voice as string) || "",
     recentThemes: await recentThemes(),
@@ -329,6 +348,53 @@ export async function createReel(input: z.infer<typeof createReelSchema>) {
     .select(columns)
     .single();
   if (error) throw new DomainError("Não foi possível salvar o Reel.", 503);
+  return rowToPost(data);
+}
+
+/**
+ * Vira Reel um post que a IA já escreveu: as telas ganham movimento e
+ * transição num MP4 vertical. Não chama a IA de novo, então não gasta token.
+ */
+export async function reelFromPost(id: string) {
+  await requirePlatformAdmin();
+  demoOnly();
+  assertOn(await readAccount());
+  z.string().uuid().parse(id);
+  const admin = createSupabaseAdmin();
+  const { data: source } = await admin.from("marketing_posts").select(columns).eq("id", id).maybeSingle();
+  if (!source) throw new DomainError("Post não encontrado.", 404);
+  const post = rowToPost(source);
+  if (post.format === "reel" || !post.slides.length)
+    throw new DomainError("Esse post não tem telas para virar vídeo.", 400);
+  let video: Buffer;
+  try {
+    video = await renderReelMp4(post.slides);
+  } catch {
+    throw new DomainError("Não foi possível montar o vídeo agora. Tente de novo.", 503);
+  }
+  const path = `reels/${crypto.randomUUID()}.mp4`;
+  const storage = admin.storage.from("marketing");
+  const { error: uploadError } = await storage.upload(path, video, {
+    contentType: "video/mp4",
+    upsert: false,
+  });
+  if (uploadError) throw new DomainError("Não foi possível guardar o vídeo.", 503);
+  const { data, error } = await admin
+    .from("marketing_posts")
+    .insert({
+      format: "reel",
+      theme: `${post.theme} (Reel)`.slice(0, 200),
+      caption: post.caption,
+      video_url: storage.getPublicUrl(path).data.publicUrl,
+      origin: post.origin,
+      slides: [],
+    })
+    .select(columns)
+    .single();
+  if (error) {
+    await storage.remove([path]);
+    throw new DomainError("Não foi possível salvar o Reel.", 503);
+  }
   return rowToPost(data);
 }
 
@@ -484,6 +550,7 @@ export async function runMarketing(now = new Date()) {
       try {
         const ideas = await generateIdeas({
           apiKey: ai.key,
+          model: modelOf(creds.account.ai_model),
           count: Math.min(missing, 6),
           voice: settings.voice,
           recentThemes: await recentThemes(),

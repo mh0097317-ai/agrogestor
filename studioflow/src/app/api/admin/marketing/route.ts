@@ -10,8 +10,11 @@ import {
   generateSchema,
   aiKeySchema,
   marketingState,
+  modelSchema,
+  reelFromPost,
   saveMarketingAiKey,
   saveMarketingSettings,
+  setMarketingModel,
   setMarketingPower,
   videoUploadUrl,
 } from "@/services/marketing/service";
@@ -37,6 +40,8 @@ const action = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("power"), enabled: z.boolean() }),
   aiKeySchema.extend({ kind: z.literal("aiKey") }),
   z.object({ kind: z.literal("aiKeyRemove") }),
+  modelSchema.extend({ kind: z.literal("model") }),
+  z.object({ kind: z.literal("toReel"), id: z.string().uuid() }),
 ]);
 
 export async function POST(request: Request) {
@@ -86,6 +91,10 @@ export async function POST(request: Request) {
         return respond(await saveMarketingAiKey(input.key));
       case "aiKeyRemove":
         return respond(await saveMarketingAiKey(null));
+      case "model":
+        return respond(await setMarketingModel(input.model));
+      case "toReel":
+        return respond(await reelFromPost(input.id), 201);
     }
   } catch (error) {
     return failure(error);
