@@ -302,12 +302,14 @@ export const notifySchema = z
   .object({
     notifyProfessionals: z.boolean().optional(),
     notifications: z.boolean().optional(),
+    attendanceCheck: z.boolean().optional(),
   })
   .strict()
   .refine(
     (input) =>
       input.notifyProfessionals !== undefined ||
-      input.notifications !== undefined,
+      input.notifications !== undefined ||
+      input.attendanceCheck !== undefined,
     "Escolha qual aviso alterar.",
   );
 export async function updateNotify(input: z.infer<typeof notifySchema>) {
@@ -318,6 +320,8 @@ export async function updateNotify(input: z.infer<typeof notifySchema>) {
           store.settings.notifyProfessionals = input.notifyProfessionals;
         if (input.notifications !== undefined)
           store.settings.notifications = input.notifications;
+        if (input.attendanceCheck !== undefined)
+          store.settings.attendanceCheck = input.attendanceCheck;
         return input;
       },
       await demoWorkspaceSlug(),
@@ -331,6 +335,9 @@ export async function updateNotify(input: z.infer<typeof notifySchema>) {
         : {}),
       ...(input.notifications !== undefined
         ? { notifications: input.notifications }
+        : {}),
+      ...(input.attendanceCheck !== undefined
+        ? { attendance_check: input.attendanceCheck }
         : {}),
     })
     .eq("business_id", businessId);

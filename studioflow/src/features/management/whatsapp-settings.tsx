@@ -113,6 +113,9 @@ function ShopWhatsAppSettings({
     store.settings.notifyProfessionals !== false,
   );
   const [reminders, setReminders] = useState(store.settings.notifications);
+  const [attendance, setAttendance] = useState(
+    store.settings.attendanceCheck !== false,
+  );
   const [savingNotice, setSavingNotice] = useState(false);
   const qrAt = useRef(0);
   const connected = view?.status === "open";
@@ -205,6 +208,28 @@ function ShopWhatsAppSettings({
       );
     } catch (cause) {
       setNotify(!value);
+      setError(
+        cause instanceof Error ? cause.message : "Não foi possível salvar.",
+      );
+    } finally {
+      setSavingNotice(false);
+    }
+  }
+
+  async function toggleAttendance(value: boolean) {
+    setAttendance(value);
+    setSavingNotice(true);
+    setError("");
+    try {
+      await send("PATCH", { attendanceCheck: value });
+      await onSaved();
+      toast(
+        value
+          ? "A plataforma vai perguntar quando um horário não for iniciado."
+          : "Pergunta de atendimento sem baixa desligada.",
+      );
+    } catch (cause) {
+      setAttendance(!value);
       setError(
         cause instanceof Error ? cause.message : "Não foi possível salvar.",
       );
@@ -375,6 +400,23 @@ function ShopWhatsAppSettings({
               Uma mensagem com serviço, profissional e horário. Apenas
               agendamentos confirmados com autorização do cliente recebem o
               lembrete.
+            </small>
+          </span>
+        </label>
+        <label className="wa-toggle">
+          <input
+            type="checkbox"
+            checked={attendance}
+            disabled={!canManage || savingNotice}
+            onChange={(event) => void toggleAttendance(event.target.checked)}
+          />
+          <span>
+            <strong>Perguntar quando o atendimento não for iniciado</strong>
+            <small>
+              15 minutos depois do horário, se ninguém iniciou o atendimento,
+              o profissional recebe no WhatsApp um link para responder: atendi,
+              estou atendendo ou o cliente faltou. Sem resposta em 2 horas, o
+              dono recebe a lista. Nada muda sozinho.
             </small>
           </span>
         </label>

@@ -182,6 +182,8 @@ export interface Settings {
   depositHold: number;
   /** WhatsApp para o profissional quando entra um agendamento. */
   notifyProfessionals?: boolean;
+  /** 15 min sem iniciar: pergunta ao profissional se atendeu; 2 h sem resposta, avisa o dono. */
+  attendanceCheck?: boolean;
   /** AI receptionist (web chat and WhatsApp). */
   assistantEnabled: boolean;
   assistantName: string;

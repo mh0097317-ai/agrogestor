@@ -30,8 +30,7 @@
 .pp-work.count-2 .pp-work-tile {
   aspect-ratio: 4 / 5;
 }
-.pp-work.count-3 .pp-work-tile:first-child,
-.pp-work.count-6 .pp-work-tile:first-child {
+.pp-work.count-3 .pp-work-tile:first-child {
   grid-column: span 2;
   grid-row: span 2;
   aspect-ratio: auto;
@@ -43,6 +42,8 @@
   height: 100%;
 }
 .pp-work-photo img {
+  /* A small crop hides the white frame many shop photos come with. */
+  transform: scale(1.06);
   transition: transform 700ms var(--ease-out) !important;
 }
 .pp-work-tile::after {
@@ -54,7 +55,7 @@
   transition: opacity var(--motion-base) var(--ease-out);
 }
 .pp-work-tile:hover .pp-work-photo img {
-  transform: scale(1.07);
+  transform: scale(1.12);
 }
 .pp-work-tile:hover::after {
   opacity: 1;
@@ -220,22 +221,9 @@
   }
 }
 @media (min-width: 768px) {
-  .pp-work.count-6 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: 180px;
-  }
+  /* Seis fotos: grade regular 3 × 2, todas do mesmo tamanho. */
   .pp-work.count-6 .pp-work-tile {
-    aspect-ratio: auto;
-  }
-  .pp-work.count-6 .pp-work-tile:first-child,
-  .pp-work.count-6 .pp-work-tile:nth-child(2) {
-    grid-column: span 1;
-    grid-row: span 2;
-  }
-}
-@media (min-width: 1024px) {
-  .pp-work.count-6 {
-    grid-auto-rows: 200px;
+    aspect-ratio: 4 / 5;
   }
 }
 @media (max-width: 640px) {
