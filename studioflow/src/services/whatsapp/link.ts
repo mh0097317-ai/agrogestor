@@ -16,6 +16,7 @@ import {
   instanceState,
   removeInstance,
   sendText,
+  sendPdf,
   setWebhook,
   type LinkState,
 } from "./evolution";
@@ -358,6 +359,12 @@ export const withCountry = (phone: string) => {
 };
 
 export type Sender = (to: string, body: string) => Promise<string | void>;
+export async function pdfSender(businessId: string, professionalId?: string) {
+  const row = await readRow(businessId, professionalId);
+  if (row?.status !== "open" || !(await evolutionReady())) return null;
+  return (phone: string, bytes: Uint8Array, name: string, caption: string) =>
+    sendPdf(row.instance, withCountry(phone), bytes, name, caption);
+}
 
 /**
  * How this business sends WhatsApp messages: its own number by QR Code

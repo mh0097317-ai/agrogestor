@@ -5,6 +5,8 @@ import {
   EvolutionConfiguration,
 } from "./client-configuration";
 import { PlatformWhatsApp } from "./platform-whatsapp";
+import { WeeklyReports } from "@/features/management/weekly-reports";
+import { PlatformAiControl } from "./ai-control";
 import { ClientAudit } from "./client-audit";
 import { notifyWorkspaceChange } from "@/lib/workspace-sync";
 import {
@@ -631,6 +633,10 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
               {monitoringError}
             </p>
           )}
+        {["overview", "operations", "receptionists"].includes(view) && (
+          <PlatformAiControl />
+        )}
+        {view === "overview" && <WeeklyReports platform canSchedule />}
         {view === "overview" && items && monitoring && (
           <OverviewPanels
             items={items}

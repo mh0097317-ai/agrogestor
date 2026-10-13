@@ -202,6 +202,43 @@ export async function sendText(
   return sent.key?.id;
 }
 
+/** Private PDF bytes, never a public URL or an arbitrary file supplied by a client. */
+export async function sendPdf(
+  instance: string,
+  number: string,
+  bytes: Uint8Array,
+  fileName: string,
+  caption: string,
+) {
+  const digits = number.replace(/\D/g, "");
+  if (
+    !/^\d{10,15}$/.test(digits) ||
+    bytes.length > 5_000_000 ||
+    !/^[a-z0-9-]+\.pdf$/.test(fileName)
+  )
+    throw new DomainError("Documento ou destinatário inválido.");
+  const result = await evo<{ key?: { id?: string } }>(
+    `/message/sendMedia/${encodeURIComponent(instance)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        number: digits,
+        mediatype: "document",
+        mimetype: "application/pdf",
+        fileName,
+        caption,
+        media: Buffer.from(bytes).toString("base64"),
+      }),
+    },
+  );
+  if (!result.key?.id)
+    throw new DomainError(
+      "Envio do PDF sem confirmação. Confira o WhatsApp antes de repetir.",
+      502,
+    );
+  return result.key.id;
+}
+
 /** Stored address book of this instance; no messages or groups are imported. */
 export async function findContacts(instance: string, page = 1) {
   const data = await evo<unknown>(

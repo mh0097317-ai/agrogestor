@@ -20,8 +20,18 @@ const output = z.object({
   ),
 });
 
+/**
+ * Chave própria do Marketing: assim a IA de posts da StudioFlow não vira,
+ * sem querer, a chave reserva da recepcionista de todas as barbearias.
+ */
+const marketingKey = () => process.env.STUDIOFLOW_MARKETING_ANTHROPIC_KEY;
+
 export function marketingAiConfigured() {
-  return !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  return !!(
+    marketingKey() ||
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.ANTHROPIC_AUTH_TOKEN
+  );
 }
 
 /** Pede ideias prontas para publicar; descarta o que não passar nas regras. */
@@ -34,7 +44,12 @@ export async function generateIdeas(input: {
 }) {
   if (!marketingAiConfigured())
     throw new DomainError("A IA não está configurada no servidor.", 503);
-  const client = new Anthropic({ timeout: 120_000, maxRetries: 1 });
+  const key = marketingKey();
+  const client = new Anthropic({
+    timeout: 120_000,
+    maxRetries: 1,
+    ...(key ? { apiKey: key, authToken: null } : {}),
+  });
   const ask = [
     `Crie ${input.count} ${input.count === 1 ? "publicação" : "publicações"} para o Instagram da StudioFlow.`,
     input.format

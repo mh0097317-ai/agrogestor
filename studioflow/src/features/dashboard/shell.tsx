@@ -239,6 +239,7 @@ function Shell({ children }: { children: ReactNode }) {
           "/dashboard",
           "/dashboard/agenda",
           "/dashboard/clientes",
+          "/dashboard/relatorios",
           "/dashboard/conversas",
           "/dashboard/configuracoes",
         ].includes(link.path)) &&

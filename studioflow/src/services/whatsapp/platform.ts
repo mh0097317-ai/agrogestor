@@ -9,6 +9,7 @@ import {
   instanceState,
   removeInstance,
   sendText,
+  sendPdf,
 } from "./evolution";
 import { withCountry } from "./link";
 
@@ -18,6 +19,15 @@ import { withCountry } from "./link";
  */
 const instance = () =>
   process.env.EVOLUTION_PLATFORM_INSTANCE || "sf-studioflow";
+export async function platformPdfSender() {
+  if (
+    !(await evolutionReady()) ||
+    (await instanceState(instance()).catch(() => "close")) !== "open"
+  )
+    return null;
+  return (phone: string, bytes: Uint8Array, name: string, caption: string) =>
+    sendPdf(instance(), withCountry(phone), bytes, name, caption);
+}
 
 export interface PlatformLink {
   ready: boolean;

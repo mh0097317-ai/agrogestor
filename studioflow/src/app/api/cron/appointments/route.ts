@@ -5,12 +5,14 @@ import {
   recoverProfessionalBookingNotices,
 } from "@/services/whatsapp/reminders";
 import { sendEmailNotices } from "@/services/email/notices";
+import { sendWeeklyReports } from "@/services/weekly-report-delivery";
+import { sendPlatformWeeklyReport } from "@/services/platform-weekly-delivery";
 import {
   sendAttendanceChecks,
   sendOwnerUnsettledAlerts,
 } from "@/services/attendance";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 export async function POST(request: Request) {
   const token = (request.headers.get("authorization") || "").replace(
     /^Bearer /,
@@ -26,19 +28,30 @@ export async function POST(request: Request) {
     return new Response("forbidden", { status: 401 });
   const origin = requestOrigin(request);
   const failed = { checked: 0, sent: 0, skipped: 0, failed: 1 };
-  const [customers, professionals, emails, attendance, owners] =
-    await Promise.all([
-      sendAppointmentReminders(),
-      recoverProfessionalBookingNotices(origin),
-      sendEmailNotices().catch(() => ({ checked: 0, sent: 0, failed: 1 })),
-      sendAttendanceChecks(origin).catch(() => failed),
-      sendOwnerUnsettledAlerts(origin).catch(() => failed),
-    ]);
+  const [
+    customers,
+    professionals,
+    emails,
+    attendance,
+    owners,
+    weeklyReports,
+    platformWeeklyReport,
+  ] = await Promise.all([
+    sendAppointmentReminders(),
+    recoverProfessionalBookingNotices(origin),
+    sendEmailNotices().catch(() => ({ checked: 0, sent: 0, failed: 1 })),
+    sendAttendanceChecks(origin).catch(() => failed),
+    sendOwnerUnsettledAlerts(origin).catch(() => failed),
+    sendWeeklyReports().catch(() => failed),
+    sendPlatformWeeklyReport().catch(() => "failed"),
+  ]);
   return Response.json({
     ...customers,
     professionals,
     emails,
     attendance,
     owners,
+    weeklyReports,
+    platformWeeklyReport,
   });
 }

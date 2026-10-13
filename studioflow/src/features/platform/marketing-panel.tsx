@@ -120,7 +120,7 @@ export function MarketingPanel() {
         <p className="mk-note">Na demonstração local o Marketing só mostra a tela. Ele funciona no app publicado.</p>
       )}
       {!state.ai && (
-        <p className="mk-note">A IA não está configurada no servidor (ANTHROPIC_API_KEY). Sem ela dá para publicar Reels, mas não criar posts.</p>
+        <p className="mk-note">A IA de posts ainda não tem chave. Na Vercel, crie a variável STUDIOFLOW_MARKETING_ANTHROPIC_KEY com uma chave da Anthropic e faça um novo deploy. Sem ela dá para publicar Reels, mas não criar posts.</p>
       )}
       <div className="mk-top">
         <Account state={state} onChange={load} />

@@ -19,6 +19,7 @@ import { accessOpen } from "@/lib/access";
 import { hasModule } from "@/lib/modules";
 import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
 import { businessCreate } from "./provider";
+import { platformAiEnabled } from "../platform-ai-control";
 import { sendWhatsApp } from "./whatsapp";
 import { sendInstagram, type InstagramMessage } from "./instagram";
 import { audioText, downloadUrl, downloadWhatsAppMedia } from "./transcribe";
@@ -524,6 +525,18 @@ export async function processConversation(
   create?: CreateMessage | null,
 ) {
   for (let round = 0; round < 3; round++) {
+    if (!(await platformAiEnabled())) {
+      const paused = await repo.get(conversationId);
+      if (paused?.status === "ai") {
+        await repo.update(conversationId, { status: "human", unreadDelta: 1 });
+        await repo.addMessage(
+          conversationId,
+          "event",
+          "IA desativada pelo admin da plataforma. Continue o atendimento manualmente.",
+        );
+      }
+      return;
+    }
     if (!(await repo.lease(conversationId))) return;
     let say: string | null = null;
     try {
@@ -637,6 +650,8 @@ async function answerPending(
     return handoffNotice;
   };
   const store = await loadStore(delivery.slug);
+  if (!(await platformAiEnabled()))
+    return toHuman("IA desativada pelo admin da plataforma.");
   if (
     conversation.channel === "whatsapp" &&
     (await repo.run?.(conversationId))?.state === "SENDING"
@@ -882,6 +897,10 @@ async function answerPending(
     // the workflow caps iterations/output and shares the daily turn budget.
     try {
       const proposed = await requestN8nTurn(turn, n8n, fetch, timeLeft);
+      if (!(await platformAiEnabled())) {
+        await repo.update(conversationId, { status: "human", unreadDelta: 1 });
+        return null;
+      }
       const fresh = await repo.get(conversationId);
       if (fresh?.status !== "ai") return null;
       if (
@@ -959,6 +978,10 @@ async function answerPending(
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);
+  if (!(await platformAiEnabled())) {
+    await repo.update(conversationId, { status: "human", unreadDelta: 1 });
+    return null;
+  }
   if ((await repo.get(conversationId))?.status !== "ai") return null;
   let sentId: string | void = undefined;
   if (result.reply && delivery.send) {
@@ -1179,6 +1202,8 @@ export async function receiveWhatsAppMessages(input: {
     .select("assistant_enabled")
     .eq("business_id", input.businessId)
     .maybeSingle();
+  const globalAiEnabled = await platformAiEnabled();
+  if (settings && !globalAiEnabled) settings.assistant_enabled = false;
   const { brazilPhone } = await import("./whatsapp");
   // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
   const touched = new Map<string, string>();
@@ -1222,7 +1247,9 @@ export async function receiveWhatsAppMessages(input: {
     }
     // Transcribe before checking intent, including a new customer's first audio.
     const body = message.loadAudio
-      ? await audioText(message.loadAudio, input.businessId)
+      ? globalAiEnabled
+        ? await audioText(message.loadAudio, input.businessId)
+        : "[Áudio recebido para atendimento manual]"
       : message.text;
     if (!body.trim()) continue;
     if (!existing && !settings?.assistant_enabled) {
@@ -1255,6 +1282,10 @@ export async function receiveWhatsAppMessages(input: {
       continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
+    if (!globalAiEnabled) {
+      await repo.update(conversation.id, { status: "human", unreadDelta: 1 });
+      continue;
+    }
     if (
       conversation.status === "human" &&
       settings?.assistant_enabled &&
@@ -1407,6 +1438,8 @@ export async function receiveInstagram(
     .select("assistant_enabled")
     .eq("business_id", account.businessId)
     .maybeSingle();
+  const globalAiEnabled = await platformAiEnabled();
+  if (settings && !globalAiEnabled) settings.assistant_enabled = false;
   const touched = new Map<string, string>();
   for (const message of messages) {
     if (message.recipient && message.recipient !== account.igUserId) continue;
@@ -1419,10 +1452,16 @@ export async function receiveInstagram(
         contactRef: message.from,
       }));
     const body = message.audioUrl
-      ? await audioText(() => downloadUrl(message.audioUrl!))
+      ? globalAiEnabled
+        ? await audioText(() => downloadUrl(message.audioUrl!))
+        : "[Áudio recebido para atendimento manual]"
       : message.text;
     if (!(await repo.addMessage(conversation.id, "customer", body, message.id)))
       continue;
+    if (!globalAiEnabled) {
+      await repo.update(conversation.id, { status: "human", unreadDelta: 1 });
+      continue;
+    }
     if (conversation.status === "closed")
       await repo.update(conversation.id, {
         status: settings?.assistant_enabled ? "ai" : "human",

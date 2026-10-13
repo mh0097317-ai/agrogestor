@@ -4,6 +4,7 @@ node_modules/
 .data/
 *.tsbuildinfo
 test-results/
+output/pdf/
 supabase/.temp/
 !.env.example
 ops/evolution/.env

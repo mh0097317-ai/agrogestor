@@ -39,6 +39,8 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
       return Response.json([
         { status: "active", access_until: null, modules: ["recepcionista"] },
       ]);
+    if (table === "platform_ai_control")
+      return Response.json([{ enabled: true }]);
     if (table === "business_settings")
       return Response.json([{ assistant_enabled: enabled }]);
     if (table === "conversation_messages")

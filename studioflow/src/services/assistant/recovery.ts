@@ -4,6 +4,7 @@ import { hasModule } from "@/lib/modules";
 import { conversationSender } from "../whatsapp/link";
 import { liveRepo, processConversation } from "./conversations";
 import { whatsappDestination } from "@/lib/whatsapp-contacts";
+import { platformAiEnabled } from "../platform-ai-control";
 
 export async function recoverConversation(input: {
   id: string;
@@ -12,6 +13,7 @@ export async function recoverConversation(input: {
   slug: string;
   origin: string;
 }) {
+  if (!(await platformAiEnabled())) return;
   const access = await readBusinessAccess(input.businessId);
   if (!accessOpen(access) || !hasModule(access.modules, "recepcionista"))
     return;
@@ -43,6 +45,7 @@ export async function recoverConversation(input: {
 }
 
 export async function recoverPendingConversations(origin: string) {
+  if (!(await platformAiEnabled())) return { checked: 0, failed: 0 };
   const { data, error } = await createSupabaseAdmin().rpc(
     "due_assistant_conversations",
   );

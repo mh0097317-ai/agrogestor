@@ -28,6 +28,7 @@ import {
 } from "./finance-helpers";
 import { PeriodControl } from "./period-control";
 import { CommercialResults } from "./commercial-results";
+import { WeeklyReports } from "./weekly-reports";
 export default function ReportsPage() {
   const { data } = useWorkspace(),
     { toast } = useToast();
@@ -61,6 +62,25 @@ export default function ReportsPage() {
     );
     toast("Relatório do período exportado.");
   }
+  if (data?.viewer?.role === "professional")
+    return (
+      <ManagementBoundary>
+        <PageHeader
+          title="Seu relatório semanal"
+          description="Seus atendimentos e resultados, em um PDF pronto para guardar."
+        />
+        {data.viewer.professionalId ? (
+          <WeeklyReports
+            key={data.business.id}
+            ownProfessionalId={data.viewer.professionalId}
+          />
+        ) : (
+          <Card>
+            Peça à gestão para vincular seu acesso ao perfil de profissional.
+          </Card>
+        )}
+      </ManagementBoundary>
+    );
   return (
     <ManagementBoundary>
       <PageHeader
@@ -77,6 +97,16 @@ export default function ReportsPage() {
           </Button>
         }
       />
+      {data && (
+        <WeeklyReports
+          key={data.business.id}
+          professionals={data.professionals}
+          ownProfessionalId={data.viewer?.professionalId}
+          canSchedule={["owner", "admin", "manager"].includes(
+            data.viewer?.role || "",
+          )}
+        />
+      )}
       <PeriodControl
         period={period}
         preset={preset}
