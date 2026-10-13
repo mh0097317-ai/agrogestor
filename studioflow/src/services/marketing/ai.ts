@@ -137,6 +137,57 @@ export async function suggestIdeas(input: {
   };
 }
 
+const voiceOutput = z.object({ voice: z.string(), reason: z.string() });
+
+/**
+ * Escreve a "Orientação para a IA" do piloto automático a partir do que
+ * já saiu e de como o público reagiu. Só sugere: quem salva é o admin.
+ */
+export async function suggestVoice(input: {
+  current: string;
+  history: Parameters<typeof suggestIdeas>[0]["history"];
+  apiKey?: string;
+  model?: MarketingModel;
+}) {
+  const client = clientFor(input.apiKey);
+  const history = input.history.length
+    ? input.history
+        .map((p) =>
+          `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
+        )
+        .join("\n")
+    : "Nada publicado ainda.";
+  const ask = [
+    "Analise o histórico do Instagram da StudioFlow e escreva a orientação que o piloto automático vai seguir nas próximas semanas.",
+    "Em 'voice': até 5 linhas curtas e práticas sobre o que priorizar (temas, formatos, tom) e o que evitar. Até 600 caracteres. Use só o que o histórico mostra; se faltar dado, oriente pelo que é mais útil para donos de barbearia.",
+    "Em 'reason': uma frase dizendo em que dado você se baseou.",
+    input.current.trim()
+      ? `Orientação atual (melhore, mantendo o que fizer sentido):\n<atual>\n${input.current.trim()}\n</atual>`
+      : "",
+    `Histórico (mais recente primeiro):\n${history}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  let response;
+  try {
+    response = await client.messages.parse({
+      model: input.model ?? modelOf(null),
+      max_tokens: 2000,
+      output_config: { effort: "low", format: zodOutputFormat(voiceOutput) },
+      system: marketingSystemPrompt(""),
+      messages: [{ role: "user", content: ask }],
+    });
+  } catch (cause) {
+    aiFailure(cause);
+  }
+  if (response.stop_reason === "refusal" || !response.parsed_output)
+    throw new DomainError("A IA não conseguiu analisar agora. Tente de novo.", 502);
+  return {
+    voice: response.parsed_output.voice.trim().slice(0, 1000),
+    reason: response.parsed_output.reason.trim().slice(0, 300),
+  };
+}
+
 /** Pede ideias prontas para publicar; descarta o que não passar nas regras. */
 export async function generateIdeas(input: {
   count: number;

@@ -6,7 +6,7 @@ import { checkInstagram, instagramTokenProblem } from "../assistant/instagram";
 import { requirePlatformAdmin } from "../platform";
 import { isDemo } from "../server-demo";
 import { decryptSecret, encryptSecret } from "../server-secrets";
-import { generateIdeas, marketingAiConfigured, suggestIdeas, marketingModels, modelOf, type MarketingModel } from "./ai";
+import { generateIdeas, marketingAiConfigured, suggestIdeas, suggestVoice, marketingModels, modelOf, type MarketingModel } from "./ai";
 import {
   nextSlots,
   rowToPost,
@@ -282,24 +282,46 @@ export async function suggestMarketing(input: z.infer<typeof suggestSchema>) {
   demoOnly();
   const account = await readAccount();
   assertOn(account);
+  return suggestIdeas({
+    apiKey: aiKeyOf(account)?.key,
+    model: modelOf(account?.ai_model),
+    voice: (account?.voice as string) || "",
+    note: input.note,
+    history: await postHistory(),
+  });
+}
+
+async function postHistory() {
   const { data } = await createSupabaseAdmin()
     .from("marketing_posts")
     .select("theme,format,status,likes,comments")
     .neq("status", "discarded")
     .order("created_at", { ascending: false })
     .limit(30);
-  return suggestIdeas({
+  return (data || []).map((p) => ({
+    theme: p.theme as string,
+    format: p.format as string,
+    likes: p.likes as number | null,
+    comments: p.comments as number | null,
+    published: p.status === "published",
+  }));
+}
+
+export const voiceSchema = z
+  .object({ current: z.string().trim().max(1000).default("") })
+  .strict();
+
+/** Sugere a orientação do piloto automático; não salva nada. */
+export async function suggestMarketingVoice(input: z.infer<typeof voiceSchema>) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  assertOn(account);
+  return suggestVoice({
     apiKey: aiKeyOf(account)?.key,
     model: modelOf(account?.ai_model),
-    voice: (account?.voice as string) || "",
-    note: input.note,
-    history: (data || []).map((p) => ({
-      theme: p.theme as string,
-      format: p.format as string,
-      likes: p.likes as number | null,
-      comments: p.comments as number | null,
-      published: p.status === "published",
-    })),
+    current: input.current,
+    history: await postHistory(),
   });
 }
 

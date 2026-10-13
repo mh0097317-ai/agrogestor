@@ -419,6 +419,26 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const dirty = JSON.stringify(form) !== JSON.stringify(state.settings);
+  const [reading, setReading] = useState(false);
+  const [reason, setReason] = useState("");
+  const canRead = state.ai && state.enabled && !state.demo;
+  async function analyze() {
+    setReading(true);
+    setMessage("");
+    setReason("");
+    try {
+      const out = await api<{ voice: string; reason: string }>("/api/admin/marketing", "POST", {
+        kind: "suggestVoice",
+        current: form.voice,
+      });
+      setForm((f) => ({ ...f, voice: out.voice }));
+      setReason(out.reason);
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Não foi possível analisar.");
+    } finally {
+      setReading(false);
+    }
+  }
   async function save() {
     setBusy(true);
     setMessage("");
@@ -485,16 +505,23 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
           </select>
         </label>
       </div>
-      <label className="mk-block">
-        Orientação para a IA
+      <div className="mk-block">
+        <span className="mk-label-row">
+          Orientação para a IA
+          <button type="button" className="mk-mini" disabled={!canRead || reading} onClick={() => void analyze()}>
+            <Lightbulb size={14} /> {reading ? "Analisando…" : "Analisar com IA"}
+          </button>
+        </span>
         <textarea
-          rows={2}
+          rows={form.voice.length > 120 ? 6 : 2}
           maxLength={1000}
+          aria-label="Orientação para a IA"
           placeholder="Ex.: falar mais da recepcionista no WhatsApp; tom descontraído; nada de gírias."
           value={form.voice}
           onChange={(e) => setForm({ ...form, voice: e.target.value })}
         />
-      </label>
+        {reason && <small className="mk-reason">Sugestão da IA, baseada em: {reason} Revise e clique em Salvar.</small>}
+      </div>
       <div className="mk-actions">
         <button type="button" className="mk-primary" disabled={!dirty || busy || state.demo} onClick={() => void save()}>
           {busy ? "Salvando…" : "Salvar"}

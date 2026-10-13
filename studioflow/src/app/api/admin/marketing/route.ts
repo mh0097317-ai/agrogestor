@@ -17,7 +17,9 @@ import {
   setMarketingModel,
   setMarketingPower,
   suggestMarketing,
+  suggestMarketingVoice,
   suggestSchema,
+  voiceSchema,
   videoUploadUrl,
 } from "@/services/marketing/service";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
@@ -45,6 +47,7 @@ const action = z.discriminatedUnion("kind", [
   modelSchema.extend({ kind: z.literal("model") }),
   z.object({ kind: z.literal("toReel"), id: z.string().uuid() }),
   suggestSchema.extend({ kind: z.literal("suggest") }),
+  voiceSchema.extend({ kind: z.literal("suggestVoice") }),
 ]);
 
 export async function POST(request: Request) {
@@ -99,6 +102,8 @@ export async function POST(request: Request) {
         return respond(await setMarketingModel(input.model));
       case "suggest":
         return respond(await suggestMarketing({ note: input.note }));
+      case "suggestVoice":
+        return respond(await suggestMarketingVoice({ current: input.current }));
       case "toReel":
         return respond(await reelFromPost(input.id), 201);
     }
