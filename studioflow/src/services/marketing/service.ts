@@ -22,6 +22,10 @@ export interface MarketingState {
   settings: MarketingSettings;
   posts: MarketingPost[];
   ai: boolean;
+  /** Onde está a chave da IA: salva no painel, no servidor ou em lugar nenhum. */
+  aiSource: "panel" | "server" | null;
+  /** Chave geral: desligado, nada é criado, publicado ou lido. */
+  enabled: boolean;
   demo: boolean;
 }
 
@@ -46,6 +50,26 @@ async function readAccount() {
   return data as Record<string, unknown> | null;
 }
 
+/** A chave do painel vence a do servidor. */
+function aiKeyOf(row: Record<string, unknown> | null) {
+  if (row?.ai_key_enc)
+    try {
+      return { key: decryptSecret(row.ai_key_enc as string), source: "panel" as const };
+    } catch {
+      // Chave ilegível (segredo do servidor trocado): cai para a do servidor.
+    }
+  return marketingAiConfigured()
+    ? { key: undefined, source: "server" as const }
+    : null;
+}
+
+const isOn = (row: Record<string, unknown> | null) => row?.enabled !== false;
+
+function assertOn(row: Record<string, unknown> | null) {
+  if (!isOn(row))
+    throw new DomainError("O Marketing está desligado. Ligue no topo da página.", 409);
+}
+
 function settingsOf(row: Record<string, unknown> | null): MarketingSettings {
   return {
     autopilot: !!row?.autopilot,
@@ -64,6 +88,8 @@ export async function marketingState(): Promise<MarketingState> {
       settings: settingsOf(null),
       posts: [],
       ai: marketingAiConfigured(),
+      aiSource: marketingAiConfigured() ? "server" : null,
+      enabled: true,
       demo: true,
     };
   const account = await readAccount();
@@ -80,7 +106,9 @@ export async function marketingState(): Promise<MarketingState> {
       : null,
     settings: settingsOf(account),
     posts: (data || []).map(rowToPost),
-    ai: marketingAiConfigured(),
+    ai: !!aiKeyOf(account),
+    aiSource: aiKeyOf(account)?.source ?? null,
+    enabled: isOn(account),
     demo: false,
   };
 }
@@ -121,6 +149,36 @@ export async function disconnectMarketingAccount() {
     .from("marketing_account")
     .update({ ig_user_id: null, username: null, access_token_enc: null, autopilot: false })
     .eq("id", 1);
+  return { ok: true };
+}
+
+export async function setMarketingPower(enabled: boolean) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw new DomainError("Não foi possível alterar o Marketing.", 503);
+  return { enabled };
+}
+
+export const aiKeySchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^sk-ant-[A-Za-z0-9_-]{20,}$/, "Cole a chave da Anthropic completa (começa com sk-ant-)."),
+});
+
+/** Guarda a chave cifrada; ela nunca volta para o navegador. */
+export async function saveMarketingAiKey(key: string | null) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({ ai_key_enc: key ? encryptSecret(key) : null, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw new DomainError("Não foi possível salvar a chave.", 503);
   return { ok: true };
 }
 
@@ -181,7 +239,9 @@ export async function generateMarketingPosts(input: z.infer<typeof generateSchem
   await requirePlatformAdmin();
   demoOnly();
   const account = await readAccount();
+  assertOn(account);
   const ideas = await generateIdeas({
+    apiKey: aiKeyOf(account)?.key,
     count: input.count,
     voice: (account?.voice as string) || "",
     recentThemes: await recentThemes(),
@@ -354,6 +414,7 @@ async function publishOne(post: MarketingPost) {
 export async function publishMarketingNow(id: string) {
   await requirePlatformAdmin();
   demoOnly();
+  assertOn(await readAccount());
   z.string().uuid().parse(id);
   const admin = createSupabaseAdmin();
   const { data: current } = await admin
@@ -382,6 +443,8 @@ export async function publishMarketingNow(id: string) {
 export async function runMarketing(now = new Date()) {
   const report = { published: 0, failed: 0, generated: 0, insights: 0 };
   if (isDemo()) return report;
+  // Desligado no /admin: nada sai, nada é criado; a fila espera.
+  if (!isOn(await readAccount())) return report;
   const admin = createSupabaseAdmin();
   // Posts esquecidos em "publicando" por queda do servidor voltam para a fila.
   await admin
@@ -403,7 +466,8 @@ export async function runMarketing(now = new Date()) {
   const last = creds.account.last_generated_at
     ? Date.parse(creds.account.last_generated_at as string)
     : 0;
-  if (settings.autopilot && marketingAiConfigured() && now.getTime() - last > 20 * 3_600_000) {
+  const ai = aiKeyOf(creds.account);
+  if (settings.autopilot && ai && now.getTime() - last > 20 * 3_600_000) {
     const week = new Date(now.getTime() + 7 * 86_400_000).toISOString();
     const { data: queued } = await admin
       .from("marketing_posts")
@@ -419,6 +483,7 @@ export async function runMarketing(now = new Date()) {
     if (missing > 0) {
       try {
         const ideas = await generateIdeas({
+          apiKey: ai.key,
           count: Math.min(missing, 6),
           voice: settings.voice,
           recentThemes: await recentThemes(),

@@ -8,8 +8,11 @@ import {
   disconnectMarketingAccount,
   generateMarketingPosts,
   generateSchema,
+  aiKeySchema,
   marketingState,
+  saveMarketingAiKey,
   saveMarketingSettings,
+  setMarketingPower,
   videoUploadUrl,
 } from "@/services/marketing/service";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
@@ -31,6 +34,9 @@ const action = z.discriminatedUnion("kind", [
   generateSchema.extend({ kind: z.literal("generate") }),
   createReelSchema.extend({ kind: z.literal("reel") }),
   z.object({ kind: z.literal("uploadUrl"), fileName: z.string().max(200) }),
+  z.object({ kind: z.literal("power"), enabled: z.boolean() }),
+  aiKeySchema.extend({ kind: z.literal("aiKey") }),
+  z.object({ kind: z.literal("aiKeyRemove") }),
 ]);
 
 export async function POST(request: Request) {
@@ -74,6 +80,12 @@ export async function POST(request: Request) {
         );
       case "uploadUrl":
         return respond(await videoUploadUrl(input.fileName));
+      case "power":
+        return respond(await setMarketingPower(input.enabled));
+      case "aiKey":
+        return respond(await saveMarketingAiKey(input.key));
+      case "aiKeyRemove":
+        return respond(await saveMarketingAiKey(null));
     }
   } catch (error) {
     return failure(error);

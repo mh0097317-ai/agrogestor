@@ -77,3 +77,4 @@
 .mk .mk-check { display: flex; flex-direction: row; }
 .mk .mk-check input { width: auto; flex: none; padding: 0; height: 16px; width: 16px; }
 .mk .mk-upload { display: inline-flex; flex-direction: row; }
+.mk-stack { display: grid; gap: 16px; align-content: start; }

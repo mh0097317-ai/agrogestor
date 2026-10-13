@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowSquareOut,
+  Key,
+  Megaphone,
   CalendarBlank,
   ChatCircle,
   Heart,
@@ -19,12 +21,15 @@ import type {
   Slide,
 } from "@/services/marketing/content";
 import "./marketing.css";
+import "./ai-control.css";
 
 interface State {
   account: { username: string } | null;
   settings: MarketingSettings;
   posts: MarketingPost[];
   ai: boolean;
+  aiSource: "panel" | "server" | null;
+  enabled: boolean;
   demo: boolean;
 }
 
@@ -119,15 +124,16 @@ export function MarketingPanel() {
       {state.demo && (
         <p className="mk-note">Na demonstração local o Marketing só mostra a tela. Ele funciona no app publicado.</p>
       )}
-      {!state.ai && (
-        <p className="mk-note">A IA de posts ainda não tem chave. Na Vercel, crie a variável STUDIOFLOW_MARKETING_ANTHROPIC_KEY com uma chave da Anthropic e faça um novo deploy. Sem ela dá para publicar Reels, mas não criar posts.</p>
-      )}
+      <Power state={state} onChange={(enabled) => setState({ ...state, enabled })} />
       <div className="mk-top">
-        <Account state={state} onChange={load} />
+        <div className="mk-stack">
+          <Account state={state} onChange={load} />
+          <AiKey state={state} onChange={load} />
+        </div>
         <Autopilot state={state} onSaved={(settings) => setState({ ...state, settings })} />
       </div>
       <Create
-        disabled={!state.ai || state.demo}
+        disabled={!state.ai || state.demo || !state.enabled}
         onCreated={(posts) => {
           setState({ ...state, posts: [...posts, ...state.posts] });
           setTab(posts[0]?.status === "scheduled" ? "scheduled" : "draft");
@@ -168,6 +174,137 @@ export function MarketingPanel() {
         )}
       </section>
     </div>
+  );
+}
+
+/** Chave geral do Marketing: desligado, nada é criado nem publicado. */
+function Power({ state, onChange }: { state: State; onChange: (enabled: boolean) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const on = state.enabled;
+  const ready = !!state.account && state.ai;
+  async function toggle() {
+    setBusy(true);
+    setError("");
+    try {
+      const next = await api<{ enabled: boolean }>("/api/admin/marketing", "POST", {
+        kind: "power",
+        enabled: !on,
+      });
+      onChange(next.enabled);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className={`pf-ai ${on ? "is-on" : "is-off"}`} aria-labelledby="mk-power-title">
+      <span className="pf-ai-icon" aria-hidden="true">
+        <Megaphone size={24} weight="duotone" />
+      </span>
+      <div className="pf-ai-text">
+        <div className="pf-ai-head">
+          <h2 id="mk-power-title">Marketing automático</h2>
+          <span className="pf-ai-badge" role="status">
+            <i aria-hidden="true" />
+            {on ? (ready ? "Ligado" : "Ligado, falta configurar") : "Desligado"}
+          </span>
+        </div>
+        <p>
+          {on
+            ? "A IA cria os posts e o servidor publica nos horários marcados."
+            : "Nada é criado nem publicado. A fila e as configurações ficam guardadas para quando você ligar."}{" "}
+          {on && !ready && (
+            <span>
+              Falta {!state.account && !state.ai ? "conectar o Instagram e salvar a chave da IA" : !state.account ? "conectar o Instagram" : "salvar a chave da IA"}.
+            </span>
+          )}
+        </p>
+        {error && (
+          <p className="pf-ai-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-labelledby="mk-power-title"
+        className="pf-ai-switch"
+        onClick={() => void toggle()}
+        disabled={busy || state.demo}
+      >
+        <span className="pf-ai-track">
+          <span className="pf-ai-thumb" />
+        </span>
+        <span className="pf-ai-label">{busy ? "Salvando…" : on ? "Desligar" : "Ligar"}</span>
+      </button>
+    </section>
+  );
+}
+
+/** Chave da Anthropic só do Marketing, guardada cifrada; nunca volta para a tela. */
+function AiKey({ state, onChange }: { state: State; onChange: () => void }) {
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function run(body: unknown) {
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/admin/marketing", "POST", body);
+      setKey("");
+      onChange();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="pf-panel mk-account">
+      <div className="mk-account-head">
+        <Key size={26} />
+        <div>
+          <strong>Chave da IA</strong>
+          <span>
+            {state.aiSource === "panel"
+              ? "Chave da Anthropic salva e cifrada. Ela só é usada para criar os posts da StudioFlow."
+              : state.aiSource === "server"
+                ? "Usando a chave configurada no servidor. Se preferir, salve outra aqui."
+                : "Cole uma chave da Anthropic (console.anthropic.com → API Keys). Ela fica cifrada e só cria os posts da StudioFlow."}
+          </span>
+        </div>
+      </div>
+      {state.aiSource === "panel" ? (
+        <button type="button" className="pf-text-button" disabled={busy} onClick={() => void run({ kind: "aiKeyRemove" })}>
+          Remover chave
+        </button>
+      ) : (
+        <form
+          className="mk-inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void run({ kind: "aiKey", key });
+          }}
+        >
+          <input
+            type="password"
+            autoComplete="off"
+            placeholder="sk-ant-…"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            aria-label="Chave da Anthropic"
+          />
+          <button type="submit" className="mk-primary" disabled={busy || key.trim().length < 20 || state.demo}>
+            {busy ? "Salvando…" : "Salvar"}
+          </button>
+        </form>
+      )}
+      {error && <em className="mk-error">{error}</em>}
+    </section>
   );
 }
 

@@ -41,10 +41,12 @@ export async function generateIdeas(input: {
   recentThemes: string[];
   request?: string;
   format?: "post" | "carousel" | "story";
+  /** Chave salva no /admin; sem ela vale a do servidor. */
+  apiKey?: string;
 }) {
-  if (!marketingAiConfigured())
-    throw new DomainError("A IA não está configurada no servidor.", 503);
-  const key = marketingKey();
+  if (!input.apiKey && !marketingAiConfigured())
+    throw new DomainError("A IA do Marketing ainda não tem chave.", 503);
+  const key = input.apiKey || marketingKey();
   const client = new Anthropic({
     timeout: 120_000,
     maxRetries: 1,
