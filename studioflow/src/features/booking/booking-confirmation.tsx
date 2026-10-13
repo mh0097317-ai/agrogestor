@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { MapPinIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { ConfirmStamp } from "./confirm-stamp";
+import { BookingTicket } from "./booking-ticket";
 import { DepositPanel } from "./deposit-panel";
 import { Countdown } from "./countdown";
 import { useEffect, useState } from "react";
@@ -388,7 +389,19 @@ function ConfirmationContent({
               )
             )}
             {review}
-            {service && (
+            {service && upcoming ? (
+              <BookingTicket
+                business={business}
+                customerName={appointment.customerName}
+                services={booked}
+                professional={professional}
+                start={appointment.start}
+                end={appointment.end}
+                code={appointment.id.slice(0, 8).toUpperCase()}
+                totalPrice={appointment.price}
+                animate={celebrate}
+              />
+            ) : service && (
               <BookingRecap
                 services={booked}
                 professional={professional}

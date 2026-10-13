@@ -3,6 +3,7 @@ import { onlineBookingEnabled } from "@/lib/online-booking";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import QRCode from "qrcode";
 import {
   ArrowsOut,
@@ -105,6 +106,8 @@ function TvScreen({ store }: { store: Store }) {
     id: string;
     name: string;
     who: string;
+    photo: string;
+    start: string;
   } | null>(null);
   const seen = useRef<Set<string> | null>(null);
   const [full, setFull] = useState(false);
@@ -203,8 +206,10 @@ function TvScreen({ store }: { store: Store }) {
     queueMicrotask(() =>
       setAnnounce({
         id: fresh.id,
-        name: tvName(fresh.customerName),
+        name: tvName(fresh.customerName).split(" ")[0],
         who: who?.name.split(" ")[0] || "",
+        photo: who?.photo || "",
+        start: fresh.start,
       }),
     );
   }, [board.arrivals, store.professionals]);
@@ -629,20 +634,97 @@ function TvScreen({ store }: { store: Store }) {
       </aside>
 
       {announce && (
-        <div className="tv-announce" role="status" key={announce.id}>
-          <span className="tv-announce-icon">
-            <DoorOpen size={46} weight="fill" />
-          </span>
-          <div>
-            <strong>{announce.name} chegou</strong>
-            <span>
-              {announce.who
-                ? `Atendimento com ${announce.who}. Aguarde ser chamado.`
-                : "Aguarde ser chamado pela equipe."}
-            </span>
-          </div>
-        </div>
+        <TvWelcome
+          key={announce.id}
+          {...announce}
+          business={business.name}
+          logo={business.logo}
+          barber={/barb/i.test(business.category)}
+          accent={business.color}
+          now={now}
+        />
       )}
     </main>
+  );
+}
+
+/**
+ * Someone just checked in: the screen is theirs for a few seconds. A
+ * curtain sweeps in, the name rises letter by letter, a blade draws the
+ * line under it and their barber appears.
+ */
+function TvWelcome({
+  name,
+  who,
+  photo,
+  start,
+  business,
+  logo,
+  barber,
+  accent,
+  now,
+}: {
+  name: string;
+  who: string;
+  photo: string;
+  start: string;
+  business: string;
+  logo?: string;
+  barber: boolean;
+  accent?: string;
+  now: Date;
+}) {
+  const [arrived] = useState(() => now.getTime());
+  const minutes = Math.round((new Date(start).getTime() - arrived) / 60_000);
+  const when =
+    minutes > 2
+      ? `Seu horário é às ${dateLabel(start, "HH:mm")}`
+      : "Já vai te chamar";
+  return (
+    <div
+      className="tv-welcome"
+      role="status"
+      style={{ "--tv-accent": accent || "#a47a3c" } as CSSProperties}
+    >
+      <span className="tv-welcome-curtain" aria-hidden="true" />
+      <div className="tv-welcome-body">
+        <span className="tv-welcome-brand">
+          {logo ? <img src={logo} alt="" /> : monogram(business)}
+        </span>
+        <small>Boas-vindas à {business}</small>
+        <strong className="tv-welcome-name" aria-label={name}>
+          {Array.from(name).map((letter, index) => (
+            <span
+              key={index}
+              aria-hidden="true"
+              style={{ animationDelay: `${700 + index * 70}ms` }}
+            >
+              {letter}
+            </span>
+          ))}
+        </strong>
+        <span className="tv-welcome-cut" aria-hidden="true">
+          <Scissors size={50} weight="fill" />
+        </span>
+        <div className="tv-welcome-who">
+          {who && (
+            <span className="tv-welcome-photo">
+              {photo ? <img src={photo} alt="" /> : monogram(who)}
+            </span>
+          )}
+          <span>
+            {who ? (
+              <span>
+                {barber ? "Seu barbeiro: " : "Atendimento com "}
+                <b>{who}</b>
+              </span>
+            ) : (
+              "A equipe já sabe que você chegou"
+            )}
+            <em>{when}</em>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
