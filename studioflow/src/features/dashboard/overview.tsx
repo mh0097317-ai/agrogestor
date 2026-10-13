@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { hasModule } from "@/lib/modules";
 import { StudioFlowResults } from "./studioflow-results";
+import { MonthRecapCard } from "./month-recap";
 import "./experience.css";
 import { OverviewWhatsApp } from "./overview-whatsapp";
 import { PageChecklist } from "./page-checklist";
@@ -222,6 +223,9 @@ export function Overview() {
         ))}
       </div>
 
+      {["owner", "admin", "manager"].includes(data.viewer?.role || "owner") && (
+        <MonthRecapCard data={data} now={now} />
+      )}
       {hasModule(data.access?.modules, "recepcionista") && (
         <div className="ov-operating-grid">
           <OverviewWhatsApp data={data} />

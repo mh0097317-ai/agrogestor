@@ -26,7 +26,6 @@ const start = "/login?cadastro=1";
 const plans = [
   {
     name: "Essencial",
-    price: 79,
     tagline: "Para sair do caderno.",
     items: [
       "Página própria da barbearia",
@@ -39,7 +38,6 @@ const plans = [
   },
   {
     name: "Profissional",
-    price: 149,
     tagline: "Para lotar a agenda e reduzir faltas.",
     featured: true,
     items: [
@@ -53,7 +51,6 @@ const plans = [
   },
   {
     name: "Completo",
-    price: 249,
     tagline: "Para quem quer uma recepcionista que não dorme.",
     items: [
       "Tudo do Profissional",
@@ -64,8 +61,6 @@ const plans = [
     ],
   },
 ];
-
-const featured = plans.find((plan) => plan.featured) ?? plans[0];
 
 const faq = [
   [
@@ -119,7 +114,7 @@ export function Landing() {
         </Link>
         <nav aria-label="Seções">
           <a href="#como-funciona">Como funciona</a>
-          <a href="#precos">Preços</a>
+          <a href="#precos">Planos</a>
           <a href="#perguntas">Perguntas</a>
         </nav>
         <div className="lp-top-actions">
@@ -267,10 +262,10 @@ export function Landing() {
           </ol>
         </section>
 
-        <NoShowCalculator planName={featured.name} planPrice={featured.price} />
+        <NoShowCalculator />
 
         <section className="lp-pricing" id="precos">
-          <p className="lp-eyebrow">Preços</p>
+          <p className="lp-eyebrow">Planos</p>
           <h2>Um plano para cada momento da barbearia.</h2>
           <p className="lp-offer">
             <b>Oferta de lançamento:</b> as 10 primeiras barbearias pagam metade nos 3 primeiros meses. No plano anual, 2 meses grátis.
@@ -286,11 +281,6 @@ export function Landing() {
                 {plan.featured && <span className="lp-badge">Mais escolhido</span>}
                 <h3>{plan.name}</h3>
                 <p className="lp-plan-tag">{plan.tagline}</p>
-                <p className="lp-price">
-                  <small>R$</small>
-                  {plan.price}
-                  <span>/mês</span>
-                </p>
                 <ul>
                   {plan.items.map((item) => (
                     <li key={item}>
@@ -298,9 +288,20 @@ export function Landing() {
                     </li>
                   ))}
                 </ul>
-                <Link href={start} className={`lp-btn ${plan.featured ? "" : "is-outline"}`}>
-                  Começar com o {plan.name}
-                </Link>
+                {whatsapp ? (
+                  <a
+                    href={`https://wa.me/${sales}?text=${encodeURIComponent(`Oi! Quero saber o valor do plano ${plan.name} do StudioFlow.`)}`}
+                    className={`lp-btn ${plan.featured ? "" : "is-outline"}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <WhatsAppIcon size={17} /> Consultar valor
+                  </a>
+                ) : (
+                  <Link href={start} className={`lp-btn ${plan.featured ? "" : "is-outline"}`}>
+                    Começar com o {plan.name}
+                  </Link>
+                )}
               </article>
             ))}
           </div>

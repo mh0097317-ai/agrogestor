@@ -335,11 +335,10 @@ export function DayStory() {
    Calculadora: quanto as faltas levam embora por mês
    ------------------------------------------------------------------ */
 
-export function NoShowCalculator({ planName, planPrice }: { planName: string; planPrice: number }) {
+export function NoShowCalculator() {
   const [price, setPrice] = useState(45);
   const [missed, setMissed] = useState(4);
   const monthly = price * missed * 4;
-  const payback = Math.max(1, Math.ceil(planPrice / price));
   return (
     <section className="lp-calc" aria-label="Calculadora de faltas">
       <div className="lp-calc-text">
@@ -377,8 +376,8 @@ export function NoShowCalculator({ planName, planPrice }: { planName: string; pl
           <Rolling value={monthly} />
         </strong>
         <p>
-          Com o corte a {brl(price)}, evitar <b>{payback} {payback === 1 ? "falta" : "faltas"} no mês</b> já paga o plano{" "}
-          {planName} de {brl(planPrice)}.
+          Cada falta evitada é <b>{brl(price)}</b> que fica no caixa. Lembrete no WhatsApp e sinal por Pix
+          seguram o horário para você.
         </p>
         <small className="lp-calc-note">Conta: preço × faltas por semana × 4 semanas.</small>
       </div>
