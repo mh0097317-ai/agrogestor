@@ -406,7 +406,11 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
         />
         <span>
           <b>Publicar sem minha aprovação</b>
-          <small>Desligado, os posts esperam você aprovar em “Aguardando aprovação”.</small>
+          <small>
+            {form.autoPublish
+              ? "Ligado: a IA cria e o servidor publica sozinho nos horários. Você não revisa antes."
+              : "Desligado: os posts esperam você aprovar em “Aguardando aprovação”."}
+          </small>
         </span>
       </label>
       <div className="mk-row">
