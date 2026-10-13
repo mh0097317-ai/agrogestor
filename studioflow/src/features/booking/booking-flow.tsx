@@ -397,6 +397,12 @@ function BookingWizard({
             <BarberCut
               active={cut}
               name={business.name}
+              logo={business.logo}
+              photos={[
+                ...(business.photos || []),
+                business.cover,
+                ...services.map((service) => service.image),
+              ]}
               onDone={() => {
                 setCut(false);
                 setCutPending(false);

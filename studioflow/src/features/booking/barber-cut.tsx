@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { monogram } from "@/lib/utils";
 import { reducedMotion } from "./motion";
 
 const seenKey = (slug: string) => `studioflow:cut:${slug}`;
@@ -23,22 +24,26 @@ export function markCutSeen(slug: string) {
 }
 
 /**
- * Transition into the time step: real footage of a barber at work, framed
- * like a film strip, then the scene lifts to reveal the calendar. Kept in
- * the page while the first steps are open so the clip is already loaded.
- * Tap to skip.
+ * Transition into the time step: the shop's own photos follow one another
+ * with a slow push-in, under its name, then the scene lifts to reveal the
+ * calendar. Without photos, the shop's mark alone. Kept in the page while
+ * the first steps are open so the photos are already loaded. Tap to skip.
  */
 export function BarberCut({
   active,
   name,
+  logo,
+  photos,
   onDone,
 }: {
   active: boolean;
   /** Business name for the caption. */
   name: string;
+  logo?: string;
+  /** Work photos, cover or service photos, best first. */
+  photos: string[];
   onDone: () => void;
 }) {
-  const video = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<"idle" | "play" | "lift">("idle");
   const done = useRef(onDone);
   useEffect(() => {
@@ -49,16 +54,11 @@ export function BarberCut({
     if (!active) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the timed scene when it is asked for
     setPhase("play");
-    const clip = video.current;
-    if (clip) {
-      clip.currentTime = 0;
-      void clip.play().catch(() => undefined);
-    }
-    const lift = window.setTimeout(() => setPhase("lift"), 1900);
+    const lift = window.setTimeout(() => setPhase("lift"), 2300);
     const end = window.setTimeout(() => {
       setPhase("idle");
       done.current();
-    }, 2600);
+    }, 3000);
     return () => {
       window.clearTimeout(lift);
       window.clearTimeout(end);
@@ -74,26 +74,30 @@ export function BarberCut({
     }, 650);
   }
 
+  const shown = [...new Set(photos.filter(Boolean))].slice(0, 3);
   return (
     <div
-      className={`bk-cut is-${phase}`}
+      className={`bk-cut is-${phase} ${shown.length ? "" : "is-mark"}`}
       aria-hidden="true"
       onClick={skip}
     >
-      <video
-        ref={video}
-        muted
-        playsInline
-        preload="auto"
-        poster="/media/barber-cut.jpg"
-        tabIndex={-1}
-      >
-        <source src="/media/barber-cut.webm" type="video/webm" />
-        <source src="/media/barber-cut.mp4" type="video/mp4" />
-      </video>
+      <div className="bk-cut-photos">
+        {shown.map((src, index) => (
+          <img
+            key={src}
+            src={src}
+            alt=""
+            decoding="async"
+            style={{ animationDelay: `${index * 700}ms`, zIndex: index }}
+          />
+        ))}
+      </div>
       <span className="bk-cut-bar is-top" />
       <span className="bk-cut-bar is-bottom" />
       <div className="bk-cut-caption">
+        <span className="bk-cut-logo">
+          {logo ? <img src={logo} alt="" /> : monogram(name)}
+        </span>
         <small>{name}</small>
         <strong>Separando a sua cadeira</strong>
         <span className="bk-cut-rule" />
