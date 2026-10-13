@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import {
   ArrowRight,
   Bell,
@@ -13,6 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { legal } from "@/features/legal/legal";
+import { DayStory, LiveDemo, NoShowCalculator } from "./landing-motion";
 import "./landing.css";
 
 const sales = (process.env.NEXT_PUBLIC_SALES_WHATSAPP || "").replace(/\D/g, "");
@@ -62,6 +64,8 @@ const plans = [
     ],
   },
 ];
+
+const featured = plans.find((plan) => plan.featured) ?? plans[0];
 
 const faq = [
   [
@@ -148,9 +152,7 @@ export function Landing() {
           </div>
           <div className="lp-hero-art" aria-hidden="true">
             <img className="lp-shot-desk" src="/landing/dashboard.webp" alt="" width={1600} height={1000} />
-            <div className="lp-phone">
-              <img src="/landing/phone-home.webp" alt="" width={780} height={1688} />
-            </div>
+            <LiveDemo />
           </div>
         </section>
 
@@ -160,15 +162,17 @@ export function Landing() {
             ["Cliente marca e esquece?", "Lembrete automático e sinal por Pix."],
             ["Dois clientes no mesmo horário?", "A agenda trava sozinha."],
             ["Não sabe quanto entrou no mês?", "Financeiro e comissão sem planilha."],
-          ].map(([q, a]) => (
-            <article key={q}>
+          ].map(([q, a], index) => (
+            <article key={q} data-reveal style={{ "--reveal-i": index } as CSSProperties}>
               <strong>{q}</strong>
               <span>{a}</span>
             </article>
           ))}
         </section>
 
-        <section className="lp-feature">
+        <DayStory />
+
+        <section className="lp-feature" data-reveal>
           <div className="lp-feature-text">
             <p className="lp-eyebrow">Página e agendamento</p>
             <h2>Uma página que vende, com o botão de agendar no topo.</h2>
@@ -210,7 +214,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="lp-feature is-wide">
+        <section className="lp-feature is-wide" data-reveal>
           <div className="lp-feature-text">
             <p className="lp-eyebrow">Painel do dono</p>
             <h2>O dia inteiro numa tela.</h2>
@@ -226,7 +230,7 @@ export function Landing() {
           <img className="lp-shot-wide" src="/landing/dashboard.webp" alt="Painel do dono com o dia, recebidos e atendimentos" width={1600} height={1000} loading="lazy" />
         </section>
 
-        <section className="lp-feature is-wide is-reverse">
+        <section className="lp-feature is-wide is-reverse" data-reveal>
           <div className="lp-feature-text">
             <p className="lp-eyebrow">Modo TV da recepção</p>
             <h2>A TV da barbearia vira vitrine.</h2>
@@ -245,23 +249,25 @@ export function Landing() {
           <p className="lp-eyebrow">Como funciona</p>
           <h2>Começa hoje, sem complicação.</h2>
           <ol>
-            <li>
+            <li data-reveal>
               <b>1</b>
               <strong>Crie sua conta</strong>
               <span>Nome da barbearia, serviços, preços e equipe. Leva uns 10 minutos.</span>
             </li>
-            <li>
+            <li data-reveal>
               <b>2</b>
               <strong>Conecte o WhatsApp</strong>
               <span>Leia o QR Code com o celular da barbearia, como no WhatsApp Web.</span>
             </li>
-            <li>
+            <li data-reveal>
               <b>3</b>
               <strong>Divulgue o link</strong>
               <span>Na bio do Instagram, no WhatsApp e no QR Code do balcão. Pronto.</span>
             </li>
           </ol>
         </section>
+
+        <NoShowCalculator planName={featured.name} planPrice={featured.price} />
 
         <section className="lp-pricing" id="precos">
           <p className="lp-eyebrow">Preços</p>
@@ -270,8 +276,13 @@ export function Landing() {
             <b>Oferta de lançamento:</b> as 10 primeiras barbearias pagam metade nos 3 primeiros meses. No plano anual, 2 meses grátis.
           </p>
           <div className="lp-plans">
-            {plans.map((plan) => (
-              <article key={plan.name} className={plan.featured ? "is-featured" : ""}>
+            {plans.map((plan, index) => (
+              <article
+                key={plan.name}
+                className={plan.featured ? "is-featured" : ""}
+                data-reveal
+                style={{ "--reveal-i": index } as CSSProperties}
+              >
                 {plan.featured && <span className="lp-badge">Mais escolhido</span>}
                 <h3>{plan.name}</h3>
                 <p className="lp-plan-tag">{plan.tagline}</p>
