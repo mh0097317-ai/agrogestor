@@ -33,6 +33,8 @@ import { PublicServices } from "./public-services";
 import { PublicWork } from "./public-gallery";
 import { RepeatBooking } from "./repeat-booking";
 import { InstallApp } from "./install-app";
+import { PublicOpening } from "./public-opening";
+import { PublicNextFree } from "./public-next-free";
 import { LocationSheet, mapLinks } from "./public-location";
 import { InstagramSheet } from "./public-instagram";
 import "./public-sheets.css";
@@ -134,6 +136,9 @@ export function PublicPage({
   const { business, services, professionals, settings } = catalog;
   const activeServices = services.filter((service) => service.active);
   const availableTeam = professionals.filter((person) => person.active);
+  const featured =
+    activeServices.find((service) => service.id === catalog.popularServiceId) ||
+    activeServices[0];
   const phone = business.phone.replace(/\D/g, "").replace(/^55(?=\d{11}$)/, "");
   const whatsapp = phone ? `https://wa.me/55${phone}` : "";
   const location = business.address ? mapLinks(business).google : "";
@@ -193,6 +198,7 @@ export function PublicPage({
 
   return (
     <div className="public-site pp" style={publicAccentStyle(business.color)}>
+      <PublicOpening business={business} />
       <a className="public-skip-link" href="#servicos">
         Ir para os serviços
       </a>
@@ -264,6 +270,12 @@ export function PublicPage({
             <Link ref={mainCta} href={bookHref} className="pp-cta">
               Agendar horário <ArrowRight size={20} weight="regular" />
             </Link>
+            <PublicNextFree
+              slug={slug}
+              serviceId={featured?.id}
+              serviceName={featured?.name}
+              professionals={availableTeam}
+            />
             {actions.length > 0 && (
               <nav className="pp-links" aria-label="Contato">
                 {actions.map(({ href, label, icon: Icon, open }) =>
