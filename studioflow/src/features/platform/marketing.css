@@ -43,7 +43,7 @@
 }
 .mk-tabs button.is-current { color: #16130f; border-bottom-color: #16130f; font-weight: 600; }
 .mk-tabs span { font-size: 12px; background: #efe7da; border-radius: 999px; padding: 1px 8px; }
-.mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 18px; }
 .mk-card { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; border: 1px solid #e4dacb; border-radius: 6px; padding: 14px; background: #fffdf9; }
 .mk-preview { position: relative; display: grid; align-content: start; gap: 8px; }
 .mk-preview img, .mk-preview video { width: 150px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px; background: #16130f; display: block; }
@@ -64,7 +64,10 @@
 .mk-edit { display: grid; gap: 10px; }
 .mk-edit fieldset { border: 1px solid #e4dacb; border-radius: 4px; padding: 8px 10px 10px; display: grid; gap: 6px; margin: 0; }
 .mk-edit legend { font-size: 12px; color: #8c8276; padding: 0 4px; }
-.mk-card .mk-actions input[type="datetime-local"] { padding: 7px 8px; }
+.mk-card .mk-actions input[type="datetime-local"] { flex: 1 1 100%; width: 100%; min-width: 0; padding: 7px 8px; }
+.mk-card .mk-actions .mk-primary, .mk-card .mk-actions .mk-ghost { flex: 1 1 auto; justify-content: center; white-space: nowrap; }
+.mk-card { overflow: hidden; }
+.mk-theme { overflow-wrap: anywhere; }
 @media (max-width: 900px) {
   .mk-top { grid-template-columns: 1fr; }
 }
