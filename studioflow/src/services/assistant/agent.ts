@@ -1082,9 +1082,11 @@ export async function runAssistant({
 }
 
 /** The real client; null when the server has no Claude credentials. */
-export function claudeCreate(): CreateMessage | null {
+export function claudeCreate(model?: string): CreateMessage | null {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN)
     return null;
   const client = new Anthropic({ timeout: 60_000, maxRetries: 1 });
-  return (params) => client.beta.messages.create(params);
+  // O modo da IA do cliente troca o modelo de todas as chamadas da conversa.
+  return (params) =>
+    client.beta.messages.create(model ? { ...params, model } : params);
 }

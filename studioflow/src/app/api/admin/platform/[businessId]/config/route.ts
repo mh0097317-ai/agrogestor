@@ -9,6 +9,7 @@ import {
 import { aiKeySchema, saveAiKey, changeAiModel } from "@/services/admin-vault";
 import { assistantSchema } from "@/services/assistant/workspace";
 import { audioKeySchema, saveAudioKey } from "@/services/assistant/audio-vault";
+import { aiTierSchema, saveAiTier } from "@/services/assistant/ai-tier";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ businessId: string }> };
@@ -34,11 +35,14 @@ export async function PATCH(request: Request, context: Context) {
         z.object({ kind: z.literal("removeKey") }),
         z.object({ kind: z.literal("model"), model: aiKeySchema.shape.model }),
         audioKeySchema.extend({ kind: z.literal("audioKey") }),
+        aiTierSchema.extend({ kind: z.literal("aiTier") }),
       ])
       .parse(await request.json());
     if (input.kind === "assistant") await saveAdminAssistant(id, input);
     else if (input.kind === "model")
       await changeAiModel(id, userId, input.model);
+    else if (input.kind === "aiTier")
+      await saveAiTier(id, userId, input.tier);
     else if (input.kind === "audioKey") await saveAudioKey(id, userId!, input);
     else await saveAiKey(id, userId, input.kind === "key" ? input : null);
     return respond(await adminClientConfig(id));

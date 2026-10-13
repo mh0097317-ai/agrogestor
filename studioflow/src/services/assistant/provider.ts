@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { CreateMessage } from "./agent";
 import { claudeCreate } from "./agent";
 import { businessAiCredential } from "../admin-vault";
+import { businessAiTier, tierModel } from "./ai-tier";
 import { DomainError } from "@/lib/availability";
 
 /** Adapts providers to the same tool loop. Booking validation stays in StudioFlow. */
@@ -148,7 +149,7 @@ export async function businessCreate(
   businessId: string,
 ): Promise<CreateMessage | null> {
   const credential = await businessAiCredential(businessId);
-  if (!credential) return claudeCreate();
+  if (!credential) return claudeCreate(tierModel(await businessAiTier(businessId)));
   if (credential.provider === "openai")
     return openAiCreate(credential.key, credential.model);
   const client = new Anthropic({

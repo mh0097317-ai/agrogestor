@@ -2471,3 +2471,18 @@ button.pf-back {
     grid-column: 1 / -1;
   }
 }
+
+/* Modo da IA por cliente */
+.pf-ai-tier { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; border: 0; min-width: 0; }
+.pf-ai-tier legend { padding: 0; margin-bottom: 8px; font-weight: 700; font-size: 15px; }
+.pf-ai-tier label {
+  display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center;
+  padding: 11px 13px; border: 1px solid #e3d8c6; border-radius: 10px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.pf-ai-tier label.is-on { border-color: #8a6430; background: #faf4ea; }
+.pf-ai-tier input { grid-row: span 2; margin: 0; accent-color: #8a6430; }
+.pf-ai-tier b { font-size: 14px; }
+.pf-ai-tier small { grid-column: 2; font-size: 12.5px; color: #6f665b; line-height: 1.4; }
+.pf-ai-tier .pf-metric-note { margin: 2px 0 0; }
+.pf-ai-tier:disabled label { cursor: not-allowed; opacity: .7; }

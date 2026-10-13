@@ -28,7 +28,18 @@ interface ClientConfiguration {
   shop: WhatsAppLink | null;
   links: (WhatsAppLink & { professionalId: string })[];
   invoices: ManualInvoice[];
+  aiTier: AiTier;
 }
+
+type AiTier = "economico" | "equilibrado" | "maximo";
+
+// Custo por milhão de tokens (entrada/saída): Haiku 4.5 US$ 1/5,
+// Sonnet 4.6 US$ 3/15, Opus 4.8 US$ 5/25.
+const aiTiers: [AiTier, string, string][] = [
+  ["economico", "Econômico", "Gasta o mínimo. Dá conta de marcar, remarcar e tirar dúvidas do dia a dia."],
+  ["equilibrado", "Equilibrado", "Cerca de 3× o custo do Econômico. Conversa mais natural em casos difíceis."],
+  ["maximo", "Máximo", "Cerca de 5 a 6× o custo do Econômico. Para clientes com muito volume ou pedidos complexos."],
+];
 async function request<T>(
   url: string,
   method = "GET",
@@ -135,6 +146,14 @@ export function ClientConfigurationPanel({
       ) : (
         <>
           {tab === "assistant" && (
+            <AiTierPicker
+              tier={data.aiTier}
+              ownKey={data.vault.configured}
+              disabled={busy || demo}
+              onSave={(tier) => save("PATCH", { kind: "aiTier", tier })}
+            />
+          )}
+          {tab === "assistant" && (
             <ReceptionistEditor
               key={item.id}
               data={data}
@@ -239,6 +258,42 @@ function AudioVaultEditor({
     </form>
   );
 }
+/** Quanto a IA deste cliente pode gastar: o modelo segue o modo escolhido. */
+function AiTierPicker({
+  tier,
+  ownKey,
+  disabled,
+  onSave,
+}: {
+  tier: AiTier;
+  ownKey: boolean;
+  disabled: boolean;
+  onSave: (tier: AiTier) => Promise<void>;
+}) {
+  return (
+    <fieldset className="pf-ai-tier" disabled={disabled}>
+      <legend>Modo da IA deste cliente</legend>
+      {aiTiers.map(([id, label, hint]) => (
+        <label key={id} className={tier === id ? "is-on" : ""}>
+          <input
+            type="radio"
+            name="pf-ai-tier"
+            checked={tier === id}
+            onChange={() => void onSave(id).catch(() => undefined)}
+          />
+          <b>{label}</b>
+          <small>{hint}</small>
+        </label>
+      ))}
+      <p className="pf-metric-note">
+        {ownKey
+          ? "Este cliente tem chave própria no Cofre de IA: vale o modelo cadastrado lá, e a conta é dele."
+          : "Vale para a recepcionista no WhatsApp e no chat da página. A troca é na hora, a partir da próxima mensagem."}
+      </p>
+    </fieldset>
+  );
+}
+
 function ReceptionistEditor({
   data,
   disabled,

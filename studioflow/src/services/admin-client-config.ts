@@ -6,6 +6,7 @@ import { aiVaultView } from "./admin-vault";
 import { audioVaultView } from "./assistant/audio-vault";
 import { isDemo, readDemo, mutateDemo } from "./server-demo";
 import { assistantSchema } from "./assistant/workspace";
+import { businessAiTier } from "./assistant/ai-tier";
 import { readProfessionalLinks, readWhatsAppLink } from "./whatsapp/link";
 import type { ManualInvoice } from "@/types";
 
@@ -79,6 +80,7 @@ export async function adminClientConfig(businessId: string) {
       },
       vault: { configured: false },
       audioVault: { configured: false },
+      aiTier: "economico" as const,
       professionals: store.professionals.map((p) => ({
         id: p.id,
         name: p.name,
@@ -123,6 +125,7 @@ export async function adminClientConfig(businessId: string) {
     },
     vault,
     audioVault: await audioVaultView(businessId),
+    aiTier: await businessAiTier(businessId),
     professionals: professionals.data || [],
     shop,
     links,
