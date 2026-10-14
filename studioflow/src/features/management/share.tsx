@@ -25,6 +25,7 @@ import { ManagementBoundary } from "./shared";
 import { hasModule } from "@/lib/modules";
 import { SlotsStory } from "./story-slots";
 import { LaunchKit } from "./launch-kit";
+import { InstagramConnectCard } from "./instagram-publish";
 import "./share.css";
 
 export default function SharePage() {
@@ -448,6 +449,7 @@ function ShareContent({ store }: { store: Store }) {
           </Card>
         )}
 
+        {online && <InstagramConnectCard store={store} />}
         {online && <LaunchKit store={store} url={url} />}
 
         {online && <SlotsStory store={store} url={url} />}

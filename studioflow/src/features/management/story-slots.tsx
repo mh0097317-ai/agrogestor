@@ -8,6 +8,7 @@ import { useToast } from "@/components/toast";
 import { availableSlots, localDate } from "@/lib/availability";
 import { dateLabel, money } from "@/lib/utils";
 import type { Store } from "@/types";
+import { PostToInstagram } from "./instagram-publish";
 
 function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -252,6 +253,13 @@ export function SlotsStory({ store, url }: { store: Store; url: string }) {
               <Button variant="secondary" onClick={download} disabled={!image}>
                 <DownloadSimple size={16} /> Baixar
               </Button>
+              <PostToInstagram
+                store={store}
+                format="story"
+                piece={day === 0 ? "vagas-hoje" : "vagas-amanha"}
+                disabled={!image}
+                getImage={async () => image}
+              />
             </div>
           </div>
         </div>

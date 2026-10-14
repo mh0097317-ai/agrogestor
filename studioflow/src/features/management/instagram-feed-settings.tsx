@@ -24,10 +24,16 @@ export function InstagramFeedSettings({
   store,
   canManage,
   onSaved,
+  title = "Posts do Instagram na página",
+  description = "Quando o cliente toca em Instagram na sua página, ele vê seu perfil, seus seguidores e os posts mais recentes sem sair do agendamento.",
+  submitLabel = "Mostrar meus posts",
 }: {
   store: Store;
   canManage: boolean;
   onSaved: () => Promise<void>;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 }) {
   const { toast } = useToast();
   const [token, setToken] = useState("");
@@ -57,10 +63,7 @@ export function InstagramFeedSettings({
   }
 
   return (
-    <FormSection
-      title="Posts do Instagram na página"
-      description="Quando o cliente toca em Instagram na sua página, ele vê seu perfil, seus seguidores e os posts mais recentes sem sair do agendamento."
-    >
+    <FormSection title={title} description={description}>
       {feed ? (
         <div className="payment-account">
           <CheckCircle weight="fill" size={22} />
@@ -133,7 +136,7 @@ export function InstagramFeedSettings({
           </FormField>
           <Button type="submit" disabled={busy || token.trim().length < 20}>
             <InstagramIcon size={16} />
-            {busy ? "Conferindo com a Meta…" : "Mostrar meus posts"}
+            {busy ? "Conferindo com a Meta…" : submitLabel}
           </Button>
         </form>
       ) : (

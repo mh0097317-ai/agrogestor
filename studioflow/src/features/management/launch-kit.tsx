@@ -6,6 +6,7 @@ import { Copy, DownloadSimple, Megaphone } from "@phosphor-icons/react/dist/ssr"
 import { Button, Card } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import type { Store } from "@/types";
+import { PostToInstagram } from "./instagram-publish";
 
 type Piece = "post" | "story" | "sticker";
 
@@ -262,6 +263,16 @@ export function LaunchKit({ store, url }: { store: Store; url: string }) {
         <Button onClick={() => void save()} disabled={busy}>
           <DownloadSimple size={16} /> Baixar {current.label.toLowerCase()}
         </Button>
+        {piece !== "sticker" && (
+          <PostToInstagram
+            store={store}
+            format={piece}
+            piece={`lancamento-${piece}`}
+            caption={caption}
+            disabled={preview?.piece !== piece}
+            getImage={async () => (preview?.piece === piece ? preview.src : render(piece, store, url))}
+          />
+        )}
         <Button variant="secondary" onClick={() => void copy(caption, "Legenda do post")}>
           <Copy size={15} /> Copiar legenda
         </Button>

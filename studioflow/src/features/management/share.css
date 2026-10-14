@@ -371,3 +371,10 @@
 .share-launch-preview.is-sticker img {
   max-height: 360px;
 }
+
+/* Postar no Instagram da casa */
+.share-instagram .form-section,
+.share-instagram section { box-shadow: none; border: 0; padding: 0; margin: 0; background: transparent; }
+.share-ig-on { display: flex; gap: 12px; align-items: flex-start; }
+.share-ig-on svg { flex: none; color: #2f7a4a; margin-top: 2px; }
+.share-ig-on p { margin: 0; }
