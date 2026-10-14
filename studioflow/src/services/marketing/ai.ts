@@ -48,7 +48,7 @@ export function marketingAiConfigured() {
   );
 }
 
-function clientFor(apiKey?: string) {
+export function clientFor(apiKey?: string) {
   if (!apiKey && !marketingAiConfigured())
     throw new DomainError("A IA do Marketing ainda não tem chave.", 503);
   const key = apiKey || marketingKey();
@@ -59,7 +59,7 @@ function clientFor(apiKey?: string) {
   });
 }
 
-function aiFailure(cause: unknown): never {
+export function aiFailure(cause: unknown): never {
   if (cause instanceof Anthropic.RateLimitError)
     throw new DomainError("A IA está ocupada agora. Tente em alguns minutos.", 429);
   if (cause instanceof Anthropic.APIError)

@@ -119,6 +119,15 @@ export async function marketingState(): Promise<MarketingState> {
   };
 }
 
+/** Chave e modelo da IA do Marketing, para outros textos da StudioFlow (e-mails). */
+export async function marketingAiAccess() {
+  await requirePlatformAdmin();
+  const account = isDemo() ? null : await readAccount();
+  const ai = isDemo() ? (marketingAiConfigured() ? { key: undefined } : null) : aiKeyOf(account);
+  if (!ai) throw new DomainError("Salve a chave da IA no /admin → Marketing primeiro.", 409);
+  return { apiKey: ai.key, model: modelOf(account?.ai_model) };
+}
+
 export const connectSchema = z.object({
   token: z
     .string()

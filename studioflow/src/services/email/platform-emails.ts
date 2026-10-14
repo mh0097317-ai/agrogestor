@@ -21,7 +21,7 @@ import { emailConfigured, sendEmail, type Email } from "./resend";
  * histórico.
  */
 
-export type EmailKind = "billing" | "welcome" | "setup" | "share" | "weekly" | "test";
+export type EmailKind = "billing" | "welcome" | "setup" | "share" | "weekly" | "test" | "campaign";
 
 export interface EmailSettings {
   enabled: boolean;

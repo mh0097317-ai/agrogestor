@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import "./ai-control.css";
 import "./email-panel.css";
+import { EmailComposer } from "./email-composer";
 
 type Template = "billing" | "welcome" | "setup" | "share" | "weekly";
 interface Settings {
@@ -85,6 +86,7 @@ const kindLabel: Record<string, string> = {
   share: "Divulgar",
   weekly: "Relatório",
   test: "Teste",
+  campaign: "Escrito com IA",
 };
 
 const when = (iso: string) =>
@@ -228,6 +230,16 @@ export function EmailPanel() {
           {error ? <WarningCircle size={16} /> : <CheckCircle size={16} />} {error || notice}
         </p>
       )}
+
+      <EmailComposer
+        disabled={data.demo}
+        configured={data.configured}
+        onSent={(message) => {
+          setError("");
+          setNotice(message);
+          void load();
+        }}
+      />
 
       <div className="em-grid">
         {groups.map((group) => {
