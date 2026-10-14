@@ -83,17 +83,6 @@ const groups: {
   },
 ];
 
-async function aiKey(body: unknown) {
-  const response = await fetch("/api/admin/marketing", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Não foi possível salvar a chave.");
-  return data;
-}
-
 /** Campo de chave: cola, salva cifrado, nunca mostra de volta. */
 function KeyCard({
   title,
@@ -345,18 +334,18 @@ export function EmailPanel() {
           onDone={load}
         />
         <KeyCard
-          title="Chave da IA (Anthropic)"
+          title="Chave da IA dos e-mails"
           status={
             data.ai
-              ? "Pronta para o Escrever com IA. É a mesma chave do Marketing."
-              : "Cole a chave da Anthropic (console.anthropic.com → API Keys) para a IA escrever os e-mails."
+              ? "Chave própria dos e-mails, salva e cifrada. O Marketing usa a dele."
+              : "Cole uma chave da Anthropic (console.anthropic.com → API Keys) só para a IA escrever os e-mails."
           }
           saved={data.ai}
           placeholder="sk-ant-…"
           minLength={20}
           demo={data.demo}
-          onSave={(key) => aiKey({ kind: "aiKey", key })}
-          onRemove={() => aiKey({ kind: "aiKeyRemove" })}
+          onSave={(key) => api("POST", { kind: "aiKey", key })}
+          onRemove={() => api("POST", { kind: "aiKeyRemove" })}
           onDone={load}
         />
       </div>

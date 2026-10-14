@@ -1,10 +1,12 @@
 import { z } from "zod";
 import {
+  emailAiKeySchema,
   emailOverview,
   emailSettingsSchema,
   previewKinds,
   resendKeySchema,
   saveEmailSettings,
+  saveEmailAiKey,
   saveResendKey,
   sendTestEmail,
 } from "@/services/email/platform-emails";
@@ -39,6 +41,8 @@ const action = z.discriminatedUnion("kind", [
   sendCampaignSchema.extend({ kind: z.literal("send") }),
   resendKeySchema.extend({ kind: z.literal("resendKey") }),
   z.object({ kind: z.literal("resendKeyRemove") }),
+  emailAiKeySchema.extend({ kind: z.literal("aiKey") }),
+  z.object({ kind: z.literal("aiKeyRemove") }),
 ]);
 
 export async function POST(request: Request) {
@@ -50,6 +54,8 @@ export async function POST(request: Request) {
     if (input.kind === "audience") return respond(await campaignAudience());
     if (input.kind === "resendKey") return respond(await saveResendKey(input.key));
     if (input.kind === "resendKeyRemove") return respond(await saveResendKey(null));
+    if (input.kind === "aiKey") return respond(await saveEmailAiKey(input.key));
+    if (input.kind === "aiKeyRemove") return respond(await saveEmailAiKey(null));
     if (input.kind === "send") {
       const { kind: _k, ...rest } = input;
       void _k;

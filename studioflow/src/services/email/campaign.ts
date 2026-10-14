@@ -7,11 +7,10 @@ import { accessOpen } from "@/lib/access";
 import { readBusinessAccess } from "@/lib/supabase/server";
 import { aiFailure, clientFor } from "../marketing/ai";
 import { productFacts } from "../marketing/content";
-import { marketingAiAccess } from "../marketing/service";
 import { requirePlatformAdmin } from "../platform";
 import { isDemo } from "../server-demo";
 import { brandEmail, firstName } from "./brand-email";
-import { deliver, readEmailSettings } from "./platform-emails";
+import { deliver, emailAi, readEmailSettings } from "./platform-emails";
 import { emailConfigured } from "./resend";
 
 /*
@@ -67,7 +66,10 @@ function systemPrompt() {
 
 /** A IA escreve o rascunho; nada é enviado aqui. */
 export async function draftCampaign(input: z.infer<typeof draftSchema>): Promise<Campaign> {
-  const { apiKey, model } = await marketingAiAccess();
+  await requirePlatformAdmin();
+  const ai = await emailAi();
+  if (!ai) throw new DomainError("Salve a chave da IA dos e-mails no quadro acima.", 409);
+  const { apiKey, model } = ai;
   const client = clientFor(apiKey);
   let response;
   try {

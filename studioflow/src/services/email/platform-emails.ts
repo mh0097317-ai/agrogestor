@@ -13,7 +13,8 @@ import { queryWeeklyRows } from "../weekly-report";
 import { weeklyReportPdf } from "../weekly-report-pdf";
 import { brandEmail, firstName } from "./brand-email";
 import { encryptSecret } from "../server-secrets";
-import { marketingAiAccess } from "../marketing/service";
+import { decryptSecret } from "../server-secrets";
+import { marketingModelChoice } from "../marketing/service";
 import { emailConfigured, forgetResendKey, resendKey, sendEmail, type Email } from "./resend";
 
 /*
@@ -359,6 +360,40 @@ export async function saveEmailSettings(input: z.infer<typeof emailSettingsSchem
   return input;
 }
 
+export const emailAiKeySchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^sk-ant-[A-Za-z0-9_-]{20,}$/, "Cole a chave da Anthropic completa (começa com sk-ant-)."),
+});
+
+/** Chave da IA só dos e-mails; a do Marketing não é usada aqui. */
+export async function emailAi() {
+  if (isDemo()) return null;
+  const { data } = await createSupabaseAdmin()
+    .from("platform_email_settings")
+    .select("ai_key_enc")
+    .eq("id", true)
+    .maybeSingle();
+  if (!data?.ai_key_enc) return null;
+  try {
+    return { apiKey: decryptSecret(data.ai_key_enc as string), model: await marketingModelChoice() };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveEmailAiKey(key: string | null) {
+  await requirePlatformAdmin();
+  if (isDemo()) throw new DomainError("A chave é salva no app publicado.", 400);
+  const { error } = await createSupabaseAdmin()
+    .from("platform_email_settings")
+    .update({ ai_key_enc: key ? encryptSecret(key) : null, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw new DomainError("Não foi possível salvar a chave.", 503);
+  return { ok: true };
+}
+
 export const resendKeySchema = z.object({
   key: z
     .string()
@@ -425,10 +460,7 @@ export async function emailOverview() {
   await requirePlatformAdmin();
   const settings = await readEmailSettings();
   const key = await resendKey();
-  const ai = await marketingAiAccess().then(
-    () => true,
-    () => false,
-  );
+  const ai = !!(await emailAi());
   const base = {
     keySource: key.source,
     ai,

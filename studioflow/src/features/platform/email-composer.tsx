@@ -167,7 +167,7 @@ export function EmailComposer({
           <Sparkle size={16} /> {busy === "draft" ? "Escrevendo…" : draft ? "Escrever de novo" : "Gerar com IA"}
         </button>
         <span className="em-hint">
-          {ai ? "Usa a chave e o modelo do Marketing." : "Salve a chave da IA no quadro acima para gerar."}
+          {ai ? "Usa a chave da IA dos e-mails." : "Salve a chave da IA dos e-mails no quadro acima para gerar."}
         </span>
         {!draft && (
           <button
