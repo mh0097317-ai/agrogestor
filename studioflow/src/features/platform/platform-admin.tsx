@@ -79,6 +79,7 @@ import {
 } from "./platform-summary";
 import "./platform.css";
 import { MarketingPanel } from "./marketing-panel";
+import { EmailPanel } from "./email-panel";
 import { OperationsPanel } from "./operations-panel";
 
 type Filter = "all" | AccessState | "closed";
@@ -119,6 +120,11 @@ const viewCopy: Record<string, { title: string; description: string }> = {
     title: "Marketing da StudioFlow.",
     description:
       "A IA cria posts, carrosséis e stories para o Instagram. Você aprova ou deixa no piloto automático.",
+  },
+  emails: {
+    title: "E-mails para os clientes.",
+    description:
+      "Cobrança da mensalidade, boas-vindas de quem se inscreveu e o relatório da semana. Você liga, desliga e testa por aqui.",
   },
   activity: {
     title: "Histórico da administração.",
@@ -372,6 +378,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             ["receptionists", "StudioFlow no WhatsApp"],
             ["billing", "Cobranças"],
             ["marketing", "Marketing"],
+            ["emails", "E-mails"],
             ["activity", "Histórico"],
           ].map(([key, label]) => (
             <button
@@ -407,6 +414,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           <option value="receptionists">StudioFlow no WhatsApp</option>
           <option value="billing">Cobranças</option>
           <option value="marketing">Marketing</option>
+          <option value="emails">E-mails</option>
           <option value="activity">Histórico</option>
         </select>
         <div className="pf-top-actions">
@@ -532,7 +540,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
         )}
         <div
           className="pf-period-bar"
-          style={view === "marketing" ? { display: "none" } : undefined}
+          style={view === "marketing" || view === "emails" ? { display: "none" } : undefined}
         >
           <label>
             Período dos indicadores{" "}
@@ -694,7 +702,8 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           />
         )}
         {view === "marketing" && <MarketingPanel />}
-        {view !== "businesses" && view !== "marketing" && !items && (
+        {view === "emails" && <EmailPanel />}
+        {view !== "businesses" && view !== "marketing" && view !== "emails" && !items && (
           <p className="pf-empty">
             {loading
               ? "Carregando o painel…"

@@ -2,6 +2,7 @@ import type { BusinessAccess } from "@/lib/access";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { billingReady, reminderStage, reminderText } from "./billing";
 import { platformSend } from "./whatsapp/platform";
+import { billingEmail, deliver, emailAllowed } from "./email/platform-emails";
 
 /**
  * Todo dia: quem vence em 3 dias, hoje, ou venceu há pouco recebe no
@@ -11,7 +12,8 @@ export async function sendBillingReminders(origin: string, now = new Date()) {
   const admin = createSupabaseAdmin();
   const { data, error } = await admin.rpc("platform_overview");
   if (error) throw new Error("overview");
-  const report = { checked: 0, sent: 0, skipped: 0 };
+  const report = { checked: 0, sent: 0, emailed: 0, skipped: 0 };
+  const email = await emailAllowed("billing");
   for (const item of data as Record<string, unknown>[]) {
     report.checked++;
     const access: BusinessAccess = {
@@ -22,7 +24,7 @@ export async function sendBillingReminders(origin: string, now = new Date()) {
     };
     const stage = reminderStage(access, now);
     const phone = String(item.phone || "").replace(/\D/g, "");
-    if (!stage || phone.length < 10) continue;
+    if (!stage || (phone.length < 10 && !email)) continue;
     // Claims the notice first, so two runs never send it twice.
     const { data: claimed } = await admin
       .from("platform_billing_notices")
@@ -51,8 +53,30 @@ export async function sendBillingReminders(origin: string, now = new Date()) {
       price: access.price || 0,
       link,
     });
-    const sent = await platformSend(phone, text).catch(() => false);
-    if (sent) report.sent++;
+    const sent = phone.length >= 10 && (await platformSend(phone, text).catch(() => false));
+    // O mesmo aviso também por e-mail, para o e-mail de login do dono.
+    const mailed =
+      !!email &&
+      (await deliver(
+        "billing",
+        billingEmail({
+          to: String(item.owner_email || ""),
+          stage,
+          owner: String(item.owner_name || ""),
+          business: String(item.name || ""),
+          plan: access.plan || "",
+          price: access.price || 0,
+          until: access.until,
+          link,
+        }),
+        {
+          businessId: item.id as string,
+          key: `billing-${item.id}-${stage}-${access.until}`,
+          replyTo: email.replyTo,
+        },
+      ));
+    if (mailed) report.emailed++;
+    if (sent || mailed) report.sent++;
     else {
       // Not sent (number off): free the claim so tomorrow tries again.
       await admin

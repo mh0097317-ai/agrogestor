@@ -17,7 +17,12 @@ export function WeeklyReports({
 }) {
   const [week, setWeek] = useState(() => weeklyPeriod().from);
   const [professional, setProfessional] = useState(ownProfessionalId || "");
-  const [prefs, setPrefs] = useState({
+  const [prefs, setPrefs] = useState<{
+    enabled: boolean;
+    includeProfessionals: boolean;
+    ownerPhone: string;
+    emailEnabled?: boolean;
+  }>({
     enabled: false,
     includeProfessionals: true,
     ownerPhone: "",
@@ -84,7 +89,11 @@ export function WeeklyReports({
       const r = await fetch(`${base}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(prefs),
+        body: JSON.stringify(
+          platform
+            ? { enabled: prefs.enabled, includeProfessionals: prefs.includeProfessionals, ownerPhone: prefs.ownerPhone }
+            : { ...prefs, emailEnabled: prefs.emailEnabled !== false },
+        ),
       });
       const value = await r.json();
       if (!r.ok) throw Error(value.error || "Não foi possível salvar.");
@@ -148,7 +157,7 @@ export function WeeklyReports({
       </div>
       {canSchedule && (
         <details className="weekly-report-schedule">
-          <summary>Receber no WhatsApp toda segunda às 9h</summary>
+          <summary>{platform ? "Receber no WhatsApp toda segunda às 9h" : "Receber no WhatsApp e no e-mail toda segunda às 9h"}</summary>
           <p>
             O PDF cobre a semana anterior, de segunda a domingo. Confira o
             destinatário antes de ativar.
@@ -178,6 +187,18 @@ export function WeeklyReports({
               cadastrado no perfil
             </label>
           )}
+          {!platform && (
+            <label className="weekly-report-check">
+              <input
+                type="checkbox"
+                checked={prefs.emailEnabled !== false}
+                onChange={(e) =>
+                  setPrefs({ ...prefs, emailEnabled: e.target.checked })
+                }
+              />
+              Receber o PDF também no e-mail de login do dono
+            </label>
+          )}
           <label className="weekly-report-check">
             <input
               type="checkbox"
@@ -186,7 +207,7 @@ export function WeeklyReports({
                 setPrefs({ ...prefs, enabled: e.target.checked })
               }
             />
-            Ativar envio automático para os destinatários acima
+            Ativar envio automático no WhatsApp para os números acima
           </label>
           <Button
             variant="secondary"

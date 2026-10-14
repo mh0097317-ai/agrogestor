@@ -19,6 +19,8 @@ export const weeklyPreferencesSchema = z
         (s) => s === "" || /^\d{10,15}$/.test(s),
         "Informe o WhatsApp do dono com DDD.",
       ),
+    /** O mesmo PDF no e-mail de login do dono (StudioFlow → Resend). */
+    emailEnabled: z.boolean().default(true),
   })
   .strict()
   .refine(
@@ -33,6 +35,7 @@ export async function weeklyPreferences(input?: unknown) {
     enabled: false,
     includeProfessionals: true,
     ownerPhone: "",
+    emailEnabled: true,
   };
   if (store.mode === "demo") {
     if (input)
@@ -51,6 +54,7 @@ export async function weeklyPreferences(input?: unknown) {
         enabled: values.enabled,
         include_professionals: values.includeProfessionals,
         owner_phone: values.ownerPhone,
+        email_enabled: values.emailEnabled,
         updated_at: new Date().toISOString(),
       });
     if (error)
@@ -59,7 +63,7 @@ export async function weeklyPreferences(input?: unknown) {
   }
   const { data, error } = await admin
     .from("weekly_report_preferences")
-    .select("enabled,include_professionals,owner_phone")
+    .select("enabled,include_professionals,owner_phone,email_enabled")
     .eq("business_id", store.business.id)
     .maybeSingle();
   if (error)
@@ -72,6 +76,7 @@ export async function weeklyPreferences(input?: unknown) {
         enabled: data.enabled,
         includeProfessionals: data.include_professionals,
         ownerPhone: data.owner_phone,
+        emailEnabled: data.email_enabled !== false,
       }
     : defaults;
 }

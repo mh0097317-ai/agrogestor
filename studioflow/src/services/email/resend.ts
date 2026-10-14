@@ -5,6 +5,8 @@ export interface Email {
   html: string;
   text: string;
   replyTo?: string;
+  /** Anexos em base64 (o PDF do relatório semanal, por exemplo). */
+  attachments?: { filename: string; content: string }[];
 }
 
 export function emailConfigured() {
@@ -29,10 +31,13 @@ export async function sendEmail(email: Email, idempotencyKey?: string) {
       html: email.html,
       text: email.text,
       ...(email.replyTo ? { reply_to: email.replyTo } : {}),
+      ...(email.attachments?.length ? { attachments: email.attachments } : {}),
     }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`email-failed-${response.status}`);
+  const body = (await response.json().catch(() => ({}))) as { id?: string };
+  return body.id || "";
 }
 
 export function escapeHtml(value: string) {
