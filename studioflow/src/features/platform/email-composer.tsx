@@ -72,6 +72,10 @@ export function EmailComposer({
   }, []);
 
   async function generate() {
+    if (brief.trim().length < 5) {
+      setError("Escreva primeiro, no campo acima, o que você quer comunicar. Ex.: avisar sobre a novidade da aba Divulgar.");
+      return;
+    }
     setBusy("draft");
     setError("");
     try {
@@ -153,7 +157,10 @@ export function EmailComposer({
         maxLength={1500}
         placeholder="Ex.: avisar que agora dá para postar no Instagram direto pela aba Divulgar, e chamar para testar hoje."
         value={brief}
-        onChange={(e) => setBrief(e.target.value)}
+        onChange={(e) => {
+          setBrief(e.target.value);
+          if (error) setError("");
+        }}
         disabled={disabled}
         aria-label="O que você quer comunicar"
       />
@@ -161,7 +168,7 @@ export function EmailComposer({
         <button
           type="button"
           className="mk-primary"
-          disabled={disabled || !ai || busy !== "" || brief.trim().length < 5}
+          disabled={disabled || !ai || busy !== ""}
           onClick={() => void generate()}
         >
           <Sparkle size={16} /> {busy === "draft" ? "Escrevendo…" : draft ? "Escrever de novo" : "Gerar com IA"}

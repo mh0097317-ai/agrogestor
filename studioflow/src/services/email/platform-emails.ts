@@ -460,10 +460,15 @@ export async function emailOverview() {
   await requirePlatformAdmin();
   const settings = await readEmailSettings();
   const key = await resendKey();
-  const ai = !!(await emailAi());
+  const aiAccess = await emailAi();
+  const ai = !!aiAccess;
+  // Só o final da chave, para o admin reconhecer qual está salva.
+  const hint = (value?: string | null) => (value && value.length > 8 ? value.slice(-4) : "");
   const base = {
     keySource: key.source,
+    resendHint: hint(key.key),
     ai,
+    aiHint: hint(aiAccess?.apiKey),
     configured: await emailConfigured(),
     from: process.env.EMAIL_FROM || "StudioFlow <avisos@studioflowapp.tech>",
     settings,

@@ -72,3 +72,11 @@
 .em .em-people-list label { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; text-align: left; gap: 12px; margin: 0; }
 .em .em-people-list label > span { justify-items: start; text-align: left; }
 .em .em-people-list input[type="checkbox"] { width: 18px; height: 18px; padding: 0; }
+.em-key.is-saved { border-color: #b9d7c2; }
+.em-key-saved { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: #eef6ef; color: #245c35; }
+.em-key-saved > svg { flex: none; }
+.em-key-saved > div { display: grid; gap: 2px; flex: 1 1 160px; min-width: 0; }
+.em-key-saved b { font-size: 14px; }
+.em-key-saved code { font-size: 13px; color: #3c6e4b; letter-spacing: .5px; overflow-wrap: anywhere; }
+.em-key-actions { display: flex; gap: 4px; }
+.em-link.is-danger { color: #9a2f25; }

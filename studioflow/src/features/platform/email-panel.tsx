@@ -25,7 +25,9 @@ interface Settings {
 interface Overview {
   configured: boolean;
   keySource: "panel" | "server" | null;
+  resendHint: string;
   ai: boolean;
+  aiHint: string;
   from: string;
   settings: Settings;
   demo: boolean;
@@ -88,6 +90,8 @@ function KeyCard({
   title,
   status,
   saved,
+  hint,
+  prefix,
   placeholder,
   minLength,
   demo,
@@ -98,6 +102,8 @@ function KeyCard({
   title: string;
   status: string;
   saved: boolean;
+  hint: string;
+  prefix: string;
   placeholder: string;
   minLength: number;
   demo: boolean;
@@ -108,12 +114,16 @@ function KeyCard({
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  async function run(task: () => Promise<unknown>) {
+  const [editing, setEditing] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  async function run(task: () => Promise<unknown>, saving = false) {
     setBusy(true);
     setError("");
     try {
       await task();
       setKey("");
+      setEditing(false);
+      setJustSaved(saving);
       await onDone();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível.");
@@ -122,41 +132,60 @@ function KeyCard({
     }
   }
   return (
-    <section className="pf-panel mk-account">
+    <section className={`pf-panel mk-account em-key ${saved ? "is-saved" : ""}`}>
       <div className="mk-account-head">
         <Key size={26} />
         <div>
-          <strong>
-            {title} {saved && <CheckCircle size={15} weight="fill" className="em-ok" />}
-          </strong>
+          <strong>{title}</strong>
           <span>{status}</span>
         </div>
       </div>
-      <form
-        className="mk-inline"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void run(() => onSave(key.trim()));
-        }}
-      >
-        <input
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder={saved ? "Colar uma chave nova" : placeholder}
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          aria-label={title}
-          disabled={demo}
-        />
-        <button type="submit" className="mk-primary" disabled={busy || demo || key.trim().length < minLength}>
-          {busy ? "Salvando…" : "Salvar"}
-        </button>
-      </form>
-      {saved && (
-        <button type="button" className="pf-text-button" disabled={busy || demo} onClick={() => void run(onRemove)}>
-          Remover chave
-        </button>
+      {saved && !editing ? (
+        <div className="em-key-saved" role="status">
+          <CheckCircle size={20} weight="fill" />
+          <div>
+            <b>{justSaved ? "Chave salva agora" : "Chave salva"}</b>
+            <code>
+              {prefix}••••••••{hint}
+            </code>
+          </div>
+          <span className="em-key-actions">
+            <button type="button" className="em-link" disabled={demo} onClick={() => setEditing(true)}>
+              Trocar chave
+            </button>
+            <button type="button" className="em-link is-danger" disabled={busy || demo} onClick={() => void run(onRemove)}>
+              Remover
+            </button>
+          </span>
+        </div>
+      ) : (
+        <form
+          className="mk-inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void run(() => onSave(key.trim()), true);
+          }}
+        >
+          <input
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={saved ? "Colar a chave nova" : placeholder}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            aria-label={title}
+            disabled={demo}
+            autoFocus={editing}
+          />
+          <button type="submit" className="mk-primary" disabled={busy || demo || key.trim().length < minLength}>
+            {busy ? "Salvando…" : "Salvar"}
+          </button>
+          {editing && (
+            <button type="button" className="pf-text-button" onClick={() => setEditing(false)}>
+              Cancelar
+            </button>
+          )}
+        </form>
       )}
       {error && <em className="mk-error">{error}</em>}
     </section>
@@ -320,12 +349,14 @@ export function EmailPanel() {
           title="Chave do Resend"
           status={
             data.keySource === "panel"
-              ? "Chave salva e cifrada. É ela que envia os e-mails."
+              ? "Guardada cifrada no servidor. É ela que envia os e-mails."
               : data.keySource === "server"
                 ? "Usando a chave cadastrada na Vercel. Se preferir, salve outra aqui."
                 : "Cole a chave da API (resend.com → API Keys). Ela fica cifrada e nunca volta para o navegador."
           }
           saved={data.keySource === "panel"}
+          hint={data.resendHint}
+          prefix="re_"
           placeholder="re_…"
           minLength={12}
           demo={data.demo}
@@ -337,10 +368,12 @@ export function EmailPanel() {
           title="Chave da IA dos e-mails"
           status={
             data.ai
-              ? "Chave própria dos e-mails, salva e cifrada. O Marketing usa a dele."
+              ? "Só para o Escrever com IA, guardada cifrada. O Marketing usa a dele."
               : "Cole uma chave da Anthropic (console.anthropic.com → API Keys) só para a IA escrever os e-mails."
           }
           saved={data.ai}
+          hint={data.aiHint}
+          prefix="sk-ant-"
           placeholder="sk-ant-…"
           minLength={20}
           demo={data.demo}
