@@ -1,0 +1,62 @@
+/* Mais vida no agendamento: toque, cascata, brilho na escolha e no botão. */
+
+/* Onda que nasce onde o dedo tocou */
+.bk-option, .bk-slot-grid button, .bk-calendar-grid button, .bk-bar-button { position: relative; overflow: hidden; }
+.bk-ripple { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--bk-brass, #8a6430) 32%, transparent) 0%, transparent 62%); transform: scale(0); opacity: 1; animation: bk-ripple 620ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards; z-index: 0; }
+.bk-bar-button .bk-ripple, .bk-slot-grid button.is-selected .bk-ripple { background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, transparent 62%); }
+@keyframes bk-ripple { to { transform: scale(1); opacity: 0; } }
+
+/* Cartões e horários chegam em cascata */
+.bk-step .bk-option { animation: bk-card-in 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bk-step .bk-option:nth-of-type(1) { animation-delay: 0ms; }
+.bk-step .bk-option:nth-of-type(2) { animation-delay: 45ms; }
+.bk-step .bk-option:nth-of-type(3) { animation-delay: 90ms; }
+.bk-step .bk-option:nth-of-type(4) { animation-delay: 135ms; }
+.bk-step .bk-option:nth-of-type(5) { animation-delay: 180ms; }
+.bk-step .bk-option:nth-of-type(6) { animation-delay: 225ms; }
+.bk-step .bk-option:nth-of-type(7) { animation-delay: 270ms; }
+.bk-step .bk-option:nth-of-type(8) { animation-delay: 315ms; }
+.bk-step .bk-option:nth-of-type(9) { animation-delay: 360ms; }
+.bk-step .bk-option:nth-of-type(10) { animation-delay: 405ms; }
+.bk-step .bk-option:nth-of-type(11) { animation-delay: 450ms; }
+.bk-step .bk-option:nth-of-type(12) { animation-delay: 495ms; }
+@keyframes bk-card-in { from { opacity: 0; transform: translateY(14px); } }
+.bk-slot-grid button:nth-child(1) { animation-delay: 0ms; }
+.bk-slot-grid button:nth-child(2) { animation-delay: 28ms; }
+.bk-slot-grid button:nth-child(3) { animation-delay: 56ms; }
+.bk-slot-grid button:nth-child(4) { animation-delay: 84ms; }
+.bk-slot-grid button:nth-child(5) { animation-delay: 112ms; }
+.bk-slot-grid button:nth-child(6) { animation-delay: 140ms; }
+.bk-slot-grid button:nth-child(7) { animation-delay: 168ms; }
+.bk-slot-grid button:nth-child(8) { animation-delay: 196ms; }
+.bk-slot-grid button:nth-child(9) { animation-delay: 224ms; }
+.bk-slot-grid button:nth-child(10) { animation-delay: 252ms; }
+.bk-slot-grid button:nth-child(11) { animation-delay: 280ms; }
+.bk-slot-grid button:nth-child(12) { animation-delay: 308ms; }
+.bk-slot-grid button:nth-child(13) { animation-delay: 336ms; }
+.bk-slot-grid button:nth-child(14) { animation-delay: 364ms; }
+.bk-slot-grid button:nth-child(15) { animation-delay: 392ms; }
+.bk-slot-grid button:nth-child(16) { animation-delay: 420ms; }
+.bk-slot-grid button:nth-child(17) { animation-delay: 448ms; }
+.bk-slot-grid button:nth-child(18) { animation-delay: 476ms; }
+
+/* Brilho que passa uma vez no item escolhido */
+.bk-option.is-selected::after, .bk-slot-grid button.is-selected::after, .bk-calendar-grid button.is-selected::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.55) 48%, transparent 66%); transform: translateX(-120%); animation: bk-sheen 760ms cubic-bezier(0.4, 0, 0.2, 1) 140ms forwards; }
+@keyframes bk-sheen { to { transform: translateX(120%); } }
+
+/* Dia escolhido no calendário: um anel que se abre */
+.bk-calendar-grid button.is-selected { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bk-brass, #8a6430) 45%, transparent); animation: bk-day-ring 640ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes bk-day-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bk-brass, #8a6430) 45%, transparent); } 100% { box-shadow: 0 0 0 12px transparent; } }
+
+/* Etapa atual: o número pulsa ao chegar */
+.bk-steps li.is-current .bk-step-dot { animation: bk-dot-arrive 560ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes bk-dot-arrive { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* Botão de continuar: um reflexo passa de vez em quando, chamando o toque */
+.bk-bar-button:not(:disabled)::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%); transform: translateX(-130%); animation: bk-cta-glint 3.8s ease-in-out 1.2s infinite; }
+@keyframes bk-cta-glint { 0%, 70% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-ripple, .bk-option.is-selected::after, .bk-slot-grid button.is-selected::after, .bk-calendar-grid button.is-selected::after, .bk-bar-button::after { display: none; }
+  .bk-step .bk-option, .bk-calendar-grid button.is-selected, .bk-steps li.is-current .bk-step-dot { animation: none; }
+}

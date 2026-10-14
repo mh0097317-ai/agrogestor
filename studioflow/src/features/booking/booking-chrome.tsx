@@ -4,12 +4,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { DrawCheck } from "./draw-check";
-import { useSwipeBack } from "./motion";
+import { TapRipples, useSwipeBack } from "./motion";
 import type { Business } from "@/types";
 import { PublicImage } from "@/features/public/public-ui";
 import { publicAccentStyle } from "@/features/public/public-branding";
 import "@/features/public/public.css";
 import "./booking.css";
+import "./booking-delight.css";
 import "./booking-refinement.css";
 
 export const bookingSteps = [
@@ -89,6 +90,7 @@ export function BookingChrome({
   const swipe = useSwipeBack(backDisabled ? undefined : onBack);
   return (
     <div className="booking-site bk" style={publicAccentStyle(business.color)}>
+      <TapRipples />
       <header className="bk-top">
         <div className="bk-top-row">
           {onBack ? (

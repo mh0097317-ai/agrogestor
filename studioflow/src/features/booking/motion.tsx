@@ -144,3 +144,37 @@ export function useSwipeBack(onBack?: () => void) {
     },
   };
 }
+
+const tappable =
+  ".bk-option, .bk-slot-grid button, .bk-calendar-grid button, .bk-bar-button";
+
+/**
+ * A soft ring spreads from the exact point the finger touched, on every
+ * choice of the booking. Pure decoration: the click itself is untouched.
+ */
+export function TapRipples() {
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const onDown = (event: PointerEvent) => {
+      const target = (event.target as Element | null)?.closest?.(tappable) as HTMLElement | null;
+      if (!target || target.matches(":disabled")) return;
+      const box = target.getBoundingClientRect();
+      const size = Math.max(box.width, box.height) * 2.2;
+      const ring = document.createElement("span");
+      ring.className = "bk-ripple";
+      ring.setAttribute("aria-hidden", "true");
+      Object.assign(ring.style, {
+        width: `${size}px`,
+        height: `${size}px`,
+        left: `${event.clientX - box.left - size / 2}px`,
+        top: `${event.clientY - box.top - size / 2}px`,
+      });
+      target.appendChild(ring);
+      ring.addEventListener("animationend", () => ring.remove(), { once: true });
+      window.setTimeout(() => ring.remove(), 900);
+    };
+    document.addEventListener("pointerdown", onDown, { passive: true });
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, []);
+  return null;
+}
