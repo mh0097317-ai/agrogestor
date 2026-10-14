@@ -12,7 +12,9 @@ import { getPublicStore } from "../server-store";
 import { queryWeeklyRows } from "../weekly-report";
 import { weeklyReportPdf } from "../weekly-report-pdf";
 import { brandEmail, firstName } from "./brand-email";
-import { emailConfigured, sendEmail, type Email } from "./resend";
+import { encryptSecret } from "../server-secrets";
+import { marketingAiAccess } from "../marketing/service";
+import { emailConfigured, forgetResendKey, resendKey, sendEmail, type Email } from "./resend";
 
 /*
  * E-mails da StudioFlow para os donos: cobrança da mensalidade, boas-vindas
@@ -59,7 +61,7 @@ export async function readEmailSettings(): Promise<EmailSettings> {
 
 /** Pode mandar este tipo agora? Chave do Resend + chave geral + chave do tipo. */
 async function allowed(kind: "billing" | "onboarding" | "weekly") {
-  if (!emailConfigured() || isDemo()) return null;
+  if (!(await emailConfigured()) || isDemo()) return null;
   const settings = await readEmailSettings();
   return settings.enabled && settings[kind] ? settings : null;
 }
@@ -357,6 +359,26 @@ export async function saveEmailSettings(input: z.infer<typeof emailSettingsSchem
   return input;
 }
 
+export const resendKeySchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .regex(/^re_[A-Za-z0-9_]{10,200}$/, "Cole a chave do Resend completa (começa com re_)."),
+});
+
+/** Guarda a chave do Resend cifrada; ela nunca volta para o navegador. */
+export async function saveResendKey(key: string | null) {
+  await requirePlatformAdmin();
+  if (isDemo()) throw new DomainError("A chave é salva no app publicado.", 400);
+  const { error } = await createSupabaseAdmin()
+    .from("platform_email_settings")
+    .update({ resend_key_enc: key ? encryptSecret(key) : null, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw new DomainError("Não foi possível salvar a chave.", 503);
+  forgetResendKey();
+  return { ok: true };
+}
+
 export const previewKinds = ["billing", "welcome", "setup", "share", "weekly"] as const;
 export type PreviewKind = (typeof previewKinds)[number];
 
@@ -385,8 +407,8 @@ async function adminEmail(userId: string | null) {
 export async function sendTestEmail(kind: PreviewKind) {
   const { userId } = await requirePlatformAdmin();
   if (isDemo()) throw new DomainError("O teste funciona no app publicado.", 400);
-  if (!emailConfigured())
-    throw new DomainError("Falta a RESEND_API_KEY na Vercel. Sem ela nenhum e-mail sai.", 409);
+  if (!(await emailConfigured()))
+    throw new DomainError("Salve a chave do Resend no topo desta aba. Sem ela nenhum e-mail sai.", 409);
   const to = await adminEmail(userId);
   if (!to) throw new DomainError("Não achei o e-mail da sua conta.", 400);
   const email = sampleEmail(kind, to);
@@ -402,8 +424,15 @@ export async function sendTestEmail(kind: PreviewKind) {
 export async function emailOverview() {
   await requirePlatformAdmin();
   const settings = await readEmailSettings();
+  const key = await resendKey();
+  const ai = await marketingAiAccess().then(
+    () => true,
+    () => false,
+  );
   const base = {
-    configured: emailConfigured(),
+    keySource: key.source,
+    ai,
+    configured: await emailConfigured(),
     from: process.env.EMAIL_FROM || "StudioFlow <avisos@studioflowapp.tech>",
     settings,
     demo: isDemo(),

@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle,
   EnvelopeSimple,
+  Key,
   Eye,
   PaperPlaneTilt,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import "./ai-control.css";
+import "./marketing.css";
 import "./email-panel.css";
 import { EmailComposer } from "./email-composer";
 
@@ -22,6 +24,8 @@ interface Settings {
 }
 interface Overview {
   configured: boolean;
+  keySource: "panel" | "server" | null;
+  ai: boolean;
   from: string;
   settings: Settings;
   demo: boolean;
@@ -78,6 +82,97 @@ const groups: {
     templates: [["weekly", "Relatório"]],
   },
 ];
+
+async function aiKey(body: unknown) {
+  const response = await fetch("/api/admin/marketing", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Não foi possível salvar a chave.");
+  return data;
+}
+
+/** Campo de chave: cola, salva cifrado, nunca mostra de volta. */
+function KeyCard({
+  title,
+  status,
+  saved,
+  placeholder,
+  minLength,
+  demo,
+  onSave,
+  onRemove,
+  onDone,
+}: {
+  title: string;
+  status: string;
+  saved: boolean;
+  placeholder: string;
+  minLength: number;
+  demo: boolean;
+  onSave: (key: string) => Promise<unknown>;
+  onRemove: () => Promise<unknown>;
+  onDone: () => Promise<void> | void;
+}) {
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function run(task: () => Promise<unknown>) {
+    setBusy(true);
+    setError("");
+    try {
+      await task();
+      setKey("");
+      await onDone();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="pf-panel mk-account">
+      <div className="mk-account-head">
+        <Key size={26} />
+        <div>
+          <strong>
+            {title} {saved && <CheckCircle size={15} weight="fill" className="em-ok" />}
+          </strong>
+          <span>{status}</span>
+        </div>
+      </div>
+      <form
+        className="mk-inline"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void run(() => onSave(key.trim()));
+        }}
+      >
+        <input
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={saved ? "Colar uma chave nova" : placeholder}
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          aria-label={title}
+          disabled={demo}
+        />
+        <button type="submit" className="mk-primary" disabled={busy || demo || key.trim().length < minLength}>
+          {busy ? "Salvando…" : "Salvar"}
+        </button>
+      </form>
+      {saved && (
+        <button type="button" className="pf-text-button" disabled={busy || demo} onClick={() => void run(onRemove)}>
+          Remover chave
+        </button>
+      )}
+      {error && <em className="mk-error">{error}</em>}
+    </section>
+  );
+}
 
 const kindLabel: Record<string, string> = {
   billing: "Cobrança",
@@ -202,7 +297,7 @@ export function EmailPanel() {
           </div>
           <p>
             {!data.configured
-              ? "Cadastre a RESEND_API_KEY na Vercel e verifique o domínio no Resend. Até lá, nenhum e-mail sai."
+              ? "Salve a chave do Resend logo abaixo. Até lá, nenhum e-mail sai."
               : s.enabled
                 ? `Saindo de ${data.from} para o e-mail de login do dono de cada barbearia.`
                 : "Nenhum e-mail automático sai agora. Os avisos no WhatsApp continuam."}{" "}
@@ -231,7 +326,43 @@ export function EmailPanel() {
         </p>
       )}
 
+      <div className="mk-top em-keys">
+        <KeyCard
+          title="Chave do Resend"
+          status={
+            data.keySource === "panel"
+              ? "Chave salva e cifrada. É ela que envia os e-mails."
+              : data.keySource === "server"
+                ? "Usando a chave cadastrada na Vercel. Se preferir, salve outra aqui."
+                : "Cole a chave da API (resend.com → API Keys). Ela fica cifrada e nunca volta para o navegador."
+          }
+          saved={data.keySource === "panel"}
+          placeholder="re_…"
+          minLength={12}
+          demo={data.demo}
+          onSave={(key) => api("POST", { kind: "resendKey", key })}
+          onRemove={() => api("POST", { kind: "resendKeyRemove" })}
+          onDone={load}
+        />
+        <KeyCard
+          title="Chave da IA (Anthropic)"
+          status={
+            data.ai
+              ? "Pronta para o Escrever com IA. É a mesma chave do Marketing."
+              : "Cole a chave da Anthropic (console.anthropic.com → API Keys) para a IA escrever os e-mails."
+          }
+          saved={data.ai}
+          placeholder="sk-ant-…"
+          minLength={20}
+          demo={data.demo}
+          onSave={(key) => aiKey({ kind: "aiKey", key })}
+          onRemove={() => aiKey({ kind: "aiKeyRemove" })}
+          onDone={load}
+        />
+      </div>
+
       <EmailComposer
+        ai={data.ai}
         disabled={data.demo}
         configured={data.configured}
         onSent={(message) => {

@@ -7,7 +7,7 @@ import { emailConfigured, sendEmail } from "./resend";
 /** Confirmação e lembrete da véspera por e-mail. Cada aviso é reivindicado uma vez só. */
 export async function sendEmailNotices() {
   const report = { checked: 0, sent: 0, failed: 0 };
-  if (!emailConfigured()) return report;
+  if (!(await emailConfigured())) return report;
   const admin = createSupabaseAdmin();
   const { data, error } = (await admin.rpc("due_email_notices")) as {
     data:

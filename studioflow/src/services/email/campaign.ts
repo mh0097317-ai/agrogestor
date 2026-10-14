@@ -125,8 +125,8 @@ export function campaignPreview(c: Campaign) {
 }
 
 export const sendCampaignSchema = campaignSchema.extend({
-  audience: z.enum(["me", "active", "one"]),
-  businessId: z.string().uuid().optional(),
+  audience: z.enum(["me", "list"]),
+  businessIds: z.array(z.string().uuid()).max(250).default([]),
 });
 
 interface Owner {
@@ -139,34 +139,40 @@ interface Owner {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const validEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
-async function recipients(audience: "active" | "one", businessId?: string) {
+async function registered() {
   const { data, error } = await createSupabaseAdmin().rpc("platform_overview");
   if (error) throw new DomainError("Não foi possível ler as barbearias.", 503);
-  const rows = ((data || []) as Owner[]).filter((r) => validEmail(r.owner_email || ""));
-  if (audience === "one") return rows.filter((r) => r.id === businessId);
-  const open: Owner[] = [];
-  for (const row of rows) if (accessOpen(await readBusinessAccess(row.id))) open.push(row);
-  return open;
+  return ((data || []) as Owner[]).filter((r) => validEmail(r.owner_email || ""));
 }
 
-/** Quantas pessoas recebem, para o admin confirmar antes de mandar. */
+/** Todos os e-mails cadastrados (dono de cada barbearia), para o admin escolher. */
 export async function campaignAudience() {
   await requirePlatformAdmin();
-  if (isDemo()) return { active: 0, businesses: [] as { id: string; name: string; email: string }[] };
-  const all = await recipients("active");
-  const { data } = await createSupabaseAdmin().rpc("platform_overview");
-  return {
-    active: all.length,
-    businesses: ((data || []) as Owner[])
-      .filter((r) => validEmail(r.owner_email || ""))
-      .map((r) => ({ id: r.id, name: r.name, email: r.owner_email })),
-  };
+  if (isDemo())
+    return {
+      businesses: [
+        { id: "demo-1", name: "Barbearia Navalha", owner: "Carlos Souza", email: "carlos@navalha.com.br", active: true },
+        { id: "demo-2", name: "Studio Corte Fino", owner: "Ana Lima", email: "ana@cortefino.com.br", active: true },
+        { id: "demo-3", name: "Barbearia do Zé", owner: "José Alves", email: "ze@barbeariadoze.com.br", active: false },
+      ],
+    };
+  const rows = await registered();
+  const businesses = [];
+  for (const r of rows)
+    businesses.push({
+      id: r.id,
+      name: r.name,
+      owner: r.owner_name,
+      email: r.owner_email,
+      active: accessOpen(await readBusinessAccess(r.id)),
+    });
+  return { businesses };
 }
 
 export async function sendCampaign(input: z.infer<typeof sendCampaignSchema>) {
   const { userId } = await requirePlatformAdmin();
   if (isDemo()) throw new DomainError("O envio funciona no app publicado.", 400);
-  if (!emailConfigured()) throw new DomainError("Falta a RESEND_API_KEY na Vercel.", 409);
+  if (!(await emailConfigured())) throw new DomainError("Salve a chave do Resend no topo desta aba.", 409);
   const settings = await readEmailSettings();
   const campaign = campaignSchema.parse(input);
   if (input.audience === "me") {
@@ -175,14 +181,13 @@ export async function sendCampaign(input: z.infer<typeof sendCampaignSchema>) {
     if (!to) throw new DomainError("Não achei o e-mail da sua conta.", 400);
     const email = campaignEmail(campaign, to, "Carlos Souza", "Barbearia Navalha");
     const ok = await deliver("test", { ...email, subject: `[Teste] ${email.subject}` });
-    if (!ok) throw new DomainError("O Resend recusou. Confira se o domínio está verificado.", 502);
+    if (!ok) throw new DomainError("O Resend recusou. Confira a chave e se o domínio está verificado.", 502);
     return { sent: 1, failed: 0, to };
   }
   if (!settings.enabled) throw new DomainError("Os e-mails estão desligados no topo da página.", 409);
-  if (input.audience === "one" && !input.businessId) throw new DomainError("Escolha a barbearia.", 400);
-  const list = await recipients(input.audience, input.businessId);
-  if (!list.length) throw new DomainError("Nenhum destinatário com e-mail válido.", 400);
-  if (list.length > 250) throw new DomainError("Mais de 250 destinatários: fale com o suporte antes.", 400);
+  const chosen = new Set(input.businessIds);
+  const list = (await registered()).filter((r) => chosen.has(r.id));
+  if (!list.length) throw new DomainError("Marque pelo menos um e-mail da lista.", 400);
   const batch = crypto.randomUUID();
   const report = { sent: 0, failed: 0 };
   for (const owner of list) {

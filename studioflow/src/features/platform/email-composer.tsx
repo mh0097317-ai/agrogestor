@@ -31,12 +31,22 @@ const ctaOptions: [Cta, string][] = [
   ["agenda", "Agenda"],
 ];
 
-/** Escrever com IA: o admin pede, a IA escreve, o admin revisa e envia. */
+interface Person {
+  id: string;
+  name: string;
+  owner: string;
+  email: string;
+  active: boolean;
+}
+
+/** Escrever com IA: o admin pede, a IA escreve, escolhe os e-mails e envia. */
 export function EmailComposer({
+  ai,
   disabled,
   configured,
   onSent,
 }: {
+  ai: boolean;
   disabled: boolean;
   configured: boolean;
   onSent: (message: string) => void;
@@ -47,20 +57,19 @@ export function EmailComposer({
   const [error, setError] = useState("");
   const [html, setHtml] = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [audience, setAudience] = useState<"me" | "active" | "one">("me");
-  const [businessId, setBusinessId] = useState("");
-  const [people, setPeople] = useState<{ active: number; businesses: { id: string; name: string; email: string }[] } | null>(null);
+  const [people, setPeople] = useState<Person[] | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!draft || people) return;
     let alive = true;
-    call<{ active: number; businesses: { id: string; name: string; email: string }[] }>({ kind: "audience" })
-      .then((value) => alive && setPeople(value))
-      .catch(() => undefined);
+    call<{ businesses: Person[] }>({ kind: "audience" })
+      .then((value) => alive && setPeople(value.businesses))
+      .catch(() => alive && setPeople([]));
     return () => {
       alive = false;
     };
-  }, [draft, people]);
+  }, []);
 
   async function generate() {
     setBusy("draft");
@@ -90,31 +99,28 @@ export function EmailComposer({
     }
   }
 
-  async function send() {
+  async function send(audience: "me" | "list") {
     if (!draft) return;
-    const count =
-      audience === "me" ? 1 : audience === "one" ? 1 : people?.active ?? 0;
-    const who =
-      audience === "me"
-        ? "o seu e-mail (teste)"
-        : audience === "one"
-          ? people?.businesses.find((b) => b.id === businessId)?.name || "a barbearia escolhida"
-          : `${count} barbearias ativas`;
-    if (audience !== "me" && !window.confirm(`Enviar este e-mail para ${who}? Não dá para desfazer.`)) return;
-    setBusy("send");
+    if (audience === "list") {
+      const names = (people || []).filter((p) => selected.includes(p.id));
+      const who = names.length === 1 ? `${names[0].name} (${names[0].email})` : `${names.length} e-mails`;
+      if (!window.confirm(`Enviar este e-mail para ${who}? Não dá para desfazer.`)) return;
+    }
+    setBusy(audience);
     setError("");
     try {
       const result = await call<{ sent: number; failed: number; to?: string }>({
         kind: "send",
         ...draft,
         audience,
-        ...(audience === "one" ? { businessId } : {}),
+        businessIds: audience === "list" ? selected : [],
       });
       onSent(
         audience === "me"
           ? `Teste enviado para ${result.to}.`
-          : `Enviado para ${result.sent} ${result.sent === 1 ? "barbearia" : "barbearias"}${result.failed ? `, ${result.failed} com falha` : ""}.`,
+          : `Enviado para ${result.sent} ${result.sent === 1 ? "e-mail" : "e-mails"}${result.failed ? `, ${result.failed} com falha` : ""}.`,
       );
+      if (audience === "list") setSelected([]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "O envio não saiu.");
     } finally {
@@ -123,6 +129,14 @@ export function EmailComposer({
   }
 
   const set = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
+  const list = people || [];
+  const term = search.trim().toLowerCase();
+  const shown = term
+    ? list.filter((p) => `${p.name} ${p.owner} ${p.email}`.toLowerCase().includes(term))
+    : list;
+  const toggle = (id: string) =>
+    setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
+  const allOn = list.length > 0 && selected.length === list.length;
 
   return (
     <section className="pf-panel em-compose">
@@ -131,7 +145,7 @@ export function EmailComposer({
           <h3>
             <Sparkle size={17} /> Escrever com IA
           </h3>
-          <p>Diga o que quer comunicar. A IA escreve, você revisa e escolhe para quem vai.</p>
+          <p>Diga o que quer comunicar. A IA escreve, você revisa e escolhe os e-mails que recebem.</p>
         </div>
       </div>
       <textarea
@@ -147,12 +161,24 @@ export function EmailComposer({
         <button
           type="button"
           className="mk-primary"
-          disabled={disabled || busy !== "" || brief.trim().length < 5}
+          disabled={disabled || !ai || busy !== "" || brief.trim().length < 5}
           onClick={() => void generate()}
         >
           <Sparkle size={16} /> {busy === "draft" ? "Escrevendo…" : draft ? "Escrever de novo" : "Gerar com IA"}
         </button>
-        <span className="em-hint">Usa a chave e o modelo do Marketing.</span>
+        <span className="em-hint">
+          {ai ? "Usa a chave e o modelo do Marketing." : "Salve a chave da IA no quadro acima para gerar."}
+        </span>
+        {!draft && (
+          <button
+            type="button"
+            className="em-link"
+            disabled={disabled}
+            onClick={() => setDraft({ subject: "", title: "", body: "Oi, {nome}!\n\n", cta: "painel", ctaLabel: "" })}
+          >
+            Escrever sem IA
+          </button>
+        )}
       </div>
       {error && <em className="mk-error">{error}</em>}
 
@@ -188,49 +214,95 @@ export function EmailComposer({
               </label>
             )}
           </div>
-          <div className="em-row">
-            <label>
-              Para quem
-              <select value={audience} onChange={(e) => setAudience(e.target.value as typeof audience)}>
-                <option value="me">Só para mim (teste)</option>
-                <option value="active">
-                  Todas as barbearias ativas{people ? ` (${people.active})` : ""}
-                </option>
-                <option value="one">Uma barbearia</option>
-              </select>
-            </label>
-            {audience === "one" && (
-              <label>
-                Barbearia
-                <select value={businessId} onChange={(e) => setBusinessId(e.target.value)}>
-                  <option value="">Escolha…</option>
-                  {(people?.businesses || []).map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name} · {b.email}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
           <div className="em-actions">
             <button type="button" className="mk-ghost" disabled={busy !== ""} onClick={() => void preview()}>
               <Eye size={16} /> {busy === "preview" ? "Montando…" : "Ver prévia"}
             </button>
             <button
               type="button"
-              className="mk-primary"
-              disabled={disabled || !configured || busy !== "" || (audience === "one" && !businessId)}
-              onClick={() => void send()}
+              className="mk-ghost"
+              disabled={disabled || !configured || busy !== ""}
+              onClick={() => void send("me")}
             >
-              <PaperPlaneTilt size={16} /> {busy === "send" ? "Enviando…" : audience === "me" ? "Enviar teste para mim" : "Enviar"}
+              <PaperPlaneTilt size={16} /> {busy === "me" ? "Enviando…" : "Enviar teste para mim"}
             </button>
           </div>
           {showPreview && (
-            <iframe title="Prévia do e-mail escrito com IA" srcDoc={html} sandbox="" className="em-frame" />
+            <iframe title="Prévia do e-mail" srcDoc={html} sandbox="" className="em-frame" />
           )}
         </div>
       )}
+
+      <div className="em-people">
+        <div className="em-people-head">
+          <strong>E-mails cadastrados</strong>
+          <span>{selected.length} de {list.length} marcados</span>
+        </div>
+        <div className="em-people-tools">
+          <input
+            type="search"
+            placeholder="Buscar barbearia, dono ou e-mail"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar e-mail"
+          />
+          <button
+            type="button"
+            className="em-link"
+            disabled={!list.length}
+            onClick={() => setSelected(allOn ? [] : list.map((p) => p.id))}
+          >
+            {allOn ? "Desmarcar todos" : `Marcar todos (${list.length})`}
+          </button>
+          <button
+            type="button"
+            className="em-link"
+            disabled={!list.length}
+            onClick={() => setSelected(list.filter((p) => p.active).map((p) => p.id))}
+          >
+            Só ativas
+          </button>
+        </div>
+        {people === null ? (
+          <p className="em-hint">Carregando os e-mails…</p>
+        ) : shown.length ? (
+          <ul className="em-people-list">
+            {shown.map((p) => (
+              <li key={p.id}>
+                <label>
+                  <input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />
+                  <span>
+                    <b>{p.name}</b>
+                    <small>
+                      {p.owner ? `${p.owner} · ` : ""}
+                      {p.email}
+                    </small>
+                  </span>
+                  {!p.active && <i className="em-tag">inativa</i>}
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="em-hint">{list.length ? "Nenhum e-mail com essa busca." : "Nenhum e-mail cadastrado ainda."}</p>
+        )}
+        <div className="em-actions">
+          <button
+            type="button"
+            className="mk-primary"
+            disabled={disabled || !configured || !draft || busy !== "" || !selected.length}
+            onClick={() => void send("list")}
+          >
+            <PaperPlaneTilt size={16} />{" "}
+            {busy === "list"
+              ? "Enviando…"
+              : selected.length
+                ? `Enviar para ${selected.length} ${selected.length === 1 ? "e-mail" : "e-mails"}`
+                : "Marque quem recebe"}
+          </button>
+          {!draft && <span className="em-hint">Escreva o e-mail acima antes de enviar.</span>}
+        </div>
+      </div>
     </section>
   );
 }
