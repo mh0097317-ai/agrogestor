@@ -67,7 +67,7 @@ import { availabilityReply } from "./availability-reply";
 import { imageUnavailableText, understandImage } from "./vision";
 import type { AssistantContext } from "./agent";
 import { manualPauseMs, whatsappBurstDelayMs } from "./idle-price-resume";
-import { assistantMayAnswer } from "./contact-scope";
+import { assistantMayAnswer, pureGreeting } from "./contact-scope";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 type AssistantSettingsRow = {
@@ -1202,7 +1202,7 @@ async function answerPending(
       await repo.progress?.(conversationId, { state: "SENDING" });
     sentId = await delivery.send(
       result.reply,
-      result.booked || result.handoff
+      result.booked || result.handoff || pureGreeting(result.reply)
         ? null
         : bookingMenu(scopedStore, understanding?.interpretation, text),
     );
@@ -1582,18 +1582,11 @@ export async function receiveWhatsAppMessages(input: {
     const earlier = (await repo.messages(conversation.id)).filter(
       (m) => m.createdAt < messageAt,
     );
-    const { data: customer } = await createSupabaseAdmin()
-      .from("customers")
-      .select("id")
-      .eq("business_id", input.businessId)
-      .in("phone", [phone, `55${phone}`])
-      .limit(1);
     if (
       !(await assistantMayAnswer({
         text: body,
         store: scopeStore,
         messages: earlier,
-        isCustomer: !!customer?.length,
       }).catch(() => false))
     ) {
       await repo.update(conversation.id, {

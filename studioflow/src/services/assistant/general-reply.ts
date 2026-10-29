@@ -49,7 +49,7 @@ export async function generalReply(
   const fixed =
     /^(oi|ola|bom dia|boa tarde|boa noite|e ai|tudo bem)$/.test(simple) &&
     simple !== "tudo bem"
-      ? `${({ "bom dia": "Bom dia", "boa tarde": "Boa tarde", "boa noite": "Boa noite" } as Record<string, string>)[simple] || "Olá"}! Tudo bem? ${pendingQuestion || "Me conta o que você gostaria de fazer hoje."}`
+      ? `${({ "bom dia": "Bom dia", "boa tarde": "Boa tarde", "boa noite": "Boa noite" } as Record<string, string>)[simple] || "Olá"}! Tudo bem?${pendingQuestion ? ` ${pendingQuestion}` : ""}`
       : askedAboutUs
         ? `Tudo certo por aqui! Obrigado por perguntar. ${resumeQuestion}`
         : returningWell

@@ -207,99 +207,54 @@ test("a second unreadable media goes to the team instead of repeating", async ()
   assert.doesNotMatch(second.reply, /Não consegui ler/);
 });
 
-test("personal chats on the shop phone are left to the owner", async () => {
-  const { assistantMayAnswer } =
+test("the assistant greets back, then answers only about the business", async () => {
+  const { assistantMayAnswer, pureGreeting } =
     await import("../src/services/assistant/contact-scope");
   const { store, service } = fixture();
   const at = (minutes: number) =>
     new Date(now.getTime() - minutes * 60_000).toISOString();
+  const may = (
+    text: string,
+    messages: Parameters<typeof assistantMayAnswer>[0]["messages"] = [],
+  ) => assistantMayAnswer({ text, store: async () => store, messages, now });
   const staffChat = [
     { id: "1", role: "staff" as const, body: "terminei la", createdAt: at(90) },
   ];
-  const base = { store: async () => store, isCustomer: false, now };
-  assert.equal(
-    await assistantMayAnswer({ ...base, text: "OK", messages: staffChat }),
-    false,
-  );
-  assert.equal(
-    await assistantMayAnswer({
-      ...base,
-      text: "ta otimo",
-      messages: staffChat,
-    }),
-    false,
-  );
-  assert.equal(
-    await assistantMayAnswer({ ...base, text: "Oi", messages: staffChat }),
-    false,
-    "a greeting from someone the owner talks to is not a lead",
-  );
-  assert.ok(
-    await assistantMayAnswer({
-      ...base,
-      text: "OK",
-      messages: staffChat,
-      isCustomer: true,
-    }),
-  );
-  assert.ok(
-    await assistantMayAnswer({
-      ...base,
-      text: "tem horário amanhã?",
-      messages: staffChat,
-    }),
-  );
-  assert.ok(
-    await assistantMayAnswer({
-      ...base,
-      text: `Consultar horários para ${service.name}`,
-      messages: staffChat,
-    }),
-  );
-  assert.ok(await assistantMayAnswer({ ...base, text: "Oi", messages: [] }));
-  assert.ok(
-    await assistantMayAnswer({
-      ...base,
-      text: "sim",
-      messages: [
-        ...staffChat,
-        {
-          id: "2",
-          role: "assistant" as const,
-          body: "Posso confirmar?",
-          createdAt: at(2),
-        },
-      ],
-    }),
-    "mid-flow answers keep going",
-  );
-});
-
-test("price and booking questions from new numbers still reach the assistant", async () => {
-  const { assistantMayAnswer } =
-    await import("../src/services/assistant/contact-scope");
-  const { store } = fixture();
-  const staff = [
+  const greeted = [
+    ...staffChat,
     {
-      id: "1",
-      role: "staff" as const,
-      body: "ok",
-      createdAt: now.toISOString(),
+      id: "2",
+      role: "assistant" as const,
+      body: "Boa noite! Tudo bem?",
+      createdAt: at(1),
     },
   ];
-  for (const text of [
-    "Quanto custa o corte?",
-    "Dá pra marcar pra sábado?",
-    "vocês atendem hoje?",
-  ])
-    assert.ok(
-      await assistantMayAnswer({
-        text,
-        store: async () => store,
-        messages: staff,
-        isCustomer: false,
-        now,
-      }),
-      text,
-    );
+  assert.ok(pureGreeting("Boa noite! Tudo bem?"));
+  assert.ok(!pureGreeting("Boa noite! Tudo bem? Qual serviço você quer?"));
+  // Greetings always get a greeting back.
+  assert.ok(await may("Boa noite", staffChat));
+  assert.ok(await may("Oi, tudo bem?", staffChat));
+  // After the greeting: small talk once, business always, the rest silent.
+  assert.ok(await may("Tudo ótimo, e você?", greeted));
+  assert.ok(await may("Quanto custa o corte?", greeted));
+  assert.ok(await may("tem horário amanhã?", greeted));
+  assert.equal(await may("Ok meu filho", greeted), false);
+  assert.equal(await may("agorinha ligo para te explicar", greeted), false);
+  assert.equal(await may("OK", staffChat), false);
+  assert.equal(await may("ta otimo", staffChat), false);
+  assert.ok(await may(`Consultar horários para ${service.name}`, staffChat));
+  for (const text of ["Dá pra marcar pra sábado?", "vocês atendem hoje?"])
+    assert.ok(await may(text, staffChat), text);
+  // Mid-flow answers to a business question keep going.
+  assert.ok(
+    await may("sim", [
+      ...staffChat,
+      {
+        id: "3",
+        role: "assistant" as const,
+        body: "Posso confirmar esse horário em seu nome?",
+        createdAt: at(2),
+      },
+    ]),
+  );
 });
