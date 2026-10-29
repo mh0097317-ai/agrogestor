@@ -98,6 +98,7 @@ async function setup(name: string) {
     customerName: "Gislayniel",
     customerPhone: "11987654321",
     customerEmail: "",
+    reminder: true,
     professionalId: pro.id,
     serviceIds: [service.id],
     start: first.start,
