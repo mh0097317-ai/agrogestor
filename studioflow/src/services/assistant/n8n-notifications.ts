@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { firstName } from "@/lib/person-name";
 import { appUrl } from "@/lib/app-url";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
 import { accessOpen } from "@/lib/access";
@@ -247,7 +248,7 @@ export async function notifyN8nCustomer(
   if (claimError?.code === "23505") return skipped("already_attempted");
   if (claimError)
     throw new DomainError("Não foi possível registrar o envio.", 503);
-  const first = name.trim().split(/\s+/)[0]?.slice(0, 50);
+  const first = firstName(name).slice(0, 50);
   const text =
     input.action === "inactive_customer"
       ? `Oi${first ? `, ${first}` : ""}! Aqui é a assistência virtual da ${store.business.name}. Faz um tempo desde seu último atendimento. Se quiser marcar seu próximo horário: ${appUrl}/${store.business.slug}`

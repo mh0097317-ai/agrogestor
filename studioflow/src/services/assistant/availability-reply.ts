@@ -113,35 +113,43 @@ export function availabilityReply(
     dates.push(localDate(new Date(earliest.start)));
   }
   if (!dates.length) return "Qual dia você prefere para esse serviço?";
-  const candidates = dates
-    .flatMap((date) =>
-      (selection.professionalId && selection.professionalId !== "any"
-        ? availableSlots(
-            store,
-            selection.serviceIds,
-            selection.professionalId,
-            date,
-            now,
-          )
-        : availableSlotsByProfessional(store, selection.serviceIds, date, now)
-      )
-        .filter(matchesPreference)
-        .filter((_slot, index) => !alternatives || index === 0)
-        .map((slot) => ({ date, ...slot })),
-    );
+  const candidates = dates.flatMap((date) =>
+    (selection.professionalId && selection.professionalId !== "any"
+      ? availableSlots(
+          store,
+          selection.serviceIds,
+          selection.professionalId,
+          date,
+          now,
+        )
+      : availableSlotsByProfessional(store, selection.serviceIds, date, now)
+    )
+      .filter(matchesPreference)
+      .filter((_slot, index) => !alternatives || index === 0)
+      .map((slot) => ({ date, ...slot })),
+  );
   if (!candidates.length)
     return "Não encontrei horários livres nesse período. Você prefere outro dia ou período?";
   const orderedCandidates = [...candidates].sort(
     (a, b) =>
       a.date.localeCompare(b.date) ||
       a.time.localeCompare(b.time) ||
-      (store.professionals.find((p) => p.id === a.professionalId)?.name || "").localeCompare(
+      (
+        store.professionals.find((p) => p.id === a.professionalId)?.name || ""
+      ).localeCompare(
         store.professionals.find((p) => p.id === b.professionalId)?.name || "",
         "pt-BR",
       ),
   );
   if (alternatives) orderedCandidates.splice(3);
   const groups = new Map<string, typeof orderedCandidates>();
+  // The text shows 3 times per person; say how many more the list holds, so
+  // "09:00, 09:30 ou 10:00" does not read as the whole day.
+  const totals = new Map<string, number>();
+  for (const slot of orderedCandidates) {
+    const key = `${slot.date}:${slot.professionalId}`;
+    totals.set(key, (totals.get(key) || 0) + 1);
+  }
   for (const slot of orderedCandidates) {
     const key = `${slot.date}:${slot.professionalId}`;
     if (
@@ -167,15 +175,21 @@ export function availabilityReply(
             .replace(/(^|\s)\p{L}/gu, (letter) => letter.toUpperCase())
         : rawName;
     const times = slots.map((s) => s.time);
+    const extra = (totals.get(`${date}:${professionalId}`) || 0) - times.length;
     const clocks =
-      times.length > 1
-        ? `${times.slice(0, -1).join(", ")} ou ${times.at(-1)}`
-        : times[0];
+      extra > 0
+        ? `${times.join(", ")} e mais ${extra} horário${extra > 1 ? "s" : ""}`
+        : times.length > 1
+          ? `${times.slice(0, -1).join(", ")} ou ${times.at(-1)}`
+          : times[0];
     const label = date.split("-").reverse().join("/");
     return `${name} — ${weekday}, ${label}, às ${clocks}`;
   });
   const people = new Set(
     [...groups.values()].map((slots) => slots[0].professionalId),
   );
-  return `Tenho estas opções disponíveis:\n\n${offers.join("\n\n")}\n\n${people.size > 1 ? "Com quem você prefere marcar?" : "Qual desses horários fica melhor para você?"}`;
+  const more = [...groups.entries()].some(
+    ([key, slots]) => (totals.get(key) || 0) > slots.length,
+  );
+  return `Tenho estas opções disponíveis:\n\n${offers.join("\n\n")}\n\n${more ? "Os outros horários estão na lista abaixo.\n\n" : ""}${people.size > 1 ? "Com quem você prefere marcar?" : "Qual desses horários fica melhor para você?"}`;
 }

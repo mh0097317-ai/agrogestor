@@ -124,3 +124,52 @@ test("the name answer drops 'sou'", async () => {
   assert.equal(nameAnswer("Sou Gislayniel", asked), "Gislayniel");
   assert.equal(nameAnswer("Me chamo Ana Paula", asked), "Ana Paula");
 });
+
+test("reminders greet the real first name and write names normally", async () => {
+  const { customerReminder } =
+    await import("../src/services/whatsapp/reminders");
+  const { store, service } = fixture();
+  const pro = store.professionals[0];
+  pro.name = "MATHEUS";
+  const text = customerReminder(
+    store,
+    {
+      ...store.appointments[0],
+      ...{
+        id: "a1",
+        customerName: "Sou Gislayniel",
+        serviceIds: [service.id],
+        professionalId: pro.id,
+        start: "2026-10-29T21:00:00Z",
+      },
+    } as Parameters<typeof customerReminder>[1],
+    720,
+  );
+  assert.match(text, /^Oi, Gislayniel!/);
+  assert.match(text, /com Matheus\./);
+});
+
+test("the text says more times are in the list", async () => {
+  const { availabilityReply } =
+    await import("../src/services/assistant/availability-reply");
+  const { store, service } = fixture();
+  const reply = availabilityReply(
+    {
+      intent: "AVAILABILITY",
+      stage: "CHOOSING_TIME",
+      confidence: 1,
+      serviceIds: [service.id],
+      professionalId: "",
+      date: "2026-10-30",
+      time: "",
+      missing: [],
+      nextAction: "CONSULT",
+    },
+    store,
+    `Consultar horários para ${service.name} no dia 30/10/2026`,
+    [],
+    now,
+  );
+  assert.match(reply || "", /e mais \d+ horários/);
+  assert.match(reply || "", /lista abaixo/);
+});

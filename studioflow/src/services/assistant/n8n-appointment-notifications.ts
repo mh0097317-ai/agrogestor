@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { firstName } from "@/lib/person-name";
 import { appUrl } from "@/lib/app-url";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { DomainError } from "@/lib/availability";
@@ -138,8 +139,7 @@ export async function notifyAppointment(
     if (!appointment || !appointmentEligible(input.action, appointment, now))
       return skipped("appointment_not_eligible");
     phone = appointment.customerPhone;
-    const first =
-      appointment.customerName.trim().split(/\s+/)[0]?.slice(0, 50) || "";
+    const first = firstName(appointment.customerName).slice(0, 50);
     const time = new Intl.DateTimeFormat("pt-BR", {
       timeZone: "America/Sao_Paulo",
       day: "2-digit",

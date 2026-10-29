@@ -1,4 +1,5 @@
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { displayName, firstName } from "@/lib/person-name";
 import { readBusinessAccess } from "@/lib/supabase/server";
 import { accessOpen } from "@/lib/access";
 import { getPublicStore } from "../server-store";
@@ -34,7 +35,7 @@ export function customerReminder(
       : minutes === 60
         ? "Falta cerca de 1 hora"
         : "Faltam cerca de 2 horas";
-  return `Oi, ${appointment.customerName.trim().split(/\s+/)[0] || "tudo bem"}! ${lead} para seu horário na ${store.business.name}.\n\n${service ? `${service} · ` : ""}${day} às ${time}${professional ? ` com ${professional.name}` : ""}. Se precisar ajustar, fale com a equipe por aqui. Até lá!`;
+  return `Oi, ${firstName(appointment.customerName) || "tudo bem"}! ${lead} para seu horário na ${store.business.name}.\n\n${service ? `${displayName(service)} · ` : ""}${day} às ${time}${professional ? ` com ${displayName(professional.name)}` : ""}. Se precisar ajustar, fale com a equipe por aqui. Até lá!`;
 }
 
 /** No AI calls. Atomic claims prevent repeated sends, even with concurrent jobs. */

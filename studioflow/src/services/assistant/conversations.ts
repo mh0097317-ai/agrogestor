@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { cleanName } from "@/lib/person-name";
 import type Anthropic from "@anthropic-ai/sdk";
 import { DomainError } from "@/lib/availability";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
@@ -845,7 +846,7 @@ async function answerPending(
           serviceIds: input.serviceIds,
           professionalId: input.professionalId,
           start: input.start,
-          name: input.name,
+          name: cleanName(input.name),
           phone: input.phone,
           email: "",
           reminder: true,
