@@ -206,3 +206,100 @@ test("a second unreadable media goes to the team instead of repeating", async ()
   assert.ok(second.handoff);
   assert.doesNotMatch(second.reply, /Não consegui ler/);
 });
+
+test("personal chats on the shop phone are left to the owner", async () => {
+  const { assistantMayAnswer } =
+    await import("../src/services/assistant/contact-scope");
+  const { store, service } = fixture();
+  const at = (minutes: number) =>
+    new Date(now.getTime() - minutes * 60_000).toISOString();
+  const staffChat = [
+    { id: "1", role: "staff" as const, body: "terminei la", createdAt: at(90) },
+  ];
+  const base = { store: async () => store, isCustomer: false, now };
+  assert.equal(
+    await assistantMayAnswer({ ...base, text: "OK", messages: staffChat }),
+    false,
+  );
+  assert.equal(
+    await assistantMayAnswer({
+      ...base,
+      text: "ta otimo",
+      messages: staffChat,
+    }),
+    false,
+  );
+  assert.equal(
+    await assistantMayAnswer({ ...base, text: "Oi", messages: staffChat }),
+    false,
+    "a greeting from someone the owner talks to is not a lead",
+  );
+  assert.ok(
+    await assistantMayAnswer({
+      ...base,
+      text: "OK",
+      messages: staffChat,
+      isCustomer: true,
+    }),
+  );
+  assert.ok(
+    await assistantMayAnswer({
+      ...base,
+      text: "tem horário amanhã?",
+      messages: staffChat,
+    }),
+  );
+  assert.ok(
+    await assistantMayAnswer({
+      ...base,
+      text: `Consultar horários para ${service.name}`,
+      messages: staffChat,
+    }),
+  );
+  assert.ok(await assistantMayAnswer({ ...base, text: "Oi", messages: [] }));
+  assert.ok(
+    await assistantMayAnswer({
+      ...base,
+      text: "sim",
+      messages: [
+        ...staffChat,
+        {
+          id: "2",
+          role: "assistant" as const,
+          body: "Posso confirmar?",
+          createdAt: at(2),
+        },
+      ],
+    }),
+    "mid-flow answers keep going",
+  );
+});
+
+test("price and booking questions from new numbers still reach the assistant", async () => {
+  const { assistantMayAnswer } =
+    await import("../src/services/assistant/contact-scope");
+  const { store } = fixture();
+  const staff = [
+    {
+      id: "1",
+      role: "staff" as const,
+      body: "ok",
+      createdAt: now.toISOString(),
+    },
+  ];
+  for (const text of [
+    "Quanto custa o corte?",
+    "Dá pra marcar pra sábado?",
+    "vocês atendem hoje?",
+  ])
+    assert.ok(
+      await assistantMayAnswer({
+        text,
+        store: async () => store,
+        messages: staff,
+        isCustomer: false,
+        now,
+      }),
+      text,
+    );
+});

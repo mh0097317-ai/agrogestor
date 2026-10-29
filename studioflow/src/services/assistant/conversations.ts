@@ -67,6 +67,7 @@ import { availabilityReply } from "./availability-reply";
 import { imageUnavailableText, understandImage } from "./vision";
 import type { AssistantContext } from "./agent";
 import { manualPauseMs, whatsappBurstDelayMs } from "./idle-price-resume";
+import { assistantMayAnswer } from "./contact-scope";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 type AssistantSettingsRow = {
@@ -1432,6 +1433,8 @@ export async function receiveWhatsAppMessages(input: {
   const { brazilPhone } = await import("./whatsapp");
   // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
   const touched = new Map<string, { to: string; replyWithAudio: boolean }>();
+  let scopedCatalog: Awaited<ReturnType<typeof loadStore>> | undefined;
+  const scopeStore = async () => (scopedCatalog ||= await loadStore(slug));
   for (const message of input.messages) {
     const providerId = input.professionalId
       ? `${input.professionalId}:${message.id}`
@@ -1574,6 +1577,31 @@ export async function receiveWhatsAppMessages(input: {
       });
     if (conversation.status !== "ai" || !assistantActive)
       await repo.update(conversation.id, { unreadDelta: 1 });
+    // Personal contacts on the shop phone are left to the owner.
+    const messageAt = message.createdAt || new Date().toISOString();
+    const earlier = (await repo.messages(conversation.id)).filter(
+      (m) => m.createdAt < messageAt,
+    );
+    const { data: customer } = await createSupabaseAdmin()
+      .from("customers")
+      .select("id")
+      .eq("business_id", input.businessId)
+      .in("phone", [phone, `55${phone}`])
+      .limit(1);
+    if (
+      !(await assistantMayAnswer({
+        text: body,
+        store: scopeStore,
+        messages: earlier,
+        isCustomer: !!customer?.length,
+      }).catch(() => false))
+    ) {
+      await repo.update(conversation.id, {
+        aiCursor: messageAt,
+        unreadDelta: 1,
+      });
+      continue;
+    }
     const previousTarget = touched.get(conversation.id);
     touched.set(conversation.id, {
       to: message.from,
