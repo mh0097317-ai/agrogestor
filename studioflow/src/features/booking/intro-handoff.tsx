@@ -18,7 +18,8 @@ let state: Handoff | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 const timers: number[] = [];
-const clearTimers = () => timers.splice(0).forEach((id) => window.clearTimeout(id));
+const clearTimers = () =>
+  timers.splice(0).forEach((id) => window.clearTimeout(id));
 
 /** Minimum time on screen, so the paper, mark and name finish arriving. */
 const minimum = 1500;
@@ -74,7 +75,7 @@ export function HandoffLayer() {
     <BookingIntro
       business={current.business}
       phase={current.phase}
-      onPhase={(phase) => phase === "lift" && finishHandoff()}
+      onPhase={(phase) => phase === "lift" && cancelHandoff()}
       mode="enter"
       hold={0}
     />

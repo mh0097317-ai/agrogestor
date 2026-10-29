@@ -48,11 +48,15 @@ test("whatsapp: áudio chega com o id da mídia para transcrever", () => {
   assert.equal(found[0].text, "[O cliente enviou um áudio.]");
 });
 
-test("transcrição: sem chave, pede texto; com chave, usa o serviço configurado", async () => {
+test("transcrição usa ElevenLabs como fallback e conserva o provedor da barbearia", async () => {
   const previous = { ...process.env };
   const originalFetch = globalThis.fetch;
   try {
     delete process.env.TRANSCRIBE_API_KEY;
+    delete process.env.TRANSCRIBE_BASE_URL;
+    delete process.env.TRANSCRIBE_MODEL;
+    delete process.env.ELEVENLABS_API_KEY;
+    delete process.env.ELEVENLABS_VOICE_ID;
     let loaded = false;
     assert.equal(
       await audioText(async () => {
@@ -63,6 +67,32 @@ test("transcrição: sem chave, pede texto; com chave, usa o serviço configurad
     );
     assert.equal(loaded, false);
 
+    process.env.ELEVENLABS_API_KEY = "elevenlabs-test-key";
+    process.env.ELEVENLABS_VOICE_ID = "voice-test-id";
+    let elevenRequest: { url: string; auth: string | null; model: unknown; language: unknown } | null = null;
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      const form = init.body as FormData;
+      elevenRequest = {
+        url,
+        auth: new Headers(init.headers).get("xi-api-key"),
+        model: form.get("model_id"),
+        language: form.get("language_code"),
+      };
+      return new Response(JSON.stringify({ text: " Pode ser às nove? " }));
+    }) as typeof fetch;
+    assert.equal(
+      await audioText(async () => ({ audio: new ArrayBuffer(8), mime: "audio/ogg" })),
+      "🎤 Pode ser às nove?",
+    );
+    assert.deepEqual(elevenRequest, {
+      url: "https://api.elevenlabs.io/v1/speech-to-text",
+      auth: "elevenlabs-test-key",
+      model: "scribe_v2",
+      language: "por",
+    });
+
+    delete process.env.ELEVENLABS_API_KEY;
+    delete process.env.ELEVENLABS_VOICE_ID;
     process.env.TRANSCRIBE_API_KEY = "test-key";
     process.env.TRANSCRIBE_BASE_URL = "https://transcribe.example/v1/";
     let request: { url: string; auth: string | null; model: unknown } | null = null;

@@ -68,18 +68,13 @@ export function appointmentEligible(
     return false;
   const until = start - now,
     since = now - end;
-  if (action === "reminder_24h")
-    return (
-      a.status === "confirmed" &&
-      a.reminder &&
-      until > 23.75 * 3600000 &&
-      until <= 24 * 3600000
-    );
+  // Superseded by the 12h/2h/1h scheduler; old workflows must not add a fourth WhatsApp reminder.
+  if (action === "reminder_24h") return false;
   if (action === "reminder_2h")
     return (
       a.status === "confirmed" &&
       a.reminder &&
-      until >= 15 * 60000 &&
+      until >= 105 * 60000 &&
       until <= 2 * 3600000 &&
       now - Date.parse(a.createdAt) >= 10 * 60000
     );

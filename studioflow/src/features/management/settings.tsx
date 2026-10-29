@@ -1,6 +1,7 @@
 "use client";
 import { onlineBookingEnabled } from "@/lib/online-booking";
 import { OnlineBookingSettings } from "./online-booking-settings";
+import { CompanyLookup } from "./company-lookup";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,7 +31,6 @@ import {
   Wallet,
 } from "@phosphor-icons/react/dist/ssr";
 import { PaymentSettings } from "./payment-settings";
-import { AssistantSettings } from "./assistant-settings";
 import { WhatsAppSettings } from "./whatsapp-settings";
 import { FeePayment } from "@/features/dashboard/fee-payment";
 import {
@@ -130,9 +130,7 @@ const settingsGroups: Record<Tab, string> = {
   plan: "Administração",
 };
 const tabs = [
-  { id: "business" as const, label: "Empresa", icon: Storefront },
-  { id: "identity" as const, label: "Aparência", icon: ImageSquare },
-  { id: "agenda" as const, label: "Horários e regras", icon: CalendarBlank },
+  { id: "business" as const, label: "Empresa e aparência", icon: Storefront },
   {
     id: "onlineBooking" as const,
     label: "Agendamento online",
@@ -140,10 +138,9 @@ const tabs = [
   },
   { id: "loyalty" as const, label: "Fidelidade", icon: Gift },
   { id: "payments" as const, label: "Pagamentos", icon: Wallet },
-  { id: "whatsapp" as const, label: "WhatsApp", icon: ChatCircleText },
   {
-    id: "assistant" as const,
-    label: "Atendimento automático",
+    id: "whatsapp" as const,
+    label: "WhatsApp e atendimento",
     icon: ChatCircleText,
   },
   { id: "notifications" as const, label: "Notificações", icon: Bell },
@@ -275,7 +272,15 @@ function SettingsContent({ store }: { store: Store }) {
       router.replace("/dashboard/equipe");
   }, [query, router]);
   const [selectedTab, setTab] = useState<Tab>(() => {
-    const wanted = query.get("aba");
+    const raw = query.get("aba");
+    const wanted =
+      raw === "identity"
+        ? "business"
+        : raw === "agenda"
+          ? "onlineBooking"
+          : raw === "assistant"
+            ? "whatsapp"
+            : raw;
     return tabs.some((item) => item.id === wanted)
       ? (wanted as Tab)
       : "business";
@@ -301,6 +306,9 @@ function SettingsContent({ store }: { store: Store }) {
     notifications: null,
   });
   const [pendingTab, setPendingTab] = useState<Tab | "discard" | null>(null);
+  const [discardSection, setDiscardSection] = useState<EditableTab | null>(
+    null,
+  );
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
   );
@@ -318,10 +326,21 @@ function SettingsContent({ store }: { store: Store }) {
     tab !== "payments" &&
     tab !== "assistant" &&
     tab !== "whatsapp";
-  const dirty =
-    editable &&
-    drafts[tab] !== null &&
-    JSON.stringify(drafts[tab]) !== JSON.stringify(saved[tab]);
+  function dirtyFor(section: EditableTab) {
+    return (
+      drafts[section] !== null &&
+      JSON.stringify(drafts[section]) !== JSON.stringify(saved[section])
+    );
+  }
+  const currentSections: EditableTab[] =
+    tab === "business"
+      ? ["business", "identity"]
+      : tab === "onlineBooking"
+        ? ["agenda"]
+        : editable
+          ? [tab as EditableTab]
+          : [];
+  const dirty = currentSections.some(dirtyFor);
   const anyDirty = (Object.keys(saved) as EditableTab[]).some(
     (section) =>
       drafts[section] !== null &&
@@ -413,23 +432,33 @@ function SettingsContent({ store }: { store: Store }) {
   }
   function switchTab(next: Tab) {
     if (next === tab || busy) return;
-    if (dirty) setPendingTab(next);
-    else {
+    if (dirty) {
+      setDiscardSection(null);
+      setPendingTab(next);
+    } else {
       setTab(next);
       action.setError("");
     }
   }
   function discard() {
-    if (!editable || busy) return;
-    setDrafts((current) => ({ ...current, [tab]: null }));
+    if (busy) return;
+    setDrafts((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        (discardSection ? [discardSection] : currentSections).map((section) => [
+          section,
+          null,
+        ]),
+      ),
+    }));
     if (pendingTab && pendingTab !== "discard") setTab(pendingTab);
     setPendingTab(null);
+    setDiscardSection(null);
     action.setError("");
   }
-  function save(event: FormEvent<HTMLFormElement>) {
+  function save(event: FormEvent<HTMLFormElement>, section: EditableTab) {
     event.preventDefault();
-    if (!canManage || !editable || busy || !dirty) return;
-    const section = tab;
+    if (!canManage || busy || !dirtyFor(section)) return;
     if (section === "loyalty") {
       const goal = Number(loyalty.loyaltyGoal);
       const reward = loyalty.loyaltyReward.trim();
@@ -584,16 +613,16 @@ function SettingsContent({ store }: { store: Store }) {
     }
   }
   const sectionTitle = {
-    business: "Dados da empresa",
+    business: "Empresa e aparência",
     identity: "Identidade visual",
     agenda: "Regras da agenda",
-    onlineBooking: "Agendamento online",
+    onlineBooking: "Agendamento online, horários e regras",
     loyalty: "Cartão fidelidade",
     professionals: "Agendas dos profissionais",
     notifications: "Notificações",
     payments: "Pagamentos online",
     assistant: "StudioFlow no WhatsApp",
-    whatsapp: "WhatsApp da loja",
+    whatsapp: "WhatsApp e atendimento automático",
     plan: "Seu espaço de gestão",
   }[tab];
   const sectionDescription = {
@@ -625,12 +654,15 @@ function SettingsContent({ store }: { store: Store }) {
       hasModule(store.access?.modules, needs[item.id as keyof typeof needs])
     );
   });
-  const saveBar = (
+  const saveBar = (section: EditableTab) => (
     <SaveBar
-      dirty={dirty}
+      dirty={dirtyFor(section)}
       busy={busy}
       canManage={canManage}
-      onDiscard={() => setPendingTab("discard")}
+      onDiscard={() => {
+        setDiscardSection(section);
+        setPendingTab("discard");
+      }}
     />
   );
 
@@ -728,7 +760,10 @@ function SettingsContent({ store }: { store: Store }) {
             </p>
           )}
           {tab === "business" && (
-            <form className="management-form" onSubmit={save}>
+            <form
+              className="management-form"
+              onSubmit={(event) => save(event, "business")}
+            >
               <fieldset
                 className="management-form settings-fields"
                 disabled={!canManage || busy}
@@ -756,13 +791,41 @@ function SettingsContent({ store }: { store: Store }) {
                           ))}
                         </select>
                       </FormField>
-                      <FormField label="CNPJ (opcional)">
-                        <input
-                          {...businessField("cnpj")}
-                          placeholder="00.000.000/0000-00"
-                          maxLength={18}
+                      <div>
+                        <FormField label="CNPJ (opcional)">
+                          <input
+                            {...businessField("cnpj")}
+                            placeholder="00.000.000/0000-00"
+                            maxLength={18}
+                          />
+                        </FormField>
+                        <CompanyLookup
+                          key={`${store.business.id}:${company.cnpj}`}
+                          value={company.cnpj}
+                          auto={company.cnpj !== saved.business.cnpj}
+                          disabled={busy}
+                          onResult={(data) =>
+                            setDrafts((current) => {
+                              const value = current.business ?? saved.business;
+                              return {
+                                ...current,
+                                business: {
+                                  ...value,
+                                  name: value.name.trim()
+                                    ? value.name
+                                    : data.tradeName || data.legalName,
+                                  address: value.address.trim()
+                                    ? value.address
+                                    : data.address,
+                                  phone: value.phone.trim()
+                                    ? value.phone
+                                    : formatPhone(data.phone),
+                                },
+                              };
+                            })
+                          }
                         />
-                      </FormField>
+                      </div>
                     </div>
                     <FormField label="Descrição">
                       <textarea
@@ -807,18 +870,14 @@ function SettingsContent({ store }: { store: Store }) {
                         maxLength={250}
                       />
                     </FormField>
-                    <FormField
-                      label="Link do Google Maps (opcional)"
-                      hint="Abra sua barbearia no Google Maps, toque em Compartilhar e cole o link. Assim o cliente vê suas fotos e avaliações do Google."
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${company.name} ${company.address}`.trim())}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary"
                     >
-                      <input
-                        {...businessField("mapsUrl")}
-                        type="url"
-                        inputMode="url"
-                        placeholder="https://maps.app.goo.gl/..."
-                        maxLength={500}
-                      />
-                    </FormField>
+                      Buscar estabelecimento no Google Maps
+                    </a>
                     <FormField
                       label="Comodidades"
                       hint="Separe por vírgula: Wi-Fi, estacionamento, bebidas, ambiente climatizado."
@@ -829,11 +888,14 @@ function SettingsContent({ store }: { store: Store }) {
                 </FormSection>
               </fieldset>
               <FormError error={action.error} />
-              {saveBar}
+              {saveBar("business")}
             </form>
           )}
-          {tab === "identity" && (
-            <form className="management-form" onSubmit={save}>
+          {tab === "business" && (
+            <form
+              className="management-form"
+              onSubmit={(event) => save(event, "identity")}
+            >
               <FormSection
                 title="Prévia da página pública"
                 description="As alterações aparecem aqui antes de salvar."
@@ -1021,11 +1083,14 @@ function SettingsContent({ store }: { store: Store }) {
                 Ver página pública salva
               </Link>
               <FormError error={action.error} />
-              {saveBar}
+              {saveBar("identity")}
             </form>
           )}
-          {tab === "agenda" && (
-            <form className="management-form" onSubmit={save}>
+          {tab === "onlineBooking" && (
+            <form
+              className="management-form"
+              onSubmit={(event) => save(event, "agenda")}
+            >
               <fieldset
                 className="management-form settings-fields"
                 disabled={!canManage || busy}
@@ -1118,7 +1183,7 @@ function SettingsContent({ store }: { store: Store }) {
                 bloqueios e toda a duração do serviço.
               </div>
               <FormError error={action.error} />
-              {saveBar}
+              {saveBar("agenda")}
             </form>
           )}
           {tab === "professionals" && (
@@ -1162,7 +1227,10 @@ function SettingsContent({ store }: { store: Store }) {
             </div>
           )}
           {tab === "loyalty" && (
-            <form className="management-form" onSubmit={save}>
+            <form
+              className="management-form"
+              onSubmit={(event) => save(event, "loyalty")}
+            >
               <fieldset
                 className="management-form settings-fields"
                 disabled={!canManage || busy}
@@ -1225,7 +1293,7 @@ function SettingsContent({ store }: { store: Store }) {
                 &ldquo;Ganha o prêmio&rdquo; para você lembrar de aplicar.
               </div>
               <FormError error={action.error} />
-              {saveBar}
+              {saveBar("loyalty")}
             </form>
           )}
           {tab === "notifications" && (
@@ -1235,8 +1303,8 @@ function SettingsContent({ store }: { store: Store }) {
             >
               <div className="management-info">
                 O barbeiro recebe um aviso ao marcar. O cliente, quando
-                autorizou, recebe um lembrete 2 horas antes. Estes envios não
-                consomem IA.
+                autorizou, recebe lembretes 12 horas, 2 horas e 1 hora antes.
+                Estes envios não consomem IA.
               </div>
               <Button
                 type="button"
@@ -1261,20 +1329,42 @@ function SettingsContent({ store }: { store: Store }) {
               onSaved={refresh}
             />
           )}
-          {tab === "assistant" && (
-            <AssistantSettings
-              store={store}
-              canManage={canManage}
-              onSaved={refresh}
-              onOpenWhatsApp={() => switchTab("whatsapp")}
-            />
-          )}
+          {tab === "whatsapp" &&
+            hasModule(store.access?.modules, "recepcionista") && (
+              <div className="settings-assistant-shortcut">
+                <div>
+                  <span className="sheet-eyebrow">Atendimento com IA</span>
+                  <strong>
+                    {store.settings.assistantEnabled
+                      ? "Atendimento configurado"
+                      : "Atendimento pausado"}
+                  </strong>
+                  <p>
+                    Personalize a voz, as instruções e o limite de respostas no
+                    treinamento. Aqui você organiza os números e os avisos.
+                  </p>
+                </div>
+                <Link
+                  className="btn btn-secondary"
+                  href="/dashboard/treinamento"
+                >
+                  Abrir treinamento →
+                </Link>
+              </div>
+            )}
           {tab === "whatsapp" && (
-            <WhatsAppSettings
-              store={store}
-              canManage={canManage}
-              onSaved={refresh}
-            />
+            <div
+              id="settings-whatsapp-connections"
+              tabIndex={-1}
+              className="management-form"
+              aria-label="Conexões do WhatsApp"
+            >
+              <WhatsAppSettings
+                store={store}
+                canManage={canManage}
+                onSaved={refresh}
+              />
+            </div>
           )}
           {tab === "plan" && (
             <>

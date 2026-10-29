@@ -275,6 +275,21 @@ export function availableSlots(
   return slots;
 }
 
+/** All staff options, including professionals sharing the same start time. */
+export function availableSlotsByProfessional(
+  store: Store,
+  serviceIds: string[],
+  date: string,
+  now = new Date(),
+): Slot[] {
+  servicesFor(store, serviceIds);
+  return store.professionals
+    .filter((person) => canAttend(store, person, serviceIds))
+    .flatMap((person) =>
+      availableSlots(store, serviceIds, person.id, date, now),
+    );
+}
+
 /**
  * Earliest bookable slot of each professional able to perform the services,
  * scanning day by day from today; stops at the first free day per person.

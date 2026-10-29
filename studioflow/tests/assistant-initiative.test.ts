@@ -123,6 +123,81 @@ test("a service request without a date proposes fresh next slots without booking
   assert.doesNotMatch(exactTime, /às 12:|às 09:/);
 });
 
+test("availability offers every eligible barber in chronological order", () => {
+  const { store, service, now } = fixture();
+  const people = store.professionals.filter(
+    (person) => person.active && service.professionalIds.includes(person.id),
+  );
+  service.professionalIds = people.map((person) => person.id);
+  for (const person of people) {
+    person.days = [1, 2, 3, 4, 5];
+    person.start = "09:00";
+    person.end = "19:00";
+  }
+  const reply = availabilityReply(
+    {
+      intent: "AVAILABILITY",
+      stage: "CHOOSING_TIME",
+      confidence: 1,
+      serviceIds: [service.id],
+      professionalId: "any",
+      date: "2026-10-12",
+      time: "",
+      missing: ["time"],
+      nextAction: "CONSULT",
+    },
+    store,
+    "quais horários tem segunda de manhã?",
+    [],
+    now,
+  )!;
+  const offers = reply.split("\n\n").filter((part) => part.includes(" — "));
+  for (const offer of offers) {
+    const times = [...offer.matchAll(/\b(\d{2}:\d{2})\b/g)].map((match) => match[1]);
+    assert.deepEqual(times, [...times].sort());
+  }
+  assert.match(reply, /Com quem você prefere marcar\?/);
+  for (const person of people.slice(0, 3)) assert.match(reply, new RegExp(person.name, "i"));
+});
+
+test("the interpreter cannot silently narrow the customer's options to one barber", async () => {
+  const { store, service, professional, now, selection } = fixture();
+  const create: CreateMessage = async () =>
+    ({
+      content: [
+        {
+          type: "tool_use",
+          name: "interpretar_pedido",
+          input: {
+            ...selection,
+            serviceIds: [service.id],
+            professionalId: professional.id,
+            date: "2026-10-12",
+            missing: ["time"],
+            nextAction: "CONSULT",
+          },
+        },
+      ],
+      usage: { input_tokens: 1, output_tokens: 1 },
+    }) as Awaited<ReturnType<CreateMessage>>;
+  const general = await understandMessage(
+    create,
+    "quero um corte na segunda",
+    store,
+    [],
+    now.toISOString(),
+  );
+  assert.equal(general.interpretation.professionalId, "");
+  const requested = await understandMessage(
+    create,
+    `quero um corte com ${professional.name} na segunda`,
+    store,
+    [],
+    now.toISOString(),
+  );
+  assert.equal(requested.interpretation.professionalId, professional.id);
+});
+
 test("price answers propose real slots once, without an additional model request", () => {
   const { store, service, professional, now } = fixture();
   const selection = exactPriceSelection(

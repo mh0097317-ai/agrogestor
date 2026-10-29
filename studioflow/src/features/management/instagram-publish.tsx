@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowSquareOut, CheckCircle, InstagramLogo } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowSquareOut,
+  CheckCircle,
+  InstagramLogo,
+} from "@phosphor-icons/react/dist/ssr";
 import { InstagramIcon } from "@/components/brand-icons";
 import { Button, Card } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -34,7 +38,11 @@ async function toJpeg(src: string) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(image, 0, 0);
   return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("imagem"))), "image/jpeg", 0.92),
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("imagem"))),
+      "image/jpeg",
+      0.92,
+    ),
   );
 }
 
@@ -52,21 +60,23 @@ export function InstagramConnectCard({ store }: { store: Store }) {
         <div className="share-ig-on">
           <CheckCircle weight="fill" size={22} />
           <p>
-            <b>@{feed.username || "conta conectada"}</b> está ligado. Nas artes abaixo, toque em{" "}
-            <b>Postar no Instagram</b> e a publicação sai direto no seu perfil, sem baixar nada.
+            <b>@{feed.username || "conta conectada"}</b> está ligado. Nas artes
+            abaixo, toque em <b>Postar no Instagram</b> e a publicação sai
+            direto no seu perfil, sem baixar nada.
           </p>
         </div>
       ) : (
         <>
           <p>
-            Ligue o Instagram da barbearia uma vez e publique daqui as artes da agenda: o aviso de
-            que agora agenda online e o story com os horários livres do dia.
+            Ligue o Instagram do seu negócio uma vez e publique daqui as artes
+            da agenda: o aviso de que agora agenda online e o story com os
+            horários livres do dia.
           </p>
           <InstagramFeedSettings
             store={store}
             canManage={canManage}
             onSaved={refresh}
-            title="Conectar o Instagram da barbearia"
+            title="Conectar o Instagram do estabelecimento"
             description="A mesma conexão mostra seus posts na página de agendamento. Na geração do token, deixe marcada a permissão de publicar conteúdo."
             submitLabel="Conectar Instagram"
           />
@@ -99,12 +109,19 @@ export function PostToInstagram({
   if (!store.instagramFeed || !canManage) return null;
   async function publish() {
     const where = format === "story" ? "nos Stories" : "no feed";
-    if (!window.confirm(`Publicar agora ${where} de @${store.instagramFeed?.username || "sua conta"}?`)) return;
+    if (
+      !window.confirm(
+        `Publicar agora ${where} de @${store.instagramFeed?.username || "sua conta"}?`,
+      )
+    )
+      return;
     setBusy(true);
     setDone(null);
     try {
       const blob = await toJpeg(await getImage());
-      const target = await send<{ path: string; signedUrl: string }>({ kind: "uploadUrl" });
+      const target = await send<{ path: string; signedUrl: string }>({
+        kind: "uploadUrl",
+      });
       const sent = await fetch(target.signedUrl, {
         method: "PUT",
         headers: { "Content-Type": "image/jpeg", "x-upsert": "false" },
@@ -119,21 +136,36 @@ export function PostToInstagram({
         caption,
       });
       setDone(result.permalink || "");
-      toast(format === "story" ? "Story publicado no Instagram." : "Post publicado no Instagram.");
+      toast(
+        format === "story"
+          ? "Story publicado no Instagram."
+          : "Post publicado no Instagram.",
+      );
     } catch (cause) {
-      toast(cause instanceof Error ? cause.message : "Não foi possível publicar.");
+      toast(
+        cause instanceof Error ? cause.message : "Não foi possível publicar.",
+      );
     } finally {
       setBusy(false);
     }
   }
   return (
     <>
-      <Button onClick={() => void publish()} disabled={busy || disabled || store.mode === "demo"}>
-        <InstagramIcon size={16} /> {busy ? "Publicando…" : "Postar no Instagram"}
+      <Button
+        onClick={() => void publish()}
+        disabled={busy || disabled || store.mode === "demo"}
+      >
+        <InstagramIcon size={16} />{" "}
+        {busy ? "Publicando…" : "Postar no Instagram"}
       </Button>
       {done !== null &&
         (done ? (
-          <a className="share-open" href={done} target="_blank" rel="noreferrer">
+          <a
+            className="share-open"
+            href={done}
+            target="_blank"
+            rel="noreferrer"
+          >
             Ver no Instagram <ArrowSquareOut size={15} />
           </a>
         ) : (

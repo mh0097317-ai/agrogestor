@@ -101,6 +101,7 @@ export function PageHeader({
     Agenda: ["01", "Seu tempo, bem cuidado"],
     Clientes: ["02", "Relacionamento"],
     Conversas: ["03", "Atendimento"],
+    "Treinamento da IA": ["03", "Seu jeito de atender"],
     Serviços: ["04", "Seu catálogo"],
     Produtos: ["05", "Sua vitrine"],
     Equipe: ["06", "Quem faz acontecer"],
@@ -142,7 +143,7 @@ export function Modal({
   onClose: () => void;
   title: string;
   children: ReactNode;
-  presentation?: "dialog" | "panel";
+  presentation?: "dialog" | "panel" | "navigation";
   description?: string;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -189,12 +190,12 @@ export function Modal({
   if (!open) return null;
   return createPortal(
     <div
-      className={`modal-backdrop ${presentation === "panel" ? "detail-backdrop" : ""}`}
+      className={`modal-backdrop ${presentation === "panel" ? "detail-backdrop" : ""} ${presentation === "navigation" ? "navigation-backdrop" : ""}`}
       onClick={onClose}
     >
       <section
         ref={dialogRef}
-        className={`modal ${presentation === "panel" ? "detail-panel" : ""}`}
+        className={`modal ${presentation === "panel" ? "detail-panel" : ""} ${presentation === "navigation" ? "navigation-sheet" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

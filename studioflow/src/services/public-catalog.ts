@@ -45,6 +45,7 @@ export async function publicCatalog(slug: string): Promise<PublicCatalog> {
     settings: {
       ...store.settings,
       assistantInstructions: undefined,
+      assistantScheduleEnabled: undefined,
       assistantDailyLimit: undefined,
     },
     rating: ratingSummary(store.reviews),

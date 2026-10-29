@@ -227,7 +227,13 @@ function BookingWizard({
       setCut(true);
     }
     setDirection(next > step ? "forward" : "back");
-    if (next > step) track(business.slug, "etapa", ["", "servico", "profissional", "horario", "dados", "pronto"][next] || "");
+    if (next > step)
+      track(
+        business.slug,
+        "etapa",
+        ["", "servico", "profissional", "horario", "dados", "pronto"][next] ||
+          "",
+      );
     setStep(next);
     setError("");
     setNotice("");
@@ -375,7 +381,7 @@ function BookingWizard({
   }
   const canContinue =
     ((step === 1 || step === 2) && chosen.length > 0) || !!slot;
-  const showBar = step <= 3 && chosen.length > 0;
+  const showBar = step <= 3;
   const slotDay = slot
     ? new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
@@ -413,7 +419,7 @@ function BookingWizard({
             className={`bk-bar ${showBar ? "is-visible" : ""} ${step === 3 && slot ? "is-ready" : ""}`}
             aria-hidden={!showBar}
           >
-            {chosen.length > 0 && (
+            {chosen.length > 0 ? (
               <div className="bk-bar-inner">
                 <span
                   ref={barPhoto}
@@ -454,6 +460,16 @@ function BookingWizard({
                   tabIndex={showBar ? 0 : -1}
                   onClick={next}
                 >
+                  Continuar <ArrowRight weight="bold" size={17} />
+                </button>
+              </div>
+            ) : (
+              <div className="bk-bar-inner bk-bar-empty">
+                <div className="bk-bar-text">
+                  <strong>Seu atendimento começa aqui</strong>
+                  <span>Selecione um serviço para continuar.</span>
+                </div>
+                <button type="button" className="bk-bar-button" disabled>
                   Continuar <ArrowRight weight="bold" size={17} />
                 </button>
               </div>

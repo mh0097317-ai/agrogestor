@@ -6,7 +6,11 @@ import { conversationSender } from "./link";
 import { notifyNewBooking } from "./notify";
 import type { Appointment, Store } from "@/types";
 
-export function customerReminder(store: Store, appointment: Appointment) {
+export function customerReminder(
+  store: Store,
+  appointment: Appointment,
+  minutes = 120,
+) {
   const time = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
     hour: "2-digit",
@@ -19,14 +23,34 @@ export function customerReminder(store: Store, appointment: Appointment) {
   const professional = store.professionals.find(
     (p) => p.id === appointment.professionalId,
   );
-  return `Oi, ${appointment.customerName.split(/\s+/)[0]}! Passando pra lembrar do seu horário hoje às ${time}${service ? ` para ${service}` : ""}${professional ? ` com ${professional.name}` : ""}, na ${store.business.name}. Até já!`;
+  const day = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(appointment.start));
+  const lead =
+    minutes === 720
+      ? "Faltam cerca de 12 horas"
+      : minutes === 60
+        ? "Falta cerca de 1 hora"
+        : "Faltam cerca de 2 horas";
+  return `Oi, ${appointment.customerName.trim().split(/\s+/)[0] || "tudo bem"}! ${lead} para seu horário na ${store.business.name}.\n\n${service ? `${service} · ` : ""}${day} às ${time}${professional ? ` com ${professional.name}` : ""}. Se precisar ajustar, fale com a equipe por aqui. Até lá!`;
 }
 
 /** No AI calls. Atomic claims prevent repeated sends, even with concurrent jobs. */
 export async function sendAppointmentReminders() {
   const admin = createSupabaseAdmin();
-  const { data, error } = (await admin.rpc("due_appointment_reminders")) as {
-    data: { id: string; business_id: string; start: string }[] | null;
+  const { data, error } = (await admin.rpc(
+    "due_staged_appointment_reminders",
+  )) as {
+    data:
+      | {
+          id: string;
+          business_id: string;
+          start: string;
+          step_minutes: number;
+        }[]
+      | null;
     error: unknown;
   };
   if (error) throw new Error("reminder query failed");
@@ -60,30 +84,37 @@ export async function sendAppointmentReminders() {
           )) || (await conversationSender(row.business_id));
         if (!send) return;
         const { data: claimed, error: claimError } = await admin.rpc(
-          "claim_appointment_notice",
-          { p_id: row.id, p_kind: "customer_reminder", p_start: row.start },
+          "claim_staged_appointment_reminder",
+          { p_id: row.id, p_minutes: row.step_minutes, p_start: row.start },
         );
         if (claimError) throw new Error("reminder claim failed");
         if (!claimed) return;
         try {
           await send(
             appointment.customerPhone,
-            customerReminder(store, appointment),
+            customerReminder(store, appointment, row.step_minutes),
           );
           const { error: updateError } = await admin
-            .from("appointment_whatsapp_notices")
+            .from("appointment_reminder_steps")
             .update({ status: "sent", sent_at: new Date().toISOString() })
             .eq("appointment_id", row.id)
-            .eq("kind", "customer_reminder")
+            .eq("step_minutes", row.step_minutes)
             .eq("appointment_start", row.start);
           if (updateError) throw new Error("reminder receipt failed");
+          if (row.step_minutes === 120)
+            await admin
+              .from("appointment_whatsapp_notices")
+              .update({ status: "sent", sent_at: new Date().toISOString() })
+              .eq("appointment_id", row.id)
+              .eq("kind", "customer_reminder")
+              .eq("appointment_start", row.start);
           report.sent++;
         } catch {
           await admin
-            .from("appointment_whatsapp_notices")
+            .from("appointment_reminder_steps")
             .update({ status: "failed" })
             .eq("appointment_id", row.id)
-            .eq("kind", "customer_reminder")
+            .eq("step_minutes", row.step_minutes)
             .eq("appointment_start", row.start);
           report.failed++;
         }

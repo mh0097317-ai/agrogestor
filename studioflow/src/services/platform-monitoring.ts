@@ -149,6 +149,8 @@ export async function platformMonitoring(
     ai_key_removed: "Credencial de IA removida",
     assistant_settings: "Recepcionista configurada",
     evolution_saved: "Servidor Evolution API configurado",
+    elevenlabs_saved: "Voz da recepcionista configurada",
+    elevenlabs_removed: "Voz da recepcionista desativada",
     manual_invoice_created: "Mensalidade manual registrada",
     manual_invoice_paid: "Pagamento manual recebido",
     manual_invoice_cancelled: "Mensalidade manual cancelada",

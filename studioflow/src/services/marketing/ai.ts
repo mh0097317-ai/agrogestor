@@ -3,6 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { DomainError } from "@/lib/availability";
 import { ideaSchema, marketingSystemPrompt, normalizeIdea } from "./content";
+import { assertPlatformAiEnabled } from "../platform-ai-control";
 
 /** Do mais barato ao mais caprichado; o admin escolhe no painel. */
 export const marketingModels = [
@@ -41,30 +42,92 @@ const output = z.object({
 const marketingKey = () => process.env.STUDIOFLOW_MARKETING_ANTHROPIC_KEY;
 
 export function marketingAiConfigured() {
-  return !!(
-    marketingKey() ||
-    process.env.ANTHROPIC_API_KEY ||
-    process.env.ANTHROPIC_AUTH_TOKEN
-  );
+  return !!marketingKey();
 }
 
 export function clientFor(apiKey?: string) {
-  if (!apiKey && !marketingAiConfigured())
-    throw new DomainError("A IA do Marketing ainda não tem chave.", 503);
   const key = apiKey || marketingKey();
+  if (!key)
+    throw new DomainError(
+      "Cadastre a chave da Anthropic em Marketing → Chave da IA.",
+      409,
+    );
   return new Anthropic({
     timeout: 120_000,
     maxRetries: 1,
-    ...(key ? { apiKey: key, authToken: null } : {}),
+    apiKey: key,
+    authToken: null,
   });
 }
 
 export function aiFailure(cause: unknown): never {
+  if (cause instanceof Anthropic.APIConnectionTimeoutError)
+    throw new DomainError(
+      "A Anthropic demorou para responder. Aguarde um pouco e tente novamente.",
+      504,
+    );
+  if (cause instanceof Anthropic.APIConnectionError)
+    throw new DomainError(
+      "Não foi possível conectar à Anthropic. Tente novamente em instantes.",
+      503,
+    );
+  if (
+    cause instanceof Anthropic.APIError &&
+    cause.status === 400 &&
+    /credit balance|insufficient.*credit|billing|saldo/i.test(cause.message)
+  )
+    throw new DomainError(
+      "A conta da Anthropic está sem saldo para gerar conteúdo. Confira os créditos da chave cadastrada.",
+      402,
+    );
+  if (cause instanceof Anthropic.APIError && cause.status === 401)
+    throw new DomainError(
+      "A Anthropic recusou a chave do Marketing. Cadastre uma chave válida em Chave da IA.",
+      401,
+    );
+  if (cause instanceof Anthropic.APIError && cause.status === 403)
+    throw new DomainError(
+      "A chave do Marketing não tem permissão para esta operação. Confira o acesso na Anthropic.",
+      403,
+    );
+  if (cause instanceof Anthropic.APIError && cause.status === 404)
+    throw new DomainError(
+      "O modelo escolhido não está disponível para esta chave. Escolha outro modelo no Marketing.",
+      409,
+    );
   if (cause instanceof Anthropic.RateLimitError)
-    throw new DomainError("A IA está ocupada agora. Tente em alguns minutos.", 429);
+    throw new DomainError(
+      "A IA está ocupada agora. Tente em alguns minutos.",
+      429,
+    );
   if (cause instanceof Anthropic.APIError)
-    throw new DomainError("A IA não respondeu. Tente de novo.", 502);
+    throw new DomainError(
+      cause.status && cause.status >= 500
+        ? "A Anthropic está indisponível agora. Tente novamente em instantes."
+        : "A Anthropic recusou a geração. Confira o modelo escolhido e a configuração da chave da IA.",
+      502,
+    );
   throw cause;
+}
+
+/** Read-only provider call: invalid credentials must never replace a saved key. */
+export async function validateMarketingAiKey(
+  key: string,
+  check: (key: string) => Promise<unknown> = async (value) =>
+    clientFor(value).models.list(
+      { limit: 1 },
+      { timeout: 15000, maxRetries: 0 },
+    ),
+) {
+  try {
+    await check(key);
+  } catch (cause) {
+    if (cause instanceof Anthropic.APIError) aiFailure(cause);
+    throw new DomainError(
+      "Não foi possível validar a chave na Anthropic. Tente novamente; a chave anterior foi preservada.",
+      503,
+    );
+  }
 }
 
 const suggestionOutput = z.object({
@@ -79,7 +142,9 @@ const suggestionOutput = z.object({
   ),
 });
 
-export type MarketingSuggestion = z.infer<typeof suggestionOutput>["suggestions"][number];
+export type MarketingSuggestion = z.infer<
+  typeof suggestionOutput
+>["suggestions"][number];
 
 /**
  * Lê o que já foi publicado (com curtidas e comentários) e o que a equipe
@@ -87,16 +152,24 @@ export type MarketingSuggestion = z.infer<typeof suggestionOutput>["suggestions"
  */
 export async function suggestIdeas(input: {
   voice: string;
-  history: { theme: string; format: string; likes: number | null; comments: number | null; published: boolean }[];
+  history: {
+    theme: string;
+    format: string;
+    likes: number | null;
+    comments: number | null;
+    published: boolean;
+  }[];
   note: string;
   apiKey?: string;
   model?: MarketingModel;
 }) {
+  await assertPlatformAiEnabled();
   const client = clientFor(input.apiKey);
   const history = input.history.length
     ? input.history
-        .map((p) =>
-          `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
+        .map(
+          (p) =>
+            `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
         )
         .join("\n")
     : "Nada publicado ainda.";
@@ -116,15 +189,22 @@ export async function suggestIdeas(input: {
     response = await client.messages.parse({
       model: input.model ?? modelOf(null),
       max_tokens: 4000,
-      output_config: { effort: "low", format: zodOutputFormat(suggestionOutput) },
+      output_config: {
+        effort: "low",
+        format: zodOutputFormat(suggestionOutput),
+      },
       system: marketingSystemPrompt(input.voice),
       messages: [{ role: "user", content: ask }],
     });
   } catch (cause) {
     aiFailure(cause);
   }
+  await assertPlatformAiEnabled();
   if (response.stop_reason === "refusal" || !response.parsed_output)
-    throw new DomainError("A IA não conseguiu analisar agora. Tente de novo.", 502);
+    throw new DomainError(
+      "A IA não conseguiu analisar agora. Tente de novo.",
+      502,
+    );
   const { reading, suggestions } = response.parsed_output;
   return {
     reading: reading.slice(0, 600),
@@ -149,11 +229,13 @@ export async function suggestVoice(input: {
   apiKey?: string;
   model?: MarketingModel;
 }) {
+  await assertPlatformAiEnabled();
   const client = clientFor(input.apiKey);
   const history = input.history.length
     ? input.history
-        .map((p) =>
-          `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
+        .map(
+          (p) =>
+            `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
         )
         .join("\n")
     : "Nada publicado ainda.";
@@ -180,8 +262,12 @@ export async function suggestVoice(input: {
   } catch (cause) {
     aiFailure(cause);
   }
+  await assertPlatformAiEnabled();
   if (response.stop_reason === "refusal" || !response.parsed_output)
-    throw new DomainError("A IA não conseguiu analisar agora. Tente de novo.", 502);
+    throw new DomainError(
+      "A IA não conseguiu analisar agora. Tente de novo.",
+      502,
+    );
   return {
     voice: response.parsed_output.voice.trim().slice(0, 1000),
     reason: response.parsed_output.reason.trim().slice(0, 300),
@@ -199,6 +285,7 @@ export async function generateIdeas(input: {
   apiKey?: string;
   model?: MarketingModel;
 }) {
+  await assertPlatformAiEnabled();
   const client = clientFor(input.apiKey);
   const ask = [
     `Crie ${input.count} ${input.count === 1 ? "publicação" : "publicações"} para o Instagram da StudioFlow.`,
@@ -224,13 +311,20 @@ export async function generateIdeas(input: {
   } catch (cause) {
     aiFailure(cause);
   }
+  await assertPlatformAiEnabled();
   if (response.stop_reason === "refusal" || !response.parsed_output)
-    throw new DomainError("A IA não conseguiu criar agora. Tente outro pedido.", 502);
+    throw new DomainError(
+      "A IA não conseguiu criar agora. Tente outro pedido.",
+      502,
+    );
   const ideas = response.parsed_output.posts.flatMap((post) => {
     const parsed = ideaSchema.safeParse(post);
     return parsed.success ? [normalizeIdea(parsed.data)] : [];
   });
   if (!ideas.length)
-    throw new DomainError("A IA devolveu um conteúdo fora do padrão. Tente de novo.", 502);
+    throw new DomainError(
+      "A IA devolveu um conteúdo fora do padrão. Tente de novo.",
+      502,
+    );
   return ideas.slice(0, input.count);
 }

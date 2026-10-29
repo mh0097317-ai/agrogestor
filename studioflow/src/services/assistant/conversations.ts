@@ -20,9 +20,18 @@ import { hasModule } from "@/lib/modules";
 import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
 import { businessCreate } from "./provider";
 import { platformAiEnabled } from "../platform-ai-control";
+import { assistantScheduleOpen } from "@/lib/assistant-schedule";
+import {
+  bookingMenu,
+  menuChoiceReply,
+  menuPageReply,
+  whatsappText,
+  type BookingMenu,
+} from "./booking-menu";
 import { sendWhatsApp } from "./whatsapp";
 import { sendInstagram, type InstagramMessage } from "./instagram";
 import { audioText, downloadUrl, downloadWhatsAppMedia } from "./transcribe";
+import { synthesizeWhatsAppReply } from "./speech";
 import {
   contextText,
   conversationContext,
@@ -33,7 +42,6 @@ import {
   nameAnswer,
 } from "./understanding";
 import { failureCode, retryable, type RunProgress } from "./pipeline";
-import { professionalStore } from "./agent";
 import { n8nWhatsAppTurn } from "./n8n-whatsapp-contract";
 import {
   n8nWhatsAppConfiguration,
@@ -43,16 +51,43 @@ import {
 import { verifiedN8nReply } from "./n8n-reply";
 import { finishConfirmedBooking } from "./confirmed-booking";
 import { routineReply } from "./routine-reply";
+import { welcomeReply } from "./welcome-reply";
+import { conversationalReply } from "./conversation-tone";
 import { productReply } from "./product-reply";
 import { generalReply } from "./general-reply";
 import { availabilityReply } from "./availability-reply";
+import { imageUnavailableText, understandImage } from "./vision";
 import type { AssistantContext } from "./agent";
 import {
-  idlePriceResumeCursor,
   whatsappBurstDelayMs,
 } from "./idle-price-resume";
 
 type History = Anthropic.Beta.BetaMessageParam[];
+type AssistantSettingsRow = {
+  assistant_enabled: boolean;
+  assistant_schedule_enabled: boolean;
+  open_days: number[];
+  open_start: string;
+  open_end: string;
+};
+function assistantAllowedNow(settings: AssistantSettingsRow | null, at = new Date()) {
+  return Boolean(
+    settings?.assistant_enabled &&
+      assistantScheduleOpen(
+        {
+          enabled: settings.assistant_schedule_enabled === true,
+          days: settings.open_days || [],
+          start: settings.open_start || "",
+          end: settings.open_end || "",
+        },
+        at,
+      ),
+  );
+}
+function cursorBefore(value: string) {
+  const time = Date.parse(value);
+  return new Date(Number.isFinite(time) ? time - 1 : Date.now() - 1).toISOString();
+}
 export interface Conversation {
   id: string;
   whatsappProfessionalId?: string | null;
@@ -214,6 +249,10 @@ export function liveRepo(
           tenant_id: tenantId,
           business_id: businessId,
           channel: input.channel,
+          // New conversations have not handled any messages yet. The database
+          // default (now()) can be later than a provider's inbound timestamp,
+          // which would make the first WhatsApp message look already handled.
+          ai_cursor: new Date(0).toISOString(),
           whatsapp_professional_id: input.professionalId || null,
           contact_phone: input.contactPhone,
           contact_name: input.contactName.slice(0, 100),
@@ -506,7 +545,7 @@ export function demoRepo(slug: string, businessId: string): ConversationRepo {
 
 export interface Delivery {
   /** Sends the assistant's answer out (WhatsApp); the web chat polls. */
-  send?: (body: string) => Promise<string | void>;
+  send?: (body: string, menu?: BookingMenu | null) => Promise<string | void>;
   origin: string;
   slug: string;
 }
@@ -526,15 +565,8 @@ export async function processConversation(
 ) {
   for (let round = 0; round < 3; round++) {
     if (!(await platformAiEnabled())) {
-      const paused = await repo.get(conversationId);
-      if (paused?.status === "ai") {
-        await repo.update(conversationId, { status: "human", unreadDelta: 1 });
-        await repo.addMessage(
-          conversationId,
-          "event",
-          "IA desativada pelo admin da plataforma. Continue o atendimento manualmente.",
-        );
-      }
+      // Keep the AI assignment intact. The global switch pauses generation;
+      // switching it back on should resume eligible chats automatically.
       return;
     }
     if (!(await repo.lease(conversationId))) return;
@@ -626,6 +658,7 @@ async function answerPending(
   );
   if (!pending.some((message) => message.role === "customer")) return null;
   const cursor = pending.at(-1)!.createdAt;
+  const replyTime = new Date(cursor);
   const text =
     pending.length === 1
       ? pending[0].body
@@ -650,6 +683,20 @@ async function answerPending(
     return handoffNotice;
   };
   const store = await loadStore(delivery.slug);
+  if (
+    !assistantScheduleOpen(
+      {
+        enabled: store.settings.assistantScheduleEnabled,
+        days: store.settings.openDays,
+        start: store.settings.openStart,
+        end: store.settings.openEnd,
+      },
+      new Date(cursor),
+    )
+  ) {
+    await repo.update(conversationId, { aiCursor: cursor, unreadDelta: 1 });
+    return null;
+  }
   if (!(await platformAiEnabled()))
     return toHuman("IA desativada pelo admin da plataforma.");
   if (
@@ -674,10 +721,10 @@ async function answerPending(
     );
   }
   let understanding: Awaited<ReturnType<typeof understandMessage>> | undefined;
-  const scopedStore = professionalStore(
-    store,
-    conversation.whatsappProfessionalId || undefined,
-  );
+  // Every number represents the same business. Let customers compare every
+  // active professional rather than silently narrowing availability to the
+  // WhatsApp number that received the message.
+  const scopedStore = store;
   const bookingContext =
     conversation.channel === "whatsapp" &&
     (referencesPreviousBooking(text) || vagueBookingRequest(text))
@@ -757,7 +804,7 @@ async function answerPending(
       : null;
   const ctx: AssistantContext = {
     channel: conversation.channel,
-    professionalId: conversation.whatsappProfessionalId || undefined,
+    professionalId: undefined,
     customerName:
       store.customers.find(
         (customer) =>
@@ -772,6 +819,13 @@ async function answerPending(
     payments,
     loadStore: () => loadStore(delivery.slug),
     book: async (input) => {
+      if (text.includes("Consultar a opção:"))
+        throw new DomainError(
+          "O cliente apenas selecionou uma opção do menu. Peça a confirmação antes de reservar.",
+          409,
+        );
+      if (!(await platformAiEnabled()))
+        throw new DomainError("IA desligada pelo admin.", 409);
       const fresh = await repo.get(conversationId);
       if (
         fresh?.status !== "ai" ||
@@ -812,7 +866,14 @@ async function answerPending(
   };
   const direct =
     understanding && !pending.some((message) => message.role === "staff")
-      ? productReply(text, scopedStore, recent) ||
+      ? menuChoiceReply(
+          scopedStore,
+          understanding.interpretation,
+          text,
+          ctx.customerName,
+        ) ||
+        menuPageReply(text) ||
+        productReply(text, scopedStore, recent) ||
         availabilityReply(
           understanding.interpretation,
           scopedStore,
@@ -825,7 +886,7 @@ async function answerPending(
         })
       : null;
   let general = null;
-  if (understanding?.interpretation.intent === "GENERAL") {
+  if (!direct && understanding?.interpretation.intent === "GENERAL") {
     await repo.progress?.(conversationId, { state: "GENERATING" });
     general = await generalReply(create, text, scopedStore, recent);
   }
@@ -834,7 +895,11 @@ async function answerPending(
     (direct
       ? ({
           history: conversation.history,
-          reply: direct,
+          reply: conversationalReply(
+            direct,
+            understanding?.interpretation.acknowledgement,
+            recent,
+          ),
           usage: { input: 0, output: 0 },
         } as import("./agent").TurnResult)
       : understanding && !pending.some((message) => message.role === "staff")
@@ -898,7 +963,7 @@ async function answerPending(
     try {
       const proposed = await requestN8nTurn(turn, n8n, fetch, timeLeft);
       if (!(await platformAiEnabled())) {
-        await repo.update(conversationId, { status: "human", unreadDelta: 1 });
+        await repo.update(conversationId, { aiCursor: cursor, unreadDelta: 1 });
         return null;
       }
       const fresh = await repo.get(conversationId);
@@ -918,15 +983,20 @@ async function answerPending(
       const verified = verifiedN8nReply(
         proposed.output,
         understanding.interpretation,
-        professionalStore(
-          freshStore,
-          conversation.whatsappProfessionalId || undefined,
-        ),
+        freshStore,
         text,
+      );
+      verified.reply = whatsappText(
+        welcomeReply(verified.reply, recent, text, replyTime),
       );
       if ((await repo.get(conversationId))?.status !== "ai") return null;
       const handoff = proposed.handoff || verified.handoff;
-      let sentId = await delivery.send?.(verified.reply);
+      let sentId = await delivery.send?.(
+        verified.reply,
+        handoff
+          ? null
+          : bookingMenu(scopedStore, understanding.interpretation, text),
+      );
       if (
         sentId &&
         conversation.whatsappProfessionalId &&
@@ -978,8 +1048,20 @@ async function answerPending(
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);
+  if (result.reply) {
+    const original = result.reply;
+    result.reply = welcomeReply(original, recent, text, replyTime);
+    if (conversation.channel === "whatsapp")
+      result.reply = whatsappText(result.reply);
+    const last = result.history.at(-1);
+    if (last?.role === "assistant" && last.content === original)
+      result.history = [
+        ...result.history.slice(0, -1),
+        { role: "assistant", content: result.reply },
+      ];
+  }
   if (!(await platformAiEnabled())) {
-    await repo.update(conversationId, { status: "human", unreadDelta: 1 });
+    await repo.update(conversationId, { aiCursor: cursor, unreadDelta: 1 });
     return null;
   }
   if ((await repo.get(conversationId))?.status !== "ai") return null;
@@ -987,7 +1069,12 @@ async function answerPending(
   if (result.reply && delivery.send) {
     if (understanding)
       await repo.progress?.(conversationId, { state: "SENDING" });
-    sentId = await delivery.send(result.reply);
+    sentId = await delivery.send(
+      result.reply,
+      result.booked || result.handoff
+        ? null
+        : bookingMenu(scopedStore, understanding?.interpretation, text),
+    );
     if (
       sentId &&
       conversation.whatsappProfessionalId &&
@@ -1176,6 +1263,8 @@ export interface IncomingWhatsApp {
   createdAt?: string;
   /** Voice note: transcribed before it is stored, when the server can. */
   loadAudio?: () => Promise<{ audio: ArrayBuffer; mime: string }>;
+  /** Photo: analyzed by the configured AI provider before it is stored. */
+  loadImage?: () => Promise<{ image: ArrayBuffer; mime: string }>;
 }
 
 /**
@@ -1189,7 +1278,12 @@ export async function receiveWhatsAppMessages(input: {
   origin: string;
   messages: IncomingWhatsApp[];
   professionalId?: string;
-  send: (to: string, body: string) => Promise<string | void>;
+  send: (
+    to: string,
+    body: string,
+    menu?: BookingMenu | null,
+    audio?: Uint8Array,
+  ) => Promise<string | void>;
 }) {
   const slug = await slugOf(input.businessId);
   // Sem acesso liberado ou sem a recepcionista no plano: a mensagem não é tratada.
@@ -1199,14 +1293,15 @@ export async function receiveWhatsAppMessages(input: {
   const repo = liveRepo(input.businessId, input.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
-    .select("assistant_enabled")
+    .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
     .eq("business_id", input.businessId)
     .maybeSingle();
   const globalAiEnabled = await platformAiEnabled();
-  if (settings && !globalAiEnabled) settings.assistant_enabled = false;
+  const assistantActive =
+    globalAiEnabled && assistantAllowedNow(settings as AssistantSettingsRow | null);
   const { brazilPhone } = await import("./whatsapp");
   // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
-  const touched = new Map<string, string>();
+  const touched = new Map<string, { to: string; replyWithAudio: boolean }>();
   for (const message of input.messages) {
     const providerId = input.professionalId
       ? `${input.professionalId}:${message.id}`
@@ -1226,7 +1321,12 @@ export async function receiveWhatsAppMessages(input: {
         !(await repo.addMessage(
           existing.id,
           "staff",
-          message.text,
+          message.text.trim() ||
+            (message.loadAudio
+              ? "[A equipe enviou um áudio.]"
+              : message.loadImage
+                ? "[A equipe enviou uma foto.]"
+                : "[A equipe enviou uma mídia.]"),
           providerId,
           message.createdAt,
         ))
@@ -1246,11 +1346,37 @@ export async function receiveWhatsAppMessages(input: {
       continue;
     }
     // Transcribe before checking intent, including a new customer's first audio.
-    const body = message.loadAudio
-      ? globalAiEnabled
+    let body = message.loadAudio
+      ? assistantActive
         ? await audioText(message.loadAudio, input.businessId)
         : "[Áudio recebido para atendimento manual]"
       : message.text;
+    if (message.loadImage) {
+      const caption = message.text
+        .replace(/^\[O cliente enviou uma foto\.\]\s*/i, "")
+        .trim();
+      if (assistantActive) {
+        try {
+          const create = await businessCreate(input.businessId);
+          if (!create) throw new Error("assistant-provider-unavailable");
+          const understood = await understandImage(
+            create,
+            await message.loadImage(),
+            caption,
+          );
+          body = understood.text;
+          await repo.addTokens(understood.usage.input, understood.usage.output);
+        } catch (error) {
+          console.error("StudioFlow image understanding error:", {
+            code:
+              error instanceof Error && error.message === "unsupported-image"
+                ? "unsupported-image"
+                : "image-understanding-unavailable",
+          });
+          body = `${imageUnavailableText}${caption ? `\n${caption}` : ""}`;
+        }
+      }
+    }
     if (!body.trim()) continue;
     if (!existing && !settings?.assistant_enabled) {
       const { data: customer, error } = await createSupabaseAdmin()
@@ -1282,65 +1408,78 @@ export async function receiveWhatsAppMessages(input: {
       continue;
     if (message.name && !conversation.contactName)
       await repo.update(conversation.id, { contactName: message.name });
-    if (!globalAiEnabled) {
-      await repo.update(conversation.id, { status: "human", unreadDelta: 1 });
+    if (!assistantActive) {
+      // Keep today's conversation context without leaving the chat in a manual
+      // state or replaying messages received while the automation was paused.
+      await repo.update(conversation.id, {
+        aiCursor: message.createdAt || new Date().toISOString(),
+        unreadDelta: 1,
+      });
       continue;
     }
-    if (
-      conversation.status === "human" &&
-      settings?.assistant_enabled &&
-      message.createdAt &&
-      /\b(?:valor|pre[cç]o|quanto)\b/i.test(body) &&
-      repo.resumeIdlePrice
-    ) {
-      const fresh = await repo.get(conversation.id);
-      if (fresh?.status === "human") {
-        const cursor = idlePriceResumeCursor({
-          text: body,
-          createdAt: message.createdAt,
-          messages: await repo.messages(conversation.id),
-          store: professionalStore(await loadStore(slug), input.professionalId),
-          runState: (await repo.run?.(conversation.id))?.state,
-        });
-        if (cursor && (await repo.resumeIdlePrice(fresh, cursor))) {
-          conversation.status = "ai";
-          await repo.addMessage(
-            conversation.id,
-            "event",
-            "Atendimento retomado após pausa manual para uma nova consulta de preço.",
-          );
-        }
-      }
+    if (conversation.status === "human") {
+      const messageAt = message.createdAt || new Date().toISOString();
+      const cursor = cursorBefore(messageAt);
+      await repo.update(conversation.id, {
+        status: "ai",
+        aiCursor: cursor,
+        unread: 0,
+      });
+      conversation.status = "ai";
+      conversation.aiCursor = cursor;
     }
     if (conversation.status === "closed")
       await repo.update(conversation.id, {
-        status: settings?.assistant_enabled ? "ai" : "human",
+        status: assistantActive ? "ai" : "human",
       });
-    if (conversation.status !== "ai" || !settings?.assistant_enabled)
+    if (conversation.status !== "ai" || !assistantActive)
       await repo.update(conversation.id, { unreadDelta: 1 });
-    touched.set(conversation.id, message.from);
+    const previousTarget = touched.get(conversation.id);
+    touched.set(conversation.id, {
+      to: message.from,
+      replyWithAudio:
+        Boolean(message.loadAudio) || Boolean(previousTarget?.replyWithAudio),
+    });
   }
   return async () => {
-    if (!settings?.assistant_enabled) return;
+    if (!assistantActive) return;
     // Let short WhatsApp bursts arrive before one leased answer is generated.
     await new Promise((resolve) => setTimeout(resolve, whatsappBurstDelayMs));
     const { data: freshSettings } = await createSupabaseAdmin()
       .from("business_settings")
-      .select("assistant_enabled")
+      .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
       .eq("business_id", input.businessId)
       .maybeSingle();
-    if (freshSettings?.assistant_enabled !== true) return;
-    for (const [id, to] of touched) {
+    if (
+      !globalAiEnabled ||
+      !assistantAllowedNow(freshSettings as AssistantSettingsRow | null)
+    )
+      return;
+    for (const [id, target] of touched) {
       const conversation = await repo.get(id);
       if (!conversation || conversation.status !== "ai") continue;
       await processConversation(repo, id, {
         origin: input.origin,
         slug,
-        send: async (body) => {
-          const id = await input.send(to, body);
-          return id && input.professionalId
-            ? `${input.professionalId}:${id}`
-            : id;
+        send: async (body, menu) => {
+          let audio: Uint8Array | undefined;
+          if (target.replyWithAudio) {
+            try {
+              audio = (await synthesizeWhatsAppReply(body)) || undefined;
+            } catch (error) {
+              console.error("StudioFlow voice reply error:", {
+                code:
+                  error instanceof Error &&
+                  error.message.startsWith("elevenlabs-speech-")
+                    ? error.message
+                    : "elevenlabs-unavailable",
+              });
+            }
+          }
+          const messageId = await input.send(target.to, body, menu, audio);
+          return messageId && input.professionalId
+            ? `${input.professionalId}:${messageId}`
+            : messageId;
         },
       });
     }
@@ -1371,14 +1510,46 @@ export async function receiveWhatsApp(
         loadAudio: message.audioId
           ? () => downloadWhatsAppMedia(message.audioId!, account.token)
           : undefined,
+        loadImage: message.imageId
+          ? async () => {
+              const media = await downloadWhatsAppMedia(
+                message.imageId!,
+                account.token,
+              );
+              return { image: media.audio, mime: media.mime };
+            }
+          : undefined,
       })),
-    send: (to, body) =>
-      sendWhatsApp({
+    send: async (to, body, menu, audio) => {
+      const messageId = await sendWhatsApp({
         phoneNumberId: account.phoneNumberId,
         token: account.token,
         to,
         body,
-      }),
+        menu,
+      });
+      if (audio) {
+        try {
+          await import("./whatsapp").then(({ sendWhatsAppAudio }) =>
+            sendWhatsAppAudio({
+              phoneNumberId: account.phoneNumberId,
+              token: account.token,
+              to,
+              audio,
+            }),
+          );
+        } catch (error) {
+          console.error("StudioFlow voice reply error:", {
+            code:
+              error instanceof Error &&
+              error.message.startsWith("elevenlabs-speech-")
+                ? error.message
+                : "whatsapp-audio-send-failed",
+          });
+        }
+      }
+      return messageId;
+    },
   });
 }
 
@@ -1435,11 +1606,12 @@ export async function receiveInstagram(
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
-    .select("assistant_enabled")
+    .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
     .eq("business_id", account.businessId)
     .maybeSingle();
   const globalAiEnabled = await platformAiEnabled();
-  if (settings && !globalAiEnabled) settings.assistant_enabled = false;
+  const assistantActive =
+    globalAiEnabled && assistantAllowedNow(settings as AssistantSettingsRow | null);
   const touched = new Map<string, string>();
   for (const message of messages) {
     if (message.recipient && message.recipient !== account.igUserId) continue;
@@ -1452,26 +1624,44 @@ export async function receiveInstagram(
         contactRef: message.from,
       }));
     const body = message.audioUrl
-      ? globalAiEnabled
+      ? assistantActive
         ? await audioText(() => downloadUrl(message.audioUrl!))
         : "[Áudio recebido para atendimento manual]"
       : message.text;
-    if (!(await repo.addMessage(conversation.id, "customer", body, message.id)))
+    const messageAt = message.createdAt || new Date().toISOString();
+    if (
+      !(await repo.addMessage(
+        conversation.id,
+        "customer",
+        body,
+        message.id,
+        messageAt,
+      ))
+    )
       continue;
-    if (!globalAiEnabled) {
-      await repo.update(conversation.id, { status: "human", unreadDelta: 1 });
+    if (!assistantActive) {
+      await repo.update(conversation.id, {
+        aiCursor: messageAt,
+        unreadDelta: 1,
+      });
       continue;
     }
-    if (conversation.status === "closed")
+    if (conversation.status === "human" || conversation.status === "closed") {
+      const cursor = cursorBefore(messageAt);
       await repo.update(conversation.id, {
-        status: settings?.assistant_enabled ? "ai" : "human",
+        status: "ai",
+        aiCursor: cursor,
+        unread: 0,
       });
-    if (conversation.status !== "ai" || !settings?.assistant_enabled)
+      conversation.status = "ai";
+      conversation.aiCursor = cursor;
+    }
+    if (conversation.status !== "ai" || !assistantActive)
       await repo.update(conversation.id, { unreadDelta: 1 });
     touched.set(conversation.id, message.from);
   }
   return async () => {
-    if (!settings?.assistant_enabled) return;
+    if (!assistantActive) return;
     for (const [id, to] of touched) {
       const conversation = await repo.get(id);
       if (!conversation || conversation.status !== "ai") continue;

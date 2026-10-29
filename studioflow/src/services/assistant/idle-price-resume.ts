@@ -1,7 +1,7 @@
 import type { ConversationMessage, Store } from "@/types";
 import { exactPriceSelection } from "./routine-reply";
 
-export const whatsappBurstDelayMs = 1000;
+export const whatsappBurstDelayMs = 350;
 const manualPauseMs = 30 * 60_000;
 
 /** Only a fresh, exact catalog question may end a stale mirrored manual pause. */

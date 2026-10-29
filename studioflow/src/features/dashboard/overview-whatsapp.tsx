@@ -106,8 +106,8 @@ export function OverviewWhatsApp({ data }: { data: Store }) {
           {updated ? `Consultado às ${updated}` : "Consultando conversas…"} ·
           últimas 60 conversas
         </small>
-        <Link href="/dashboard/conversas">
-          Abrir conversas <ArrowUpRight size={16} />
+        <Link href="/dashboard/treinamento">
+          Treinar atendimento <ArrowUpRight size={16} />
         </Link>
       </footer>
     </section>

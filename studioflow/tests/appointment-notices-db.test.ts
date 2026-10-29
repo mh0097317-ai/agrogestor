@@ -247,6 +247,69 @@ test("reminder claims enforce consent, cancellation, current time, deduplication
       ).rows[0].v,
       false,
     );
+    await db.exec("update business_settings set notifications=true");
+    for (const minutes of [720, 120, 60]) {
+      const current = (
+        await db.query<{ start: string }>(
+          `update appointments set status='confirmed',reminder=true,created_at=now()-interval '20 minutes',
+        start=now()+make_interval(mins=>$2),"end"=now()+make_interval(mins=>$2+40),occupied_end=now()+make_interval(mins=>$2+40)
+        where id=$1 returning start`,
+          [a.id, minutes - 5],
+        )
+      ).rows[0];
+      const due = (
+        await db.query<{ step_minutes: number }>(
+          "select * from due_staged_appointment_reminders() where id=$1",
+          [a.id],
+        )
+      ).rows;
+      assert.equal(
+        due.some((r) => r.step_minutes === minutes),
+        true,
+      );
+      const claimed = await Promise.all(
+        [1, 2].map(() =>
+          db.query<{ v: boolean }>(
+            "select claim_staged_appointment_reminder($1,$2,$3) v",
+            [a.id, current.start, minutes],
+          ),
+        ),
+      );
+      assert.equal(
+        claimed.filter((r) => r.rows[0].v).length,
+        1,
+        `one ${minutes}-minute claim`,
+      );
+      if (minutes === 120)
+        assert.equal(
+          (
+            await db.query<{ v: boolean }>(
+              "select claim_appointment_notice($1,'customer_reminder',$2) v",
+              [a.id, current.start],
+            )
+          ).rows[0].v,
+          false,
+          "n8n shares the 2h receipt",
+        );
+      assert.equal(
+        (
+          await db.query(
+            "select * from due_staged_appointment_reminders() where id=$1",
+            [a.id],
+          )
+        ).rows.length,
+        0,
+      );
+    }
+    await db.exec("set role authenticated");
+    await assert.rejects(
+      db.query("select * from appointment_reminder_steps"),
+      /permission/,
+    );
+    await assert.rejects(
+      db.query("select * from due_staged_appointment_reminders()"),
+      /permission/,
+    );
   } finally {
     await db.close();
   }

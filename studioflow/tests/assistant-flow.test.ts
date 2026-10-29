@@ -151,7 +151,9 @@ test("pending vague follow-up is interpreted with its own customer history, sent
   };
   await processConversation(repo, conversation.id, delivery, create);
   assert.equal(interpretations, 1);
-  assert.deepEqual(sent, ["Você quer com algum profissional específico?"]);
+  assert.deepEqual(sent, [
+    "Bom dia! Tudo bem?\n\nVocê quer com algum profissional específico?",
+  ]);
   await processConversation(repo, conversation.id, delivery, create);
   assert.equal(sent.length, 1);
   assert.equal(interpretations, 1);
@@ -237,7 +239,9 @@ test("n8n live pipeline: one engine, persistent uncertain boundary, no duplicate
       assert.equal(classifierCalls, 1);
       assert.deepEqual(
         sent,
-        outcome === "success" ? ["Qual dia você prefere?"] : [],
+        outcome === "success"
+          ? ["Bom dia! Tudo bem?\n\nQual dia você prefere?"]
+          : [],
       );
       assert.equal(
         (await repo.get(conversation.id))!.status,
@@ -389,7 +393,7 @@ test("conversas: responde pendentes, passa para a equipe sem chave e respeita o 
     delivery,
     answer("Abrimos às 9h."),
   );
-  assert.deepEqual(sent, ["Abrimos às 9h."]);
+  assert.deepEqual(sent, ["Bom dia! Tudo bem?\n\nAbrimos às 9h."]);
   assert.equal((await repo.get(conversation.id))!.history.length, 2);
   await processConversation(
     repo,
@@ -428,7 +432,10 @@ test("conversas: responde pendentes, passa para a equipe sem chave e respeita o 
   const fresh = (await repo.get(conversation.id))!;
   assert.equal(fresh.status, "human");
   assert.equal(fresh.unread, 1);
-  assert.deepEqual(sent, ["Abrimos às 9h.", "Sábado também."]);
+  assert.deepEqual(sent, [
+    "Bom dia! Tudo bem?\n\nAbrimos às 9h.",
+    "Sábado também.",
+  ]);
   assert.ok(
     messages
       .get(conversation.id)!

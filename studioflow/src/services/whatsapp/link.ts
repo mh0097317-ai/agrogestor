@@ -8,6 +8,7 @@ import { isDemo, mutateDemo, readDemo } from "../server-demo";
 import { matchesHash, sha256 } from "../server-secrets";
 import { demoWorkspaceSlug } from "../server-store";
 import { sendWhatsApp } from "../assistant/whatsapp";
+import type { BookingMenu } from "../assistant/booking-menu";
 import {
   connectInstance,
   createInstance,
@@ -16,6 +17,7 @@ import {
   instanceState,
   removeInstance,
   sendText,
+  sendBookingMenu,
   sendPdf,
   setWebhook,
   type LinkState,
@@ -358,7 +360,11 @@ export const withCountry = (phone: string) => {
     : digits;
 };
 
-export type Sender = (to: string, body: string) => Promise<string | void>;
+export type Sender = (
+  to: string,
+  body: string,
+  menu?: BookingMenu | null,
+) => Promise<string | void>;
 export async function pdfSender(businessId: string, professionalId?: string) {
   const row = await readRow(businessId, professionalId);
   if (row?.status !== "open" || !(await evolutionReady())) return null;
@@ -377,16 +383,20 @@ export async function shopSender(
   if (isDemo()) return null;
   const row = await readRow(businessId).catch(() => null);
   if (row?.status === "open" && (await evolutionReady()))
-    return (to, body) => sendText(row.instance, withCountry(to), body, role);
+    return (to, body, menu) =>
+      menu
+        ? sendBookingMenu(row.instance, withCountry(to), body, menu, role)
+        : sendText(row.instance, withCountry(to), body, role);
   const { whatsappAccount } = await import("../assistant/conversations");
   const account = await whatsappAccount(businessId).catch(() => null);
   if (account)
-    return (to, body) =>
+    return (to, body, menu) =>
       sendWhatsApp({
         phoneNumberId: account.phoneNumberId,
         token: account.token,
         to: withCountry(to),
         body,
+        menu,
       });
   return null;
 }
@@ -477,6 +487,9 @@ export async function conversationSender(
   if (!professionalId) return shopSender(businessId, role);
   const row = await readRow(businessId, professionalId);
   return row?.status === "open" && (await evolutionReady())
-    ? (to, body) => sendText(row.instance, withCountry(to), body, role)
+    ? (to, body, menu) =>
+        menu
+          ? sendBookingMenu(row.instance, withCountry(to), body, menu, role)
+          : sendText(row.instance, withCountry(to), body, role)
     : null;
 }

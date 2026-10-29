@@ -12,6 +12,7 @@ import { isDemo } from "../server-demo";
 import { brandEmail, firstName } from "./brand-email";
 import { deliver, emailAi, readEmailSettings } from "./platform-emails";
 import { emailConfigured } from "./resend";
+import { assertPlatformAiEnabled } from "../platform-ai-control";
 
 /*
  * /admin → E-mails → Escrever com IA. O admin diz o que quer comunicar, a IA
@@ -23,7 +24,10 @@ export const ctaTargets = {
   none: null,
   painel: { label: "Abrir meu painel", path: "/dashboard" },
   divulgar: { label: "Abrir a aba Divulgar", path: "/dashboard/divulgar" },
-  configuracoes: { label: "Abrir Configurações", path: "/dashboard/configuracoes" },
+  configuracoes: {
+    label: "Abrir Configurações",
+    path: "/dashboard/configuracoes",
+  },
   agenda: { label: "Abrir a agenda", path: "/dashboard/agenda" },
 } as const;
 export type CtaTarget = keyof typeof ctaTargets;
@@ -38,7 +42,9 @@ export const campaignSchema = z.object({
 });
 export type Campaign = z.infer<typeof campaignSchema>;
 
-export const draftSchema = z.object({ brief: z.string().trim().min(5).max(1500) });
+export const draftSchema = z.object({
+  brief: z.string().trim().min(5).max(1500),
+});
 
 const draftOutput = z.object({
   subject: z.string(),
@@ -65,10 +71,17 @@ function systemPrompt() {
 }
 
 /** A IA escreve o rascunho; nada é enviado aqui. */
-export async function draftCampaign(input: z.infer<typeof draftSchema>): Promise<Campaign> {
+export async function draftCampaign(
+  input: z.infer<typeof draftSchema>,
+): Promise<Campaign> {
   await requirePlatformAdmin();
+  await assertPlatformAiEnabled();
   const ai = await emailAi();
-  if (!ai) throw new DomainError("Salve a chave da IA dos e-mails no quadro acima.", 409);
+  if (!ai)
+    throw new DomainError(
+      "Salve a chave da IA dos e-mails no quadro acima.",
+      409,
+    );
   const { apiKey, model } = ai;
   const client = clientFor(apiKey);
   let response;
@@ -88,13 +101,21 @@ export async function draftCampaign(input: z.infer<typeof draftSchema>): Promise
   } catch (cause) {
     aiFailure(cause);
   }
+  await assertPlatformAiEnabled();
   if (response.stop_reason === "refusal" || !response.parsed_output)
-    throw new DomainError("A IA não conseguiu escrever agora. Tente outro pedido.", 502);
+    throw new DomainError(
+      "A IA não conseguiu escrever agora. Tente outro pedido.",
+      502,
+    );
   const out = response.parsed_output;
   return campaignSchema.parse({
     subject: out.subject.slice(0, 150),
     title: out.title.slice(0, 150),
-    body: out.paragraphs.map((p) => p.trim()).filter(Boolean).join("\n\n").slice(0, 4000),
+    body: out.paragraphs
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 4000),
     cta: out.cta,
     ctaLabel: out.ctaLabel.slice(0, 60),
   });
@@ -105,7 +126,12 @@ const fill = (text: string, owner: string, business: string) =>
     .replace(/\{nome\}/gi, firstName(owner) || "tudo bem")
     .replace(/\{barbearia\}/gi, business || "sua barbearia");
 
-export function campaignEmail(c: Campaign, to: string, owner: string, business: string) {
+export function campaignEmail(
+  c: Campaign,
+  to: string,
+  owner: string,
+  business: string,
+) {
   const target = ctaTargets[c.cta];
   const paragraphs = c.body
     .split(/\n\s*\n/)
@@ -117,13 +143,21 @@ export function campaignEmail(c: Campaign, to: string, owner: string, business: 
     preview: paragraphs[0]?.slice(0, 120) || c.title,
     title: fill(c.title, owner, business),
     paragraphs,
-    cta: target ? { label: c.ctaLabel || target.label, url: `${appUrl}${target.path}` } : undefined,
-    footnote: "Você recebe este e-mail porque usa o StudioFlow na sua barbearia. Dúvidas? É só responder.",
+    cta: target
+      ? { label: c.ctaLabel || target.label, url: `${appUrl}${target.path}` }
+      : undefined,
+    footnote:
+      "Você recebe este e-mail porque usa o StudioFlow na sua barbearia. Dúvidas? É só responder.",
   });
 }
 
 export function campaignPreview(c: Campaign) {
-  return campaignEmail(c, "dono@barbearia.com.br", "Carlos Souza", "Barbearia Navalha").html;
+  return campaignEmail(
+    c,
+    "dono@barbearia.com.br",
+    "Carlos Souza",
+    "Barbearia Navalha",
+  ).html;
 }
 
 export const sendCampaignSchema = campaignSchema.extend({
@@ -144,7 +178,9 @@ const validEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 async function registered() {
   const { data, error } = await createSupabaseAdmin().rpc("platform_overview");
   if (error) throw new DomainError("Não foi possível ler as barbearias.", 503);
-  return ((data || []) as Owner[]).filter((r) => validEmail(r.owner_email || ""));
+  return ((data || []) as Owner[]).filter((r) =>
+    validEmail(r.owner_email || ""),
+  );
 }
 
 /** Todos os e-mails cadastrados (dono de cada barbearia), para o admin escolher. */
@@ -153,9 +189,27 @@ export async function campaignAudience() {
   if (isDemo())
     return {
       businesses: [
-        { id: "demo-1", name: "Barbearia Navalha", owner: "Carlos Souza", email: "carlos@navalha.com.br", active: true },
-        { id: "demo-2", name: "Studio Corte Fino", owner: "Ana Lima", email: "ana@cortefino.com.br", active: true },
-        { id: "demo-3", name: "Barbearia do Zé", owner: "José Alves", email: "ze@barbeariadoze.com.br", active: false },
+        {
+          id: "demo-1",
+          name: "Barbearia Navalha",
+          owner: "Carlos Souza",
+          email: "carlos@navalha.com.br",
+          active: true,
+        },
+        {
+          id: "demo-2",
+          name: "Studio Corte Fino",
+          owner: "Ana Lima",
+          email: "ana@cortefino.com.br",
+          active: true,
+        },
+        {
+          id: "demo-3",
+          name: "Barbearia do Zé",
+          owner: "José Alves",
+          email: "ze@barbeariadoze.com.br",
+          active: false,
+        },
       ],
     };
   const rows = await registered();
@@ -173,31 +227,56 @@ export async function campaignAudience() {
 
 export async function sendCampaign(input: z.infer<typeof sendCampaignSchema>) {
   const { userId } = await requirePlatformAdmin();
-  if (isDemo()) throw new DomainError("O envio funciona no app publicado.", 400);
-  if (!(await emailConfigured())) throw new DomainError("Salve a chave do Resend no topo desta aba.", 409);
+  if (isDemo())
+    throw new DomainError("O envio funciona no app publicado.", 400);
+  if (!(await emailConfigured()))
+    throw new DomainError("Salve a chave do Resend no topo desta aba.", 409);
   const settings = await readEmailSettings();
   const campaign = campaignSchema.parse(input);
   if (input.audience === "me") {
-    const { data } = await createSupabaseAdmin().auth.admin.getUserById(userId || "");
+    const { data } = await createSupabaseAdmin().auth.admin.getUserById(
+      userId || "",
+    );
     const to = data.user?.email || "";
     if (!to) throw new DomainError("Não achei o e-mail da sua conta.", 400);
-    const email = campaignEmail(campaign, to, "Carlos Souza", "Barbearia Navalha");
-    const ok = await deliver("test", { ...email, subject: `[Teste] ${email.subject}` });
-    if (!ok) throw new DomainError("O Resend recusou. Confira a chave e se o domínio está verificado.", 502);
+    const email = campaignEmail(
+      campaign,
+      to,
+      "Carlos Souza",
+      "Barbearia Navalha",
+    );
+    const ok = await deliver("test", {
+      ...email,
+      subject: `[Teste] ${email.subject}`,
+    });
+    if (!ok)
+      throw new DomainError(
+        "O Resend recusou. Confira a chave e se o domínio está verificado.",
+        502,
+      );
     return { sent: 1, failed: 0, to };
   }
-  if (!settings.enabled) throw new DomainError("Os e-mails estão desligados no topo da página.", 409);
+  if (!settings.enabled)
+    throw new DomainError(
+      "Os e-mails estão desligados no topo da página.",
+      409,
+    );
   const chosen = new Set(input.businessIds);
   const list = (await registered()).filter((r) => chosen.has(r.id));
-  if (!list.length) throw new DomainError("Marque pelo menos um e-mail da lista.", 400);
+  if (!list.length)
+    throw new DomainError("Marque pelo menos um e-mail da lista.", 400);
   const batch = crypto.randomUUID();
   const report = { sent: 0, failed: 0 };
   for (const owner of list) {
-    const ok = await deliver("campaign", campaignEmail(campaign, owner.owner_email, owner.owner_name, owner.name), {
-      businessId: owner.id,
-      key: `campaign-${batch}-${owner.id}`,
-      replyTo: settings.replyTo,
-    });
+    const ok = await deliver(
+      "campaign",
+      campaignEmail(campaign, owner.owner_email, owner.owner_name, owner.name),
+      {
+        businessId: owner.id,
+        key: `campaign-${batch}-${owner.id}`,
+        replyTo: settings.replyTo,
+      },
+    );
     report[ok ? "sent" : "failed"]++;
     await sleep(600); // o Resend aceita 2 por segundo no plano de entrada
   }

@@ -48,32 +48,63 @@ export function AdminLogin({ demo }: { demo: boolean }) {
   return (
     <main className="ac-page is-admin">
       <Link href="/" className="ac-home" aria-label="StudioFlow">
-        <Brand tone="on-dark" size={34} />
+        <Brand tone="on-dark" size={34} animated />
+        <span className="ac-home-caption">ADMINISTRAÇÃO DA PLATAFORMA</span>
       </Link>
-      <div className={`ac-card is-intro ${owner ? "is-register" : ""}`}>
-        <div className="ac-bg" aria-hidden="true" />
+      <div className={`ac-card ${owner ? "is-register" : ""}`}>
+        <div className="ac-bg" aria-hidden="true">
+          <span className="ac-photo-caption">
+            Uma visão clara.
+            <br />
+            <em>Mais controle, mais cuidado.</em>
+            <small>ADMINISTRAÇÃO STUDIOFLOW</small>
+          </span>
+        </div>
 
         <div className="ac-hero is-register" aria-hidden={!owner}>
           <span className="ac-hero-eyebrow">Equipe StudioFlow</span>
           <h2>Uma visão clara de todos os clientes.</h2>
-          <p>Acessos, planos, canais, cobranças, auditoria e marketing num só lugar.</p>
-          <button type="button" className="ac-switch" onClick={() => setOwner(false)} tabIndex={owner ? 0 : -1}>
+          <p>
+            Acessos, planos, canais, cobranças, auditoria e marketing num só
+            lugar.
+          </p>
+          <button
+            type="button"
+            className="ac-switch"
+            onClick={() => setOwner(false)}
+            tabIndex={owner ? 0 : -1}
+          >
             Entrar no admin
           </button>
         </div>
         <div className="ac-hero is-login" aria-hidden={owner}>
           <span className="ac-hero-eyebrow">Administração da plataforma</span>
           <h2>Bem-vindo de volta ao comando.</h2>
-          <p>Acesso exclusivo da equipe autorizada. Cada entrada fica registrada.</p>
-          <button type="button" className="ac-switch" onClick={() => setOwner(true)} tabIndex={owner ? -1 : 0}>
-            Sou dono de barbearia
+          <p>
+            Uma entrada reservada para cuidar de quem cresce com a StudioFlow.
+          </p>
+          <button
+            type="button"
+            className="ac-switch"
+            onClick={() => setOwner(true)}
+            tabIndex={owner ? -1 : 0}
+          >
+            Tenho um estabelecimento
           </button>
         </div>
 
-        <form className="ac-form is-login" onSubmit={submit} aria-busy={busy} aria-hidden={owner}>
+        <form
+          className="ac-form is-login"
+          onSubmit={submit}
+          aria-busy={busy}
+          aria-hidden={owner}
+          inert={owner}
+        >
           <span className="ac-eyebrow">Painel administrativo</span>
           <h1>Entrar no admin.</h1>
-          <p className="ac-sub">Use sua conta autorizada do StudioFlow.</p>
+          <p className="ac-sub">
+            Acesso reservado à equipe que administra a plataforma.
+          </p>
           <label className="ac-field">
             E-mail do administrador
             <input
@@ -115,7 +146,11 @@ export function AdminLogin({ demo }: { demo: boolean }) {
               {error}
             </p>
           )}
-          <button className="ac-submit" disabled={busy || demo} tabIndex={owner ? -1 : 0}>
+          <button
+            className="ac-submit"
+            disabled={busy || demo}
+            tabIndex={owner ? -1 : 0}
+          >
             {busy ? (
               <>
                 <CircleNotch size={18} className="is-spinning" /> Entrando…
@@ -128,34 +163,52 @@ export function AdminLogin({ demo }: { demo: boolean }) {
           </button>
           {demo && (
             <p className="ac-terms">
-              Ambiente local de demonstração. <Link href="/admin">Explorar painel admin</Link>
+              Ambiente local de demonstração.{" "}
+              <Link href="/admin">Explorar painel admin</Link>
             </p>
           )}
-          <button type="button" className="ac-mobile-switch" onClick={() => setOwner(true)}>
-            É dono de barbearia? <b>Acessar meu estabelecimento</b>
+          <button
+            type="button"
+            className="ac-mobile-switch"
+            onClick={() => setOwner(true)}
+          >
+            Tem um estabelecimento? <b>Acesse seu painel</b>
           </button>
         </form>
 
-        <div className="ac-form is-register" aria-hidden={!owner}>
-          <span className="ac-eyebrow">Dono de barbearia</span>
-          <h1>Seu painel fica em outro lugar.</h1>
+        <div
+          className="ac-form is-register"
+          aria-hidden={!owner}
+          inert={!owner}
+        >
+          <span className="ac-eyebrow">Seu estabelecimento</span>
+          <h1>Seu negócio tem um espaço aqui.</h1>
           <p className="ac-sub">
-            Esta entrada é só da equipe StudioFlow. A agenda, os clientes e o caixa da sua barbearia ficam no painel do
+            Acesse sua agenda, seus clientes e as ferramentas para cuidar do seu
             estabelecimento.
           </p>
           <Link href="/login" className="ac-submit" tabIndex={owner ? 0 : -1}>
             Acessar meu estabelecimento <ArrowRight size={18} />
           </Link>
-          <Link href="/login?cadastro=1" className="ac-secondary" tabIndex={owner ? 0 : -1}>
+          <Link
+            href="/login?cadastro=1"
+            className="ac-secondary"
+            tabIndex={owner ? 0 : -1}
+          >
             Ainda não tem conta? Criar agora
           </Link>
-          <button type="button" className="ac-mobile-switch" onClick={() => setOwner(false)}>
+          <button
+            type="button"
+            className="ac-mobile-switch"
+            onClick={() => setOwner(false)}
+          >
             Sou da equipe <b>Entrar no admin</b>
           </button>
         </div>
       </div>
       <p className="ac-foot">
-        <ShieldCheck size={15} /> Acesso exclusivo à administração da plataforma.
+        <ShieldCheck size={15} /> Acesso exclusivo à administração da
+        plataforma.
       </p>
     </main>
   );

@@ -33,8 +33,23 @@ interface State {
   aiSource: "panel" | "server" | null;
   enabled: boolean;
   model: Model;
+  videoAi: boolean;
+  videoAiSource: "panel" | "server" | null;
+  videoJobs: VideoJob[];
   demo: boolean;
 }
+
+type VideoJob = {
+  id: string;
+  status: "starting" | "processing" | "saving" | "completed" | "failed";
+  prompt: string;
+  caption: string;
+  aspectRatio: "9:16" | "16:9";
+  resolution: "720p" | "1080p";
+  error: string | null;
+  createdAt: string;
+  postId: string | null;
+};
 
 type Model = "claude-haiku-5-5" | "claude-sonnet-5-5" | "claude-opus-5-5";
 
@@ -97,6 +112,7 @@ export function MarketingPanel() {
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("draft");
+  const [area, setArea] = useState<"content" | "photo">("content");
   const load = useCallback(async () => {
     try {
       setState(await api<State>("/api/admin/marketing"));
@@ -123,6 +139,15 @@ export function MarketingPanel() {
     setState((s) =>
       s ? { ...s, posts: s.posts.map((p) => (p.id === post.id ? post : p)).filter((p) => p.status !== "discarded") } : s,
     );
+  const addVideoPost = useCallback((post: MarketingPost) => {
+    setState((current) =>
+      current && !current.posts.some((item) => item.id === post.id)
+        ? { ...current, posts: [post, ...current.posts] }
+        : current,
+    );
+    setTab(post.status === "scheduled" ? "scheduled" : "draft");
+    setArea("content");
+  }, []);
   if (!state)
     return <p className="pf-empty">{error || "Carregando o Marketing…"}</p>;
   const list = state.posts
@@ -142,9 +167,21 @@ export function MarketingPanel() {
         <div className="mk-stack">
           <Account state={state} onChange={load} />
           <AiKey state={state} onChange={load} />
+          <VideoKey state={state} onChange={load} />
         </div>
         <Autopilot state={state} onSaved={(settings) => setState({ ...state, settings })} />
       </div>
+      <div className="mk-section-tabs" role="tablist" aria-label="Ferramentas de publicação">
+        <button type="button" role="tab" aria-selected={area === "content"} className={area === "content" ? "is-current" : ""} onClick={() => setArea("content")}>
+          Conteúdo e fila
+        </button>
+        <button type="button" role="tab" aria-selected={area === "photo"} className={area === "photo" ? "is-current" : ""} onClick={() => setArea("photo")}>
+          Postar foto
+        </button>
+      </div>
+      {area === "photo" && <ManualPhoto state={state} onCreated={addVideoPost} />}
+      <div hidden={area === "photo"}>
+      <VideoStudio state={state} onCreated={addVideoPost} />
       <Suggest
         disabled={!state.ai || state.demo || !state.enabled}
         onCreated={(posts) => {
@@ -200,7 +237,315 @@ export function MarketingPanel() {
           </p>
         )}
       </section>
+      </div>
     </div>
+  );
+}
+
+/** Chave separada do Google: nunca compartilhada com a IA de texto. */
+function VideoKey({ state, onChange }: { state: State; onChange: () => void }) {
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function run(body: unknown) {
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/admin/marketing", "POST", body);
+      setKey("");
+      onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível configurar o Google.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="pf-panel mk-account">
+      <div className="mk-account-head">
+        <FilmSlate size={26} />
+        <div>
+          <strong>Vídeos com IA do Google</strong>
+          <span>
+            {state.videoAiSource === "panel"
+              ? "Chave validada e guardada cifrada no servidor."
+              : state.videoAiSource === "server"
+                ? "Usando a chave configurada no servidor."
+                : "Conecte uma chave do Google AI para gerar vídeos com Veo."}
+          </span>
+        </div>
+      </div>
+      {state.videoAiSource === "panel" ? (
+        <button
+          type="button"
+          className="pf-text-button"
+          disabled={busy || state.demo}
+          onClick={() => void run({ kind: "videoAiKeyRemove" })}
+        >
+          Remover chave
+        </button>
+      ) : state.videoAiSource === "server" ? null : (
+        <form
+          className="mk-inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void run({ kind: "videoAiKey", key });
+          }}
+        >
+          <input
+            type="password"
+            autoComplete="off"
+            placeholder="Chave do Google AI"
+            value={key}
+            onChange={(event) => setKey(event.target.value)}
+            aria-label="Chave de vídeo do Google AI"
+          />
+          <button
+            type="submit"
+            className="mk-primary"
+            disabled={busy || key.trim().length < 20 || state.demo}
+          >
+            {busy ? "Validando…" : "Conectar"}
+          </button>
+        </form>
+      )}
+      {error && <em className="mk-error">{error}</em>}
+    </section>
+  );
+}
+
+/** Gera um clipe Veo; o resultado sempre entra na fila como rascunho. */
+function VideoStudio({
+  state,
+  onCreated,
+}: {
+  state: State;
+  onCreated: (post: MarketingPost) => void;
+}) {
+  const [prompt, setPrompt] = useState("");
+  const [caption, setCaption] = useState("");
+  const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
+  const [resolution, setResolution] = useState<"720p" | "1080p">("720p");
+  const [job, setJob] = useState<VideoJob | null>(
+    () =>
+      state.videoJobs.find((item) =>
+        ["starting", "processing", "saving"].includes(item.status),
+      ) ?? null,
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const jobId = job?.id;
+  const jobStatus = job?.status;
+  useEffect(() => {
+    if (
+      !jobId ||
+      !jobStatus ||
+      !["starting", "processing", "saving"].includes(jobStatus)
+    )
+      return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const result = await api<{ job: VideoJob; post: MarketingPost | null }>(
+          "/api/admin/marketing",
+          "POST",
+          { kind: "checkVideo", id: jobId },
+        );
+        if (cancelled) return;
+        setJob(result.job);
+        setError("");
+        if (result.post && result.job.status === "completed")
+          onCreated(result.post);
+        else if (
+          ["starting", "processing", "saving"].includes(result.job.status)
+        )
+          timer = setTimeout(poll, 10_000);
+      } catch (cause) {
+        if (cancelled) return;
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Não foi possível consultar a geração.",
+        );
+        timer = setTimeout(poll, 15_000);
+      }
+    };
+    timer = setTimeout(poll, 5_000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [jobId, jobStatus, onCreated]);
+
+  async function generate(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const next = await api<VideoJob>("/api/admin/marketing", "POST", {
+        kind: "generateVideo",
+        prompt,
+        caption,
+        aspectRatio,
+        resolution,
+      });
+      setPrompt("");
+      setCaption("");
+      setJob(next);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Não foi possível iniciar o vídeo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const generating =
+    !!job && ["starting", "processing", "saving"].includes(job.status);
+  return (
+    <section className="pf-panel mk-video-studio">
+      <div className="pf-panel-head mk-video-head">
+        <div>
+          <span className="mk-video-kicker">
+            <Sparkle size={14} weight="fill" /> ESTÚDIO CRIATIVO
+          </span>
+          <h2>Vídeos profissionais com IA</h2>
+          <p>
+            Descreva a cena. O Google gera o clipe; o StudioFlow salva o Reel
+            nos rascunhos para você revisar e publicar.
+          </p>
+        </div>
+        <span className="mk-video-mark">
+          <FilmSlate size={22} />
+        </span>
+      </div>
+      {state.videoAi ? (
+        <form
+          className="mk-video-form"
+          onSubmit={(event) => void generate(event)}
+        >
+          <label className="mk-video-prompt">
+            Descreva o vídeo
+            <textarea
+              rows={4}
+              minLength={20}
+              maxLength={2000}
+              required
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder="Ex.: Reel vertical para a StudioFlow, mostrando um barbeiro preparando a cadeira, um corte em andamento e o dono conferindo a agenda no celular. Luz cinematográfica, visual grafite com detalhes bronze, movimentos suaves, sem textos gerados."
+              disabled={generating || !state.enabled || state.demo}
+            />
+          </label>
+          <label className="mk-video-caption">
+            Legenda para acompanhar (opcional)
+            <textarea
+              rows={2}
+              maxLength={2200}
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              placeholder="Escreva a legenda que vai junto com o Reel."
+              disabled={generating || !state.enabled || state.demo}
+            />
+          </label>
+          <div className="mk-video-controls">
+            <label>
+              Formato
+              <select
+                value={aspectRatio}
+                onChange={(event) =>
+                  setAspectRatio(event.target.value as typeof aspectRatio)
+                }
+                disabled={generating}
+              >
+                <option value="9:16">Vertical · Reels/Stories</option>
+                <option value="16:9">Horizontal</option>
+              </select>
+            </label>
+            <label>
+              Resolução
+              <select
+                value={resolution}
+                onChange={(event) =>
+                  setResolution(event.target.value as typeof resolution)
+                }
+                disabled={generating}
+              >
+                <option value="720p">720p · padrão</option>
+                <option value="1080p">1080p · alta</option>
+              </select>
+            </label>
+            <button
+              className="mk-primary"
+              type="submit"
+              disabled={
+                busy ||
+                generating ||
+                !state.enabled ||
+                state.demo ||
+                prompt.trim().length < 20
+              }
+            >
+              <Sparkle size={16} weight="fill" />{" "}
+              {busy ? "Iniciando…" : "Gerar vídeo · 8 s"}
+            </button>
+          </div>
+          <p className="mk-video-cost">
+            Cada geração consome créditos da conta Google. O vídeo entra como
+            rascunho; nada é publicado sem sua aprovação.
+          </p>
+        </form>
+      ) : (
+        <div className="mk-video-connect">
+          <strong>Conecte a chave do Google para liberar o estúdio.</strong>
+          <span>
+            A chave fica protegida no servidor e separada da IA que escreve as
+            legendas.
+          </span>
+        </div>
+      )}
+      {generating && (
+        <div className="mk-video-progress" role="status" aria-live="polite">
+          <span className="mk-video-pulse" />
+          <div>
+            <strong>
+              {job.status === "saving"
+                ? "Salvando seu Reel…"
+                : job.status === "starting"
+                  ? "Preparando o vídeo…"
+                  : "O Google está criando seu vídeo…"}
+            </strong>
+            <small>
+              Isso pode levar alguns minutos. Você pode continuar usando o
+              painel.
+            </small>
+          </div>
+        </div>
+      )}
+      {job?.status === "completed" && (
+        <p className="mk-video-success" role="status">
+          Vídeo pronto. O Reel foi adicionado aos rascunhos para revisão.
+        </p>
+      )}
+      {job?.status === "failed" && (
+        <p className="mk-error" role="alert">
+          {job.error ||
+            "A geração não foi concluída. Confira a chave e a cota do Google antes de tentar novamente."}
+        </p>
+      )}
+      {error && (
+        <p className="mk-error" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -479,23 +824,39 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
         <input
           type="checkbox"
           checked={form.autoPublish}
-          disabled={!form.autopilot}
           onChange={(e) => setForm({ ...form, autoPublish: e.target.checked })}
         />
         <span>
           <b>Publicar sem minha aprovação</b>
           <small>
             {form.autoPublish
-              ? "Ligado: a IA cria e o servidor publica sozinho nos horários. Você não revisa antes."
-              : "Desligado: os posts esperam você aprovar em “Aguardando aprovação”."}
+              ? "Ligado: as fotos enviadas e os conteúdos com publicação automática saem nos dias e horários escolhidos."
+              : "Desligado: fotos enviadas ficam em rascunhos; conteúdos podem ser aprovados e agendados individualmente."}
           </small>
         </span>
       </label>
       <div className="mk-row">
-        <label>
-          Posts por semana
-          <input type="number" min={1} max={14} value={form.postsPerWeek} onChange={(e) => setForm({ ...form, postsPerWeek: Number(e.target.value) || 1 })} />
-        </label>
+        <fieldset className="mk-days">
+          <legend>Dias de publicação</legend>
+          <div>
+            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((label, day) => (
+              <label key={day} className={form.postDays.includes(day) ? "is-selected" : ""}>
+                <input
+                  type="checkbox"
+                  checked={form.postDays.includes(day)}
+                  onChange={(event) => {
+                    const postDays = event.target.checked
+                      ? [...form.postDays, day].sort((a, b) => a - b)
+                      : form.postDays.filter((item) => item !== day);
+                    if (postDays.length) setForm({ ...form, postDays, postsPerWeek: postDays.length });
+                  }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <small>{form.postDays.length} {form.postDays.length === 1 ? "dia escolhido" : "dias escolhidos"} por semana.</small>
+        </fieldset>
         <label>
           Horário (Brasília)
           <select value={form.postHour} onChange={(e) => setForm({ ...form, postHour: Number(e.target.value) })}>
@@ -528,6 +889,112 @@ function Autopilot({ state, onSaved }: { state: State; onSaved: (s: MarketingSet
         </button>
         {message && <span className="mk-muted">{message}</span>}
       </div>
+    </section>
+  );
+}
+
+function ManualPhoto({ state, onCreated }: { state: State; onCreated: (post: MarketingPost) => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  const [caption, setCaption] = useState("");
+  const [theme, setTheme] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
+  function chooseFile(selected: File | null) {
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(selected ? URL.createObjectURL(selected) : "");
+    setFile(selected);
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    setMessage("Enviando foto…");
+    try {
+      const target = await api<{ path: string; signedUrl: string }>("/api/admin/marketing", "POST", {
+        kind: "photoUploadUrl",
+        contentType: file.type,
+      });
+      const sent = await fetch(target.signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type, "x-upsert": "false" },
+        body: file,
+      });
+      if (!sent.ok) throw new Error("O envio da foto falhou. Tente novamente.");
+      const post = await api<MarketingPost>("/api/admin/marketing", "POST", {
+        kind: "manualPhoto",
+        path: target.path,
+        caption,
+        theme: theme || file.name.replace(/\.[^.]+$/, "").slice(0, 200),
+      });
+      onCreated(post);
+      chooseFile(null);
+      setCaption("");
+      setTheme("");
+      setMessage(post.scheduledFor ? `Agendado para ${when(post.scheduledFor)}.` : "Foto salva em rascunhos para aprovação.");
+    } catch (cause) {
+      setMessage("");
+      setError(cause instanceof Error ? cause.message : "Não foi possível enviar a foto.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const disabled = !state.enabled || state.demo || !state.account;
+  return (
+    <section className="pf-panel mk-manual-photo">
+      <div className="pf-panel-head">
+        <div>
+          <span className="mk-video-kicker">PUBLICAÇÃO DIRETA</span>
+          <h2>Postar uma foto</h2>
+        <p>Envie uma foto do corte e escreva a legenda. Com a publicação automática ligada, ela entra no próximo dia e horário selecionados.</p>
+        </div>
+      </div>
+      <form onSubmit={(event) => void submit(event)}>
+        <label className="mk-photo-picker">
+          {file && preview ? <img src={preview} alt="Prévia da foto escolhida" /> : <UploadSimple size={23} />}
+          <span>{file ? file.name : "Escolher foto JPG ou PNG"}</span>
+          <small>Até 20 MB</small>
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            disabled={disabled || busy}
+            onChange={(event) => {
+              const selected = event.target.files?.[0] || null;
+              event.target.value = "";
+              if (selected && selected.size > 20 * 1024 * 1024) {
+                setError("A foto precisa ter até 20 MB.");
+                return;
+              }
+              chooseFile(selected);
+              setError("");
+            }}
+          />
+        </label>
+        <label className="mk-block">
+          Nome interno (opcional)
+          <input value={theme} maxLength={200} onChange={(event) => setTheme(event.target.value)} placeholder="Ex.: Corte degradê desta semana" disabled={disabled || busy} />
+        </label>
+        <label className="mk-block">
+          Legenda do Instagram
+          <textarea rows={4} maxLength={2200} value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Escreva uma legenda para acompanhar a foto…" disabled={disabled || busy} />
+        </label>
+        {!state.settings.autoPublish ? (
+          <p className="mk-photo-note">A foto vai para rascunhos. Para agendar automaticamente, ligue “Publicar sem minha aprovação” no Piloto automático.</p>
+        ) : (
+          <p className="mk-photo-note">Próximo horário: {state.settings.postDays.map((day) => ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][day]).join(", ")} às {String(state.settings.postHour).padStart(2, "0")}:00 · horário de Brasília.</p>
+        )}
+        <div className="mk-actions">
+          <button className="mk-primary" type="submit" disabled={disabled || busy || !file}>{busy ? "Enviando…" : "Adicionar à fila"}</button>
+          {!state.account && <span className="mk-muted">Conecte o Instagram para adicionar fotos à fila.</span>}
+          {message && <span className="mk-muted" role="status">{message}</span>}
+          {error && <em className="mk-error">{error}</em>}
+        </div>
+      </form>
     </section>
   );
 }
@@ -782,7 +1249,7 @@ function PostCard({
         {post.format === "reel" ? (
           post.videoUrl ? <video src={post.videoUrl} controls preload="metadata" playsInline /> : <span>Sem vídeo</span>
         ) : (
-          <img src={`/api/marketing/image/${post.id}/${slide}.jpg?v=${version}`} alt={post.slides[slide]?.title || post.theme} loading="lazy" />
+          <img src={post.slides[slide]?.imageUrl || `/api/marketing/image/${post.id}/${slide}.jpg?v=${version}`} alt={post.slides[slide]?.title || post.theme} loading="lazy" />
         )}
         {post.slides.length > 1 && (
           <div className="mk-dots">

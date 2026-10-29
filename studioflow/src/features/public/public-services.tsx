@@ -65,6 +65,11 @@ export function PublicServices({
                         <em className="pp-popular">Mais pedido</em>
                       )}
                     </strong>
+                    {service.description && (
+                      <span className="pp-menu-description">
+                        {service.description}
+                      </span>
+                    )}
                     <small>{durationLabel(service.duration)}</small>
                   </span>
                   <span className="pp-menu-price">

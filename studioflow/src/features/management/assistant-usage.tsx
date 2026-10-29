@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { businessDay } from "@/lib/utils";
 import { usageSummary, type OperationSnapshot } from "@/lib/operation-health";
 
@@ -47,9 +46,6 @@ export function AssistantUsage({ limit }: { limit: number }) {
           O limite é de turnos, não de reais. Consumo externo do n8n e de
           transcrição é acompanhado nos provedores.
         </p>
-        <Link href="/dashboard/operacao">
-          Ver consumo e saúde da operação →
-        </Link>
       </div>
     </div>
   );

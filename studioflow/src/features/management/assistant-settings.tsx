@@ -13,6 +13,7 @@ import type { Store } from "@/types";
 import { FormError, FormField } from "./shared";
 import "./assistant-settings.css";
 import { AssistantUsage } from "./assistant-usage";
+import { TrainingCoach } from "./training-coach";
 
 async function send(url: string, method: string, body?: unknown) {
   const response = await fetch(url, {
@@ -43,6 +44,9 @@ export function AssistantSettings({
   const { toast } = useToast();
   const settings = store.settings;
   const [enabled, setEnabled] = useState(settings.assistantEnabled);
+  const [scheduleEnabled, setScheduleEnabled] = useState(
+    settings.assistantScheduleEnabled || false,
+  );
   const [name, setName] = useState(settings.assistantName || "Recepção");
   const [instructions, setInstructions] = useState(
     settings.assistantInstructions || "",
@@ -75,6 +79,7 @@ export function AssistantSettings({
     void run("save", async () => {
       await send("/api/workspace/assistant", "PATCH", {
         assistantEnabled: enabled,
+        assistantScheduleEnabled: scheduleEnabled,
         assistantName: name,
         assistantInstructions: instructions,
         assistantDailyLimit: Number(limit) || 300,
@@ -85,8 +90,7 @@ export function AssistantSettings({
     });
   }
   return (
-    <div className="management-form payment-settings">
-      {canManage && <AssistantUsage limit={settings.assistantDailyLimit} />}
+    <div className="management-form payment-settings assistant-settings">
       <div className="assistant-overview">
         <div className="assistant-overview-main">
           <span className="sheet-eyebrow">Atendimento no WhatsApp</span>
@@ -128,11 +132,17 @@ export function AssistantSettings({
           </Button>
         </div>
       </div>
+      {canManage && (
+        <details className="assistant-usage-details">
+          <summary>Consumo e limites de hoje</summary>
+          <AssistantUsage limit={settings.assistantDailyLimit} />
+        </details>
+      )}
       {!store.aiReady && (
         <div className="management-info payment-warning-box">
           <Warning size={16} /> A recepcionista aguarda a configuração da sua
-          credencial pela plataforma. As mensagens recebidas ficam em Conversas
-          para a equipe continuar o atendimento.
+          credencial pela plataforma. A equipe pode continuar pelo botão
+          “Acompanhar conversas”.
         </div>
       )}
       <FormSection
@@ -156,8 +166,22 @@ export function AssistantSettings({
                 </strong>
                 <small>
                   Atende pelo WhatsApp conectado e agenda diretamente na
-                  conversa. O chat do site acompanha a configuração do link
-                  público.
+                  conversa. Quando ligada, volta a responder no próximo contato
+                  do cliente.
+                </small>
+              </span>
+            </label>
+            <label className="assistant-toggle">
+              <input
+                type="checkbox"
+                checked={scheduleEnabled}
+                onChange={(event) => setScheduleEnabled(event.target.checked)}
+              />
+              <span>
+                <strong>Responder somente durante o expediente</strong>
+                <small>
+                  A IA acompanha os dias e horários cadastrados em Horários e
+                  regras ({settings.openStart} às {settings.openEnd}).
                 </small>
               </span>
             </label>
@@ -196,12 +220,19 @@ export function AssistantSettings({
                 onChange={(event) => setInstructions(event.target.value)}
               />
             </FormField>
+            {canManage && (
+              <TrainingCoach
+                existing={instructions}
+                onApply={setInstructions}
+                disabled={!!busy}
+              />
+            )}
           </fieldset>
           <FormError error={error} />
           {canManage && (
             <div className="management-form-actions">
               <Button type="submit" disabled={!!busy}>
-                {busy === "save" ? "Salvando…" : "Salvar StudioFlow"}
+                {busy === "save" ? "Salvando…" : "Salvar treinamento"}
               </Button>
             </div>
           )}

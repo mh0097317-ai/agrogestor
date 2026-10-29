@@ -1,5 +1,6 @@
 import { DomainError } from "@/lib/availability";
 import QRCode from "qrcode";
+import type { BookingMenu } from "../assistant/booking-menu";
 import { evolutionCredential } from "../admin-vault";
 
 /**
@@ -202,6 +203,98 @@ export async function sendText(
   return sent.key?.id;
 }
 
+/** Sends generated MP3 speech as a WhatsApp voice note through Evolution. */
+export async function sendWhatsAppAudio(
+  instance: string,
+  number: string,
+  audio: Uint8Array,
+) {
+  const digits = number.replace(/\D/g, "");
+  if (
+    !/^[0-9]{10,15}$/.test(digits) ||
+    !audio.length ||
+    audio.length > 4_000_000
+  )
+    throw new DomainError("Áudio ou destinatário inválido.");
+  const sent = await evo<{ key?: { id?: string } }>(
+    `/message/sendWhatsAppAudio/${encodeURIComponent(instance)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        number: digits,
+        audio: Buffer.from(audio).toString("base64"),
+      }),
+    },
+  );
+  if (!sent.key?.id)
+    throw new DomainError("O WhatsApp não confirmou o envio do áudio.", 502);
+  const { recordOutgoing } = await import("./history");
+  await recordOutgoing(
+    instance,
+    digits,
+    "[Áudio da StudioFlow]",
+    sent.key.id,
+    "assistant",
+  );
+  return sent.key.id;
+}
+
+/** Fallback only on an explicit rejection, never after an uncertain send. */
+export async function sendBookingMenu(
+  instance: string,
+  number: string,
+  text: string,
+  menu: BookingMenu,
+  role: "staff" | "assistant" = "assistant",
+) {
+  const digits = number.replace(/\D/g, "");
+  if (!/^[0-9]{10,15}$/.test(digits))
+    throw new DomainError("Número de WhatsApp inválido.");
+  const fallback = () => sendText(instance, number, text, role);
+  // This connector has already been verified with a real WhatsApp device.
+  // Keep a deployment-level escape hatch for older Evolution installations.
+  if (process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS === "false")
+    return fallback();
+  let sent: { key?: { id?: string } };
+  try {
+    sent = await evo(`/message/sendList/${encodeURIComponent(instance)}`, {
+      method: "POST",
+      body: JSON.stringify({
+        number: digits,
+        title: menu.title,
+        description: text.slice(0, 1024),
+        buttonText: menu.button,
+        footerText: "Escolha uma opção ou responda por texto",
+        sections: [
+          {
+            title: menu.title,
+            rows: menu.rows.map((r) => ({
+              title: r.title,
+              description: r.description,
+              rowId: r.id,
+            })),
+          },
+        ],
+      }),
+    });
+  } catch (e) {
+    if (
+      e instanceof DomainError &&
+      (e.status === 404 || /HTTP (?:400|405|501)\b/.test(e.message))
+    )
+      return fallback();
+    throw e;
+  }
+  if (!sent.key?.id)
+    throw new DomainError(
+      "Envio do menu sem confirmação. Confira a conversa antes de tentar de novo.",
+      503,
+    );
+  const { recordOutgoing } = await import("./history");
+  await recordOutgoing(instance, digits, text, sent.key.id, role);
+  return sent.key.id;
+}
+
 /** Private PDF bytes, never a public URL or an arbitrary file supplied by a client. */
 export async function sendPdf(
   instance: string,
@@ -337,6 +430,42 @@ export async function evolutionAudio(
   };
 }
 
+/** Authenticated download of an inbound photo from the connected instance. */
+export async function evolutionImage(
+  instance: string,
+  id: string,
+  inline?: string,
+  mime = "image/jpeg",
+) {
+  const media = inline
+    ? { base64: inline, mimetype: mime }
+    : await evo<{ base64?: string; mimetype?: string }>(
+        `/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            message: { key: { id } },
+            convertToMp4: false,
+          }),
+        },
+      );
+  const encoded = (media.base64 || "").replace(/^data:[^,]+,/, "");
+  if (
+    !encoded ||
+    encoded.length > Math.ceil((8 * 1024 * 1024 * 4) / 3) ||
+    !/^[A-Za-z0-9+/=\r\n]+$/.test(encoded)
+  )
+    throw new Error("image-unavailable");
+  const bytes = Buffer.from(encoded, "base64");
+  return {
+    image: bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    ),
+    mime: (media.mimetype || mime).split(";")[0],
+  };
+}
+
 export async function removeInstance(instance: string) {
   await evo(`/instance/logout/${encodeURIComponent(instance)}`, {
     method: "DELETE",
@@ -361,6 +490,9 @@ export interface EvolutionMessage {
   /** Voice note sent inline (base64) when the webhook has base64 on. */
   audio?: { base64: string; mime: string };
   audioId?: string;
+  /** Photo sent inline by the webhook, when available. */
+  image?: { base64: string; mime: string };
+  imageId?: string;
   fromMe?: boolean;
   createdAt?: string;
 }
@@ -374,6 +506,32 @@ const asRecord = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+
+export function interactiveSelection(message: Record<string, unknown>) {
+  const list = asRecord(message.listResponseMessage),
+    button = asRecord(message.buttonsResponseMessage),
+    template = asRecord(message.templateButtonReplyMessage);
+  const selected =
+    asRecord(list.singleSelectReply).selectedRowId ||
+    button.selectedButtonId ||
+    template.selectedId;
+  if (typeof selected === "string") return selected.slice(0, 2000);
+  const native = asRecord(
+    asRecord(message.interactiveResponseMessage).nativeFlowResponseMessage,
+  );
+  if (
+    typeof native.paramsJson === "string" &&
+    native.paramsJson.length <= 4000
+  ) {
+    try {
+      const params = asRecord(JSON.parse(native.paramsJson));
+      if (typeof params.id === "string") return params.id.slice(0, 2000);
+    } catch {
+      /* Malformed content is not a customer selection. */
+    }
+  }
+  return "";
+}
 
 const contentWrappers = [
   "ephemeralMessage",
@@ -479,7 +637,9 @@ export function parseEvolution(
     const extended = asRecord(message.extendedTextMessage);
     const audioMessage = asRecord(message.audioMessage);
     const text =
-      messageText(message.conversation) || messageText(extended.text);
+      messageText(message.conversation) ||
+      messageText(extended.text) ||
+      interactiveSelection(message);
     const id = String(key.id || "");
     if (!id) continue;
     const timestamp = Number(data.messageTimestamp);
@@ -520,6 +680,11 @@ export function parseEvolution(
       ].find((type) => hasMedia(message, type));
       if (!mediaType) continue;
       const caption = messageText(asRecord(message[mediaType]).caption);
+      const mediaRecord = asRecord(message[mediaType]);
+      const inline =
+        messageText(mediaRecord.base64) ||
+        messageText(message.base64) ||
+        messageText(envelope.base64);
       const description =
         mediaType === "imageMessage"
           ? "[O cliente enviou uma foto.]"
@@ -530,6 +695,21 @@ export function parseEvolution(
         from,
         name: String(data.pushName || "").slice(0, 80),
         text: `${description}${caption ? `\n${caption}` : ""}`.slice(0, 4000),
+        ...(mediaType === "imageMessage"
+          ? {
+              imageId: id,
+              ...(inline
+                ? {
+                    image: {
+                      base64: inline,
+                      mime: String(mediaRecord.mimetype || "image/jpeg").split(
+                        ";",
+                      )[0],
+                    },
+                  }
+                : {}),
+            }
+          : {}),
       });
       continue;
     }
@@ -542,7 +722,7 @@ export function parseEvolution(
     });
   }
   result.messages = result.messages.filter(
-    (message) => message.text || message.audio,
+    (message) => message.text || message.audio || message.image,
   );
   return result;
 }

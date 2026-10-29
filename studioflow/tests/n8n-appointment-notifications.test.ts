@@ -20,7 +20,7 @@ const at = (hours: number) => ({
   end: new Date(now + (hours + 1) * 3600000).toISOString(),
 });
 test("reminder windows exclude cancelled, opted-out, new and stale appointments", () => {
-  assert.equal(appointmentEligible("reminder_24h", at(24), now), true);
+  assert.equal(appointmentEligible("reminder_24h", at(24), now), false,"legacy 24h WhatsApp reminder is replaced by the staged scheduler");
   assert.equal(appointmentEligible("reminder_24h", at(23.5), now), false);
   assert.equal(
     appointmentEligible("reminder_24h", { ...at(24), reminder: false }, now),

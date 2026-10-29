@@ -9,6 +9,8 @@ import {
   type WeeklyReceipt,
   type WeeklySale,
 } from "@/lib/weekly-report";
+import { validPeriod } from "@/features/management/finance-helpers";
+import { businessDay } from "@/lib/utils";
 import { DomainError } from "@/lib/availability";
 
 async function pages<T>(
@@ -38,8 +40,9 @@ export async function queryWeeklyRows(
   businessId: string,
   week?: string,
   professionalId?: string,
+  reportPeriod?: { from: string; to: string },
 ) {
-  const { from, to } = weeklyPeriod(week);
+  const { from, to } = reportPeriod ?? weeklyPeriod(week);
   const start = `${from}T00:00:00-03:00`;
   const end = new Date(
     Date.parse(`${to}T00:00:00-03:00`) + 86400000,
@@ -111,8 +114,12 @@ export async function queryWeeklyRows(
     })) as WeeklySale[],
   };
 }
-export async function weeklyReport(week?: string, requested?: string) {
-  const selectedWeek = weeklyPeriod(week).from;
+export async function weeklyReport(
+  week?: string,
+  requested?: string,
+  reportPeriod?: { from: string; to: string },
+) {
+  const selectedWeek = reportPeriod?.from || weeklyPeriod(week).from;
   const store = await getWorkspace();
   const professionalId = weeklyScope(store, requested);
   if (store.mode === "demo") {
@@ -129,6 +136,8 @@ export async function weeklyReport(week?: string, requested?: string) {
       store.appointments,
       receipts,
       store.productSales || [],
+      new Date(),
+      reportPeriod,
     );
   }
   const rows = await queryWeeklyRows(
@@ -136,6 +145,7 @@ export async function weeklyReport(week?: string, requested?: string) {
     store.business.id,
     selectedWeek,
     professionalId,
+    reportPeriod,
   );
   return weeklySummary(
     store,
@@ -144,5 +154,16 @@ export async function weeklyReport(week?: string, requested?: string) {
     rows.appointments,
     rows.receipts,
     rows.sales,
+    new Date(),
+    reportPeriod,
   );
+}
+
+export async function dailyReport(date = businessDay(), requested?: string) {
+  if (!validPeriod({ from: date, to: date }))
+    throw new DomainError("Selecione um dia válido.");
+  return {
+    ...(await weeklyReport(date, requested, { from: date, to: date })),
+    daily: true,
+  };
 }

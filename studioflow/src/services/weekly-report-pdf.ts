@@ -9,19 +9,22 @@ const date = (value: string) => value.split("-").reverse().join("/");
 export async function weeklyReportPdf(
   report: WeeklyReport & {
     platform?: boolean;
+    daily?: boolean;
     newBusinesses?: number;
     overdueCents?: number;
   },
 ) {
   const doc = await PDFDocument.create();
-  doc.setTitle(`StudioFlow - Relatório semanal - ${report.from}`);
+  doc.setTitle(
+    `StudioFlow - Relatório ${report.daily ? "diário" : "semanal"} - ${report.from}`,
+  );
   doc.setAuthor("StudioFlow");
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const serif = await doc.embedFont(StandardFonts.TimesRoman);
-  const ink = rgb(0.12, 0.19, 0.16),
-    muted = rgb(0.4, 0.45, 0.42),
-    green = rgb(0.18, 0.36, 0.28),
+  const ink = rgb(0.16, 0.17, 0.18),
+    muted = rgb(0.42, 0.43, 0.43),
+    green = rgb(0.2, 0.21, 0.22),
     gold = rgb(0.68, 0.46, 0.26),
     cream = rgb(0.97, 0.96, 0.93);
   let page = doc.addPage([595.28, 841.89]);
@@ -63,7 +66,9 @@ export async function weeklyReportPdf(
     text(subtitle, 40, 737, 29, serif);
     text(report.businessName, 40, 706, 12, bold);
     text(
-      `${date(report.from)} a ${date(report.to)} | Segunda a domingo`,
+      report.daily
+        ? `${date(report.from)} | Fechamento do dia`
+        : `${date(report.from)} a ${date(report.to)} | Segunda a domingo`,
       40,
       686,
       10,
@@ -85,7 +90,9 @@ export async function weeklyReportPdf(
       gold,
     );
   };
-  frame("Sua semana, em perspectiva.");
+  frame(
+    report.daily ? "Seu dia, em perspectiva." : "Sua semana, em perspectiva.",
+  );
   const metrics = [
     ["RECEBIDO", cash(report.totalReceived)],
     [
@@ -119,7 +126,7 @@ export async function weeklyReportPdf(
   text(
     report.platform
       ? "Mensalidades pagas em cada dia da semana"
-      : "Atendimentos concluídos em cada dia da semana",
+      : "Atendimentos concluídos no período",
     40,
     486,
     10,
@@ -128,7 +135,8 @@ export async function weeklyReportPdf(
   );
   const max = Math.max(1, ...report.days.map((d) => d.completed));
   report.days.forEach((d, i) => {
-    const x = 49 + i * 73,
+    const step = 511 / report.days.length,
+      x = 49 + i * step + (step - 41) / 2,
       h = (d.completed / max) * 110;
     page.drawRectangle({
       x,
@@ -139,7 +147,9 @@ export async function weeklyReportPdf(
     });
     text(String(d.completed), x + 14, 342 + h, 10, bold);
     text(
-      ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][i],
+      ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"][
+        new Date(`${d.date}T12:00:00Z`).getUTCDay()
+      ],
       x,
       310,
       8,
@@ -163,8 +173,8 @@ export async function weeklyReportPdf(
       : report.missed
         ? "Revise as faltas e acompanhe as confirmações antes do próximo atendimento."
         : report.completed
-          ? "Sem faltas registradas na semana. Continue acompanhando os lembretes."
-          : "Ainda não há atendimentos concluídos registrados para esta semana.",
+          ? "Sem faltas registradas no período. Continue acompanhando os lembretes."
+          : "Ainda não há atendimentos concluídos registrados para este período.",
     40,
     201,
     10,
@@ -198,7 +208,7 @@ export async function weeklyReportPdf(
   const section = (label: string) => {
     if (y < 155) {
       page = doc.addPage([595.28, 841.89]);
-      frame("Detalhes da semana.");
+      frame("Detalhes do período.");
       y = 615;
     }
     text(label, 40, y, 19, serif);
@@ -207,7 +217,7 @@ export async function weeklyReportPdf(
   const row = (name: string, values: string) => {
     if (y < 105) {
       page = doc.addPage([595.28, 841.89]);
-      frame("Detalhes da semana.");
+      frame("Detalhes do período.");
       y = 615;
     }
     page.drawLine({
@@ -242,7 +252,7 @@ export async function weeklyReportPdf(
       : "Serviços mais realizados",
   );
   if (!report.services.length)
-    row("Sem atendimentos concluídos", "Nenhum serviço registrado na semana");
+    row("Sem atendimentos concluídos", "Nenhum serviço registrado no período");
   report.services.forEach((s) =>
     row(
       s.name,
@@ -253,13 +263,13 @@ export async function weeklyReportPdf(
   section("Critérios do relatório");
   (report.platform
     ? [
-        "Semana e datas no fuso America/Sao_Paulo.",
+        "Período e datas no fuso America/Sao_Paulo.",
         "Recebimentos usam a data do pagamento das mensalidades cadastradas.",
         "Ativas, pausadas e atrasos são o estado atual, não um histórico reconstruído.",
         "Não inclui receita dos estabelecimentos, custos ou lucro da plataforma.",
       ]
     : [
-        "Semana e datas no fuso America/Sao_Paulo.",
+        "Período e datas no fuso America/Sao_Paulo.",
         "Comparecimento: concluídos / (concluídos + faltas).",
         "Comissão estimada sobre recebimentos, usando a taxa atual do profissional.",
         "Não representa comissão liquidada, lucro, entrega ou leitura de mensagens.",
@@ -268,7 +278,7 @@ export async function weeklyReportPdf(
   ).forEach((line) => {
     if (y < 105) {
       page = doc.addPage([595.28, 841.89]);
-      frame("Critérios da semana.");
+      frame("Critérios do período.");
       y = 615;
     }
     text(line, 40, y, 9, regular, muted, 510);
@@ -283,7 +293,7 @@ export async function weeklyReportPdf(
       thickness: 0.5,
     });
     text(
-      `StudioFlow | Relatório semanal${report.demo ? " | Demonstração" : ""}`,
+      `StudioFlow | Relatório ${report.daily ? "diário" : "semanal"}${report.demo ? " | Demonstração" : ""}`,
       40,
       40,
       8,

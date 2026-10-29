@@ -90,6 +90,7 @@ export async function POST(request: Request) {
           depositValue: 0,
           depositHold: 15,
           assistantEnabled: false,
+          assistantScheduleEnabled: false,
           assistantName: "Recepção",
           assistantInstructions: "",
           assistantDailyLimit: 300,

@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { DomainError } from "@/lib/availability";
+import type { BookingMenu } from "./booking-menu";
 
 /** Graph API version used for the WhatsApp Cloud API. */
 export const graphVersion = "v23.0";
@@ -13,6 +14,8 @@ export interface InboundMessage {
   text: string;
   /** Voice note: transcribed before it is stored, when the server can. */
   audioId?: string;
+  /** Photo: analyzed before it is stored, when the AI is enabled. */
+  imageId?: string;
 }
 
 /**
@@ -65,6 +68,11 @@ export function inboundMessages(body: unknown): InboundMessage[] {
       for (const message of messages) {
         const from = String(message.from || "");
         const type = String(message.type || "");
+        const interactive = message.interactive as
+          | { button_reply?: { id?: string }; list_reply?: { id?: string } }
+          | undefined;
+        const selected =
+          interactive?.button_reply?.id || interactive?.list_reply?.id;
         const text =
           type === "text"
             ? String((message.text as { body?: string })?.body || "")
@@ -72,24 +80,31 @@ export function inboundMessages(body: unknown): InboundMessage[] {
               ? String((message.button as { text?: string })?.text || "")
               : type === "interactive"
                 ? String(
-                    ((
-                      message.interactive as {
-                        button_reply?: { title?: string };
-                        list_reply?: { title?: string };
-                      }
-                    )?.button_reply?.title ||
+                    selected ||
+                      (
+                        message.interactive as {
+                          button_reply?: { title?: string };
+                          list_reply?: { title?: string };
+                        }
+                      )?.button_reply?.title ||
                       (
                         message.interactive as {
                           list_reply?: { title?: string };
                         }
-                      )?.list_reply?.title) ??
+                      )?.list_reply?.title ||
                       "",
                   )
-                : `[O cliente enviou ${type === "audio" ? "um áudio" : type === "image" ? "uma imagem" : "uma mensagem que não é texto"}.]`;
+                : type === "image"
+                  ? `[O cliente enviou uma foto.]${String((message.image as { caption?: string })?.caption || "").trim() ? `\n${String((message.image as { caption?: string })?.caption || "").trim()}` : ""}`
+                  : `[O cliente enviou ${type === "audio" ? "um áudio" : "uma mensagem que não é texto"}.]`;
         if (!from || !message.id || !text.trim()) continue;
         const audioId =
           type === "audio"
             ? String((message.audio as { id?: string })?.id || "")
+            : "";
+        const imageId =
+          type === "image"
+            ? String((message.image as { id?: string })?.id || "")
             : "";
         found.push({
           phoneNumberId,
@@ -100,6 +115,7 @@ export function inboundMessages(body: unknown): InboundMessage[] {
           id: String(message.id),
           text: text.slice(0, 2000),
           ...(audioId ? { audioId } : {}),
+          ...(imageId ? { imageId } : {}),
         });
       }
     }
@@ -112,8 +128,14 @@ export async function sendWhatsApp(input: {
   token: string;
   to: string;
   body: string;
+  menu?: BookingMenu | null;
 }) {
   let response: Response;
+  const useButtons =
+    !!input.menu &&
+    !input.menu.forceList &&
+    input.menu.rows.length > 0 &&
+    input.menu.rows.length <= 3;
   try {
     response = await fetch(
       `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(input.phoneNumberId)}/messages`,
@@ -126,8 +148,38 @@ export async function sendWhatsApp(input: {
         body: JSON.stringify({
           messaging_product: "whatsapp",
           to: input.to,
-          type: "text",
-          text: { body: input.body.slice(0, 4000), preview_url: true },
+          ...(input.menu
+            ? {
+                type: "interactive",
+                interactive: {
+                  type: useButtons ? "button" : "list",
+                  body: { text: input.body.slice(0, 1024) },
+                  action: useButtons
+                    ? {
+                        buttons: input.menu.rows.map((r) => ({
+                          type: "reply",
+                          reply: { id: r.id, title: r.title.slice(0, 20) },
+                        })),
+                      }
+                    : {
+                        button: input.menu!.button,
+                        sections: [
+                          {
+                            title: input.menu!.title.slice(0, 24),
+                            rows: input.menu!.rows.map((r) => ({
+                              id: r.id,
+                              title: r.title,
+                              description: r.description,
+                            })),
+                          },
+                        ],
+                      },
+                },
+              }
+            : {
+                type: "text",
+                text: { body: input.body.slice(0, 4000), preview_url: true },
+              }),
         }),
         signal: AbortSignal.timeout(15_000),
       },
@@ -151,6 +203,67 @@ export async function sendWhatsApp(input: {
     messages?: { id?: string }[];
   } | null;
   return sent?.messages?.[0]?.id;
+}
+
+/** Uploads an ElevenLabs MP3 to Meta, then delivers it as a WhatsApp audio message. */
+export async function sendWhatsAppAudio(input: {
+  phoneNumberId: string;
+  token: string;
+  to: string;
+  audio: Uint8Array;
+}) {
+  if (!input.audio.length || input.audio.length > 4_000_000)
+    throw new DomainError("O áudio ficou grande demais para o WhatsApp.", 413);
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", "audio/mpeg");
+  const audioBuffer = Uint8Array.from(input.audio).buffer as ArrayBuffer;
+  form.append(
+    "file",
+    new Blob([audioBuffer], { type: "audio/mpeg" }),
+    "studioflow-resposta.mp3",
+  );
+  const upload = await fetch(
+    `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(input.phoneNumberId)}/media`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${input.token}` },
+      body: form,
+      signal: AbortSignal.timeout(20_000),
+    },
+  ).catch(() => null);
+  if (!upload?.ok)
+    throw new DomainError("Não foi possível enviar o áudio ao WhatsApp.", 502);
+  const media = (await upload.json().catch(() => null)) as {
+    id?: string;
+  } | null;
+  if (!media?.id)
+    throw new DomainError("O WhatsApp não confirmou o arquivo de áudio.", 502);
+  const response = await fetch(
+    `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(input.phoneNumberId)}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: input.to,
+        type: "audio",
+        audio: { id: media.id },
+      }),
+      signal: AbortSignal.timeout(15_000),
+    },
+  ).catch(() => null);
+  if (!response?.ok)
+    throw new DomainError("O WhatsApp não confirmou o envio do áudio.", 502);
+  const sent = (await response.json().catch(() => null)) as {
+    messages?: { id?: string }[];
+  } | null;
+  if (!sent?.messages?.[0]?.id)
+    throw new DomainError("O WhatsApp não confirmou o envio do áudio.", 502);
+  return sent.messages[0].id;
 }
 
 /** Confirms the phone number id and token before saving them. */

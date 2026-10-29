@@ -1,3 +1,37 @@
+.training-coach {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #ddcab3;
+  border-radius: 14px;
+  background: #f8f1e8;
+  color: #292b2e;
+}
+.training-coach h3 {
+  font: 500 26px/1.25 var(--serif);
+  margin: 8px 0;
+}
+.training-coach p,
+.training-coach small {
+  color: #776453;
+  line-height: 1.65;
+}
+.training-coach > button {
+  justify-self: start;
+}
+.training-suggestion {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: #fffcf7;
+  border: 1px solid #e3d7c9;
+  border-radius: 10px;
+}
+.management-settings-card > .management-form + .management-form {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid #e3d7c9;
+}
 .assistant-overview {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -63,5 +97,101 @@
   }
   .assistant-overview-connections button {
     width: 100%;
+  }
+}
+/* Training should feel like a conversation, not a stack of boxes. */
+.app-shell .training-surface {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.assistant-settings {
+  gap: 30px;
+}
+.assistant-settings .assistant-overview {
+  border: 0;
+  border-radius: 22px;
+  background: #292b2e;
+  color: #eeeeea;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.8fr);
+}
+.assistant-settings .assistant-overview-main,
+.assistant-settings .assistant-overview-connections {
+  padding: 28px 30px;
+}
+.assistant-settings .assistant-overview-connections {
+  border-left: 1px solid #ffffff24;
+  background: transparent;
+}
+.assistant-settings .assistant-overview strong {
+  color: #f7f7f2;
+  font-weight: 400;
+  font-size: 28px;
+}
+.assistant-settings .assistant-overview p {
+  color: #d1d2d3;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.assistant-settings .assistant-overview .sheet-eyebrow {
+  color: #cdcdc6;
+}
+.assistant-settings .assistant-status,
+.assistant-settings .assistant-status.is-active {
+  border: 1px solid #ffffff38;
+  border-radius: 30px;
+  color: #e1dfd6;
+  background: #ffffff08;
+  padding: 7px 12px;
+}
+.assistant-settings .assistant-overview-connections .btn {
+  border-radius: 30px;
+  padding-inline: 18px;
+  font-size: 12px;
+}
+.assistant-usage-details {
+  padding: 0 4px 18px;
+  border-bottom: 1px solid #ded1be;
+}
+.assistant-usage-details > summary {
+  color: #856a4c;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 0 10px;
+}
+.assistant-usage-details .management-info {
+  background: #f1e9dd;
+  border: 0;
+  border-radius: 14px;
+  margin-top: 8px;
+  padding: 18px;
+}
+.assistant-settings .form-section {
+  border: 0;
+}
+.assistant-settings .assistant-toggle {
+  border-radius: 14px;
+  padding: 18px;
+  background: #fffaf2;
+  border-color: #e2d3bd;
+}
+.assistant-settings .training-coach {
+  border: 0;
+  border-radius: 20px;
+  background: #e8e8e3;
+  padding: 26px;
+}
+@media (max-width: 760px) {
+  .assistant-settings .assistant-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .assistant-settings .assistant-overview-main,
+  .assistant-settings .assistant-overview-connections {
+    padding: 24px;
+  }
+  .assistant-settings .assistant-overview-connections {
+    border-left: 0;
+    border-top: 1px solid #ffffff24;
   }
 }

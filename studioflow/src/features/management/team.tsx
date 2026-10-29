@@ -102,9 +102,13 @@ export default function TeamPage() {
     const end = String(form.get("end"));
     const breakStart = String(form.get("breakStart") ?? "");
     const breakEnd = String(form.get("breakEnd") ?? "");
-    if (name.length < 3 || (phone && !brazilianPhone(phone))) {
+    if (name.length < 3) {
+      action.setError("Informe o nome completo, com pelo menos 3 caracteres.");
+      return;
+    }
+    if (phone && !brazilianPhone(phone)) {
       action.setError(
-        "Informe o nome e um telefone brasileiro válido com DDD.",
+        "O telefone está incompleto ou inválido. Informe DDD + número: (62) 99999-9999. Você também pode deixar este campo vazio.",
       );
       return;
     }
@@ -140,7 +144,7 @@ export default function TeamPage() {
         id,
         businessId: data!.business.id,
         name,
-        phone,
+        phone: phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""),
         photo: String(form.get("photo") ?? "").trim(),
         specialties: String(form.get("specialties") ?? "")
           .split(",")
@@ -572,10 +576,20 @@ export default function TeamPage() {
                 required
               />
             </FormField>
-            <FormField label="Telefone (opcional)">
+            <FormField
+              label="Telefone (opcional)"
+              hint="DDD + 9 dígitos para celular, ou DDD + 8 para telefone fixo. Pode colar com +55."
+            >
               <input
                 name="phone"
                 type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                onBlur={(event) => {
+                  event.currentTarget.value = formatPhone(
+                    event.currentTarget.value,
+                  );
+                }}
                 defaultValue={editing?.phone ? formatPhone(editing.phone) : ""}
                 placeholder="(11) 99999-9999"
               />

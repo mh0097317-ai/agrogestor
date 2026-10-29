@@ -47,6 +47,7 @@ import {
 } from "./public-business-details";
 import "./public.css";
 import "./public-page.css";
+import "./client-page.css";
 
 /** "@casa", "casa" or a profile link → "casa". */
 const instagramHandle = (value: string) =>
@@ -285,7 +286,9 @@ export function PublicPage({
                       type="button"
                       onClick={open}
                       aria-haspopup="dialog"
-                      data-track={label === "Localização" ? "localizacao" : "instagram"}
+                      data-track={
+                        label === "Localização" ? "localizacao" : "instagram"
+                      }
                     >
                       <Icon size={15} /> {label}
                     </button>
@@ -304,6 +307,20 @@ export function PublicPage({
             />
           </section>
           <InstallApp slug={slug} name={business.name} />
+
+          <nav
+            className="pp-section-nav"
+            aria-label="Explore o estabelecimento"
+          >
+            <a href="#servicos">
+              Serviços <span>{activeServices.length}</span>
+            </a>
+            {availableTeam.length > 0 && <a href="#equipe">Profissionais</a>}
+            {!!business.photos?.filter(Boolean).length && (
+              <a href="#trabalhos">Nosso trabalho</a>
+            )}
+            <a href="#espaco">Como chegar</a>
+          </nav>
 
           <PublicServices
             services={activeServices}
@@ -412,6 +429,7 @@ export function PublicPage({
           <div className="pp-book-card">
             <span className="pp-eyebrow">Agenda online</span>
             <h2>Escolha o serviço, o profissional e o horário.</h2>
+            <p className="pp-book-intro">Um momento para você, do seu jeito.</p>
             <dl>
               <div>
                 <dt>Hoje</dt>

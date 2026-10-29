@@ -8,6 +8,8 @@ import {
   instanceState,
   instanceOwner,
   sendText,
+  sendBookingMenu,
+  sendWhatsAppAudio,
   parseEvolution,
   evolutionAudio,
   findContacts,
@@ -66,6 +68,14 @@ test("Evolution HTTP contract: tenant instance, enabled signed webhook, QR, owne
       res.end(JSON.stringify({ message: "test-key test-webhook-token" }));
       return;
     }
+    if (req.url?.startsWith("/message/sendWhatsAppAudio/")) {
+      res.end(JSON.stringify({ key: { id: "audio-sent" } }));
+      return;
+    }
+    if (req.url?.startsWith("/message/sendList/")) {
+      res.end(JSON.stringify({ key: { id: "list-sent" } }));
+      return;
+    }
     res.end(
       JSON.stringify(
         req.url?.startsWith("/instance/connect/")
@@ -101,9 +111,11 @@ test("Evolution HTTP contract: tenant instance, enabled signed webhook, QR, owne
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const port = (server.address() as { port: number }).port;
   const originalUrl = process.env.EVOLUTION_API_URL,
-    originalKey = process.env.EVOLUTION_API_KEY;
+    originalKey = process.env.EVOLUTION_API_KEY,
+    originalNativeLists = process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS;
   process.env.EVOLUTION_API_URL = `http://127.0.0.1:${port}`;
   process.env.EVOLUTION_API_KEY = "test-key";
+  delete process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS;
   try {
     await createInstance(
       "sf-one",
@@ -143,7 +155,43 @@ test("Evolution HTTP contract: tenant instance, enabled signed webhook, QR, owne
       number: "5511987654321",
       text: "Confirmado",
     });
+    await sendBookingMenu("sf-one", "5511987654321", "Boa noite!", {
+      title: "Como posso ajudar?",
+      button: "Ver opções",
+      forceList: true,
+      rows: [
+        {
+          id: "Quero agendar um horário",
+          title: "Agendar horário",
+          description: "Escolher serviço e horário",
+        },
+        {
+          id: "Quero ver serviços e preços",
+          title: "Serviços e preços",
+          description: "Consultar catálogo",
+        },
+        {
+          id: "Quero falar com a equipe",
+          title: "Falar com a equipe",
+          description: "Pedir ajuda de uma pessoa",
+        },
+      ],
+    });
+    assert.equal(seen.at(-1)?.path, "/message/sendList/sf-one");
+    assert.equal(seen.at(-1)?.body.buttonText, "Ver opções");
+    assert.equal(
+      (seen.at(-1)?.body.sections as { rows: unknown[] }[])[0].rows.length,
+      3,
+    );
     assert.ok(seen.every((req) => req.key === "test-key"));
+    await sendWhatsAppAudio(
+      "sf-one",
+      "5511987654321",
+      new Uint8Array([1, 2, 3]),
+    );
+    assert.equal(seen.at(-1)?.path, "/message/sendWhatsAppAudio/sf-one");
+    assert.equal(seen.at(-1)?.body.number, "5511987654321");
+    assert.equal(seen.at(-1)?.body.audio, "AQID");
     assert.equal((await findContacts("sf-one", 2)).length, 1);
     assert.equal(seen.at(-1)?.path, "/chat/findContacts/sf-one");
     assert.deepEqual(seen.at(-1)?.body, { where: {}, offset: 500, page: 2 });
@@ -180,6 +228,9 @@ test("Evolution HTTP contract: tenant instance, enabled signed webhook, QR, owne
     else process.env.EVOLUTION_API_URL = originalUrl;
     if (originalKey === undefined) delete process.env.EVOLUTION_API_KEY;
     else process.env.EVOLUTION_API_KEY = originalKey;
+    if (originalNativeLists === undefined)
+      delete process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS;
+    else process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS = originalNativeLists;
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );

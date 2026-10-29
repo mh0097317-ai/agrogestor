@@ -7,6 +7,7 @@ import {
   generalSelection,
 } from "../src/services/assistant/understanding";
 import { completeBookingSelection } from "../src/services/assistant/confirmed-booking";
+import { needsBrazilianPortugueseReview } from "../src/services/assistant/agent";
 import type { CreateMessage } from "../src/services/assistant/agent";
 
 const store = createSeed();
@@ -18,6 +19,18 @@ const response = (text: string, input = 10, output = 5) =>
     content: [{ type: "text", text }],
     usage: { input_tokens: input, output_tokens: output },
   }) as Awaited<ReturnType<CreateMessage>>;
+
+test("Brazilian Portuguese review catches missing accents and rough punctuation only", () => {
+  assert.equal(
+    needsBrazilianPortugueseReview(
+      "Tudo certo! O corte custa R$ 30,00. Prefere hoje ou amanhã?",
+    ),
+    false,
+  );
+  assert.equal(needsBrazilianPortugueseReview("Voce tem horario disponivel?"), true);
+  assert.equal(needsBrazilianPortugueseReview("Tudo bem ?"), true);
+  assert.equal(needsBrazilianPortugueseReview("Tudo certo. temos horário."), true);
+});
 
 test("greetings, acknowledgments and unreadable media receive useful replies without model charges", async () => {
   for (const text of [

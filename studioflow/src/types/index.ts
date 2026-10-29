@@ -186,6 +186,8 @@ export interface Settings {
   attendanceCheck?: boolean;
   /** AI receptionist (web chat and WhatsApp). */
   assistantEnabled: boolean;
+  /** Automatically answer only during the business opening hours. */
+  assistantScheduleEnabled: boolean;
   assistantName: string;
   assistantInstructions: string;
   assistantDailyLimit: number;

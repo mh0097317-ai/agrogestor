@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import {
   ArrowSquareOut,
+  Camera,
+  Megaphone,
+  LinkSimple,
   Copy,
   DownloadSimple,
   InstagramLogo,
@@ -27,6 +30,7 @@ import { SlotsStory } from "./story-slots";
 import { LaunchKit } from "./launch-kit";
 import { InstagramConnectCard } from "./instagram-publish";
 import "./share.css";
+import { WorkPhotoStudio } from "./work-photo-studio";
 
 export default function SharePage() {
   const { data } = useWorkspace();
@@ -136,6 +140,7 @@ function download(dataUrl: string, name: string) {
 function ShareContent({ store }: { store: Store }) {
   const { toast } = useToast();
   const { business } = store;
+  const [view, setView] = useState<"photos" | "campaigns" | "links">("photos");
   const [origin] = useState(() =>
     typeof window === "undefined" ? "" : window.location.origin,
   );
@@ -251,258 +256,360 @@ function ShareContent({ store }: { store: Store }) {
         title="Divulgar"
         description={
           online
-            ? "Leve seus clientes para a agenda online."
-            : "Gerencie seus canais de atendimento."
+            ? "Mostre seu trabalho. Desperte vontade. Traga a próxima visita."
+            : "Fotos, publicações e seus canais de atendimento em um só lugar."
         }
       />
-      {!online && <OnlineBookingNotice />}
-      <div className="share-channel-summary">
-        <span className={online ? "is-active" : ""}>
-          Link público · {online ? "ativado" : "desativado"}
-        </span>
-        <span className={channels.whatsapp ? "is-active" : ""}>
-          WhatsApp ·{" "}
-          {channels.whatsapp ? "disponível" : "cadastre o número da loja"}
-        </span>
-      </div>
-      <div className="share-grid">
-        {channels.whatsapp && (
-          <Card className="share-card share-link">
-            <h2>
-              <WhatsAppIcon size={20} /> Agendamento pelo WhatsApp
-            </h2>
-            <p>
-              Leve seus clientes direto para a conversa com o estabelecimento.
-            </p>
-            <div className="share-url">
-              <span>{channels.whatsapp.split("?")[0]}</span>
+      <nav className="share-mode-nav" aria-label="O que você quer divulgar?">
+        {(
+          [
+            {
+              id: "photos",
+              title: "Meu trabalho",
+              hint: "Fotos que atraem clientes",
+              icon: Camera,
+            },
+            {
+              id: "campaigns",
+              title: "Minha agenda",
+              hint: "Campanhas e horários livres",
+              icon: Megaphone,
+            },
+            {
+              id: "links",
+              title: "Meus canais",
+              hint: "Links, QR Code e recepção",
+              icon: LinkSimple,
+            },
+          ] as const
+        ).map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-pressed={view === item.id}
+            aria-controls="share-workspace"
+            onClick={() => setView(item.id)}
+            className={view === item.id ? "is-selected" : ""}
+          >
+            <span className="share-mode-icon">
+              <item.icon
+                size={22}
+                weight={view === item.id ? "duotone" : "regular"}
+              />
+            </span>
+            <span>
+              <strong>{item.title}</strong>
+              <small>{item.hint}</small>
+            </span>
+            <span className="share-mode-number">0{index + 1}</span>
+          </button>
+        ))}
+      </nav>
+      <section
+        id="share-workspace"
+        aria-label={
+          view === "photos"
+            ? "Estúdio de fotos"
+            : view === "campaigns"
+              ? "Campanhas da agenda"
+              : "Canais de divulgação"
+        }
+      >
+        <div hidden={view !== "photos"}>
+          <WorkPhotoStudio
+            store={store}
+            bookingUrl={channels.online || channels.whatsapp || url}
+          />
+          <details className="share-instagram-disclosure">
+            <summary>
+              <InstagramLogo size={20} />
+              <span>
+                Publicar direto no Instagram
+                <small>
+                  {store.instagramFeed
+                    ? "Sua conta está conectada"
+                    : "Conecte sua conta profissional"}
+                </small>
+              </span>
+              <span aria-hidden="true">+</span>
+            </summary>
+            <InstagramConnectCard store={store} />
+          </details>
+        </div>
+        {view !== "photos" && (
+          <>
+            {!online && <OnlineBookingNotice />}
+            <div className="share-channel-summary">
+              <span className={online ? "is-active" : ""}>
+                Link público · {online ? "ativado" : "desativado"}
+              </span>
+              <span className={channels.whatsapp ? "is-active" : ""}>
+                WhatsApp ·{" "}
+                {channels.whatsapp ? "disponível" : "cadastre o número da loja"}
+              </span>
             </div>
-            <div className="share-actions">
-              <Button
-                onClick={() =>
-                  void copy(channels.whatsapp, "Link do WhatsApp copiado.")
-                }
-              >
-                <Copy size={16} />
-                Copiar WhatsApp
-              </Button>
-              <a
-                className="share-open"
-                href={channels.whatsapp}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir conversa <ArrowSquareOut size={15} />
-              </a>
-            </div>
-          </Card>
-        )}
-        {online && (
-          <Card className="share-card share-link">
-            <h2>Seu link de agendamento</h2>
-            <div className="share-url">
-              <span>{url.replace(/^https?:\/\//, "")}</span>
-            </div>
-            <div className="share-actions">
-              <Button onClick={() => void copy(url, "Link copiado.")}>
-                <Copy size={16} /> Copiar link
-              </Button>
-              <Button variant="secondary" onClick={() => void share()}>
-                <ShareNetwork size={16} /> Compartilhar
-              </Button>
-              <a
-                className="share-open"
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Abrir página <ArrowSquareOut size={15} />
-              </a>
-            </div>
-          </Card>
-        )}
+            <div className="share-grid">
+              {view === "links" && channels.whatsapp && (
+                <Card className="share-card share-link">
+                  <h2>
+                    <WhatsAppIcon size={20} /> Agendamento pelo WhatsApp
+                  </h2>
+                  <p>
+                    Leve seus clientes direto para a conversa com o
+                    estabelecimento.
+                  </p>
+                  <div className="share-url">
+                    <span>{channels.whatsapp.split("?")[0]}</span>
+                  </div>
+                  <div className="share-actions">
+                    <Button
+                      onClick={() =>
+                        void copy(
+                          channels.whatsapp,
+                          "Link do WhatsApp copiado.",
+                        )
+                      }
+                    >
+                      <Copy size={16} />
+                      Copiar WhatsApp
+                    </Button>
+                    <a
+                      className="share-open"
+                      href={channels.whatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir conversa <ArrowSquareOut size={15} />
+                    </a>
+                  </div>
+                </Card>
+              )}
+              {view === "links" && online && (
+                <Card className="share-card share-link">
+                  <h2>Seu link de agendamento</h2>
+                  <div className="share-url">
+                    <span>{url.replace(/^https?:\/\//, "")}</span>
+                  </div>
+                  <div className="share-actions">
+                    <Button onClick={() => void copy(url, "Link copiado.")}>
+                      <Copy size={16} /> Copiar link
+                    </Button>
+                    <Button variant="secondary" onClick={() => void share()}>
+                      <ShareNetwork size={16} /> Compartilhar
+                    </Button>
+                    <a
+                      className="share-open"
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Abrir página <ArrowSquareOut size={15} />
+                    </a>
+                  </div>
+                </Card>
+              )}
 
-        {(online || reception || channels.whatsapp) && (
-          <Card className="share-card share-qr">
-            {Number(online) + Number(reception) + Number(!!channels.whatsapp) >
-              1 && (
-              <div
-                className="share-switch"
-                role="tablist"
-                aria-label="Tipo de cartaz"
-              >
-                {online && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={poster === "book"}
-                    className={poster === "book" ? "is-on" : ""}
-                    onClick={() => setPoster("book")}
-                  >
-                    Agendar
-                  </button>
+              {view === "links" &&
+                (online || reception || channels.whatsapp) && (
+                  <Card className="share-card share-qr">
+                    {Number(online) +
+                      Number(reception) +
+                      Number(!!channels.whatsapp) >
+                      1 && (
+                      <div
+                        className="share-switch"
+                        role="tablist"
+                        aria-label="Tipo de cartaz"
+                      >
+                        {online && (
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={poster === "book"}
+                            className={poster === "book" ? "is-on" : ""}
+                            onClick={() => setPoster("book")}
+                          >
+                            Agendar
+                          </button>
+                        )}
+                        {channels.whatsapp && (
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={poster === "whatsapp"}
+                            className={poster === "whatsapp" ? "is-on" : ""}
+                            onClick={() => setPoster("whatsapp")}
+                          >
+                            WhatsApp
+                          </button>
+                        )}
+                        {reception && (
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={poster === "checkin"}
+                            className={poster === "checkin" ? "is-on" : ""}
+                            onClick={() => setPoster("checkin")}
+                          >
+                            Check-in na recepção
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="share-poster" id="share-poster">
+                      <div className="share-poster-brand">
+                        {business.logo ? (
+                          <img
+                            src={business.logo}
+                            alt=""
+                            className="share-poster-logo"
+                          />
+                        ) : (
+                          <span className="share-poster-mark">
+                            <SegmentIcon
+                              category={business.category}
+                              size={30}
+                              weight="light"
+                            />
+                          </span>
+                        )}
+                        <strong>{business.name}</strong>
+                        <small>{business.category}</small>
+                      </div>
+                      <p className="share-poster-title">
+                        {poster === "checkin"
+                          ? "Chegou? Avise a equipe por aqui"
+                          : poster === "whatsapp"
+                            ? "Marque seu horário pelo WhatsApp"
+                            : "Agende seu horário pelo celular"}
+                      </p>
+                      <div className="share-poster-code">
+                        {qr ? (
+                          <img src={qr} alt={`QR Code para ${posterUrl}`} />
+                        ) : (
+                          <QrCode size={64} weight="thin" />
+                        )}
+                      </div>
+                      <p className="share-poster-hint">
+                        Aponte a câmera do celular
+                      </p>
+                      <p className="share-poster-url">
+                        {displayAddress(posterUrl)}
+                      </p>
+                    </div>
+                    <div className="share-actions">
+                      <Button onClick={() => window.print()} disabled={!qr}>
+                        <Printer size={16} /> Imprimir cartaz
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        disabled={!qr}
+                        onClick={() =>
+                          download(
+                            qr,
+                            `qrcode-${poster === "checkin" ? "checkin-" : ""}${business.slug}.png`,
+                          )
+                        }
+                      >
+                        <DownloadSimple size={16} /> Baixar QR Code
+                      </Button>
+                      {poster !== "checkin" && (
+                        <Button
+                          variant="secondary"
+                          disabled={!qr}
+                          onClick={() =>
+                            void storyImage(
+                              store,
+                              posterUrl,
+                              qr,
+                              poster === "whatsapp",
+                            )
+                              .then((image) =>
+                                download(image, `stories-${business.slug}.png`),
+                              )
+                              .catch(() =>
+                                toast(
+                                  "Não foi possível gerar a imagem. Tente de novo.",
+                                ),
+                              )
+                          }
+                        >
+                          <InstagramLogo size={16} /> Imagem para Stories
+                        </Button>
+                      )}
+                    </div>
+                    <p className="share-tip">
+                      {poster === "checkin"
+                        ? 'Deixe no balcão da recepção. O cliente avisa que chegou e aparece "Chegou" na sua agenda e na TV.'
+                        : poster === "whatsapp"
+                          ? "Quem apontar a câmera abre uma conversa com o WhatsApp da loja."
+                          : "Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a câmera cai direto na sua agenda."}
+                    </p>
+                  </Card>
                 )}
-                {channels.whatsapp && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={poster === "whatsapp"}
-                    className={poster === "whatsapp" ? "is-on" : ""}
-                    onClick={() => setPoster("whatsapp")}
-                  >
-                    WhatsApp
-                  </button>
-                )}
-                {reception && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={poster === "checkin"}
-                    className={poster === "checkin" ? "is-on" : ""}
-                    onClick={() => setPoster("checkin")}
-                  >
-                    Check-in na recepção
-                  </button>
-                )}
-              </div>
-            )}
-            <div className="share-poster" id="share-poster">
-              <div className="share-poster-brand">
-                {business.logo ? (
-                  <img
-                    src={business.logo}
-                    alt=""
-                    className="share-poster-logo"
-                  />
-                ) : (
-                  <span className="share-poster-mark">
-                    <SegmentIcon
-                      category={business.category}
-                      size={30}
-                      weight="light"
-                    />
-                  </span>
-                )}
-                <strong>{business.name}</strong>
-                <small>{business.category}</small>
-              </div>
-              <p className="share-poster-title">
-                {poster === "checkin"
-                  ? "Chegou? Avise a equipe por aqui"
-                  : poster === "whatsapp"
-                    ? "Marque seu horário pelo WhatsApp"
-                    : "Agende seu horário pelo celular"}
-              </p>
-              <div className="share-poster-code">
-                {qr ? (
-                  <img src={qr} alt={`QR Code para ${posterUrl}`} />
-                ) : (
-                  <QrCode size={64} weight="thin" />
-                )}
-              </div>
-              <p className="share-poster-hint">Aponte a câmera do celular</p>
-              <p className="share-poster-url">{displayAddress(posterUrl)}</p>
-            </div>
-            <div className="share-actions">
-              <Button onClick={() => window.print()} disabled={!qr}>
-                <Printer size={16} /> Imprimir cartaz
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={!qr}
-                onClick={() =>
-                  download(
-                    qr,
-                    `qrcode-${poster === "checkin" ? "checkin-" : ""}${business.slug}.png`,
-                  )
-                }
-              >
-                <DownloadSimple size={16} /> Baixar QR Code
-              </Button>
-              {poster !== "checkin" && (
-                <Button
-                  variant="secondary"
-                  disabled={!qr}
-                  onClick={() =>
-                    void storyImage(store, posterUrl, qr, poster === "whatsapp")
-                      .then((image) =>
-                        download(image, `stories-${business.slug}.png`),
-                      )
-                      .catch(() =>
-                        toast(
-                          "Não foi possível gerar a imagem. Tente de novo.",
-                        ),
-                      )
-                  }
-                >
-                  <InstagramLogo size={16} /> Imagem para Stories
-                </Button>
+
+              {view === "campaigns" && online && (
+                <LaunchKit store={store} url={url} />
+              )}
+
+              {view === "campaigns" && online && (
+                <SlotsStory store={store} url={url} />
+              )}
+
+              {view === "links" && reception && (
+                <Card className="share-card share-tv">
+                  <h2>
+                    <Television size={20} /> Modo TV da recepção
+                  </h2>
+                  <p>
+                    Abra na TV da barbearia (navegador da smart TV, TV box ou um
+                    notebook no HDMI) com a sua conta. Mostra o relógio, quem
+                    está sendo atendido, os próximos horários, quem fez check-in
+                    e os QR Codes para{" "}
+                    {online ? "agendar e avisar a chegada" : "avisar a chegada"}
+                    . Atualiza sozinha.
+                  </p>
+                  <div className="share-actions">
+                    <a
+                      className="btn btn-primary"
+                      href="/tv"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <Television size={16} /> Abrir modo TV
+                    </a>
+                  </div>
+                </Card>
+              )}
+
+              {view === "campaigns" && marketingTexts.length > 0 && (
+                <Card className="share-card share-texts">
+                  <h2>Textos prontos</h2>
+                  <ul role="list">
+                    {marketingTexts.map(({ icon: Icon, title, text }) => (
+                      <li key={title}>
+                        <div>
+                          <Icon size={18} />
+                          <strong>{title}</strong>
+                        </div>
+                        <p>{text}</p>
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            void copy(text, `${title}: texto copiado.`)
+                          }
+                        >
+                          <Copy size={15} /> Copiar
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               )}
             </div>
-            <p className="share-tip">
-              {poster === "checkin"
-                ? 'Deixe no balcão da recepção. O cliente avisa que chegou e aparece "Chegou" na sua agenda e na TV.'
-                : poster === "whatsapp"
-                  ? "Quem apontar a câmera abre uma conversa com o WhatsApp da loja."
-                  : "Cole o cartaz no espelho, no balcão ou na porta. Quem apontar a câmera cai direto na sua agenda."}
-            </p>
-          </Card>
+          </>
         )}
-
-        {online && <InstagramConnectCard store={store} />}
-        {online && <LaunchKit store={store} url={url} />}
-
-        {online && <SlotsStory store={store} url={url} />}
-
-        {reception && (
-          <Card className="share-card share-tv">
-            <h2>
-              <Television size={20} /> Modo TV da recepção
-            </h2>
-            <p>
-              Abra na TV da barbearia (navegador da smart TV, TV box ou um
-              notebook no HDMI) com a sua conta. Mostra o relógio, quem está
-              sendo atendido, os próximos horários, quem fez check-in e os QR
-              Codes para{" "}
-              {online ? "agendar e avisar a chegada" : "avisar a chegada"}.
-              Atualiza sozinha.
-            </p>
-            <div className="share-actions">
-              <a
-                className="btn btn-primary"
-                href="/tv"
-                target="_blank"
-                rel="noopener"
-              >
-                <Television size={16} /> Abrir modo TV
-              </a>
-            </div>
-          </Card>
-        )}
-
-        {marketingTexts.length > 0 && (
-          <Card className="share-card share-texts">
-            <h2>Textos prontos</h2>
-            <ul role="list">
-              {marketingTexts.map(({ icon: Icon, title, text }) => (
-                <li key={title}>
-                  <div>
-                    <Icon size={18} />
-                    <strong>{title}</strong>
-                  </div>
-                  <p>{text}</p>
-                  <Button
-                    variant="secondary"
-                    onClick={() => void copy(text, `${title}: texto copiado.`)}
-                  >
-                    <Copy size={15} /> Copiar
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-      </div>
+      </section>
     </div>
   );
 }

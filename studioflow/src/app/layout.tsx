@@ -50,7 +50,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    // The opening scripts set visit-marker attributes before hydration to avoid a flash.
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${hanken.className} ${hanken.variable} ${fraunces.variable}`}
       >

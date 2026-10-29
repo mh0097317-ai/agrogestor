@@ -1,8 +1,13 @@
 "use client";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowUpRight, Plus } from "@phosphor-icons/react/dist/ssr";
-import { dateLabel, localDay } from "@/lib/utils";
+import {
+  ArrowUpRight,
+  CalendarBlank,
+  Plus,
+} from "@phosphor-icons/react/dist/ssr";
+import { dateLabel, localDay, statusLabels } from "@/lib/utils";
+import { Avatar } from "@/components/ui";
 import type { Appointment, Store } from "@/types";
 import { appointmentServices, appointmentsOn } from "./agenda-helpers";
 
@@ -47,6 +52,8 @@ export function WeekOverview({
   onAdd,
   onSelect,
   onDetail,
+  today,
+  selectedDate,
 }: {
   data: Store;
   days: Date[];
@@ -55,6 +62,8 @@ export function WeekOverview({
   onAdd: (date: Date) => void;
   onSelect: (date: Date) => void;
   onDetail: (appointment: Appointment) => void;
+  today: string;
+  selectedDate: string;
 }) {
   return (
     <div className="calendar-week-scroll">
@@ -62,14 +71,21 @@ export function WeekOverview({
         {days.map((day) => {
           const entries = appointmentsOn(appointments, localDay(day));
           return (
-            <section className="calendar-week-column" key={localDay(day)}>
+            <section
+              className={`calendar-week-column ${localDay(day) === today ? "is-today" : ""} ${localDay(day) === selectedDate ? "is-selected" : ""}`}
+              key={localDay(day)}
+            >
               <button
                 className="calendar-week-heading"
                 type="button"
                 onClick={() => onSelect(day)}
                 aria-label={`Abrir ${dateLabel(day)}`}
               >
-                <span>{format(day, "EEE", { locale: ptBR })}</span>
+                <span>
+                  {localDay(day) === today
+                    ? "Hoje"
+                    : format(day, "EEE", { locale: ptBR })}
+                </span>
                 <strong>{format(day, "dd")}</strong>
                 <small>
                   {entries.length} atendimentos <ArrowUpRight size={12} />
@@ -90,6 +106,15 @@ export function WeekOverview({
                     <strong>{appointment.customerName}</strong>
                     <small>{appointmentServices(data, appointment)}</small>
                     <small>
+                      <Avatar
+                        name={
+                          data.professionals.find(
+                            (professional) =>
+                              professional.id === appointment.professionalId,
+                          )?.name || "Profissional"
+                        }
+                        size={18}
+                      />
                       {
                         data.professionals
                           .find(
@@ -99,10 +124,25 @@ export function WeekOverview({
                           ?.name.split(" ")[0]
                       }
                     </small>
+                    <span className="calendar-week-status">
+                      {statusLabels[appointment.status]}
+                    </span>
                   </button>
                 ))}
                 {!entries.length && (
-                  <p className="calendar-week-empty">Nenhum atendimento</p>
+                  <div className="calendar-week-empty">
+                    <CalendarBlank
+                      size={26}
+                      weight="duotone"
+                      aria-hidden="true"
+                    />
+                    <span>Nenhum atendimento</span>
+                    <small>
+                      {canEdit
+                        ? "Organize seu próximo horário"
+                        : "Os atendimentos aparecerão aqui"}
+                    </small>
+                  </div>
                 )}
               </div>
               {canEdit && (
@@ -127,11 +167,13 @@ export function MonthOverview({
   date,
   appointments,
   onSelect,
+  today,
 }: {
   days: Date[];
   date: Date;
   appointments: Appointment[];
   onSelect: (date: Date) => void;
+  today: string;
 }) {
   return (
     <div className="calendar-month-board">
@@ -147,12 +189,30 @@ export function MonthOverview({
             <button
               type="button"
               key={localDay(day)}
-              className={`calendar-month-day ${!isSameMonth(day, date) ? "outside" : ""} ${isSameDay(day, date) ? "selected" : ""}`}
+              className={`calendar-month-day ${!isSameMonth(day, date) ? "outside" : ""} ${isSameDay(day, date) ? "selected" : ""} ${localDay(day) === today ? "is-today" : ""}`}
               aria-pressed={isSameDay(day, date)}
+              aria-current={localDay(day) === today ? "date" : undefined}
               aria-label={`${dateLabel(day, "dd 'de' MMMM")}, ${entries.length} atendimentos`}
               onClick={() => onSelect(day)}
             >
               <strong>{format(day, "d")}</strong>
+              <span className="calendar-month-preview" aria-hidden="true">
+                {entries.slice(0, 2).map((appointment) => (
+                  <span
+                    key={appointment.id}
+                    className={`calendar-month-entry calendar-status-${appointment.status}`}
+                  >
+                    <time>{dateLabel(appointment.start, "HH:mm")}</time>
+                    <span>{appointment.customerName}</span>
+                  </span>
+                ))}
+                {entries.length > 2 && (
+                  <small>
+                    +{entries.length - 2}{" "}
+                    {entries.length === 3 ? "atendimento" : "atendimentos"}
+                  </small>
+                )}
+              </span>
               {entries.length > 0 && (
                 <span className="calendar-month-count">
                   <b>{entries.length}</b>

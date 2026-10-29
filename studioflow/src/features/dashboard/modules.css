@@ -1,15 +1,15 @@
-/* Atelier: the same paper identity, with a more deliberate module composition. */
+/* Graphite and quiet neutral surfaces across the management workspace. */
 .app-shell {
-  --sf-green: #243d34;
-  --sf-green-soft: #e9eee8;
+  --sf-graphite: #292b2e;
+  --sf-graphite-soft: #edede9;
   --sf-line: #ded6c9;
-  --gradient: var(--sf-green);
+  --gradient: var(--sf-graphite);
   --radius: 10px;
   background: #f5f1e9;
 }
 .app-shell .sidebar {
-  background: #1b2d27;
-  color: #c3c9ba;
+  background: #202225;
+  color: #d8d9d7;
   border-right: 1px solid #ffffff0c;
 }
 .app-shell .sidebar-business {
@@ -18,7 +18,7 @@
 }
 .app-shell .sidebar-business-name small,
 .app-shell .nav-section-label {
-  color: #a4b3a3;
+  color: #b8babd;
 }
 .app-shell .nav-link.active {
   color: #f9f3e8;
@@ -33,7 +33,7 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 168px;
+  min-height: 148px;
   padding: 22px 0 28px;
   margin-bottom: 0;
   border-bottom: 1px solid #cfc4b2;
@@ -65,11 +65,11 @@
   font-variant-numeric: tabular-nums;
 }
 .app-shell .sf-module-header h1 {
-  font-size: clamp(40px, 4.2vw, 60px);
+  font-size: clamp(34px, 3.8vw, 52px);
   font-weight: 450;
   line-height: 1.02;
   letter-spacing: -0.055em;
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .sf-module-header p {
   max-width: 520px;
@@ -81,11 +81,11 @@
   padding-bottom: 4px;
 }
 .app-shell .btn-primary {
-  background: #243d34;
+  background: #292b2e;
   box-shadow: none;
 }
 .app-shell .btn-primary:hover {
-  background: #345346;
+  background: #414449;
 }
 .app-shell .btn-secondary {
   background: #fffdf8;
@@ -129,8 +129,8 @@
   border-right: 1px solid #ded6c9;
 }
 .app-shell .metric-item:first-child {
-  background: #e9eee8;
-  border-color: #d6dfd3;
+  background: #edede9;
+  border-color: #ddccb8;
 }
 .app-shell .metric-item > span {
   color: #716a5f;
@@ -140,7 +140,7 @@
 }
 .app-shell .metric-item strong {
   font-size: clamp(28px, 2.5vw, 38px);
-  color: #243d34;
+  color: #292b2e;
   line-height: 1.2;
 }
 .app-shell .metric-item small {
@@ -176,7 +176,7 @@
 .app-shell .management-filters button.selected,
 .app-shell .crm-filters button.selected {
   background: #fffdf8;
-  color: #243d34;
+  color: #292b2e;
   border-color: transparent;
   box-shadow: 0 2px 5px #30281709;
   font-weight: 650;
@@ -208,7 +208,7 @@
   background: #f8f5ee;
 }
 .app-shell .management-table td strong {
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .management-period {
   border-radius: 10px;
@@ -221,7 +221,7 @@
 }
 .app-shell .management-period .management-filters button.selected {
   background: #fffdf8;
-  color: #243d34;
+  color: #292b2e;
   box-shadow: 0 2px 5px #30281709;
 }
 .app-shell .management-pill {
@@ -230,8 +230,8 @@
   font-size: 10px;
 }
 .app-shell .management-pill.success {
-  background: #e9eee8;
-  color: #365642;
+  background: #edede9;
+  color: #715334;
 }
 
 /* Services are a portfolio, rather than a narrow administration table. */
@@ -315,7 +315,7 @@
   font-family: var(--serif);
   font-size: 30px;
   font-weight: 450;
-  color: #243d34;
+  color: #292b2e;
   padding-top: 8px;
 }
 .app-shell .catalog-actions {
@@ -350,7 +350,7 @@
   font-size: 24px;
 }
 .app-shell .shop-price {
-  color: #243d34;
+  color: #292b2e;
   font-size: 29px;
 }
 
@@ -362,16 +362,16 @@
 .app-shell .crm-context {
   margin: 0;
   padding: 17px 20px;
-  border: 1px solid #d6dfd3;
+  border: 1px solid #ddccb8;
   border-radius: 8px;
-  background: #e9eee8;
+  background: #edede9;
 }
 .app-shell .crm-context > span strong {
   font-family: var(--serif);
   font-size: 27px;
   font-weight: 450;
   margin-right: 8px;
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .crm-person > div > strong {
   font-size: 15px;
@@ -384,11 +384,11 @@
   background: #f7f3e9;
 }
 .app-shell .crm-spent {
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .avatar {
-  background: #e8eddf;
-  color: #405445;
+  background: #eee1d0;
+  color: #6b5039;
 }
 .app-shell .team-card {
   padding: 27px;
@@ -410,7 +410,7 @@
   font-family: var(--serif);
   font-size: 28px;
   font-weight: 450;
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .team-week span {
   background: transparent;
@@ -418,9 +418,9 @@
   border-radius: 5px;
 }
 .app-shell .team-week span.working {
-  background: #e9eee8;
-  color: #365642;
-  border-color: #d6dfd3;
+  background: #edede9;
+  color: #715334;
+  border-color: #ddccb8;
 }
 .app-shell .team-connection > summary {
   min-height: 62px;
@@ -428,8 +428,8 @@
 
 /* Cash gets a distinct, calm focal point; charts and tables stay on paper. */
 .app-shell .finance-overview {
-  background: #243d34;
-  border-color: #243d34;
+  background: #292b2e;
+  border-color: #292b2e;
   color: #f9f3e8;
   padding: 35px;
   min-height: 210px;
@@ -438,7 +438,7 @@
   background: #b69965;
 }
 .app-shell .finance-overview .management-eyebrow {
-  color: #d2dccb;
+  color: #e3d1b9;
   font-size: 10px;
   letter-spacing: 0.12em;
 }
@@ -451,7 +451,7 @@
 .app-shell .finance-overview p,
 .app-shell .finance-overview-balance > span,
 .app-shell .finance-overview-balance small {
-  color: #c1cebc;
+  color: #d9c4aa;
 }
 .app-shell .finance-overview-balance {
   border-left-color: #ffffff22;
@@ -463,7 +463,7 @@
   font-weight: 450;
 }
 .app-shell .management-bar-track > span {
-  background: #6c8270;
+  background: #9c7652;
 }
 .app-shell .management-rank-number {
   font-family: var(--serif);
@@ -478,8 +478,8 @@
 .app-shell .chat-overview {
   border-radius: 8px;
   padding: 21px 24px;
-  background: #e9eee8;
-  border-color: #d6dfd3;
+  background: #edede9;
+  border-color: #ddccb8;
 }
 .app-shell .chat-layout {
   min-height: 540px;
@@ -492,8 +492,8 @@
   border-bottom-color: #e7dfd1;
 }
 .app-shell .chat-item.is-active {
-  background: #e9eee8;
-  box-shadow: inset 3px 0 #52735c;
+  background: #edede9;
+  box-shadow: inset 3px 0 #9a7048;
 }
 .app-shell .chat-thread {
   background: #f5f1e8;
@@ -505,22 +505,22 @@
   background: #fffdf8;
 }
 .app-shell .chat-bubble.is-staff p {
-  background: #243d34;
+  background: #292b2e;
 }
 .app-shell .chat-bubble.is-assistant p {
-  background: #e9eee8;
-  border-color: #d6dfd3;
+  background: #edede9;
+  border-color: #ddccb8;
 }
 .app-shell .chat-empty {
   background: #f5f1e8;
 }
 .app-shell .chat-empty strong {
-  color: #243d34;
+  color: #292b2e;
   font-size: 32px;
 }
 .app-shell .settings-section-nav .management-tab.selected {
-  background: #e9eee8;
-  color: #243d34;
+  background: #edede9;
+  color: #292b2e;
 }
 .app-shell .management-settings-card {
   padding: 30px;
@@ -540,7 +540,7 @@
   border-radius: 10px;
 }
 .app-shell .segmented .selected {
-  background: #243d34;
+  background: #292b2e;
   color: #fffdf8;
 }
 .app-shell .calendar-card-heading {
@@ -553,7 +553,7 @@
   font-family: var(--serif);
   font-size: 27px;
   font-weight: 450;
-  color: #243d34;
+  color: #292b2e;
 }
 body:has(.app-shell) .detail-panel {
   background: #fffdf8;
@@ -568,7 +568,7 @@ body:has(.app-shell) .modal > header h2 {
   font-weight: 450;
 }
 body:has(.app-shell) .modal .btn-primary {
-  background: #243d34;
+  background: #292b2e;
 }
 .app-shell .club-plans {
   gap: 22px;
@@ -586,7 +586,7 @@ body:has(.app-shell) .modal .btn-primary {
 }
 .app-shell .club-plan-price {
   font-size: 38px;
-  color: #243d34;
+  color: #292b2e;
 }
 .app-shell .share-card {
   padding: 28px;
@@ -600,9 +600,9 @@ body:has(.app-shell) .modal .btn-primary {
 .app-shell .share-url {
   border-style: solid;
   border-radius: 7px;
-  background: #e9eee8;
-  border-color: #d6dfd3;
-  color: #243d34;
+  background: #edede9;
+  border-color: #ddccb8;
+  color: #292b2e;
 }
 body:has(.app-shell) .modal input,
 body:has(.app-shell) .modal select,

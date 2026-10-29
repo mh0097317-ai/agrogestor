@@ -3,6 +3,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { DomainError } from "@/lib/availability";
 import { openVault, sealVault } from "../server-secrets";
 import { isDemo } from "../server-demo";
+import { businessAiCredential } from "../admin-vault";
 
 export const audioKeySchema = z.object({
   provider: z.enum(["groq", "openai"]),
@@ -43,6 +44,13 @@ export async function audioVaultView(
       model: data.model,
       hint: data.key_hint,
     };
+  const ai = await businessAiCredential(businessId);
+  if (ai?.provider === "openai")
+    return {
+      configured: true,
+      provider: "OpenAI (chave da IA)",
+      model: config.openai.model,
+    };
   return {
     configured: !!process.env.TRANSCRIBE_API_KEY,
     provider: process.env.TRANSCRIBE_API_KEY ? "servidor" : undefined,
@@ -62,6 +70,8 @@ export async function audioCredential(businessId?: string) {
         model: data.model as string,
         key: openVault(data.secret_enc, scope(businessId)),
       };
+    const ai = await businessAiCredential(businessId);
+    if (ai?.provider === "openai") return { ...config.openai, key: ai.key };
   }
   return process.env.TRANSCRIBE_API_KEY
     ? {

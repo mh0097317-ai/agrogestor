@@ -50,17 +50,24 @@ export function PlatformAiControl() {
       </span>
       <div className="pf-ai-text">
         <div className="pf-ai-head">
-          <h2 id="pf-ai-title">Atendimento com IA</h2>
+          <h2 id="pf-ai-title">Controle geral da IA</h2>
           <span className="pf-ai-badge" role="status">
             <i aria-hidden="true" />
-            {state === "loading" ? "Consultando…" : enabled ? "Ligada" : "Desligada"}
+            {state === "loading"
+              ? "Consultando…"
+              : enabled
+                ? "Ligada"
+                : "Desligada"}
           </span>
         </div>
         <p>
           {enabled
-            ? "A recepcionista responde nas barbearias que a ativaram. Cada casa segue as próprias configurações."
-            : "Nenhuma barbearia usa a IA agora. Só você pode ligar, por aqui."}{" "}
-          <span>Confirmações, lembretes e relatórios funcionam sempre.</span>
+            ? "IA liberada para atendimento dos clientes, Marketing e geração de e-mails. Cada módulo mantém suas configurações e credenciais."
+            : "Atendimento com IA, Marketing com IA e geração de e-mails por IA estão bloqueados. Só o admin pode liberar, por aqui."}{" "}
+          <span>
+            Confirmações, lembretes e relatórios seguem suas configurações de
+            envio.
+          </span>
         </p>
         {error && (
           <p className="pf-ai-error" role="alert">

@@ -580,6 +580,38 @@
     grid-column: auto;
   }
 }
+
+/* Keep every dashboard/admin surface inside the phone viewport. */
+@media (max-width: 767px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .app-shell,
+  .main-shell,
+  .dashboard-content,
+  .pf,
+  .pf-main,
+  .mk {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .dashboard-content {
+    padding-left: clamp(12px, 4vw, 20px);
+    padding-right: clamp(12px, 4vw, 20px);
+  }
+  .pf-main,
+  .mk > *,
+  .mk-top > *,
+  .mk-grid > *,
+  .mk-card > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *:before,

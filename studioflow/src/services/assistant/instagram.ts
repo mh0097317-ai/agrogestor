@@ -10,6 +10,7 @@ export interface InstagramMessage {
   /** Quem escreveu (id do Instagram dentro desta conta). */
   from: string;
   id: string;
+  createdAt?: string;
   text: string;
   /** Link temporário do áudio, quando é uma mensagem de voz. */
   audioUrl?: string;
@@ -52,6 +53,9 @@ export function inboundInstagram(body: unknown, ownId: string): InstagramMessage
         from: sender,
         id: message.mid,
         text: text.slice(0, 2000),
+        ...(typeof event.timestamp === "number" && Number.isFinite(event.timestamp)
+          ? { createdAt: new Date(event.timestamp).toISOString() }
+          : {}),
         ...(audio ? { audioUrl: audio } : {}),
       });
     }

@@ -31,6 +31,7 @@ const staff = [...editors, "receptionist", "professional"];
 
 export const assistantSchema = z.object({
   assistantEnabled: z.boolean(),
+  assistantScheduleEnabled: z.boolean().default(false),
   assistantName: z.string().trim().min(2, "Dê um nome à atendente.").max(40),
   assistantInstructions: z
     .string()
@@ -95,6 +96,7 @@ export async function updateAssistant(input: z.infer<typeof assistantSchema>) {
     .from("business_settings")
     .update({
       assistant_enabled: input.assistantEnabled,
+      assistant_schedule_enabled: input.assistantScheduleEnabled,
       assistant_name: input.assistantName,
       assistant_instructions: input.assistantInstructions,
       assistant_daily_limit: input.assistantDailyLimit,

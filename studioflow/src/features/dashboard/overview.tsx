@@ -6,8 +6,6 @@ import { StudioFlowResults } from "./studioflow-results";
 import { MonthRecapCard } from "./month-recap";
 import "./experience.css";
 import { OverviewWhatsApp } from "./overview-whatsapp";
-import { PageChecklist } from "./page-checklist";
-import { activationSteps } from "@/lib/activation";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -234,31 +232,6 @@ export function Overview() {
       )}
       <div className="ov-body">
         <div className="ov-main">
-          {["owner", "admin", "manager"].includes(
-            data.viewer?.role || "owner",
-          ) && (
-            <details className="ov-setup">
-              <summary>Preparar meu espaço · configuração inicial</summary>
-              <div
-                className="ov-card"
-                style={{ padding: 24, marginBottom: 16 }}
-              >
-                <h2>Da configuração à primeira reserva</h2>
-                <p>
-                  {activationSteps(data).filter((step) => step.ready).length} de
-                  4 configurações conferidas. Complete a preparação e acompanhe
-                  uma reserva de teste.
-                </p>
-                <Link
-                  className="management-text-link"
-                  href="/dashboard/ativacao"
-                >
-                  Abrir ativação guiada <CaretRight size={16} />
-                </Link>
-              </div>
-              <PageChecklist data={data} />
-            </details>
-          )}
           <OverviewAgenda
             data={data}
             rows={model.appointments}

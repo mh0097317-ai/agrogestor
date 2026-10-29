@@ -6,11 +6,13 @@ import { DomainError } from "@/lib/availability";
 import { weeklyPeriod, weeklySummary } from "@/lib/weekly-report";
 import { queryWeeklyRows } from "./weekly-report";
 import { weeklyReportPdf } from "./weekly-report-pdf";
+import { dailyReportDate } from "@/lib/daily-report";
 import { pdfSender } from "./whatsapp/link";
 
 export const weeklyPreferencesSchema = z
   .object({
     enabled: z.boolean(),
+    dailyEnabled: z.boolean().default(false),
     includeProfessionals: z.boolean(),
     ownerPhone: z
       .string()
@@ -24,7 +26,7 @@ export const weeklyPreferencesSchema = z
   })
   .strict()
   .refine(
-    (v) => !v.enabled || !!v.ownerPhone,
+    (v) => (!v.enabled && !v.dailyEnabled) || !!v.ownerPhone,
     "Informe o número do dono antes de ativar.",
   );
 export async function weeklyPreferences(input?: unknown) {
@@ -33,6 +35,7 @@ export async function weeklyPreferences(input?: unknown) {
     throw new DomainError("Somente a gestão configura os envios.", 403);
   const defaults = {
     enabled: false,
+    dailyEnabled: false,
     includeProfessionals: true,
     ownerPhone: "",
     emailEnabled: true,
@@ -47,23 +50,24 @@ export async function weeklyPreferences(input?: unknown) {
   const admin = createSupabaseAdmin();
   if (input !== undefined) {
     const values = weeklyPreferencesSchema.parse(input);
-    const { error } = await admin
-      .from("weekly_report_preferences")
-      .upsert({
-        business_id: store.business.id,
-        enabled: values.enabled,
-        include_professionals: values.includeProfessionals,
-        owner_phone: values.ownerPhone,
-        email_enabled: values.emailEnabled,
-        updated_at: new Date().toISOString(),
-      });
+    const { error } = await admin.from("weekly_report_preferences").upsert({
+      business_id: store.business.id,
+      enabled: values.enabled,
+      daily_enabled: values.dailyEnabled,
+      include_professionals: values.includeProfessionals,
+      owner_phone: values.ownerPhone,
+      email_enabled: values.emailEnabled,
+      updated_at: new Date().toISOString(),
+    });
     if (error)
       throw new DomainError("Não foi possível salvar o envio semanal.", 503);
     return values;
   }
   const { data, error } = await admin
     .from("weekly_report_preferences")
-    .select("enabled,include_professionals,owner_phone,email_enabled")
+    .select(
+      "enabled,daily_enabled,include_professionals,owner_phone,email_enabled",
+    )
     .eq("business_id", store.business.id)
     .maybeSingle();
   if (error)
@@ -74,6 +78,7 @@ export async function weeklyPreferences(input?: unknown) {
   return data
     ? {
         enabled: data.enabled,
+        dailyEnabled: data.daily_enabled,
         includeProfessionals: data.include_professionals,
         ownerPhone: data.owner_phone,
         emailEnabled: data.email_enabled !== false,
@@ -110,18 +115,21 @@ export async function deliverWeeklyPdf(input: {
     return "failed" as const;
   }
 }
-export async function sendWeeklyReports(now = new Date()) {
+export const sendWeeklyReports = (now = new Date()) =>
+  sendReports("weekly", now);
+export const sendDailyReports = (now = new Date()) => sendReports("daily", now);
+async function sendReports(frequency: "weekly" | "daily", now: Date) {
   const totals = { checked: 0, sent: 0, failed: 0, skipped: 0 };
-  if (!weeklySendWindow(now)) return totals;
+  if (frequency === "weekly" && !weeklySendWindow(now)) return totals;
   const admin = createSupabaseAdmin();
   const { data: preferences, error } = await admin
     .from("weekly_report_preferences")
     .select("business_id,owner_phone,include_professionals")
-    .eq("enabled", true)
+    .eq(frequency === "daily" ? "daily_enabled" : "enabled", true)
     .order("business_id")
     .limit(100);
   if (error) throw Error("weekly report preferences unavailable");
-  const { from: week } = weeklyPeriod(undefined, now);
+  const previousWeek = weeklyPeriod(undefined, now);
   let attempted = 0;
   for (const pref of preferences || []) {
     if (!accessOpen(await readBusinessAccess(pref.business_id))) continue;
@@ -135,6 +143,22 @@ export async function sendWeeklyReports(now = new Date()) {
       continue;
     }
     const store = await getPublicStore(business.slug);
+    const dailyDate =
+      frequency === "daily"
+        ? dailyReportDate(now, store.settings.openEnd)
+        : undefined;
+    if (
+      frequency === "daily" &&
+      (!dailyDate ||
+        !store.settings.openDays.includes(
+          new Date(`${dailyDate}T12:00:00Z`).getUTCDay(),
+        ))
+    )
+      continue;
+    const week = dailyDate || previousWeek.from;
+    const reportPeriod = dailyDate
+      ? { from: dailyDate, to: dailyDate }
+      : previousWeek;
     const jobs = [
       {
         id: "owner",
@@ -169,14 +193,38 @@ export async function sendWeeklyReports(now = new Date()) {
         continue;
       }
       const sender = send,
-        key = { business_id: store.business.id, week, target: job.id };
+        key = {
+          business_id: store.business.id,
+          week,
+          target: frequency === "daily" ? `daily:${job.id}` : job.id,
+        };
       const status = await deliverWeeklyPdf({
         claim: async () => {
-          const { error } = await admin
+          let { data, error } = await admin
             .from("weekly_report_deliveries")
-            .insert(key);
-          if (error?.code === "23505") return false;
+            .insert(key)
+            .select("business_id")
+            .maybeSingle();
+          if (error?.code === "23505") {
+            // A provider failure is safe to retry. A sent or still-claimed
+            // delivery remains protected against duplicate PDFs.
+            const retry = await admin
+              .from("weekly_report_deliveries")
+              .update({
+                status: "claimed",
+                provider_message_id: null,
+                sent_at: null,
+                created_at: now.toISOString(),
+              })
+              .match({ ...key, status: "failed" })
+              .select("business_id")
+              .maybeSingle();
+            data = retry.data;
+            error = retry.error;
+            if (!data && !error) return false;
+          }
           if (error) throw Error("weekly report claim failed");
+          if (!data) return false;
           attempted++;
           return true;
         },
@@ -186,9 +234,10 @@ export async function sendWeeklyReports(now = new Date()) {
             store.business.id,
             week,
             job.professionalId,
+            reportPeriod,
           );
-          return weeklyReportPdf(
-            weeklySummary(
+          return weeklyReportPdf({
+            ...weeklySummary(
               store,
               week,
               job.professionalId,
@@ -196,15 +245,19 @@ export async function sendWeeklyReports(now = new Date()) {
               rows.receipts,
               rows.sales,
               now,
+              reportPeriod,
             ),
-          );
+            daily: frequency === "daily",
+          });
         },
         send: (bytes) =>
           sender(
             job.phone,
             bytes,
-            `studioflow-semanal-${job.id === "owner" ? "dono" : "profissional"}-${week}.pdf`,
-            "Seu relatório semanal StudioFlow: resultados da semana anterior, de segunda a domingo.",
+            `studioflow-${frequency === "daily" ? "diario" : "semanal"}-${job.id === "owner" ? "dono" : "profissional"}-${week}.pdf`,
+            frequency === "daily"
+              ? `Seu fechamento do dia ${week.split("-").reverse().join("/")}: atendimentos, recebimentos, produtos e resultados registrados no StudioFlow.`
+              : "Seu relatório semanal StudioFlow: resultados da semana anterior, de segunda a domingo.",
           ),
         receipt: async (status, id) => {
           const { error } = await admin

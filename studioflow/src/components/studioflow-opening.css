@@ -1,0 +1,214 @@
+/* The StudioFlow signature: original mark, two moving arches, one short reveal. */
+.sf-signature {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  background: #25272a;
+  color: #f5f1e9;
+  pointer-events: none;
+  animation: sf-signature-away 250ms cubic-bezier(0.3, 0, 0.2, 1) 800ms forwards;
+}
+[data-sf-signature-seen] .sf-signature {
+  display: none;
+}
+.sf-signature-body {
+  display: grid;
+  justify-items: center;
+  gap: 17px;
+  text-align: center;
+}
+.sf-signature-kicker {
+  color: #c9c3b8;
+  font:
+    500 10px var(--font-ui),
+    sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: sf-signature-type 450ms ease 80ms both;
+}
+.sf-signature-mark {
+  width: 86px;
+  height: 86px;
+  overflow: visible;
+}
+.sf-signature-mark rect {
+  fill: #25272a;
+}
+.sf-signature-mark .brand-arch {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.sf-signature-mark .brand-arch-top {
+  animation: sf-signature-top 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sf-signature-mark .brand-arch-bottom {
+  animation: sf-signature-bottom 650ms cubic-bezier(0.2, 0.8, 0.2, 1) 90ms both;
+}
+.sf-signature-mark .brand-spark {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: sf-signature-spark 380ms cubic-bezier(0.2, 1.3, 0.4, 1) 320ms both;
+}
+.sf-signature-name {
+  display: block;
+  overflow: hidden;
+  font: 500 clamp(44px, 9vw, 68px)/1.1 var(--serif);
+  letter-spacing: -0.05em;
+  animation: sf-signature-type 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 140ms both;
+}
+.sf-signature-name i {
+  font-weight: 400;
+  color: #d4bc91;
+}
+.sf-signature-dot {
+  color: #d4bc91;
+}
+.sf-signature-line {
+  width: 74px;
+  height: 1px;
+  background: #d4bc91;
+  transform-origin: left;
+  animation: sf-signature-line 500ms cubic-bezier(0.2, 0.8, 0.2, 1) 220ms both;
+}
+.sf-signature-caption {
+  color: #c9c3b8;
+  font:
+    400 11px/1.5 var(--font-ui),
+    sans-serif;
+  animation: sf-signature-type 400ms ease 260ms both;
+}
+@keyframes sf-signature-top {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) rotate(-35deg);
+  }
+}
+@keyframes sf-signature-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px) rotate(35deg);
+  }
+}
+@keyframes sf-signature-spark {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+@keyframes sf-signature-type {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 -10% 0);
+  }
+}
+@keyframes sf-signature-line {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes sf-signature-away {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.pp-opening.sf-opening {
+  animation-delay: 1.9s;
+}
+.pp-opening.sf-opening .pp-opening-door.is-top,
+.pp-opening.sf-opening .pp-opening-door.is-bottom {
+  animation-delay: 1.2s;
+}
+.pp-opening.sf-opening .pp-opening-door.is-top::after {
+  animation-delay: 0.92s;
+}
+.pp-opening.sf-opening.is-skipped {
+  visibility: hidden;
+}
+.bk-intro-art {
+  display: contents;
+}
+.sf-opening-skip {
+  position: absolute;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid #ffffff42;
+  border-radius: 99px;
+  background: #25272ade;
+  color: #f5f1e9;
+  font:
+    400 12px var(--font-ui),
+    sans-serif;
+  cursor: pointer;
+}
+.sf-opening-skip:focus-visible {
+  outline: 2px solid #d4bc91;
+  outline-offset: 4px;
+}
+.bk-intro.is-lift .sf-opening-skip {
+  display: none;
+}
+.bk-intro.is-lift .sf-signature {
+  display: none;
+}
+.sf-loading-credit {
+  color: #81796e;
+  font:
+    400 10px var(--font-ui),
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+/* Carry the original paper, typography and business color through every step. */
+.bk .bk-screen {
+  animation-duration: 260ms;
+}
+.bk .bk-option {
+  transition:
+    border-color 180ms,
+    background 180ms,
+    box-shadow 180ms,
+    transform 180ms;
+}
+.bk .bk-option.is-selected::after {
+  animation-duration: 480ms;
+}
+.bk .bk-head p {
+  max-width: 44ch;
+}
+.bk .bk-done-head h1 {
+  font-family: var(--serif);
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 500;
+  line-height: 1.12;
+}
+.bk .bk-contact {
+  border-radius: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sf-signature {
+    display: none !important;
+  }
+  .pp-opening.sf-opening {
+    display: none;
+  }
+  .sf-signature *,
+  .bk .bk-screen,
+  .bk .bk-option {
+    animation: none !important;
+    transition: none;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Button, Card } from "@/components/ui";
+import { businessDay } from "@/lib/utils";
 import { weeklyPeriod } from "@/lib/weekly-report";
 import "./weekly-reports.css";
 
@@ -15,10 +16,13 @@ export function WeeklyReports({
   canSchedule?: boolean;
   platform?: boolean;
 }) {
+  const [reportKind, setReportKind] = useState<"weekly" | "daily">("weekly");
+  const [day, setDay] = useState(() => businessDay());
   const [week, setWeek] = useState(() => weeklyPeriod().from);
   const [professional, setProfessional] = useState(ownProfessionalId || "");
   const [prefs, setPrefs] = useState<{
     enabled: boolean;
+    dailyEnabled?: boolean;
     includeProfessionals: boolean;
     ownerPhone: string;
     emailEnabled?: boolean;
@@ -58,9 +62,14 @@ export function WeeklyReports({
     setBusy(true);
     setError("");
     try {
-      const query = new URLSearchParams({ week });
+      const query = new URLSearchParams(
+        reportKind === "daily" ? { date: day } : { week },
+      );
       if (professional) query.set("professionalId", professional);
-      const r = await fetch(`${base}?${query}`, { cache: "no-store" });
+      const r = await fetch(
+        `${reportKind === "daily" && !platform ? "/api/workspace/reports/daily" : base}?${query}`,
+        { cache: "no-store" },
+      );
       if (!r.ok) {
         const e = await r.json();
         throw Error(e.error || "Não foi possível gerar o PDF.");
@@ -69,7 +78,7 @@ export function WeeklyReports({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `studioflow-semanal-${platform ? "plataforma" : professional ? "profissional" : "dono"}-${week}.pdf`;
+      link.download = `studioflow-${reportKind === "daily" ? "diario" : "semanal"}-${platform ? "plataforma" : professional ? "profissional" : "dono"}-${reportKind === "daily" ? day : week}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -91,17 +100,27 @@ export function WeeklyReports({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           platform
-            ? { enabled: prefs.enabled, includeProfessionals: prefs.includeProfessionals, ownerPhone: prefs.ownerPhone }
-            : { ...prefs, emailEnabled: prefs.emailEnabled !== false },
+            ? {
+                enabled: prefs.enabled,
+                includeProfessionals: prefs.includeProfessionals,
+                ownerPhone: prefs.ownerPhone,
+              }
+            : {
+                ...prefs,
+                dailyEnabled: prefs.dailyEnabled === true,
+                emailEnabled: prefs.emailEnabled !== false,
+              },
         ),
       });
       const value = await r.json();
       if (!r.ok) throw Error(value.error || "Não foi possível salvar.");
       setPrefs(value);
       setMessage(
-        value.enabled
-          ? "Envio semanal ativado: segunda-feira às 9h, horário de Brasília."
-          : "Envio automático pausado.",
+        value.dailyEnabled
+          ? "Resumo diário ativado: 15 minutos após o encerramento do expediente, horário de Brasília."
+          : value.enabled
+            ? "Envio semanal ativado: segunda-feira às 9h, horário de Brasília."
+            : "Envio automático pausado.",
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao salvar.");
@@ -112,26 +131,49 @@ export function WeeklyReports({
   return (
     <Card className="weekly-report-card">
       <div className="weekly-report-heading">
-        <span>STUDIOFLOW / SEMANA EM FOCO</span>
-        <h2>
-          {platform
-            ? "Sua plataforma, em PDF"
-            : "Seu relatório semanal, em PDF"}
-        </h2>
+        <span>STUDIOFLOW / RESULTADOS EM FOCO</span>
+        <h2>{platform ? "Sua plataforma, em PDF" : "Seu negócio, em PDF"}</h2>
         <p>
           {platform
             ? "Recebimentos das assinaturas e situação dos estabelecimentos."
-            : "Resultados reais, gráfico da semana e detalhes do atendimento. Uma versão para a loja e outra para cada profissional."}
+            : "Resultados reais do dia ou da semana e detalhes do atendimento. Uma versão para a loja e outra para cada profissional."}
         </p>
       </div>
+      {!platform && (
+        <div
+          className="management-filters"
+          role="group"
+          aria-label="Período do PDF"
+        >
+          <button
+            type="button"
+            className={reportKind === "weekly" ? "selected" : ""}
+            aria-pressed={reportKind === "weekly"}
+            onClick={() => setReportKind("weekly")}
+          >
+            Semanal
+          </button>
+          <button
+            type="button"
+            className={reportKind === "daily" ? "selected" : ""}
+            aria-pressed={reportKind === "daily"}
+            onClick={() => setReportKind("daily")}
+          >
+            Diário
+          </button>
+        </div>
+      )}
       <div className="weekly-report-controls">
         <label>
-          Semana que começa em
+          {reportKind === "daily" ? "Dia do relatório" : "Semana que começa em"}
           <input
             type="date"
-            value={week}
+            value={reportKind === "daily" ? day : week}
             onChange={(e) => {
-              if (e.target.value) setWeek(weeklyPeriod(e.target.value).from);
+              if (e.target.value) {
+                if (reportKind === "daily") setDay(e.target.value);
+                else setWeek(weeklyPeriod(e.target.value).from);
+              }
             }}
           />
         </label>
@@ -157,7 +199,11 @@ export function WeeklyReports({
       </div>
       {canSchedule && (
         <details className="weekly-report-schedule">
-          <summary>{platform ? "Receber no WhatsApp toda segunda às 9h" : "Receber no WhatsApp e no e-mail toda segunda às 9h"}</summary>
+          <summary>
+            {platform
+              ? "Receber no WhatsApp toda segunda às 9h"
+              : "Receber relatórios no WhatsApp e no e-mail"}
+          </summary>
           <p>
             O PDF cobre a semana anterior, de segunda a domingo. Confira o
             destinatário antes de ativar.
@@ -183,7 +229,7 @@ export function WeeklyReports({
                   setPrefs({ ...prefs, includeProfessionals: e.target.checked })
                 }
               />
-              Enviar também o PDF individual de cada barbeiro para o número
+              Enviar também o PDF individual de cada profissional para o número
               cadastrado no perfil
             </label>
           )}
@@ -196,7 +242,7 @@ export function WeeklyReports({
                   setPrefs({ ...prefs, emailEnabled: e.target.checked })
                 }
               />
-              Receber o PDF também no e-mail de login do dono
+              Receber o PDF semanal também no e-mail de login do dono
             </label>
           )}
           <label className="weekly-report-check">
@@ -207,14 +253,28 @@ export function WeeklyReports({
                 setPrefs({ ...prefs, enabled: e.target.checked })
               }
             />
-            Ativar envio automático no WhatsApp para os números acima
+            Receber o relatório semanal no WhatsApp toda segunda às 9h
           </label>
+          {!platform && (
+            <label className="weekly-report-check">
+              <input
+                type="checkbox"
+                checked={prefs.dailyEnabled === true}
+                onChange={(e) =>
+                  setPrefs({ ...prefs, dailyEnabled: e.target.checked })
+                }
+              />
+              Receber também o fechamento diário em PDF pelo WhatsApp, 15
+              minutos após o expediente, nos dias de funcionamento. Cada
+              profissional incluído recebe apenas os próprios resultados.
+            </label>
+          )}
           <Button
             variant="secondary"
             onClick={() => void save()}
             disabled={!loaded || busy}
           >
-            Salvar envio semanal
+            Salvar preferências de envio
           </Button>
         </details>
       )}

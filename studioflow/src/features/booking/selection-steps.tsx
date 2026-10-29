@@ -185,7 +185,11 @@ export function ServiceStep({
                   className="bk-option-photo"
                   fallback={
                     <span className="public-image-fallback">
-                      <SegmentIcon category={service.category} size={28} weight="light" />
+                      <SegmentIcon
+                        category={service.category}
+                        size={28}
+                        weight="light"
+                      />
                     </span>
                   }
                 />
@@ -196,6 +200,11 @@ export function ServiceStep({
                       <em className="bk-popular">Mais pedido</em>
                     )}
                   </strong>
+                  {service.description && (
+                    <span className="bk-service-description">
+                      {service.description}
+                    </span>
+                  )}
                   <span>{durationLabel(service.duration)}</span>
                   <b>{money(service.price)}</b>
                 </span>

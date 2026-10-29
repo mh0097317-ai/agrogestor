@@ -3,6 +3,7 @@
 import {
   ClientConfigurationPanel,
   EvolutionConfiguration,
+  ElevenLabsConfiguration,
 } from "./client-configuration";
 import { PlatformWhatsApp } from "./platform-whatsapp";
 import { WeeklyReports } from "@/features/management/weekly-reports";
@@ -984,11 +985,14 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           </>
         )}
         {view === "receptionists" && (
-          <EvolutionConfiguration
-            demo={demo}
-            onSaved={load}
-            initiallyOpen={openEvolution}
-          />
+          <>
+            <EvolutionConfiguration
+              demo={demo}
+              onSaved={load}
+              initiallyOpen={openEvolution}
+            />
+            <ElevenLabsConfiguration demo={demo} onSaved={load} />
+          </>
         )}
         {view === "billing" && (
           <details className="pf-integration">

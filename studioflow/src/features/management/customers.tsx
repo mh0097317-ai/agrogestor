@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Clock, Plus } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -80,18 +80,29 @@ export default function CustomersPage() {
             )
           }
         />
-        <div className="crm-context">
-          <span>
-            <strong>{data?.customers.length ?? 0}</strong> clientes cadastrados
-          </span>
-          {returnCount > 0 && (
-            <button onClick={() => setFilter("return")}>
-              <Clock size={16} />
-              <strong>{returnCount}</strong> demorando mais que o normal para
-              voltar
-              <ArrowUpRight size={16} />
-            </button>
-          )}
+        <div className="crm-overview" aria-label="Visão do relacionamento">
+          <button onClick={() => setFilter("all")}>
+            <span>Sua base</span>
+            <strong>{data?.customers.length ?? 0}</strong>
+            <small>Clientes cadastrados</small>
+          </button>
+          <button onClick={() => setFilter("active")}>
+            <span>Relacionamento ativo</span>
+            <strong>
+              {
+                (data?.customers ?? []).filter((c) => {
+                  const days = customerDays(c.lastVisit);
+                  return days !== undefined && days <= 45;
+                }).length
+              }
+            </strong>
+            <small>Visita nos últimos 45 dias</small>
+          </button>
+          <button onClick={() => setFilter("return")}>
+            <span>Oportunidades de retorno</span>
+            <strong>{returnCount}</strong>
+            <small>Mais tempo que o habitual sem voltar</small>
+          </button>
         </div>
         <div className="crm-controls">
           <SearchField
@@ -127,7 +138,7 @@ export default function CustomersPage() {
               <span>Relacionamento</span>
               <span />
             </div>
-            <ul>
+            <ul className="crm-list">
               {customers.map((customer) => {
                 const overdue = customerNeedsReturn(customer);
                 const days = customerDays(customer.lastVisit);

@@ -1,5 +1,6 @@
 import { graphVersion } from "./whatsapp";
 import { audioCredential } from "./audio-vault";
+import { elevenLabsCredential } from "./speech";
 
 /**
  * Áudio → texto por um serviço compatível com /audio/transcriptions
@@ -15,11 +16,7 @@ export async function transcribe(
   mime: string,
   businessId?: string,
 ): Promise<string> {
-  const credential = await audioCredential(businessId);
-  if (!credential) throw new Error("transcription off");
-  const { key, model } = credential;
   if (audio.byteLength > maxBytes) throw new Error("audio too large");
-  const base = credential.base.replace(/\/$/, "");
   const extension = mime.includes("mpeg")
     ? "mp3"
     : mime.includes("mp4")
@@ -27,18 +24,44 @@ export async function transcribe(
       : mime.includes("wav")
         ? "wav"
         : "ogg";
+  const file = new Blob([audio], { type: mime || "audio/ogg" });
+  const credential = await audioCredential(businessId);
+  if (credential) {
+    const form = new FormData();
+    form.append("file", file, `audio.${extension}`);
+    form.append("model", credential.model);
+    form.append("language", "pt");
+    form.append("response_format", "json");
+    try {
+      const response = await fetch(
+        `${credential.base.replace(/\/$/, "")}/audio/transcriptions`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${credential.key}` },
+          body: form,
+          signal: AbortSignal.timeout(20_000),
+        },
+      );
+      if (response.ok) {
+        const data = (await response.json()) as { text?: string };
+        const text = (data.text || "").trim();
+        if (text) return text;
+      }
+    } catch {
+      // Fall through to the platform's ElevenLabs transcription credential.
+    }
+  }
+
+  const elevenLabs = await elevenLabsCredential();
+  if (!elevenLabs) throw new Error("transcription off");
   const form = new FormData();
-  form.append(
-    "file",
-    new Blob([audio], { type: mime || "audio/ogg" }),
-    `audio.${extension}`,
-  );
-  form.append("model", model);
-  form.append("language", "pt");
-  form.append("response_format", "json");
-  const response = await fetch(`${base}/audio/transcriptions`, {
+  form.append("file", file, `audio.${extension}`);
+  form.append("model_id", "scribe_v2");
+  form.append("language_code", "por");
+  form.append("tag_audio_events", "false");
+  const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}` },
+    headers: { "xi-api-key": elevenLabs.key },
     body: form,
     signal: AbortSignal.timeout(20_000),
   });
@@ -94,7 +117,8 @@ export async function audioText(
   businessId?: string,
 ) {
   try {
-    if (!(await audioCredential(businessId))) return audioPlaceholder;
+    if (!(await audioCredential(businessId)) && !(await elevenLabsCredential()))
+      return audioPlaceholder;
     const { audio, mime } = await load();
     const text = await transcribe(audio, mime, businessId);
     return text ? `🎤 ${text}` : audioPlaceholder;

@@ -21,6 +21,16 @@ export async function platformAiEnabled(): Promise<boolean> {
   }
 }
 
+export async function assertPlatformAiEnabled(
+  check: () => Promise<boolean> = platformAiEnabled,
+) {
+  if (!(await check()))
+    throw new DomainError(
+      "A IA está desligada no controle geral. Ative em Admin → Controle geral da IA.",
+      409,
+    );
+}
+
 export async function platformAiControl(input?: unknown) {
   const { userId } = await requirePlatformAdmin();
   if (isDemo()) {

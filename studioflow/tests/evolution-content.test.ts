@@ -73,10 +73,13 @@ test("Evolution keeps text with context metadata and unwraps supported envelopes
 });
 
 test("Evolution preserves actual photos, documents, videos and captions", () => {
-  assert.equal(
-    delivery({ imageMessage: { caption: "Quero esse corte" } })[0].text,
-    "[O cliente enviou uma foto.]\nQuero esse corte",
-  );
+  const photo = delivery({
+    imageMessage: { caption: "Quero esse corte", mimetype: "image/jpeg" },
+    base64: "YWJj",
+  })[0];
+  assert.equal(photo.text, "[O cliente enviou uma foto.]\nQuero esse corte");
+  assert.equal(photo.imageId, "incoming");
+  assert.deepEqual(photo.image, { base64: "YWJj", mime: "image/jpeg" });
   assert.equal(
     delivery({ imageMessage: {} })[0].text,
     "[O cliente enviou uma foto.]",

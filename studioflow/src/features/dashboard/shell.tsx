@@ -1,6 +1,8 @@
 "use client";
 import "./experience.css";
 import "./modules.css";
+import "@/features/management/workspace-polish.css";
+import "./mobile-navigation.css";
 import { onlineBookingEnabled } from "@/lib/online-booking";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,7 +21,6 @@ import {
   CaretDown,
   CaretRight,
   ChartLineUp,
-  CheckCircle,
   ChatCircleDots,
   Copy,
   Crown,
@@ -57,11 +58,9 @@ const links = [
   { path: "/dashboard", label: "Início", icon: SquaresFour },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDots },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
-  { path: "/dashboard/operacao", label: "Operação", icon: ShieldCheck },
-  { path: "/dashboard/ativacao", label: "Ativar espaço", icon: CheckCircle },
   {
-    path: "/dashboard/conversas",
-    label: "Conversas",
+    path: "/dashboard/treinamento",
+    label: "Treinamento da IA",
     icon: ChatCircleDots,
     module: "recepcionista" as ModuleKey,
   },
@@ -92,8 +91,7 @@ const navigationGroups: Record<string, string> = {
   "/dashboard": "Dia a dia",
   "/dashboard/agenda": "Dia a dia",
   "/dashboard/clientes": "Dia a dia",
-  "/dashboard/operacao": "Dia a dia",
-  "/dashboard/conversas": "Dia a dia",
+  "/dashboard/treinamento": "Crescimento",
   "/dashboard/servicos": "Seu negócio",
   "/dashboard/produtos": "Seu negócio",
   "/dashboard/equipe": "Seu negócio",
@@ -102,7 +100,6 @@ const navigationGroups: Record<string, string> = {
   "/dashboard/clube": "Crescimento",
   "/dashboard/divulgar": "Crescimento",
   "/dashboard/configuracoes": "Preferências",
-  "/dashboard/ativacao": "Preferências",
 };
 const navigationOrder = [
   "Dia a dia",
@@ -240,17 +237,14 @@ function Shell({ children }: { children: ReactNode }) {
           "/dashboard/agenda",
           "/dashboard/clientes",
           "/dashboard/relatorios",
-          "/dashboard/conversas",
+          "/dashboard/treinamento",
           "/dashboard/configuracoes",
         ].includes(link.path)) &&
       (!("module" in link && link.module) ||
         (!!data && hasModule(data.access?.modules, link.module))),
   );
   const ownerName = data?.viewer?.name || "Seu perfil";
-  const mobileInbox = menu.some((link) => link.path === "/dashboard/conversas");
-  const mobileContactPath = mobileInbox
-    ? "/dashboard/conversas"
-    : "/dashboard/clientes";
+  const mobileContactPath = "/dashboard/clientes";
   const ownerRole =
     data?.viewer?.role === "owner"
       ? "Proprietário"
@@ -489,7 +483,7 @@ function Shell({ children }: { children: ReactNode }) {
             {online ? "Sua página" : "Online desativado"}
           </Link>
         </header>
-        <main className="dashboard-content" key={pathname}>
+        <main className="dashboard-content dashboard-route" key={pathname}>
           {refreshError && (
             <div className="workspace-refresh-message" role="status">
               <span>{refreshError} Seus últimos dados continuam visíveis.</span>
@@ -536,26 +530,39 @@ function Shell({ children }: { children: ReactNode }) {
           href={mobileContactPath}
           className={active(mobileContactPath) ? "active" : ""}
         >
-          {mobileInbox ? (
-            <ChatCircleDots
-              size={24}
-              weight={active(mobileContactPath) ? "fill" : "regular"}
-            />
-          ) : (
-            <UsersThree
-              size={24}
-              weight={active(mobileContactPath) ? "fill" : "regular"}
-            />
-          )}
-          {mobileInbox ? "Conversas" : "Clientes"}
+          <UsersThree
+            size={24}
+            weight={active(mobileContactPath) ? "fill" : "regular"}
+          />
+          Clientes
         </Link>
-        <button onClick={() => setMore(!more)} aria-label="Mais opções">
+        <button
+          onClick={() => setMore(!more)}
+          aria-label="Mais opções"
+          aria-haspopup="dialog"
+          aria-expanded={more}
+          className={
+            more ||
+            !["/dashboard", "/dashboard/agenda", mobileContactPath].some(active)
+              ? "active"
+              : ""
+          }
+        >
           <DotsThree size={24} weight="bold" />
           Mais
         </button>
       </nav>
-      {more && (
-        <Card className="mobile-more">
+      <Modal
+        open={more}
+        onClose={() => setMore(false)}
+        title="Seu espaço"
+        description="Tudo para cuidar do seu negócio."
+        presentation="navigation"
+      >
+        <nav
+          className="mobile-module-grid"
+          aria-label="Módulos do estabelecimento"
+        >
           {menu
             .filter(
               (link) =>
@@ -570,13 +577,17 @@ function Shell({ children }: { children: ReactNode }) {
                 key={link.path}
                 href={link.path}
                 onClick={() => setMore(false)}
+                aria-current={active(link.path) ? "page" : undefined}
+                className={active(link.path) ? "is-current" : undefined}
               >
                 <link.icon size={20} weight="regular" />
-                {link.label}
+                <span>{link.label}</span>
               </Link>
             ))}
+        </nav>
+        <div className="mobile-account-actions">
           <Link href="/login" onClick={() => setMore(false)}>
-            <SignOut size={17} /> Conta
+            <UserCircleGear size={18} /> Conta
           </Link>
           {data?.mode === "live" && (
             <button
@@ -588,8 +599,8 @@ function Shell({ children }: { children: ReactNode }) {
               {signingOut ? "Saindo…" : "Sair da conta"}
             </button>
           )}
-        </Card>
-      )}
+        </div>
+      </Modal>
       <AppointmentForm open={create} onClose={() => setCreate(false)} />
       <Modal
         open={help}

@@ -62,6 +62,40 @@ test("cofre, conexões individuais e mensalidades: RLS, escopo, auditoria e reno
       "select public.platform_save_ai_key($1,$2,'anthropic','model','sealed','abcd')",
       [one.id, admin],
     );
+    await db.query(
+      "select public.platform_save_ai_key($1,$2,'mwapi','claude-haiku-4-5','mwapi-sealed','wxyz')",
+      [one.id, admin],
+    );
+    const switchedCredential = (
+      await db.query<{
+        provider: string;
+        fallback_provider: string;
+        fallback_model: string;
+        fallback_secret_enc: string;
+        fallback_key_hint: string;
+      }>(
+        "select provider,fallback_provider,fallback_model,fallback_secret_enc,fallback_key_hint from public.business_ai_credentials where business_id=$1",
+        [one.id],
+      )
+    ).rows[0];
+    assert.equal(switchedCredential.provider, "mwapi");
+    assert.equal(switchedCredential.fallback_provider, "anthropic");
+    assert.equal(switchedCredential.fallback_model, "model");
+    assert.equal(switchedCredential.fallback_secret_enc, "sealed");
+    assert.equal(switchedCredential.fallback_key_hint, "abcd");
+    await db.query(
+      "select public.platform_save_ai_key($1,$2,'mwapi','claude-haiku-4-5','mwapi-rotated','efgh')",
+      [one.id, admin],
+    );
+    assert.equal(
+      (
+        await db.query<{ fallback_secret_enc: string }>(
+          "select fallback_secret_enc from public.business_ai_credentials where business_id=$1",
+          [one.id],
+        )
+      ).rows[0].fallback_secret_enc,
+      "sealed",
+    );
     assert.equal(
       (
         await db.query(

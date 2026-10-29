@@ -7,6 +7,7 @@ import type { CSSProperties } from "react";
 import QRCode from "qrcode";
 import {
   ArrowsOut,
+  Clock,
   DoorOpen,
   Scissors,
   X,
@@ -84,7 +85,13 @@ type Slide =
       popular: boolean;
     }
   | { kind: "free"; times: { time: string; who: string }[]; service: string }
-  | { kind: "reviews"; average: number; count: number; quote: string; who: string }
+  | {
+      kind: "reviews";
+      average: number;
+      count: number;
+      quote: string;
+      who: string;
+    }
   | { kind: "instagram"; handle: string; photos: string[] }
   | {
       kind: "products";
@@ -224,7 +231,7 @@ function TvScreen({ store }: { store: Store }) {
     const photos = (business.photos || []).filter(Boolean);
     const caption =
       business.description?.split(/(?<=[.!?])\s/)[0]?.slice(0, 90) ||
-      "Seu próximo corte começa aqui.";
+      "Seu próximo momento começa aqui.";
     const list: Slide[] = photos
       .slice(0, 3)
       .map((src) => ({ kind: "photo" as const, src, caption }));
@@ -232,8 +239,12 @@ function TvScreen({ store }: { store: Store }) {
     const since = clock.getTime() - 90 * 86_400_000;
     const counts = new Map<string, number>();
     for (const item of store.appointments)
-      if (item.status !== "cancelled" && new Date(item.start).getTime() >= since)
-        for (const id of item.serviceIds) counts.set(id, (counts.get(id) || 0) + 1);
+      if (
+        item.status !== "cancelled" &&
+        new Date(item.start).getTime() >= since
+      )
+        for (const id of item.serviceIds)
+          counts.set(id, (counts.get(id) || 0) + 1);
     const ranked = store.services
       .filter((service) => service.active)
       .sort((a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
@@ -271,7 +282,12 @@ function TvScreen({ store }: { store: Store }) {
     if (good.length >= 3) {
       const average = good.reduce((sum, r) => sum + r.rating, 0) / good.length;
       const quote = good
-        .filter((r) => r.rating === 5 && r.comment.trim().length >= 12 && r.comment.length <= 140)
+        .filter(
+          (r) =>
+            r.rating === 5 &&
+            r.comment.trim().length >= 12 &&
+            r.comment.length <= 140,
+        )
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
       list.splice(Math.min(list.length, 3), 0, {
         kind: "reviews",
@@ -290,7 +306,9 @@ function TvScreen({ store }: { store: Store }) {
       list.push({
         kind: "instagram",
         handle,
-        photos: [...photos, ...ranked.map((s) => s.image)].filter(Boolean).slice(0, 3),
+        photos: [...photos, ...ranked.map((s) => s.image)]
+          .filter(Boolean)
+          .slice(0, 3),
       });
     const products = (store.products || []).filter(
       (item) =>
@@ -362,79 +380,94 @@ function TvScreen({ store }: { store: Store }) {
               <span className="tv-monogram">{monogram(business.name)}</span>
             )}
             <div>
+              <span className="tv-eyebrow">Boas-vindas à nossa casa</span>
               <strong>{business.name}</strong>
               <small>{dateLabel(iso, "EEEE, d 'de' MMMM")}</small>
             </div>
           </div>
-          <time className="tv-clock" dateTime={iso}>
-            {dateLabel(iso, "HH")}
-            <span className="tv-colon">:</span>
-            {dateLabel(iso, "mm")}
-          </time>
+          <div className="tv-clock-wrap">
+            <span className="tv-live">Recepção · ao vivo</span>
+            <time className="tv-clock" dateTime={iso}>
+              {dateLabel(iso, "HH")}
+              <span className="tv-colon">:</span>
+              {dateLabel(iso, "mm")}
+            </time>
+          </div>
         </header>
 
-        <div className="tv-day-strip">
+        <div className="tv-day-strip" aria-label="Movimento de hoje">
           <span>
-            <strong>{board.serving}</strong> em atendimento
+            <strong>{board.serving.toString().padStart(2, "0")}</strong>
+            <span>Em atendimento</span>
           </span>
           <span>
-            <strong>{board.arrivals.length}</strong> aguardando na recepção
+            <strong>{board.arrivals.length.toString().padStart(2, "0")}</strong>
+            <span>Na recepção</span>
           </span>
           <span>
-            <strong>{board.expected}</strong> ainda vão chegar
+            <strong>{board.expected.toString().padStart(2, "0")}</strong>
+            <span>A caminho</span>
           </span>
           <span>
-            <strong>{board.completed}</strong> atendidos hoje
+            <strong>{board.completed.toString().padStart(2, "0")}</strong>
+            <span>Atendidos hoje</span>
           </span>
         </div>
 
-        <div className="tv-team">
-          {board.team.length === 0 ? (
-            <p className="tv-quiet">Equipe de folga hoje.</p>
-          ) : (
-            board.team.slice(0, 6).map((seat) => (
-              <article
-                key={seat.professional.id}
-                className={`tv-seat is-${seat.state}`}
-              >
-                <span className="tv-photo">
-                  {seat.professional.photo ? (
-                    <img src={seat.professional.photo} alt="" />
-                  ) : (
-                    monogram(seat.professional.name)
-                  )}
-                </span>
-                <div>
-                  <strong>{seat.professional.name.split(" ")[0]}</strong>
-                  {seat.state === "busy" && seat.current ? (
-                    <span>
-                      <Scissors size={16} weight="fill" />{" "}
-                      {seat.current.status === "in_progress"
-                        ? "Atendendo"
-                        : "Horário de"}{" "}
-                      {tvName(seat.current.customerName)}
-                      <small>
-                        {" "}
-                        · até {dateLabel(seat.current.end, "HH:mm")}
-                      </small>
-                    </span>
-                  ) : seat.state === "next" && seat.next ? (
-                    <span>
-                      Próximo: {tvName(seat.next.customerName)}
-                      <small> · {dateLabel(seat.next.start, "HH:mm")}</small>
-                    </span>
-                  ) : (
-                    <span className="tv-free">Livre agora</span>
-                  )}
-                </div>
-              </article>
-            ))
-          )}
-        </div>
+        <section className="tv-team-section" aria-label="Equipe agora">
+          <h2 className="tv-section-label">
+            Nossa equipe <span>Agora</span>
+          </h2>
+          <div className="tv-team">
+            {board.team.length === 0 ? (
+              <p className="tv-quiet">
+                Nenhum profissional em expediente agora.
+              </p>
+            ) : (
+              board.team.slice(0, 6).map((seat) => (
+                <article
+                  key={seat.professional.id}
+                  className={`tv-seat is-${seat.state}`}
+                >
+                  <span className="tv-photo">
+                    {seat.professional.photo ? (
+                      <img src={seat.professional.photo} alt="" />
+                    ) : (
+                      monogram(seat.professional.name)
+                    )}
+                  </span>
+                  <div>
+                    <strong>{seat.professional.name.split(" ")[0]}</strong>
+                    {seat.state === "busy" && seat.current ? (
+                      <span>
+                        <Scissors size={16} weight="fill" />{" "}
+                        {seat.current.status === "in_progress"
+                          ? "Atendendo"
+                          : "Horário de"}{" "}
+                        {tvName(seat.current.customerName)}
+                        <small>
+                          {" "}
+                          · até {dateLabel(seat.current.end, "HH:mm")}
+                        </small>
+                      </span>
+                    ) : seat.state === "next" && seat.next ? (
+                      <span>
+                        Próximo: {tvName(seat.next.customerName)}
+                        <small> · {dateLabel(seat.next.start, "HH:mm")}</small>
+                      </span>
+                    ) : (
+                      <span className="tv-free">Livre agora</span>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
 
         <div className="tv-list">
           <h2>
-            Quem chega em seguida{" "}
+            Próximos atendimentos{" "}
             {queuePages > 1 && (
               <small>
                 {(queuePage % queuePages) + 1} / {queuePages}
@@ -442,12 +475,18 @@ function TvScreen({ store }: { store: Store }) {
             )}
           </h2>
           {board.upcoming.length === 0 ? (
-            <p className="tv-quiet">
-              Sem mais horários marcados hoje.{" "}
-              {online
-                ? "Agende pelo QR Code ao lado."
-                : "Fale com a equipe para agendar."}
-            </p>
+            <div className="tv-empty">
+              <span className="tv-empty-icon">
+                <Clock size={34} weight="light" />
+              </span>
+              <strong>Tudo em dia por aqui.</strong>
+              <p>Sem próximos agendamentos hoje.</p>
+              <span>
+                {online
+                  ? "Seu próximo momento? Agende pelo QR Code."
+                  : "Fale com a equipe para agendar."}
+              </span>
+            </div>
           ) : (
             <ol ref={queueRef}>
               {visibleQueue.map((item) => {
@@ -490,23 +529,39 @@ function TvScreen({ store }: { store: Store }) {
       </section>
 
       <aside className="tv-side">
+        <div className="tv-showcase-label">
+          <span>Da nossa casa para você</span>
+          <span aria-hidden="true">✳</span>
+        </div>
         <div className="tv-qrs">
           <figure>
             {checkinQr && <img src={checkinQr} alt="QR Code de check-in" />}
             <figcaption>
-              <strong>Chegou?</strong> Faça seu check-in
+              <strong>Já chegou?</strong> Aponte a câmera e faça seu check-in
             </figcaption>
           </figure>
           {online && (
             <figure>
               {bookQr && <img src={bookQr} alt="QR Code de agendamento" />}
               <figcaption>
-                <strong>Próximo corte?</strong> Agende pelo celular
+                <strong>Seu próximo horário</strong> Escolha e agende pelo
+                celular
               </figcaption>
             </figure>
           )}
         </div>
         <div className="tv-slide" key={slide}>
+          {!current && (
+            <div className="tv-slide-card tv-brand-card">
+              <small>Um tempo para você</small>
+              <p className="tv-big">
+                Sinta-se
+                <br />
+                em casa.
+              </p>
+              <p>É um prazer receber você na {business.name}.</p>
+            </div>
+          )}
           {current?.kind === "photo" && (
             <div className="tv-ad">
               <img className="tv-slide-photo" src={current.src} alt="" />
@@ -520,7 +575,9 @@ function TvScreen({ store }: { store: Store }) {
             <div className="tv-ad">
               <img className="tv-slide-photo" src={current.image} alt="" />
               <div className="tv-ad-text">
-                {current.popular && <span className="tv-ad-tag">O mais pedido</span>}
+                {current.popular && (
+                  <span className="tv-ad-tag">O mais pedido</span>
+                )}
                 <strong>{current.name}</strong>
                 <span className="tv-ad-price">
                   {money(current.price)} <em>· {current.duration} min</em>
@@ -569,7 +626,7 @@ function TvScreen({ store }: { store: Store }) {
                   <img key={src} src={src} alt="" />
                 ))}
               </div>
-              <p>Cortes novos toda semana no Instagram.</p>
+              <p>Inspirações e novidades no nosso Instagram.</p>
             </div>
           )}
           {slides.length > 1 && (

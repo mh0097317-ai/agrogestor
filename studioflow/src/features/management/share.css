@@ -1,3 +1,110 @@
+.work-studio {
+  margin: 0 0 28px;
+  padding: clamp(20px, 3vw, 36px);
+  border-radius: 18px;
+  background: #fffcf7;
+  border: 1px solid #e3d7c9;
+}
+.work-studio header {
+  max-width: 680px;
+  margin-bottom: 28px;
+}
+.work-studio h2 {
+  margin: 10px 0;
+  font: 500 clamp(26px, 3vw, 38px)/1.16 var(--serif);
+  color: #292b2e;
+}
+.work-studio header p {
+  color: #776453;
+  line-height: 1.7;
+}
+.work-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: clamp(20px, 4vw, 54px);
+  align-items: start;
+}
+.work-photo-input {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 9px;
+  padding: 28px 18px;
+  border: 1px dashed #a77c56;
+  border-radius: 12px;
+  background: #f7f0e6;
+  color: #65482f;
+  cursor: pointer;
+  overflow: hidden;
+}
+.work-photo-input input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.work-photo-input:focus-within {
+  outline: 3px solid #936545;
+  outline-offset: 3px;
+}
+.work-photo-input span {
+  font-size: 12px;
+}
+.work-studio-result {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  min-width: 0;
+}
+.work-studio-preview {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 4 / 5;
+  background: #f0e7db;
+  border: 1px solid #dfd0be;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px #292b2e12;
+}
+.work-studio-preview.is-story {
+  aspect-ratio: 9 / 16;
+  max-width: 285px;
+}
+.work-studio-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.work-studio-preview > div {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 15px;
+  height: 100%;
+  color: #8b6d50;
+  text-align: center;
+  padding: 20px;
+}
+.work-studio-preview span {
+  font: 500 26px var(--serif);
+}
+.work-studio-result .share-actions {
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .work-studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .work-studio input,
+  .work-studio textarea,
+  .work-studio select {
+    font-size: 16px;
+  }
+}
+
 .share-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -374,7 +481,327 @@
 
 /* Postar no Instagram da casa */
 .share-instagram .form-section,
-.share-instagram section { box-shadow: none; border: 0; padding: 0; margin: 0; background: transparent; }
-.share-ig-on { display: flex; gap: 12px; align-items: flex-start; }
-.share-ig-on svg { flex: none; color: #2f7a4a; margin-top: 2px; }
-.share-ig-on p { margin: 0; }
+.share-instagram section {
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+.share-ig-on {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.share-ig-on svg {
+  flex: none;
+  color: #2f7a4a;
+  margin-top: 2px;
+}
+.share-ig-on p {
+  margin: 0;
+}
+/* A calm graphite studio, with the photo as the focal point. */
+.share-mode-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 36px;
+}
+.share-mode-nav button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px;
+  min-height: 92px;
+  border: 1px solid #e2d5c5;
+  border-radius: 16px;
+  background: #fffcf7;
+  color: #66513f;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 180ms,
+    border-color 180ms;
+}
+.share-mode-nav button:hover {
+  border-color: #a5805b;
+}
+.share-mode-nav button.is-selected {
+  background: #292b2e;
+  border-color: #292b2e;
+  color: #fff7ec;
+}
+.share-mode-nav button > span:nth-child(2) {
+  display: grid;
+  gap: 6px;
+}
+.share-mode-nav strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.share-mode-nav small {
+  color: #84715f;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.share-mode-nav .is-selected small {
+  color: #d0d1d0;
+}
+.share-mode-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f2e8da;
+  flex: 0 0 auto;
+}
+.is-selected .share-mode-icon {
+  background: #ffffff12;
+  color: #ddd7ca;
+}
+.share-mode-number {
+  margin-left: auto;
+  font: 400 22px var(--serif);
+  opacity: 0.5;
+}
+.app-shell .share-page .work-studio {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 30px;
+}
+.work-studio header {
+  max-width: 680px;
+  margin-bottom: 26px;
+}
+.work-studio h2 {
+  font-size: clamp(28px, 3.2vw, 40px);
+  letter-spacing: -0.035em;
+}
+.work-studio-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 36px;
+}
+.work-studio-editor {
+  padding: clamp(20px, 2.6vw, 32px);
+  border: 1px solid #e4d7c6;
+  border-radius: 22px;
+  background: #fffcf8;
+}
+.work-editor-heading,
+.work-preview-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #71583e;
+}
+.work-editor-heading > span,
+.work-preview-label > span {
+  font: 400 24px var(--serif);
+  color: #a78054;
+}
+.work-editor-heading {
+  margin-bottom: 4px;
+}
+.work-photo-input {
+  padding: 26px 18px;
+  border-radius: 14px;
+  background: #faf5ed;
+  border-color: #cdb697;
+}
+.work-format-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.work-format-options button {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 5px 10px;
+  align-items: center;
+  min-height: 76px;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid #e3d7c8;
+  border-radius: 12px;
+  color: #68533f;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+.work-format-options button[aria-pressed="true"] {
+  background: #f1e6d6;
+  border-color: #9f7b51;
+  color: #292b2e;
+}
+.work-format-options small {
+  grid-column: 2;
+  color: #89735b;
+  font-size: 10px;
+}
+.work-format-feed,
+.work-format-story {
+  display: block;
+  width: 17px;
+  height: 22px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  grid-row: span 2;
+}
+.work-format-story {
+  width: 14px;
+  height: 26px;
+}
+.work-studio-result {
+  align-self: start;
+  gap: 20px;
+  padding-top: 12px;
+  position: sticky;
+  top: 95px;
+}
+.work-studio-preview {
+  border-radius: 20px;
+  border: 0;
+  box-shadow: 0 16px 36px #39271a18;
+}
+.work-studio-preview.is-empty,
+.work-studio-preview.is-empty.is-story {
+  position: relative;
+  aspect-ratio: auto;
+  min-height: 410px;
+  max-width: 420px;
+  background: #292b2e;
+  box-shadow: 0 16px 36px #39271a14;
+}
+.work-studio-preview.is-empty::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid #b6956950;
+  border-radius: 13px;
+  pointer-events: none;
+}
+.work-studio-preview.is-empty > div {
+  min-height: 410px;
+  position: relative;
+  color: #e6c79e;
+  gap: 22px;
+}
+.work-studio-preview.is-empty svg {
+  color: #b7b9b9;
+}
+.work-studio-preview.is-empty span {
+  font: 400 clamp(28px, 3vw, 37px)/1.2 var(--serif);
+  color: #f5f5f0;
+}
+.work-studio-preview.is-empty small {
+  color: #c8c9c7;
+  line-height: 1.8;
+  font-size: 12px;
+}
+.share-instagram-disclosure {
+  border-top: 1px solid #dacebd;
+  border-bottom: 1px solid #dacebd;
+  margin: 32px 0;
+}
+.share-instagram-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 2px;
+  cursor: pointer;
+  list-style: none;
+  color: #62482f;
+}
+.share-instagram-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.share-instagram-disclosure summary > span:first-of-type {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.share-instagram-disclosure summary small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #8b7560;
+}
+.share-instagram-disclosure summary > span:last-child {
+  margin-left: auto;
+  font-size: 24px;
+  font-weight: 300;
+}
+.share-instagram-disclosure[open] summary > span:last-child {
+  transform: rotate(45deg);
+}
+.app-shell .share-instagram-disclosure .share-instagram {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding-top: 0;
+}
+.share-mode-nav button:focus-visible,
+.work-format-options button:focus-visible,
+.share-instagram-disclosure summary:focus-visible {
+  outline: 3px solid #9f7b51;
+  outline-offset: 4px;
+}
+@media (max-width: 1000px) {
+  .share-mode-nav button {
+    padding: 14px 12px;
+    gap: 9px;
+  }
+  .share-mode-number {
+    display: none;
+  }
+  .share-mode-nav small {
+    font-size: 10px;
+  }
+}
+@media (max-width: 760px) {
+  .share-mode-nav {
+    gap: 8px;
+    margin-bottom: 25px;
+  }
+  .share-mode-nav button {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px 7px;
+    gap: 10px;
+  }
+  .share-mode-nav button > span:nth-child(2) {
+    gap: 0;
+  }
+  .share-mode-nav small {
+    display: none;
+  }
+  .share-mode-nav strong {
+    font-size: 12px;
+  }
+  .work-studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 25px;
+  }
+  .work-studio-result {
+    position: static;
+  }
+  .work-studio-preview.is-empty,
+  .work-studio-preview.is-empty > div {
+    min-height: 320px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .share-mode-nav button {
+    transition: none;
+  }
+}
+
+.share-page [hidden] {
+  display: none !important;
+}

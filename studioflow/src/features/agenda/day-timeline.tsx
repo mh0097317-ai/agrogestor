@@ -22,6 +22,7 @@ export function DayTimeline({
   onAdd,
   onDetail,
   onBlock,
+  now,
 }: {
   data: Store;
   date: Date;
@@ -31,6 +32,7 @@ export function DayTimeline({
   onAdd: (day: Date, time?: string, professionalId?: string) => void;
   onDetail: (appointment: Appointment) => void;
   onBlock: (block: BlockedTime) => void;
+  now: number;
 }) {
   if (!professionals.length)
     return (
@@ -73,6 +75,11 @@ export function DayTimeline({
   ];
   const start = Math.floor(Math.min(...bounds) / 60) * 60;
   const end = Math.max(start + 60, Math.ceil(Math.max(...bounds) / 60) * 60);
+  const currentMinute = appointmentMinute(new Date(now).toISOString());
+  const showNow =
+    businessDay(new Date(now)) === day &&
+    currentMinute >= start &&
+    currentMinute < end;
   const minutes = Array.from(
     { length: (end - start) / 30 },
     (_, index) => start + index * 30,
@@ -131,6 +138,14 @@ export function DayTimeline({
               {timeOf(minute)}
             </span>
           ))}
+          {showNow && (
+            <span
+              className="calendar-now-label"
+              style={{ top: (currentMinute - start) * pixelsPerMinute }}
+            >
+              {timeOf(currentMinute)}
+            </span>
+          )}
         </div>
         {professionals.map((professional) => {
           const range = workingRange(data, professional, date);
@@ -152,6 +167,13 @@ export function DayTimeline({
               className="calendar-person-track"
               style={{ height: (end - start) * pixelsPerMinute }}
             >
+              {showNow && (
+                <div
+                  className="calendar-now-line"
+                  style={{ top: (currentMinute - start) * pixelsPerMinute }}
+                  aria-label={`Agora, ${timeOf(currentMinute)}`}
+                />
+              )}
               {minutes.map((minute) => {
                 const busy = entries.some(
                   (appointment) =>

@@ -40,7 +40,7 @@ export async function recoverConversation(input: {
   await processConversation(repo, input.id, {
     slug: input.slug,
     origin: input.origin,
-    send: (body) => send(whatsappDestination(conversation), body),
+    send: (body,menu) => send(whatsappDestination(conversation), body,menu),
   });
 }
 

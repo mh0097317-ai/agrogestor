@@ -7,6 +7,7 @@ import { exactPriceSelection } from "./routine-reply";
 import { resolveBookingDate } from "./booking-date";
 import { offeredChoice } from "./offered-choice";
 import { productSelection } from "./product-reply";
+import { menuSelection } from "./booking-menu";
 export { asksForDayOptions } from "./day-options";
 
 export const interpretationSchema = z
@@ -57,6 +58,7 @@ export const interpretationSchema = z
       "CONFIRM",
       "HANDOFF",
     ]),
+    acknowledgement: z.string().max(140).optional(),
   })
   .strict();
 export type Interpretation = z.infer<typeof interpretationSchema>;
@@ -78,7 +80,14 @@ export function generalSelection(): Interpretation {
 
 export function nameAnswer(text: string, recent: ConversationMessage[]) {
   const last = recent.at(-1);
-  const value = text.trim();
+  // "Sou Gislayniel" is the name Gislayniel, not "Sou".
+  const value = text
+    .trim()
+    .replace(
+      /^(?:sou (?:o |a )?|me chamo |meu nome [eé] |aqui [eé] (?:o |a )?|[eé] (?:o |a ))/i,
+      "",
+    )
+    .trim();
   if (
     !last ||
     last.role === "customer" ||
@@ -104,7 +113,8 @@ export function nameAnswer(text: string, recent: ConversationMessage[]) {
 // still enforces bounds and checks every entity against this business.
 const interpretationTool = {
   name: "interpretar_pedido",
-  description: "Classificar o pedido atual sem responder nem executar ações.",
+  description:
+    "Entender o pedido e, quando útil, acolher o contexto sem executar ações.",
   strict: true,
   input_schema: {
     type: "object" as const,
@@ -130,6 +140,7 @@ const interpretationTool = {
         type: "string",
         enum: interpretationSchema.shape.nextAction.options,
       },
+      acknowledgement: { type: "string" },
     },
     required: Object.keys(interpretationSchema.shape),
     additionalProperties: false,
@@ -389,6 +400,8 @@ export async function understandMessage(
   };
   if (!current)
     return { interpretation: silent, usage: { input: 0, output: 0 } };
+  const menu = menuSelection(store, current);
+  if (menu) return { interpretation: menu, usage: { input: 0, output: 0 } };
   // Commercial relevance controls routing, not whether the customer receives an answer.
   if (!canUnderstand(current, store, recent, at, bookingContext))
     return {
@@ -416,7 +429,8 @@ export async function understandMessage(
     max_tokens: 360,
     tools: [interpretationTool],
     tool_choice: { type: "tool", name: interpretationTool.name },
-    system: `Você é o INTERPRETADOR de atendimento de uma ${store.business.category}. Nunca escreva uma resposta ao cliente e não execute ações. Leia a mensagem atual e as seis mensagens anteriores da MESMA conversa. Devolva somente JSON com as chaves intent,stage,confidence,serviceIds,professionalId,date,time,missing,nextAction.
+    system: `Você é o INTERPRETADOR de atendimento de uma ${store.business.category}. Nunca escreva uma resposta completa ao cliente e não execute ações; apenas classifique o pedido e sugira o acolhimento opcional definido abaixo. Leia a mensagem atual e as seis mensagens anteriores da MESMA conversa. Devolva somente JSON com as chaves intent,stage,confidence,serviceIds,professionalId,date,time,missing,nextAction,acknowledgement.
+acknowledgement: uma frase breve, natural e específica para acolher algo que o cliente acabou de contar, sem perguntas, saudações, valores, datas, horários, nomes ou fatos do estabelecimento. Exemplo: para "tenho um casamento e queria mudar o visual", "Vamos pensar num visual para essa ocasião.". Use "" em perguntas objetivas, escolhas de horário, respostas curtas, agradecimentos ou quando não houver algo a acolher. Não use frases prontas em toda resposta; não repita o acolhimento anterior. Nunca afirme que reservou, que há vaga, que existe um produto ou que oferece desconto. As informações reais e a próxima pergunta serão acrescentadas pelo sistema.
 intent: PRICE|AVAILABILITY|BOOK|CHANGE_BOOKING|INFORMATION|GENERAL|NEGOTIATE|SUPPORT|CONTINUE|OFF_TOPIC.
 stage: UNDERSTANDING|QUALIFYING|CHOOSING_TIME|CONFIRMING|NEGOTIATING|SUPPORT|OFF_TOPIC.
 nextAction: SILENCE|ASK|CONSULT|ANSWER|CONFIRM|HANDOFF.
@@ -426,7 +440,7 @@ Catálogo real: ${JSON.stringify(store.services.filter((s) => s.active).map((s) 
 Perguntas sobre produtos para cabelo/barba são INFORMATION/ANSWER, nunca OFF_TOPIC. Responda à pergunta atual sem esquecer o horário escolhido antes. Não invente estoque nem prometa reserva: produtos públicos disponíveis: ${JSON.stringify((store.products || []).filter((p) => p.businessId === store.business.id && p.active && p.showPublic && p.stock > 0).map((p) => ({ name: p.name, price: p.price })))}.
 Quando o cliente pergunta quais dias estão disponíveis ou "quais são os outros dias?" após falar de um serviço, interprete AVAILABILITY/CONSULT, preservando serviço e período do contexto. Não peça uma data para poder consultar opções de datas. A data anterior serve de contexto, não como a única data solicitada agora.
 Iniciativa: pedido de um serviço identificado sem escolher dia ("quero cortar o cabelo", "qualquer dia", "não sei quando", "o primeiro que tiver") é BOOK ou AVAILABILITY/CONSULT com date="" e time="". O backend vai oferecer os próximos horários reais; essas propostas ainda não são escolhas do cliente nem consentimento. Se o cliente informou um dia ou período, preserve-o. Não colete nome antes de apresentar as opções de horário; após escolher, pergunte apenas o dado necessário. Não repita perguntas já respondidas e não ofereça alternativas após recusa ou despedida.
-Equipe real: ${JSON.stringify(store.professionals.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name })))}
+Equipe real: ${JSON.stringify(store.professionals.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name })))}. Preencha professionalId somente se o cliente pedir ou escolher claramente uma pessoa; sem escolha explícita, use "" para consultar a equipe inteira. Nunca escolha o primeiro profissional por conta própria.
 Fechamento: escolha inequívoca de um horário oferecido na conversa comercial atual, "pode marcar" ou "quero às 18h" para o serviço e dia em discussão é BOOK/CONFIRM. Isso já é confirmação; não inclua confirmation em missing por exigir uma segunda confirmação. Perguntar se há horário é AVAILABILITY/CONSULT, nunca autorização para agendar. Se serviço, dia ou horário forem ambíguos, ASK com o dado faltante. Se falta apenas o nome, BOOK/ASK com missing=["name"]; quando o cliente responde à pergunta do nome depois de escolher serviço/dia/horário, BOOK/CONFIRM com missing=[] e preserve a escolha atual. Nunca converta recusa, silêncio ou referência a um atendimento antigo em consentimento. No canal com apenas um profissional, use esse profissional, sem perguntar novamente. Nome de cadastro já conhecido: ${customerName || "não informado; não use apelido como nome confirmado"}. Se conhecido, não inclua name em missing. O telefone do cliente no WhatsApp já é conhecido.`,
     messages: [
       {
@@ -502,6 +516,24 @@ Fechamento: escolha inequívoca de um horário oferecido na conversa comercial a
       ))
   )
     throw new Error("interpretation-invalid-entity");
+  const namedProfessional = store.professionals.find(
+    (person) =>
+      person.active && normalized(current).includes(normalized(person.name)),
+  );
+  const answeredProfessionalQuestion =
+    recent.at(-1)?.role === "assistant" &&
+    /com quem.*prefere|qual profissional|qual barbeiro/i.test(
+      recent.at(-1)?.body || "",
+    );
+  if (
+    namedProfessional &&
+    (answeredProfessionalQuestion ||
+      /\b(?:com|prefiro|quero|barbeiro|profissional|atendido por)\b/i.test(
+        current,
+      ))
+  )
+    interpretation.professionalId = namedProfessional.id;
+  else interpretation.professionalId = "";
   const answeredName = nameAnswer(current, recent);
   if (customerName || answeredName)
     interpretation.missing = interpretation.missing.filter(

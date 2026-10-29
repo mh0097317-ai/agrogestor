@@ -94,6 +94,7 @@ async function transaction<T>(
     store.settings.depositValue ??= 0;
     store.settings.depositHold ??= 15;
     store.settings.assistantEnabled ??= false;
+    store.settings.assistantScheduleEnabled ??= false;
     store.settings.assistantName ??= "Recepção";
     store.settings.assistantInstructions ??= "";
     store.settings.assistantDailyLimit ??= 300;

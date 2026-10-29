@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CircleNotch,
+  Eye,
+  EyeSlash,
   ShieldCheck,
 } from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
@@ -12,7 +14,11 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { inviteRedirect } from "@/lib/invite-redirect";
 import "./login.css";
 import "@/components/auth-card.css";
-export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }) {
+export function LoginForm({
+  initialSignup = false,
+}: {
+  initialSignup?: boolean;
+}) {
   const router = useRouter();
   const [signup, setSignup] = useState(initialSignup),
     [email, setEmail] = useState(""),
@@ -21,6 +27,7 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
+  const [visible, setVisible] = useState(false);
   const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     dev = process.env.NODE_ENV !== "production";
   async function submit(event: React.FormEvent) {
@@ -81,7 +88,9 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
     }
   }
   function switchMode(next: boolean) {
+    if (busy) return;
     setSignup(next);
+    setVisible(false);
     setError("");
     setMessage("");
   }
@@ -109,22 +118,38 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="voce@barbearia.com"
+          placeholder="Seu e-mail de acesso"
           tabIndex={(mode === "register") === signup ? 0 : -1}
         />
       </label>
       <label className="ac-field">
         Senha
-        <input
-          required
-          type="password"
-          minLength={8}
-          autoComplete={mode === "register" ? "new-password" : "current-password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Pelo menos 8 caracteres"
-          tabIndex={(mode === "register") === signup ? 0 : -1}
-        />
+        <span className="ac-password">
+          <input
+            required
+            type={visible ? "text" : "password"}
+            minLength={8}
+            autoComplete={
+              mode === "register" ? "new-password" : "current-password"
+            }
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={
+              mode === "register"
+                ? "Crie uma senha com 8 ou mais caracteres"
+                : "Digite sua senha"
+            }
+            tabIndex={(mode === "register") === signup ? 0 : -1}
+          />
+          <button
+            type="button"
+            aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+            aria-pressed={visible}
+            onClick={() => setVisible(!visible)}
+          >
+            {visible ? <EyeSlash size={20} /> : <Eye size={20} />}
+          </button>
+        </span>
       </label>
     </>
   );
@@ -132,46 +157,98 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
     <main className="ac-page">
       <Link href="/" className="ac-home" aria-label="StudioFlow">
         <Brand tone="on-dark" size={34} animated />
+        <span className="ac-home-caption">GESTÃO COM MAIS FLUXO</span>
       </Link>
       <div className={`ac-card ${signup ? "is-register" : ""}`}>
-        <div className="ac-bg" aria-hidden="true" />
+        <div className="ac-bg" aria-hidden="true">
+          <span className="ac-photo-caption">
+            Seu espaço.
+            <br />
+            <em>Seu próximo capítulo.</em>
+            <small>BARBEARIAS · SALÕES · ESTÚDIOS</small>
+          </span>
+        </div>
 
         <div className="ac-hero is-register" aria-hidden={!signup}>
           <span className="ac-hero-eyebrow">Já é da casa?</span>
           <h2>Bom ter você de volta.</h2>
-          <p>Entre para ver a agenda do dia, o caixa e o que a recepcionista resolveu.</p>
-          <button type="button" className="ac-switch" onClick={() => switchMode(false)} tabIndex={signup ? 0 : -1}>
+          <p>
+            Entre para ver a agenda do dia, o caixa e o que a recepcionista
+            resolveu.
+          </p>
+          <button
+            type="button"
+            className="ac-switch"
+            onClick={() => switchMode(false)}
+            tabIndex={signup ? 0 : -1}
+          >
             Entrar
           </button>
         </div>
         <div className="ac-hero is-login" aria-hidden={signup}>
           <span className="ac-hero-eyebrow">Primeira vez por aqui?</span>
-          <h2>Sua barbearia agendando sozinha.</h2>
-          <p>Crie sua conta e tenha página, agenda e lembretes funcionando hoje.</p>
-          <button type="button" className="ac-switch" onClick={() => switchMode(true)} tabIndex={signup ? -1 : 0}>
+          <h2>Mais tempo para o que você faz de melhor.</h2>
+          <p>
+            Agenda, clientes e atendimento em um espaço feito para o seu
+            negócio.
+          </p>
+          <button
+            type="button"
+            className="ac-switch"
+            onClick={() => switchMode(true)}
+            tabIndex={signup ? -1 : 0}
+          >
             Criar conta
           </button>
         </div>
 
-        <form className="ac-form is-login" onSubmit={submit} aria-busy={busy} aria-hidden={signup}>
+        <form
+          className="ac-form is-login"
+          onSubmit={submit}
+          aria-busy={busy}
+          aria-hidden={signup}
+          inert={signup}
+        >
           <span className="ac-eyebrow">Entrar</span>
           <h1>Bom ter você aqui.</h1>
-          <p className="ac-sub">Entre para acompanhar o seu estabelecimento.</p>
+          <p className="ac-sub">
+            Entre para acompanhar sua agenda, atender seus clientes e cuidar do negócio.
+          </p>
           {credentials("login")}
           {!signup && feedback}
-          <button disabled={busy || !configured} className="ac-submit" tabIndex={signup ? -1 : 0}>
-            {busy && !signup ? <CircleNotch size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+          <button
+            disabled={busy || !configured}
+            className="ac-submit"
+            tabIndex={signup ? -1 : 0}
+          >
+            {busy && !signup ? (
+              <CircleNotch size={18} className="animate-spin" />
+            ) : (
+              <ArrowRight size={18} />
+            )}
             Entrar no painel
           </button>
-          <button type="button" className="ac-mobile-switch" onClick={() => switchMode(true)}>
+          <button
+            type="button"
+            className="ac-mobile-switch"
+            onClick={() => switchMode(true)}
+          >
             Primeira vez por aqui? <b>Criar conta</b>
           </button>
         </form>
 
-        <form className="ac-form is-register" onSubmit={submit} aria-busy={busy} aria-hidden={!signup}>
+        <form
+          className="ac-form is-register"
+          onSubmit={submit}
+          aria-busy={busy}
+          aria-hidden={!signup}
+          inert={!signup}
+        >
           <span className="ac-eyebrow">Criar conta</span>
           <h1>Seu espaço começa aqui.</h1>
-          <p className="ac-sub">Leva uns minutos. Depois é só divulgar o link.</p>
+          <p className="ac-sub">
+            Crie seu acesso. Depois, vamos organizar o seu estabelecimento.
+          </p>
           <label className="ac-field">
             Seu nome
             <input
@@ -187,15 +264,34 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
           </label>
           {credentials("register")}
           {signup && feedback}
-          <button disabled={busy || !configured} className="ac-submit" tabIndex={signup ? 0 : -1}>
-            {busy && signup ? <CircleNotch size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+          <button
+            disabled={busy || !configured}
+            className="ac-submit"
+            tabIndex={signup ? 0 : -1}
+          >
+            {busy && signup ? (
+              <CircleNotch size={18} className="animate-spin" />
+            ) : (
+              <ArrowRight size={18} />
+            )}
             Criar minha conta
           </button>
           <p className="ac-terms">
-            Ao criar a conta, você concorda com os <Link href="/termos" target="_blank">Termos de Uso</Link> e a{" "}
-            <Link href="/privacidade" target="_blank">Política de Privacidade</Link>.
+            Ao criar a conta, você concorda com os{" "}
+            <Link href="/termos" target="_blank">
+              Termos de Uso
+            </Link>{" "}
+            e a{" "}
+            <Link href="/privacidade" target="_blank">
+              Política de Privacidade
+            </Link>
+            .
           </p>
-          <button type="button" className="ac-mobile-switch" onClick={() => switchMode(false)}>
+          <button
+            type="button"
+            className="ac-mobile-switch"
+            onClick={() => switchMode(false)}
+          >
             Já tem uma conta? <b>Entrar</b>
           </button>
         </form>
@@ -217,8 +313,10 @@ export function LoginForm({ initialSignup = false }: { initialSignup?: boolean }
         </div>
       )}
       <p className="ac-foot">
-        <ShieldCheck size={15} /> Os dados de cada estabelecimento ficam separados e protegidos.
+        <ShieldCheck size={15} /> Os dados de cada estabelecimento ficam
+        separados e protegidos.
         <Link href="/barber-011">Ver a experiência do cliente</Link>
+        <Link href="/admin/login">Acesso administrativo</Link>
       </p>
     </main>
   );

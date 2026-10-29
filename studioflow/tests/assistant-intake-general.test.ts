@@ -11,7 +11,8 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://intake.example.test";
   process.env.SUPABASE_SECRET_KEY = "local-test-secret";
   let enabled = true,
-    duplicate = false;
+    duplicate = false,
+    existingThread = false;
   const writes: { table: string; data: Record<string, unknown> }[] = [];
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
@@ -28,7 +29,7 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
           status: "ai",
           unread: 0,
           history: [],
-          ai_cursor: new Date(0).toISOString(),
+          ai_cursor: data.ai_cursor,
         });
       assert.equal(table, "conversation_messages");
       return new Response(null, { status: 201 });
@@ -45,7 +46,28 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
       return Response.json([{ assistant_enabled: enabled }]);
     if (table === "conversation_messages")
       return Response.json(duplicate ? [{ id: "seen" }] : []);
-    if (table === "conversations" || table === "customers")
+    if (table === "conversations")
+      return Response.json(
+        existingThread
+          ? [
+              {
+                id: "existing",
+                channel: "whatsapp",
+                contact_phone: url.searchParams.get("contact_phone")?.replace("eq.", ""),
+                contact_name: "Teste",
+                contact_ref: "",
+                status: "ai",
+                unread: 0,
+                history: [],
+                ai_cursor: "1970-01-01T00:00:00.000Z",
+                whatsapp_professional_id: "p1",
+                processing_until: null,
+                updated_at: "2026-10-28T12:00:00.000Z",
+              },
+            ]
+          : [],
+      );
+    if (table === "customers")
       return Response.json([]);
     throw Error(`Unexpected mocked request: ${table}`);
   };
@@ -72,6 +94,12 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
       });
     }
     assert.equal(writes.filter((w) => w.table === "conversations").length, 3);
+    assert.ok(
+      writes
+        .filter((w) => w.table === "conversations")
+        .every((w) => w.data.ai_cursor === "1970-01-01T00:00:00.000Z"),
+      "a fresh conversation must start before its first inbound message",
+    );
     assert.deepEqual(
       writes
         .filter((w) => w.table === "conversation_messages")
@@ -83,7 +111,6 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
         (w) => w.data.business_id === "b1" && w.data.tenant_id === "t1",
       ),
     );
-    const before = writes.length;
     enabled = false;
     await receiveWhatsAppMessages({
       ...base,
@@ -92,6 +119,7 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
       ],
     });
     enabled = true;
+    existingThread = true;
     await receiveWhatsAppMessages({
       ...base,
       messages: [
@@ -104,6 +132,23 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
         },
       ],
     });
+    await receiveWhatsAppMessages({
+      ...base,
+      messages: [
+        {
+          id: "outgoing-empty-media",
+          from: "5562999999999",
+          name: "Teste",
+          text: "",
+          fromMe: true,
+        },
+      ],
+    });
+    const sentStaffBodies = writes
+      .filter((w) => w.table === "conversation_messages" && w.data.role === "staff")
+      .map((w) => w.data.body);
+    assert.deepEqual(sentStaffBodies, ["Olá", "[A equipe enviou uma mídia.]"]);
+    const afterOutgoing = writes.length;
     duplicate = true;
     await receiveWhatsAppMessages({
       ...base,
@@ -111,7 +156,7 @@ test("a new WhatsApp contact's greeting or general question reaches the inbox wh
         { id: "m0", from: "5562999999999", name: "Teste", text: "Boa noite" },
       ],
     });
-    assert.equal(writes.length, before);
+    assert.equal(writes.length, afterOutgoing);
   } finally {
     globalThis.fetch = previous.fetch;
     if (previous.url === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -358,6 +358,7 @@ export function createSeed(): Store {
       assistantEnabled: false,
       assistantName: "Recepção",
       assistantInstructions: "",
+      assistantScheduleEnabled: false,
       assistantDailyLimit: 300,
     },
   };

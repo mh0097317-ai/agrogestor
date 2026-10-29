@@ -29,7 +29,7 @@ import {
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/components/toast";
-import { localDay, dateLabel, businessToday } from "@/lib/utils";
+import { localDay, dateLabel, businessToday, businessDay } from "@/lib/utils";
 import type { Appointment, BlockedTime } from "@/types";
 import { AppointmentForm } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
@@ -152,6 +152,21 @@ export function AgendaPage() {
   const inProgress = selectedAppointments.filter(
     (appointment) => appointment.status === "in_progress",
   ).length;
+  const today = businessDay(new Date(now));
+  const periodAppointments = appointments.filter((appointment) => {
+    const day = businessDay(appointment.start);
+    return view === "day"
+      ? day === localDay(date)
+      : view === "week"
+        ? day >= localDay(weekDays[0]) && day <= localDay(weekDays[6])
+        : day.startsWith(format(date, "yyyy-MM"));
+  });
+  const periodPending = periodAppointments.filter(
+    (appointment) => appointment.status === "pending",
+  ).length;
+  const periodCompleted = periodAppointments.filter(
+    (appointment) => appointment.status === "completed",
+  ).length;
   function navigate(direction: number) {
     changeCalendar({
       date:
@@ -192,7 +207,7 @@ export function AgendaPage() {
     }
   }
   return (
-    <div className="calendar-page">
+    <div className={`calendar-page calendar-view-${view}`}>
       <PageHeader
         title="Agenda"
         description="Horários de toda a equipe por dia, semana ou mês."
@@ -226,7 +241,7 @@ export function AgendaPage() {
             {view === "month"
               ? format(date, "MMMM yyyy", { locale: ptBR })
               : view === "week"
-                ? `${format(weekDays[0], "dd")}–${format(weekDays[6], "dd 'de' MMMM", { locale: ptBR })}`
+                ? `${format(weekDays[0], "dd MMM", { locale: ptBR })} — ${format(weekDays[6], "dd MMM yyyy", { locale: ptBR })}`
                 : format(date, "dd 'de' MMMM", { locale: ptBR })}
           </strong>
           <button
@@ -243,6 +258,18 @@ export function AgendaPage() {
           >
             Hoje
           </Button>
+          <label className="calendar-jump">
+            <CalendarBlank size={17} aria-hidden="true" />
+            <span className="sr-only">Ir para uma data</span>
+            <input
+              type="date"
+              value={localDay(date)}
+              onChange={(event) => {
+                const nextDate = validAgendaDate(event.target.value);
+                if (nextDate) changeCalendar({ date: nextDate });
+              }}
+            />
+          </label>
         </div>
         <div className="calendar-view-controls">
           <select
@@ -278,6 +305,47 @@ export function AgendaPage() {
             ))}
           </div>
         </div>
+      </div>
+      <div className="calendar-period-summary" aria-label="Resumo do período">
+        <div className="calendar-period-total">
+          <span className="calendar-summary-icon">
+            <CalendarBlank size={23} weight="duotone" />
+          </span>
+          <div>
+            <span>
+              {view === "day"
+                ? "Neste dia"
+                : view === "week"
+                  ? "Nesta semana"
+                  : "Neste mês"}
+            </span>
+            <strong>
+              {periodAppointments.length}{" "}
+              <small>
+                {periodAppointments.length === 1
+                  ? "atendimento"
+                  : "atendimentos"}
+              </small>
+            </strong>
+          </div>
+        </div>
+        <div>
+          <i className="calendar-summary-pending" />
+          <strong>{periodPending}</strong>
+          <span>A confirmar</span>
+        </div>
+        <div>
+          <i className="calendar-summary-completed" />
+          <strong>{periodCompleted}</strong>
+          <span>Concluídos</span>
+        </div>
+        <span className="calendar-summary-scope">
+          {activeFilter === "all"
+            ? "Toda a equipe"
+            : data.professionals.find(
+                (professional) => professional.id === activeFilter,
+              )?.name}
+        </span>
       </div>
       {view !== "month" && (
         <div className="calendar-mobile-dates">
@@ -324,7 +392,7 @@ export function AgendaPage() {
               {view === "day"
                 ? format(date, "EEEE", { locale: ptBR })
                 : view === "week"
-                  ? "Seu tempo, em perspectiva."
+                  ? "Sua semana, bem organizada."
                   : format(date, "MMMM", { locale: ptBR })}
             </h2>
           </div>
@@ -351,6 +419,7 @@ export function AgendaPage() {
               onAdd={add}
               onDetail={setDetail}
               onBlock={openBlock}
+              now={now}
             />
           </div>
         )}
@@ -360,6 +429,8 @@ export function AgendaPage() {
               data={data}
               days={weekDays}
               appointments={appointments}
+              today={today}
+              selectedDate={localDay(date)}
               canEdit={canEdit}
               onAdd={add}
               onDetail={setDetail}
@@ -374,6 +445,7 @@ export function AgendaPage() {
             days={monthDays}
             date={date}
             appointments={appointments}
+            today={today}
             onSelect={(nextDate) => changeCalendar({ date: nextDate })}
           />
         )}
@@ -405,6 +477,45 @@ export function AgendaPage() {
             { label: "Em andamento", value: inProgress },
           ]}
         />
+        {view === "day" && (
+          <div
+            className="mobile-professional-switch"
+            role="group"
+            aria-label="Agenda de qual profissional?"
+          >
+            <button
+              type="button"
+              aria-pressed={activeFilter === "all"}
+              onClick={() => changeCalendar({ filter: "all" })}
+            >
+              Todos
+            </button>
+            {data.professionals
+              .filter((p) => p.active)
+              .map((p) => (
+                <button
+                  type="button"
+                  key={p.id}
+                  aria-pressed={activeFilter === p.id}
+                  onClick={() => changeCalendar({ filter: p.id })}
+                >
+                  {p.name}
+                  <span>
+                    {
+                      appointmentsOn(
+                        data.appointments.filter(
+                          (a) =>
+                            !["cancelled", "no_show"].includes(a.status) &&
+                            a.professionalId === p.id,
+                        ),
+                        localDay(date),
+                      ).length
+                    }
+                  </span>
+                </button>
+              ))}
+          </div>
+        )}
         <MobileDayAgenda
           data={data}
           date={date}

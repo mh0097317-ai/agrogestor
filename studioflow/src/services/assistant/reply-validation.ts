@@ -18,7 +18,7 @@ export function unverifiedBookingClaim(reply: string) {
     /\b(?:ainda\s+)?nao\s+(?:esta\s+|foi\s+|ficou\s+)?(?:agendei|marquei|reservei|confirmad[oa]|marcado|agendado|reservado|garantido)\b/g,
     "",
   );
-  return /\b(?:agendei|marquei|reservei|confirmad[oa]|agendament[oa] realizado)\b|\b(?:pronto|prontinho|tudo certo)[,!]?\s+(?:marcado|agendado|reservado)\b|\b(?:horario|agendamento|reserva)\s+(?:esta\s+|ja\s+|foi\s+|ficou\s+)?(?:marcado|agendado|reservado|garantido)\b/.test(
+  return /\b(?:agendei|marquei|reservei|confirmad[oa]|agendament[oa] realizado)\b|\b(?:pronto|prontinho|tudo certo)[,!]?\s+(?:marcado|agendado|reservado)\b|\b(?:horario|agendamento|reserva)\s+(?:esta\s+|ja\s+|foi\s+|ficou\s+)?(?:marcado|agendado|reservado|garantido)\b|\b(?:foi|esta|ficou|ja esta)\s+(?:agendad[oa]|marcad[oa]|reservad[oa])\b|\b(?:agendad[oa]|marcad[oa]|reservad[oa])\s+para\b/.test(
     positive,
   );
 }

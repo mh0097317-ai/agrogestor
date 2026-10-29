@@ -5,6 +5,10 @@ import { businessAiCredential } from "../admin-vault";
 import { businessAiTier, tierModel } from "./ai-tier";
 import { DomainError } from "@/lib/availability";
 
+type OpenAIContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string; detail: "high" } };
+
 /** Adapts providers to the same tool loop. Booking validation stays in StudioFlow. */
 export function openAiCreate(key: string, model: string): CreateMessage {
   return async (params) => {
@@ -22,9 +26,22 @@ export function openAiCreate(key: string, model: string): CreateMessage {
         messages.push({ role: message.role, content: message.content });
         continue;
       }
-      const texts = message.content
-        .filter((b) => b.type === "text")
-        .map((b) => (b.type === "text" ? b.text : ""))
+      const userContent: OpenAIContentPart[] = [];
+      for (const block of message.content) {
+        if (block.type === "text")
+          userContent.push({ type: "text", text: block.text });
+        else if (block.type === "image" && block.source.type === "base64")
+          userContent.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${block.source.media_type};base64,${block.source.data}`,
+              detail: "high",
+            },
+          });
+      }
+      const texts = userContent
+        .filter((part) => part.type === "text")
+        .map((part) => (part.type === "text" ? part.text : ""))
         .join("\n");
       const calls = message.content
         .filter((b) => b.type === "tool_use")
@@ -44,7 +61,14 @@ export function openAiCreate(key: string, model: string): CreateMessage {
           ...(calls.length ? { tool_calls: calls } : {}),
         });
       else {
-        if (texts) messages.push({ role: "user", content: texts });
+        if (userContent.length)
+          messages.push({
+            role: "user",
+            content:
+              userContent.length === 1 && userContent[0].type === "text"
+                ? texts
+                : userContent,
+          });
         for (const block of message.content)
           if (block.type === "tool_result")
             messages.push({
@@ -145,15 +169,20 @@ export function openAiCreate(key: string, model: string): CreateMessage {
     } as Anthropic.Beta.BetaMessage;
   };
 }
-export async function businessCreate(
-  businessId: string,
-): Promise<CreateMessage | null> {
-  const credential = await businessAiCredential(businessId);
-  if (!credential) return claudeCreate(tierModel(await businessAiTier(businessId)));
-  if (credential.provider === "openai")
-    return openAiCreate(credential.key, credential.model);
+
+type AiCredential = {
+  provider: "anthropic" | "openai" | "mwapi";
+  model: string;
+  key: string;
+};
+
+function anthropicProviderCreate(
+  credential: AiCredential,
+  baseURL?: string,
+): CreateMessage {
   const client = new Anthropic({
     apiKey: credential.key,
+    ...(baseURL ? { baseURL } : {}),
     authToken: null,
     timeout: 40000,
     maxRetries: 0,
@@ -176,6 +205,7 @@ export async function businessCreate(
         /unsupported|not supported|unknown|extra inputs/i.test(error.message);
       if (!unsupportedStrict && !unsupportedCache) throw error;
       console.warn("StudioFlow provider compatibility:", {
+        provider: credential.provider,
         feature: unsupportedStrict ? "strict" : "cache-control",
       });
       return client.beta.messages.create({
@@ -193,5 +223,68 @@ export async function businessCreate(
         model: credential.model,
       });
     }
+  };
+}
+
+function credentialCreate(credential: AiCredential): CreateMessage {
+  if (credential.provider === "openai")
+    return openAiCreate(credential.key, credential.model);
+  if (credential.provider === "mwapi")
+    return anthropicProviderCreate(credential, "https://api.mwapi.dev");
+  return anthropicProviderCreate(credential);
+}
+
+function shouldFailover(error: unknown) {
+  if (error instanceof DomainError) return error.status === 502 || error.status === 503;
+  if (!error || typeof error !== "object") return false;
+  const status = "status" in error ? Number(error.status) : undefined;
+  if (status === 401 || status === 403 || status === 408 || status === 429 || (status !== undefined && status >= 500))
+    return true;
+  const name = "name" in error ? String(error.name) : "";
+  return (
+    error instanceof TypeError ||
+    name === "APIConnectionError" ||
+    name === "APIConnectionTimeoutError" ||
+    name === "TimeoutError"
+  );
+}
+
+/** Retry the same turn through the encrypted backup only for provider outages. */
+export async function runWithAiFailover<T>(
+  primary: () => Promise<T>,
+  fallback: (() => Promise<T>) | null,
+): Promise<T> {
+  try {
+    return await primary();
+  } catch (error) {
+    if (!fallback || !shouldFailover(error)) throw error;
+    console.warn("StudioFlow AI provider failover", {
+      reason:
+        error instanceof DomainError
+          ? `http-${error.status}`
+          : error && typeof error === "object" && "status" in error
+            ? `http-${String(error.status)}`
+            : "connection",
+    });
+    return fallback();
+  }
+}
+
+export async function businessCreate(
+  businessId: string,
+): Promise<CreateMessage | null> {
+  const credential = await businessAiCredential(businessId);
+  if (!credential)
+    return claudeCreate(tierModel(await businessAiTier(businessId)));
+  const primary = credentialCreate(credential);
+  const fallback = credential.fallback
+    ? credentialCreate(credential.fallback)
+    : null;
+  if (!fallback) return primary;
+  return async (params) => {
+    return runWithAiFailover(
+      () => primary(params),
+      () => fallback(params),
+    );
   };
 }

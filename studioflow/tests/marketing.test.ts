@@ -6,10 +6,12 @@ import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import {
   ideaSchema,
+  marketingRunMode,
   marketingSystemPrompt,
   nextSlots,
   normalizeIdea,
   rowToPost,
+  settingsSchema,
 } from "../src/services/marketing/content";
 
 test("marketing: carrossel com uma tela vira post e as hashtags entram na legenda", () => {
@@ -46,9 +48,51 @@ test("marketing: horários espalhados na semana, no horário de Brasília, sem r
   assert.ok(slots.every((s) => Date.parse(s) > now.getTime()));
 });
 
+test("marketing: agenda automática respeita os dias escolhidos no horário de Brasília", () => {
+  const now = new Date("2026-10-19T15:00:00Z"); // segunda-feira, meio-dia em Brasília
+  const slots = nextSlots(2, 12, [], 2, now, [2, 4]); // terça e quinta
+  assert.deepEqual(
+    slots.map((slot) => slot.slice(0, 10)),
+    ["2026-10-20", "2026-10-22"],
+  );
+  assert.ok(slots.every((slot) => new Date(slot).getUTCHours() === 15));
+});
+
+test("marketing: configura dias únicos para a programação semanal", () => {
+  const base = {
+    autopilot: true,
+    autoPublish: true,
+    postsPerWeek: 2,
+    postDays: [2, 4],
+    postHour: 12,
+    voice: "",
+    weeklyReel: false,
+  };
+  assert.equal(settingsSchema.safeParse(base).success, true);
+  assert.equal(settingsSchema.safeParse({ ...base, postDays: [2, 2] }).success, false);
+});
+
+test("marketing: chave geral pausa IA, mas preserva posts manuais aprovados", () => {
+  assert.equal(marketingRunMode(false, true), "paused");
+  assert.equal(marketingRunMode(false, false), "paused");
+  assert.equal(marketingRunMode(true, false), "manual");
+  assert.equal(marketingRunMode(true, true), "full");
+});
+
 test("marketing: telas fora do formato não quebram a leitura do post", () => {
   const post = rowToPost({ id: "x", status: "draft", format: "post", slides: "lixo", created_at: "2026-10-14T00:00:00Z" });
   assert.deepEqual(post.slides, []);
+});
+
+test("marketing: imagem enviada pelo admin permanece vinculada ao post", () => {
+  const post = rowToPost({
+    id: "x",
+    status: "draft",
+    format: "post",
+    slides: [{ title: "Foto", body: "", imageUrl: "https://images.example/corte.jpg" }],
+    created_at: "2026-10-14T00:00:00Z",
+  });
+  assert.equal(post.slides[0].imageUrl, "https://images.example/corte.jpg");
 });
 
 test("marketing: tabelas só do servidor e cada post publicado uma vez", async () => {
@@ -64,6 +108,10 @@ test("marketing: tabelas só do servidor e cada post publicado uma vez", async (
     const dir = new URL("../supabase/migrations/", import.meta.url);
     for (const name of (await readdir(dir)).filter((n) => n.endsWith(".sql")).sort())
       await db.exec(await readFile(new URL(name, dir), "utf8"));
+    assert.deepEqual(
+      (await db.query<{ post_days: number[] }>("select post_days from marketing_account where id=1")).rows[0].post_days,
+      [1, 3, 5],
+    );
     assert.equal((await db.query("select 1 from storage.buckets where id='marketing' and public")).rows.length, 1);
     await db.exec("set role anon");
     await assert.rejects(db.query("select * from marketing_posts"), /permission/);

@@ -36,6 +36,16 @@ import {
   SubmitButton,
   useFormAction,
 } from "./shared";
+import "./services.css";
+
+const servicePreview = (service: Service | null) => ({
+  name: service?.name || "",
+  category: service?.category || "",
+  price: service ? String(service.price) : "",
+  duration: String(service?.duration ?? 40),
+  professionalIds: service?.professionalIds || [],
+  active: service?.active ?? true,
+});
 
 export default function ServicesPage() {
   const { data, mutate } = useWorkspace();
@@ -48,6 +58,7 @@ export default function ServicesPage() {
   const [deleting, setDeleting] = useState<Service | null>(null);
   const [pendingId, setPendingId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(() => servicePreview(null));
   const action = useFormAction();
   const removal = useFormAction();
   const categories = [
@@ -73,6 +84,12 @@ export default function ServicesPage() {
           activeServices.length,
       )
     : 0;
+
+  function openEditor(service: Service | null) {
+    action.setError("");
+    setPreview(servicePreview(service));
+    setEditing(service);
+  }
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -180,12 +197,7 @@ export default function ServicesPage() {
         description="Preço, duração, foto e quem faz cada serviço."
         actions={
           editable ? (
-            <Button
-              onClick={() => {
-                action.setError("");
-                setEditing(null);
-              }}
-            >
+            <Button onClick={() => openEditor(null)}>
               <Plus size={16} weight="bold" />
               Novo serviço
             </Button>
@@ -319,10 +331,7 @@ export default function ServicesPage() {
                             <div className="catalog-actions">
                               <Button
                                 variant="secondary"
-                                onClick={() => {
-                                  action.setError("");
-                                  setEditing(service);
-                                }}
+                                onClick={() => openEditor(service)}
                               >
                                 <PencilSimple size={15} weight="duotone" />
                                 Editar
@@ -370,24 +379,79 @@ export default function ServicesPage() {
       <DetailPanel
         open={editing !== undefined}
         onClose={() => {
-          if (!action.busy) setEditing(undefined);
+          if (!action.busy && !uploading) setEditing(undefined);
         }}
         title={editing ? "Editar serviço" : "Novo serviço"}
         description="Defina os detalhes que o cliente verá no agendamento."
       >
-        <form className="management-form" onSubmit={save}>
-          <FormSection title="Informações do serviço">
-            <ServicePhotosField
-              key={editing?.id ?? "new"}
-              initial={editing ? servicePhotos(editing) : []}
-              disabled={action.busy}
-              onBusy={setUploading}
-            />
+        <form
+          key={editing?.id ?? "new"}
+          className="management-form service-editor"
+          onSubmit={save}
+          aria-busy={action.busy || uploading}
+          onChange={(event) => {
+            const form = new FormData(event.currentTarget);
+            setPreview({
+              name: String(form.get("name") || ""),
+              category: String(form.get("category") || ""),
+              price: String(form.get("price") || ""),
+              duration: String(form.get("duration") || ""),
+              professionalIds: form.getAll("professionalIds").map(String),
+              active: form.get("active") === "on",
+            });
+          }}
+        >
+          <section
+            className="service-editor-preview"
+            aria-label="Prévia do serviço"
+          >
+            <div className="service-preview-head">
+              <span className="service-preview-symbol">
+                <Scissors size={25} weight="duotone" />
+              </span>
+              <div>
+                <span>PRÉVIA DO SERVIÇO</span>
+                <h3>{preview.name.trim() || "Seu novo serviço"}</h3>
+                <p>{preview.category.trim() || "Escolha uma categoria"}</p>
+              </div>
+            </div>
+            <div className="service-preview-details">
+              <div>
+                <span>Valor</span>
+                <strong>
+                  {preview.price.trim() &&
+                  Number.isFinite(Number(preview.price))
+                    ? money(Number(preview.price))
+                    : "A definir"}
+                </strong>
+              </div>
+              <div>
+                <span>Duração</span>
+                <strong>
+                  {preview.duration ? `${preview.duration} min` : "A definir"}
+                </strong>
+              </div>
+              <div>
+                <span>Profissionais</span>
+                <strong>{preview.professionalIds.length}</strong>
+              </div>
+            </div>
+            <p className="service-preview-status">
+              <i className={preview.active ? "is-active" : ""} />
+              {preview.active
+                ? "Disponível para agendar após salvar"
+                : "Pausado para novos agendamentos após salvar"}
+            </p>
+          </section>
+          <FormSection
+            title="01 · Apresentação"
+            description="Um nome claro e uma boa descrição ajudam o cliente a escolher."
+          >
             <FormField label="Nome do serviço">
               <input
                 name="name"
                 defaultValue={editing?.name}
-                placeholder="Ex.: Corte masculino"
+                placeholder="Ex.: Corte e finalização"
                 required
                 minLength={3}
                 maxLength={100}
@@ -418,9 +482,15 @@ export default function ServicesPage() {
                 maxLength={500}
               />
             </FormField>
+            <ServicePhotosField
+              key={editing?.id ?? "new"}
+              initial={editing ? servicePhotos(editing) : []}
+              disabled={action.busy}
+              onBusy={setUploading}
+            />
           </FormSection>
           <FormSection
-            title="Duração e preço"
+            title="02 · Duração e preço"
             description="O agendamento reserva toda a duração deste serviço."
           >
             <div className="management-form-grid">
@@ -450,8 +520,8 @@ export default function ServicesPage() {
             </div>
           </FormSection>
           <FormSection
-            title="Profissionais habilitados"
-            description="Selecione quem pode realizar este serviço."
+            title="03 · Quem realiza este serviço?"
+            description="Escolha pelo menos um profissional ativo para disponibilizar o agendamento."
           >
             <div className="management-checkbox-grid">
               {data?.professionals
@@ -461,7 +531,10 @@ export default function ServicesPage() {
                     editing?.professionalIds.includes(person.id),
                 )
                 .map((person) => (
-                  <label className="management-check" key={person.id}>
+                  <label
+                    className="management-check service-professional-choice"
+                    key={person.id}
+                  >
                     <input
                       type="checkbox"
                       name="professionalIds"
@@ -470,8 +543,15 @@ export default function ServicesPage() {
                         person.id,
                       )}
                     />
-                    {person.name}
-                    {!person.active && " (inativo)"}
+                    <Avatar name={person.name} src={person.photo} size={34} />
+                    <span>
+                      <strong>{person.name}</strong>
+                      <small>
+                        {person.active
+                          ? "Ativo na equipe"
+                          : "Profissional inativo"}
+                      </small>
+                    </span>
                   </label>
                 ))}
             </div>
@@ -481,14 +561,22 @@ export default function ServicesPage() {
               </p>
             )}
           </FormSection>
-          <FormSection title="Publicação">
-            <label className="management-check">
+          <FormSection
+            title="04 · Disponibilidade"
+            description="Você pode pausar o serviço depois, preservando o histórico dos atendimentos."
+          >
+            <label className="management-check service-publication-choice">
               <input
                 type="checkbox"
                 name="active"
                 defaultChecked={editing?.active ?? true}
               />
-              Disponível para agendamento público
+              <span>
+                <strong>Disponível para agendamento público</strong>
+                <small>
+                  Ao desmarcar, o serviço fica pausado para novos agendamentos.
+                </small>
+              </span>
             </label>
           </FormSection>
           <FormError error={action.error} />
@@ -496,12 +584,18 @@ export default function ServicesPage() {
             <Button
               variant="secondary"
               type="button"
-              disabled={action.busy}
+              disabled={action.busy || uploading}
               onClick={() => setEditing(undefined)}
             >
               Cancelar
             </Button>
-            <SubmitButton busy={action.busy}>Salvar serviço</SubmitButton>
+            {uploading ? (
+              <Button type="button" disabled>
+                Enviando fotos…
+              </Button>
+            ) : (
+              <SubmitButton busy={action.busy}>Salvar serviço</SubmitButton>
+            )}
           </div>
         </form>
       </DetailPanel>
@@ -550,7 +644,7 @@ function ServicePhotosField({
     <>
       <GalleryUpload
         label="Fotos do serviço (opcional)"
-        hint="Até 3 fotos reais do resultado, como o corte de frente, de lado e de trás. A primeira é a principal; no agendamento o cliente passa o dedo ou o mouse para ver as outras."
+        hint="Até 3 fotos do resultado. A primeira será a capa; as demais aparecem na galeria do agendamento."
         value={photos}
         onChange={setPhotos}
         max={3}

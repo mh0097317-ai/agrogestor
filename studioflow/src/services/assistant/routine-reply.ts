@@ -90,7 +90,7 @@ export function routineReply(
       context.recent || [],
       context.now,
     );
-    return `${price} ${offer || "Qual dia você prefere?"}`;
+    return `${price}\n\n${offer || "Qual dia fica melhor para você?"}`;
   }
   if (
     selection.nextAction === "ASK" &&
@@ -98,11 +98,11 @@ export function routineReply(
     ["BOOK", "AVAILABILITY", "CONTINUE"].includes(selection.intent)
   ) {
     const question: Record<string, string> = {
-      service: "Qual serviço você quer agendar?",
-      name: "Qual nome você prefere para o agendamento?",
-      date: "Qual dia você prefere?",
-      time: "Qual horário você prefere?",
-      professional: "Você tem preferência por algum profissional?",
+      service: "Me conta, qual serviço você gostaria de fazer?",
+      name: "Como posso te chamar para deixar o agendamento no seu nome?",
+      date: "Qual dia fica melhor para você?",
+      time: "E qual horário fica melhor para você?",
+      professional: "Você prefere algum profissional ou posso buscar as opções da equipe?",
     };
     return question[selection.missing[0]] || null;
   }

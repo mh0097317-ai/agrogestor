@@ -12,6 +12,7 @@ import "@/features/public/public.css";
 import "./booking.css";
 import "./booking-delight.css";
 import "./booking-refinement.css";
+import "./client-booking.css";
 
 export const bookingSteps = [
   "Serviço",

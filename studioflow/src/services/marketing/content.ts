@@ -4,6 +4,7 @@ import { z } from "zod";
 export const slideSchema = z.object({
   title: z.string().trim().min(1).max(120),
   body: z.string().trim().max(280).default(""),
+  imageUrl: z.string().url().max(2048).optional(),
 });
 export type Slide = z.infer<typeof slideSchema>;
 
@@ -40,9 +41,21 @@ export interface MarketingSettings {
   autopilot: boolean;
   autoPublish: boolean;
   postsPerWeek: number;
+  postDays: number[];
   postHour: number;
   voice: string;
   weeklyReel: boolean;
+}
+
+export type MarketingRunMode = "paused" | "manual" | "full";
+
+/** The platform AI switch pauses generated work, not posts the admin approved. */
+export function marketingRunMode(
+  marketingEnabled: boolean,
+  platformAiEnabled: boolean,
+): MarketingRunMode {
+  if (!marketingEnabled) return "paused";
+  return platformAiEnabled ? "full" : "manual";
 }
 
 export const settingsSchema = z
@@ -50,6 +63,8 @@ export const settingsSchema = z
     autopilot: z.boolean(),
     autoPublish: z.boolean(),
     postsPerWeek: z.number().int().min(1).max(14),
+    postDays: z.array(z.number().int().min(0).max(6)).min(1).max(7)
+      .refine((days) => new Set(days).size === days.length, "Dias repetidos."),
     postHour: z.number().int().min(6).max(22),
     voice: z.string().trim().max(1000),
     weeklyReel: z.boolean(),
@@ -134,6 +149,7 @@ export function nextSlots(
   taken: string[],
   postsPerWeek: number,
   now = new Date(),
+  postDays?: number[],
 ) {
   const gap = Math.max(1, Math.floor(7 / Math.max(1, postsPerWeek)));
   const takenDays = new Set(taken.map((t) => dayKey(new Date(t))));
@@ -145,16 +161,25 @@ export function nextSlots(
   let day = 1;
   while (slots.length < count && day < 120) {
     const at = new Date(base.getTime() + day * 86_400_000);
-    if (!takenDays.has(dayKey(at)) && at.getTime() > now.getTime()) {
+    const localDay = dayOfWeek(at);
+    const selectedDay = !postDays?.length || postDays.includes(localDay);
+    if (
+      selectedDay &&
+      !takenDays.has(dayKey(at)) &&
+      at.getTime() > now.getTime()
+    ) {
       slots.push(at.toISOString());
       takenDays.add(dayKey(at));
-      day += gap;
+      day += postDays?.length ? 1 : gap;
     } else day++;
   }
   return slots;
 }
 const dayKey = (d: Date) =>
   new Date(d.getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
+
+const dayOfWeek = (d: Date) =>
+  new Date(`${dayKey(d)}T00:00:00Z`).getUTCDay();
 
 export function rowToPost(row: Record<string, unknown>): MarketingPost {
   return {

@@ -6,7 +6,7 @@ import { openVault, sealVault } from "./server-secrets";
 import { isDemo } from "./server-demo";
 
 export const aiKeySchema = z.object({
-  provider: z.enum(["anthropic", "openai"]),
+  provider: z.enum(["anthropic", "openai", "mwapi"]),
   model: z
     .string()
     .trim()
@@ -20,6 +20,9 @@ export interface AiVaultView {
   provider?: string;
   model?: string;
   hint?: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+  fallbackHint?: string;
   updatedAt?: string;
 }
 const scope = (id: string, provider: string) => `business:${id}:ai:${provider}`;
@@ -27,7 +30,9 @@ export async function aiVaultView(businessId: string): Promise<AiVaultView> {
   if (isDemo()) return { configured: false };
   const { data, error } = await createSupabaseAdmin()
     .from("business_ai_credentials")
-    .select("provider,model,key_hint,updated_at")
+    .select(
+      "provider,model,key_hint,fallback_provider,fallback_model,fallback_key_hint,updated_at",
+    )
     .eq("business_id", businessId)
     .maybeSingle();
   if (error) throw new DomainError("Não foi possível consultar o cofre.", 503);
@@ -37,6 +42,9 @@ export async function aiVaultView(businessId: string): Promise<AiVaultView> {
         provider: data.provider,
         model: data.model,
         hint: data.key_hint,
+        fallbackProvider: data.fallback_provider || undefined,
+        fallbackModel: data.fallback_model || undefined,
+        fallbackHint: data.fallback_key_hint || undefined,
         updatedAt: data.updated_at,
       }
     : { configured: false };
@@ -60,7 +68,22 @@ export async function saveAiKey(
           timeout: 15000,
           maxRetries: 0,
         }).models.retrieve(input.model);
-      else {
+      else if (input.provider === "mwapi") {
+        // MWAPI exposes Claude through the Anthropic Messages API. Validate
+        // with a one-token request because its public landing page documents
+        // /v1/messages but does not promise the Anthropic models endpoint.
+        await new Anthropic({
+          apiKey: input.key,
+          baseURL: "https://api.mwapi.dev",
+          authToken: null,
+          timeout: 15000,
+          maxRetries: 0,
+        }).messages.create({
+          model: input.model,
+          max_tokens: 1,
+          messages: [{ role: "user", content: "OK" }],
+        });
+      } else {
         const response = await fetch(
           `https://api.openai.com/v1/models/${encodeURIComponent(input.model)}`,
           {
@@ -96,7 +119,9 @@ export async function businessAiCredential(businessId: string) {
   if (isDemo()) return null;
   const { data, error } = await createSupabaseAdmin()
     .from("business_ai_credentials")
-    .select("provider,model,secret_enc")
+    .select(
+      "provider,model,secret_enc,fallback_provider,fallback_model,fallback_secret_enc",
+    )
     .eq("business_id", businessId)
     .maybeSingle();
   if (error)
@@ -106,9 +131,20 @@ export async function businessAiCredential(businessId: string) {
     );
   return data
     ? {
-        provider: data.provider as "anthropic" | "openai",
+        provider: data.provider as "anthropic" | "openai" | "mwapi",
         model: data.model as string,
         key: openVault(data.secret_enc, scope(businessId, data.provider)),
+        fallback:
+          data.fallback_provider && data.fallback_model && data.fallback_secret_enc
+            ? {
+                provider: data.fallback_provider as "anthropic" | "openai" | "mwapi",
+                model: data.fallback_model as string,
+                key: openVault(
+                  data.fallback_secret_enc,
+                  scope(businessId, data.fallback_provider),
+                ),
+              }
+            : null,
       }
     : null;
 }

@@ -1,7 +1,6 @@
 import type { Store } from "@/types";
-import { availableSlots } from "@/lib/availability";
-import { matchesTimePeriod, requestedTimePeriod } from "@/lib/time-period";
 import { money } from "@/lib/utils";
+import { availabilityReply } from "./availability-reply";
 import type { Interpretation } from "./understanding";
 import {
   unverifiedAvailabilityClaim,
@@ -44,13 +43,25 @@ export function verifiedN8nReply(
       handoff: true,
     };
   const services = interpretation.serviceIds.map((id) =>
-    store.services.find((service) => service.id === id && service.active),
+    store.services.find(
+      (service) =>
+        service.id === id &&
+        service.businessId === store.business.id &&
+        service.active,
+    ),
   );
   if (services.some((service) => !service))
     throw new Error("n8n-reply-service-scope");
   if (interpretation.intent === "PRICE" && services.length) {
+    const offer = availabilityReply(
+      { ...interpretation, intent: "AVAILABILITY", nextAction: "CONSULT" },
+      store,
+      customerText,
+      [],
+      now,
+    );
     return {
-      reply: `${services.map((service) => `${service!.name}: ${money(service!.price)}`).join("; ")}. Qual dia você prefere?`,
+      reply: `${services.map((service) => `${service!.name.charAt(0).toUpperCase()}${service!.name.slice(1).toLowerCase()} fica ${money(service!.price)}`).join(". ")}.\n\n${offer || "Qual dia fica melhor para você?"}`,
       handoff: false,
     };
   }
@@ -59,22 +70,17 @@ export function verifiedN8nReply(
     services.length &&
     /^\d{4}-\d{2}-\d{2}$/.test(interpretation.date)
   ) {
-    const slots = availableSlots(
+    const offer = availabilityReply(
+      { ...interpretation, nextAction: "CONSULT" },
       store,
-      interpretation.serviceIds,
-      interpretation.professionalId || "any",
-      interpretation.date,
+      customerText,
+      [],
       now,
-    )
-      .filter((slot) =>
-        matchesTimePeriod(slot.time, requestedTimePeriod(customerText)),
-      )
-      .slice(0, 3);
-    const date = interpretation.date.split("-").reverse().join("/");
+    );
     return {
-      reply: slots.length
-        ? `Para ${date}, encontrei ${slots.map((slot) => `${slot.time} com ${store.professionals.find((p) => p.id === slot.professionalId)!.name}`).join("; ")}. Qual você prefere? A reserva ainda não foi feita.`
-        : `Não encontrei horários livres para esse pedido em ${date}. Você prefere outro dia?`,
+      reply:
+        offer ||
+        "Vamos conferir a disponibilidade. Qual profissional você prefere?",
       handoff: false,
     };
   }

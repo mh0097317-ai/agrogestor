@@ -5,7 +5,11 @@ import {
   recoverProfessionalBookingNotices,
 } from "@/services/whatsapp/reminders";
 import { sendEmailNotices } from "@/services/email/notices";
-import { sendWeeklyReports, weeklySendWindow } from "@/services/weekly-report-delivery";
+import {
+  sendWeeklyReports,
+  sendDailyReports,
+  weeklySendWindow,
+} from "@/services/weekly-report-delivery";
 import { sendWeeklyEmails } from "@/services/email/platform-emails";
 import { sendPlatformWeeklyReport } from "@/services/platform-weekly-delivery";
 import {
@@ -36,6 +40,7 @@ export async function POST(request: Request) {
     attendance,
     owners,
     weeklyReports,
+    dailyReports,
     platformWeeklyReport,
     weeklyEmails,
   ] = await Promise.all([
@@ -45,6 +50,7 @@ export async function POST(request: Request) {
     sendAttendanceChecks(origin).catch(() => failed),
     sendOwnerUnsettledAlerts(origin).catch(() => failed),
     sendWeeklyReports().catch(() => failed),
+    sendDailyReports().catch(() => failed),
     sendPlatformWeeklyReport().catch(() => "failed"),
     // Segunda, 9h: o mesmo relatório em PDF no e-mail de cada dono.
     weeklySendWindow()
@@ -58,6 +64,7 @@ export async function POST(request: Request) {
     attendance,
     owners,
     weeklyReports,
+    dailyReports,
     platformWeeklyReport,
     weeklyEmails,
   });

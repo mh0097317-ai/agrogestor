@@ -10,6 +10,7 @@ import { Button } from "@/components/ui";
 import type { ManualInvoice, WhatsAppLink } from "@/types";
 import type { AiVaultView } from "@/services/admin-vault";
 import type { AudioVaultView } from "@/services/assistant/audio-vault";
+import type { ElevenLabsView } from "@/services/assistant/speech";
 import type { PlatformBusiness } from "@/services/platform";
 import { hasModule } from "@/lib/modules";
 import { useToast } from "@/components/toast";
@@ -447,6 +448,12 @@ function VaultEditor({
                 ? `${data.provider} · ${data.model}`
                 : "Cadastre a credencial contratada para este estabelecimento."}
             </p>
+            {data.fallbackProvider && (
+              <p>
+                Reserva automática: {data.fallbackProvider} · {data.fallbackModel}
+                {data.fallbackHint ? ` · •••• ${data.fallbackHint}` : ""}
+              </p>
+            )}
           </div>
         </div>
         <div className="pf-config-grid">
@@ -462,6 +469,7 @@ function VaultEditor({
               }}
             >
               <option value="anthropic">Anthropic</option>
+              <option value="mwapi">MWAPI · Claude econômico</option>
               <option value="openai">OpenAI</option>
             </select>
           </label>
@@ -492,9 +500,11 @@ function VaultEditor({
           />
         </label>
         <p className="pf-metric-note">
-          A chave fica criptografada e não volta para o navegador. Apenas você
-          pode trocar ou remover. A conta do provedor precisa ter saldo e acesso
-          ao modelo escolhido.
+          A chave fica criptografada e não volta para o navegador. Ao trocar de
+          provedor, a credencial atual é preservada como reserva automática para
+          falhas de conexão, autenticação, limite ou indisponibilidade. No MWAPI,
+          o Claude Haiku é a opção econômica; confirme o ID do modelo no Model
+          Plaza antes de salvar.
         </p>
         <div className="pf-config-actions">
           {data.configured && (
@@ -902,6 +912,140 @@ export function EvolutionConfiguration({
             {error}
           </p>
         )}
+      </form>
+    </details>
+  );
+}
+
+export function ElevenLabsConfiguration({
+  demo,
+  onSaved,
+}: {
+  demo: boolean;
+  onSaved: () => Promise<void>;
+}) {
+  const [data, setData] = useState<ElevenLabsView | null>(null);
+  const [key, setKey] = useState("");
+  const [voiceId, setVoiceId] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void request<ElevenLabsView>("/api/admin/elevenlabs")
+      .then((result) => {
+        if (active) {
+          setData(result);
+          setVoiceId(result.voiceId || "");
+        }
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      setData(
+        await request<ElevenLabsView>("/api/admin/elevenlabs", "PUT", {
+          key,
+          voiceId,
+        }),
+      );
+      setKey("");
+      await onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível validar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function disableVoice() {
+    setBusy(true);
+    setError("");
+    try {
+      setData(await request<ElevenLabsView>("/api/admin/elevenlabs", "DELETE"));
+      await onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível desativar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <details className="pf-integration">
+      <summary>
+        Resposta por áudio
+        <span>{data?.configured ? "ElevenLabs conectado" : "Configurar ElevenLabs"}</span>
+      </summary>
+      <form className="pf-config-form" onSubmit={(event) => void save(event)}>
+        <p>
+          Quando o cliente mandar áudio, a recepcionista responderá por texto e
+          também enviará uma versão falada. O MP3 usa o modelo rápido da
+          ElevenLabs; o consumo depende do tamanho de cada resposta.
+        </p>
+        {data?.configured && (
+          <p className="pf-metric-note">
+            Ativo · Voz {data.voiceId} · chave terminada em {data.hint || "••••"}
+          </p>
+        )}
+        <fieldset disabled={demo || busy || data?.source === "environment"}>
+          <label>
+            Chave API da ElevenLabs
+            <input
+              type="password"
+              value={key}
+              minLength={20}
+              autoComplete="new-password"
+              required={!data?.configured}
+              onChange={(event) => setKey(event.target.value)}
+              placeholder={data?.configured ? "••••••••••••••••" : "xi-…"}
+            />
+          </label>
+          <label>
+            ID da voz
+            <input
+              value={voiceId}
+              minLength={3}
+              maxLength={100}
+              required
+              onChange={(event) => setVoiceId(event.target.value)}
+              placeholder="Copie o Voice ID da sua voz na ElevenLabs"
+            />
+          </label>
+          <small>
+            A chave fica criptografada no servidor. O ID da voz aparece em
+            My Voices → menu da voz → Copy voice ID.
+          </small>
+          <Button type="submit" disabled={!key || !voiceId || busy}>
+            {busy ? "Validando…" : data?.configured ? "Atualizar voz" : "Validar e ativar respostas por áudio"}
+          </Button>
+        </fieldset>
+        {data?.source === "environment" && (
+          <p className="pf-metric-note">
+            Esta voz é administrada pelas variáveis de ambiente da publicação.
+          </p>
+        )}
+        {data?.configured && data.source !== "environment" && (
+          <button
+            type="button"
+            className="pf-text-button"
+            disabled={busy || demo}
+            onClick={() => void disableVoice()}
+          >
+            Desativar respostas faladas
+          </button>
+        )}
+        {demo && (
+          <p className="pf-metric-note">
+            A chave real é cadastrada no admin publicado.
+          </p>
+        )}
+        {error && <p role="alert" className="pf-error">{error}</p>}
       </form>
     </details>
   );

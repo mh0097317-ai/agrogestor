@@ -4,7 +4,10 @@ import { receiveWhatsAppMessages } from "@/services/assistant/conversations";
 import {
   parseEvolution,
   sendText,
+  sendBookingMenu,
+  sendWhatsAppAudio,
   evolutionAudio,
+  evolutionImage,
   parseEvolutionChanges,
 } from "@/services/whatsapp/evolution";
 import { linkForWebhook, saveLinkState } from "@/services/whatsapp/link";
@@ -113,8 +116,34 @@ export async function POST(
                   message.audio?.mime,
                 )
             : undefined,
+          loadImage: message.imageId
+            ? () =>
+                evolutionImage(
+                  link.instance,
+                  message.imageId!,
+                  message.image?.base64,
+                  message.image?.mime,
+                )
+            : undefined,
         })),
-      send: (to, text) => sendText(link.instance, to, text, "assistant"),
+      send: async (to, text, menu, audio) => {
+        const result = await (menu
+          ? sendBookingMenu(link.instance, to, text, menu)
+          : sendText(link.instance, to, text, "assistant"));
+        if (audio) {
+          try {
+            await sendWhatsAppAudio(link.instance, to, audio);
+          } catch (error) {
+            console.error("StudioFlow voice reply error:", {
+              code:
+                error instanceof Error && error.message.startsWith("elevenlabs-speech-")
+                  ? error.message
+                  : "whatsapp-audio-send-failed",
+            });
+          }
+        }
+        return result;
+      },
     });
     after(work);
     const outgoing = delivery.messages.filter((message) => message.fromMe);

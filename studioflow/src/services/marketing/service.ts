@@ -5,10 +5,24 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { checkInstagram, instagramTokenProblem } from "../assistant/instagram";
 import { requirePlatformAdmin } from "../platform";
 import { isDemo } from "../server-demo";
+import {
+  assertPlatformAiEnabled,
+  platformAiEnabled,
+} from "../platform-ai-control";
 import { decryptSecret, encryptSecret } from "../server-secrets";
-import { generateIdeas, marketingAiConfigured, suggestIdeas, suggestVoice, marketingModels, modelOf, type MarketingModel } from "./ai";
+import {
+  generateIdeas,
+  marketingAiConfigured,
+  suggestIdeas,
+  suggestVoice,
+  marketingModels,
+  modelOf,
+  validateMarketingAiKey,
+  type MarketingModel,
+} from "./ai";
 import {
   nextSlots,
+  marketingRunMode,
   rowToPost,
   settingsSchema,
   slideSchema,
@@ -17,6 +31,12 @@ import {
 } from "./content";
 import { mediaInsights, publishToInstagram } from "./instagram";
 import { renderReelMp4 } from "./reel";
+import {
+  downloadGoogleVideo,
+  getGoogleVideoOperation,
+  startGoogleVideo,
+  validateGoogleVideoKey,
+} from "./video-generation";
 
 export interface MarketingState {
   account: { username: string } | null;
@@ -29,18 +49,40 @@ export interface MarketingState {
   enabled: boolean;
   /** Modelo que escreve os posts: o mais barato gasta bem menos por ideia. */
   model: MarketingModel;
+  videoAi: boolean;
+  videoAiSource: "panel" | "server" | null;
+  videoJobs: MarketingVideoJob[];
   demo: boolean;
+}
+
+export interface MarketingVideoJob {
+  id: string;
+  status: "starting" | "processing" | "saving" | "completed" | "failed";
+  prompt: string;
+  caption: string;
+  aspectRatio: "9:16" | "16:9";
+  resolution: "720p" | "1080p";
+  error: string | null;
+  createdAt: string;
+  postId: string | null;
 }
 
 const columns =
   "id,source_id,status,format,theme,slides,caption,video_url,scheduled_for,published_at,permalink,error,likes,comments,origin,created_at,updated_at";
 
-export const imageUrl = (post: Pick<MarketingPost, "id" | "updatedAt">, index: number) =>
+export const imageUrl = (
+  post: Pick<MarketingPost, "id" | "updatedAt" | "slides">,
+  index: number,
+) =>
+  post.slides[index]?.imageUrl ||
   `${appUrl}/api/marketing/image/${post.id}/${index}.jpg?v=${Date.parse(post.updatedAt) || 0}`;
 
 function demoOnly() {
   if (isDemo())
-    throw new DomainError("O Marketing funciona só no ambiente de produção.", 400);
+    throw new DomainError(
+      "O Marketing funciona só no ambiente de produção.",
+      400,
+    );
 }
 
 async function readAccount() {
@@ -57,7 +99,10 @@ async function readAccount() {
 function aiKeyOf(row: Record<string, unknown> | null) {
   if (row?.ai_key_enc)
     try {
-      return { key: decryptSecret(row.ai_key_enc as string), source: "panel" as const };
+      return {
+        key: decryptSecret(row.ai_key_enc as string),
+        source: "panel" as const,
+      };
     } catch {
       // Chave ilegível (segredo do servidor trocado): cai para a do servidor.
     }
@@ -70,7 +115,10 @@ const isOn = (row: Record<string, unknown> | null) => row?.enabled !== false;
 
 function assertOn(row: Record<string, unknown> | null) {
   if (!isOn(row))
-    throw new DomainError("O Marketing está desligado. Ligue no topo da página.", 409);
+    throw new DomainError(
+      "O Marketing está desligado. Ligue no topo da página.",
+      409,
+    );
 }
 
 function settingsOf(row: Record<string, unknown> | null): MarketingSettings {
@@ -78,10 +126,55 @@ function settingsOf(row: Record<string, unknown> | null): MarketingSettings {
     autopilot: !!row?.autopilot,
     autoPublish: !!row?.auto_publish,
     postsPerWeek: Number(row?.posts_per_week ?? 3),
+    postDays: Array.isArray(row?.post_days)
+      ? (row.post_days as number[])
+      : [1, 3, 5],
     postHour: Number(row?.post_hour ?? 12),
     voice: (row?.voice as string) || "",
     weeklyReel: row?.weekly_reel !== false,
   };
+}
+
+function videoAiKeyOf(row: Record<string, unknown> | null) {
+  if (row?.google_video_key_enc)
+    try {
+      return {
+        key: decryptSecret(row.google_video_key_enc as string),
+        source: "panel" as const,
+      };
+    } catch {
+      // A server key can still be used if an encrypted panel key cannot be read.
+    }
+  const key = process.env.STUDIOFLOW_MARKETING_GEMINI_KEY;
+  return key ? { key, source: "server" as const } : null;
+}
+
+const videoJobFromRow = (row: Record<string, unknown>): MarketingVideoJob => ({
+  id: row.id as string,
+  status: row.status as MarketingVideoJob["status"],
+  prompt: row.prompt as string,
+  caption: row.caption as string,
+  aspectRatio: row.aspect_ratio as MarketingVideoJob["aspectRatio"],
+  resolution: row.resolution as MarketingVideoJob["resolution"],
+  error: (row.error as string | null) || null,
+  createdAt: row.created_at as string,
+  postId: (row.post_id as string | null) || null,
+});
+
+async function recentVideoJobs() {
+  const { data, error } = await createSupabaseAdmin()
+    .from("marketing_video_jobs")
+    .select(
+      "id,status,prompt,caption,aspect_ratio,resolution,error,created_at,post_id",
+    )
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error)
+    throw new DomainError(
+      "Não foi possível consultar as gerações de vídeo.",
+      503,
+    );
+  return (data || []).map(videoJobFromRow);
 }
 
 export async function marketingState(): Promise<MarketingState> {
@@ -95,6 +188,11 @@ export async function marketingState(): Promise<MarketingState> {
       aiSource: marketingAiConfigured() ? "server" : null,
       enabled: true,
       model: modelOf(null),
+      videoAi: !!process.env.STUDIOFLOW_MARKETING_GEMINI_KEY,
+      videoAiSource: process.env.STUDIOFLOW_MARKETING_GEMINI_KEY
+        ? "server"
+        : null,
+      videoJobs: [],
       demo: true,
     };
   const account = await readAccount();
@@ -115,6 +213,9 @@ export async function marketingState(): Promise<MarketingState> {
     aiSource: aiKeyOf(account)?.source ?? null,
     enabled: isOn(account),
     model: modelOf(account?.ai_model),
+    videoAi: !!videoAiKeyOf(account),
+    videoAiSource: videoAiKeyOf(account)?.source ?? null,
+    videoJobs: await recentVideoJobs(),
     demo: false,
   };
 }
@@ -159,7 +260,12 @@ export async function disconnectMarketingAccount() {
   demoOnly();
   await createSupabaseAdmin()
     .from("marketing_account")
-    .update({ ig_user_id: null, username: null, access_token_enc: null, autopilot: false })
+    .update({
+      ig_user_id: null,
+      username: null,
+      access_token_enc: null,
+      autopilot: false,
+    })
     .eq("id", 1);
   return { ok: true };
 }
@@ -171,7 +277,8 @@ export async function setMarketingPower(enabled: boolean) {
     .from("marketing_account")
     .update({ enabled, updated_at: new Date().toISOString() })
     .eq("id", 1);
-  if (error) throw new DomainError("Não foi possível alterar o Marketing.", 503);
+  if (error)
+    throw new DomainError("Não foi possível alterar o Marketing.", 503);
   return { enabled };
 }
 
@@ -179,19 +286,268 @@ export const aiKeySchema = z.object({
   key: z
     .string()
     .trim()
-    .regex(/^sk-ant-[A-Za-z0-9_-]{20,}$/, "Cole a chave da Anthropic completa (começa com sk-ant-)."),
+    .regex(
+      /^sk-ant-[A-Za-z0-9_-]{20,}$/,
+      "Cole a chave da Anthropic completa (começa com sk-ant-).",
+    ),
 });
 
 /** Guarda a chave cifrada; ela nunca volta para o navegador. */
 export async function saveMarketingAiKey(key: string | null) {
   await requirePlatformAdmin();
   demoOnly();
+  if (key) await validateMarketingAiKey(key);
   const { error } = await createSupabaseAdmin()
     .from("marketing_account")
-    .update({ ai_key_enc: key ? encryptSecret(key) : null, updated_at: new Date().toISOString() })
+    .update({
+      ai_key_enc: key ? encryptSecret(key) : null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", 1);
   if (error) throw new DomainError("Não foi possível salvar a chave.", 503);
   return { ok: true };
+}
+
+export const googleVideoKeySchema = z.object({
+  key: z.string().trim().min(20).max(300),
+});
+
+/** Salva a chave do Google cifrada; ela nunca é enviada de volta ao navegador. */
+export async function saveGoogleVideoKey(key: string | null) {
+  await requirePlatformAdmin();
+  demoOnly();
+  if (key) await validateGoogleVideoKey(key);
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({
+      google_video_key_enc: key ? encryptSecret(key) : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error)
+    throw new DomainError("Não foi possível salvar a chave do Google.", 503);
+  return { ok: true };
+}
+
+export const generateMarketingVideoSchema = z
+  .object({
+    prompt: z.string().trim().min(20).max(2000),
+    caption: z.string().trim().max(2200).default(""),
+    aspectRatio: z.enum(["9:16", "16:9"]).default("9:16"),
+    resolution: z.enum(["720p", "1080p"]).default("720p"),
+  })
+  .strict();
+
+/** Inicia uma operação paga do Google e deixa o MP4 em rascunho no Marketing. */
+export async function startMarketingVideo(
+  input: z.infer<typeof generateMarketingVideoSchema>,
+) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  assertOn(account);
+  const credentials = videoAiKeyOf(account);
+  if (!credentials)
+    throw new DomainError(
+      "Configure a chave do Google em Marketing → Vídeos com IA.",
+      409,
+    );
+
+  const admin = createSupabaseAdmin();
+  const { data: row, error } = await admin
+    .from("marketing_video_jobs")
+    .insert({
+      status: "starting",
+      prompt: input.prompt,
+      caption: input.caption,
+      aspect_ratio: input.aspectRatio,
+      resolution: input.resolution,
+    })
+    .select(
+      "id,status,prompt,caption,aspect_ratio,resolution,error,created_at,post_id",
+    )
+    .single();
+  if (error || !row)
+    throw new DomainError("Não foi possível preparar a geração do vídeo.", 503);
+
+  try {
+    const operationName = await startGoogleVideo({
+      key: credentials.key,
+      prompt: input.prompt,
+      aspectRatio: input.aspectRatio,
+      resolution: input.resolution,
+    });
+    const { data: updated, error: updateError } = await admin
+      .from("marketing_video_jobs")
+      .update({
+        status: "processing",
+        operation_name: operationName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .select(
+        "id,status,prompt,caption,aspect_ratio,resolution,error,created_at,post_id",
+      )
+      .single();
+    if (updateError || !updated)
+      throw new DomainError(
+        "A geração iniciou, mas não foi possível guardar o acompanhamento.",
+        503,
+      );
+    return videoJobFromRow(updated);
+  } catch (cause) {
+    const message =
+      cause instanceof DomainError
+        ? cause.message
+        : "Não foi possível iniciar a geração no Google.";
+    await admin
+      .from("marketing_video_jobs")
+      .update({
+        status: "failed",
+        error: message.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    throw cause;
+  }
+}
+
+/** Consulta o job e, quando pronto, salva o MP4 no Storage e cria um Reel em rascunho. */
+export async function checkMarketingVideo(id: string) {
+  await requirePlatformAdmin();
+  demoOnly();
+  z.string().uuid().parse(id);
+  const admin = createSupabaseAdmin();
+  const { data: row, error } = await admin
+    .from("marketing_video_jobs")
+    .select(
+      "id,status,prompt,caption,aspect_ratio,resolution,error,created_at,post_id,operation_name",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !row)
+    throw new DomainError("Geração de vídeo não encontrada.", 404);
+  const job = videoJobFromRow(row);
+  if (job.status === "completed" && job.postId) {
+    const { data: post } = await admin
+      .from("marketing_posts")
+      .select(columns)
+      .eq("id", job.postId)
+      .maybeSingle();
+    return { job, post: post ? rowToPost(post) : null };
+  }
+  if (job.status !== "processing" || !row.operation_name)
+    return { job, post: null };
+  const account = await readAccount();
+  const credentials = videoAiKeyOf(account);
+  if (!credentials)
+    throw new DomainError("A chave do Google não está mais configurada.", 409);
+
+  const operation = await getGoogleVideoOperation(
+    credentials.key,
+    row.operation_name as string,
+  );
+  if (!operation.done) return { job, post: null };
+  if (!operation.videoUri) {
+    await admin
+      .from("marketing_video_jobs")
+      .update({
+        status: "failed",
+        error: "O Google terminou sem retornar o arquivo de vídeo.",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("status", "processing");
+    return {
+      job: {
+        ...job,
+        status: "failed",
+        error: "O Google terminou sem retornar o arquivo de vídeo.",
+      },
+      post: null,
+    };
+  }
+
+  const { data: claim } = await admin
+    .from("marketing_video_jobs")
+    .update({ status: "saving", updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "processing")
+    .select("id")
+    .maybeSingle();
+  if (!claim) return { job: { ...job, status: "saving" as const }, post: null };
+
+  let path: string | null = null;
+  try {
+    const video = await downloadGoogleVideo(
+      credentials.key,
+      operation.videoUri,
+    );
+    path = `reels/veo-${crypto.randomUUID()}.mp4`;
+    const storage = admin.storage.from("marketing");
+    const { error: uploadError } = await storage.upload(path, video, {
+      contentType: "video/mp4",
+      upsert: false,
+    });
+    if (uploadError)
+      throw new DomainError("Não foi possível guardar o vídeo gerado.", 503);
+    const { data: post, error: postError } = await admin
+      .from("marketing_posts")
+      .insert({
+        format: "reel",
+        theme:
+          job.prompt.split(/[.!?\n]/)[0].slice(0, 200) || "Reel criado com IA",
+        slides: [],
+        caption: job.caption,
+        video_url: storage.getPublicUrl(path).data.publicUrl,
+        status: "draft",
+        origin: "ia",
+      })
+      .select(columns)
+      .single();
+    if (postError || !post)
+      throw new DomainError(
+        "Não foi possível salvar o Reel na fila de Marketing.",
+        503,
+      );
+    const { error: completeError } = await admin
+      .from("marketing_video_jobs")
+      .update({
+        status: "completed",
+        post_id: post.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (completeError) {
+      await admin.from("marketing_posts").delete().eq("id", post.id);
+      throw new DomainError(
+        "O vídeo foi criado, mas não foi possível concluir o acompanhamento.",
+        503,
+      );
+    }
+    return {
+      job: { ...job, status: "completed" as const, postId: post.id },
+      post: rowToPost(post),
+    };
+  } catch (cause) {
+    if (path) await admin.storage.from("marketing").remove([path]);
+    const message =
+      cause instanceof DomainError
+        ? cause.message
+        : "Não foi possível salvar o vídeo gerado.";
+    await admin
+      .from("marketing_video_jobs")
+      .update({
+        status: "failed",
+        error: message.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    return {
+      job: { ...job, status: "failed" as const, error: message },
+      post: null,
+    };
+  }
 }
 
 export const modelSchema = z.object({ model: z.enum(marketingModels) });
@@ -207,7 +563,9 @@ export async function setMarketingModel(model: MarketingModel) {
   return { model };
 }
 
-export async function saveMarketingSettings(input: z.infer<typeof settingsSchema>) {
+export async function saveMarketingSettings(
+  input: z.infer<typeof settingsSchema>,
+) {
   await requirePlatformAdmin();
   demoOnly();
   const { error } = await createSupabaseAdmin()
@@ -216,6 +574,7 @@ export async function saveMarketingSettings(input: z.infer<typeof settingsSchema
       autopilot: input.autopilot,
       auto_publish: input.autoPublish,
       posts_per_week: input.postsPerWeek,
+      post_days: input.postDays,
       post_hour: input.postHour,
       voice: input.voice,
       weekly_reel: input.weeklyReel,
@@ -239,6 +598,7 @@ async function insertIdeas(
   ideas: Awaited<ReturnType<typeof generateIdeas>>,
   schedule: string[] = [],
 ) {
+  await assertPlatformAiEnabled();
   const rows = ideas.map((idea, i) => ({
     ...idea,
     origin: "ia",
@@ -261,7 +621,9 @@ export const generateSchema = z
   })
   .strict();
 
-export async function generateMarketingPosts(input: z.infer<typeof generateSchema>) {
+export async function generateMarketingPosts(
+  input: z.infer<typeof generateSchema>,
+) {
   await requirePlatformAdmin();
   demoOnly();
   const account = await readAccount();
@@ -318,7 +680,9 @@ export const voiceSchema = z
   .strict();
 
 /** Sugere a orientação do piloto automático; não salva nada. */
-export async function suggestMarketingVoice(input: z.infer<typeof voiceSchema>) {
+export async function suggestMarketingVoice(
+  input: z.infer<typeof voiceSchema>,
+) {
   await requirePlatformAdmin();
   demoOnly();
   const account = await readAccount();
@@ -337,11 +701,20 @@ export const updateSchema = z
     caption: z.string().max(2200).optional(),
     slides: z.array(slideSchema).min(1).max(10).optional(),
     scheduledFor: z.string().datetime({ offset: true }).optional(),
-    videoUrl: z.string().url().startsWith("https://").max(1000).nullable().optional(),
+    videoUrl: z
+      .string()
+      .url()
+      .startsWith("https://")
+      .max(1000)
+      .nullable()
+      .optional(),
   })
   .strict();
 
-export async function updateMarketingPost(id: string, input: z.infer<typeof updateSchema>) {
+export async function updateMarketingPost(
+  id: string,
+  input: z.infer<typeof updateSchema>,
+) {
   await requirePlatformAdmin();
   demoOnly();
   z.string().uuid().parse(id);
@@ -354,16 +727,23 @@ export async function updateMarketingPost(id: string, input: z.infer<typeof upda
   if (!current) throw new DomainError("Post não encontrado.", 404);
   if (["published", "publishing"].includes(current.status as string))
     throw new DomainError("Esse post já foi para o Instagram.", 409);
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
   if (input.caption !== undefined) patch.caption = input.caption;
   if (input.slides) patch.slides = input.slides;
   if (input.videoUrl !== undefined) patch.video_url = input.videoUrl;
   if (input.action === "schedule" || input.action === "retry") {
     const at = input.scheduledFor ? new Date(input.scheduledFor) : new Date();
-    if (at.getTime() < Date.now() - 60_000 && input.action === "schedule" && input.scheduledFor)
+    if (
+      at.getTime() < Date.now() - 60_000 &&
+      input.action === "schedule" &&
+      input.scheduledFor
+    )
       throw new DomainError("Escolha um horário no futuro.", 400);
     const format = current.format as string;
-    const video = input.videoUrl !== undefined ? input.videoUrl : current.video_url;
+    const video =
+      input.videoUrl !== undefined ? input.videoUrl : current.video_url;
     if (format === "reel" && !video)
       throw new DomainError("Envie o vídeo antes de agendar o Reel.", 400);
     patch.status = "scheduled";
@@ -422,7 +802,11 @@ export async function reelFromPost(id: string) {
   assertOn(await readAccount());
   z.string().uuid().parse(id);
   const admin = createSupabaseAdmin();
-  const { data: source } = await admin.from("marketing_posts").select(columns).eq("id", id).maybeSingle();
+  const { data: source } = await admin
+    .from("marketing_posts")
+    .select(columns)
+    .eq("id", id)
+    .maybeSingle();
   if (!source) throw new DomainError("Post não encontrado.", 404);
   const post = rowToPost(source);
   if (post.format === "reel" || !post.slides.length)
@@ -436,7 +820,10 @@ async function makeReel(post: MarketingPost, scheduledFor?: string) {
   try {
     video = await renderReelMp4(post.slides);
   } catch {
-    throw new DomainError("Não foi possível montar o vídeo agora. Tente de novo.", 503);
+    throw new DomainError(
+      "Não foi possível montar o vídeo agora. Tente de novo.",
+      503,
+    );
   }
   const path = `reels/${crypto.randomUUID()}.mp4`;
   const storage = admin.storage.from("marketing");
@@ -444,7 +831,8 @@ async function makeReel(post: MarketingPost, scheduledFor?: string) {
     contentType: "video/mp4",
     upsert: false,
   });
-  if (uploadError) throw new DomainError("Não foi possível guardar o vídeo.", 503);
+  if (uploadError)
+    throw new DomainError("Não foi possível guardar o vídeo.", 503);
   const { data, error } = await admin
     .from("marketing_posts")
     .insert({
@@ -493,7 +881,10 @@ async function weeklyReel(settings: MarketingSettings, now: Date) {
   const { data: used } = await admin
     .from("marketing_posts")
     .select("source_id")
-    .in("source_id", candidates.map((c) => c.id as string));
+    .in(
+      "source_id",
+      candidates.map((c) => c.id as string),
+    );
   const done = new Set((used || []).map((u) => u.source_id as string));
   const source = candidates.find((c) => !done.has(c.id as string));
   if (!source) return false;
@@ -505,7 +896,14 @@ async function weeklyReel(settings: MarketingSettings, now: Date) {
       .eq("status", "scheduled")
       .not("scheduled_for", "is", null);
     // Dia livre próprio: o Reel é um extra, não ocupa a cota de posts da semana.
-    slot = nextSlots(1, settings.postHour, (taken || []).map((t) => t.scheduled_for as string), 7, now)[0];
+    slot = nextSlots(
+      1,
+      settings.postHour,
+      (taken || []).map((t) => t.scheduled_for as string),
+      7,
+      now,
+      settings.postDays,
+    )[0];
   }
   await makeReel(rowToPost(source), slot);
   return true;
@@ -519,13 +917,100 @@ export async function videoUploadUrl(fileName: string) {
   const path = `reels/${crypto.randomUUID()}.${ext}`;
   const storage = createSupabaseAdmin().storage.from("marketing");
   const { data, error } = await storage.createSignedUploadUrl(path);
-  if (error || !data) throw new DomainError("Não foi possível preparar o envio.", 503);
+  if (error || !data)
+    throw new DomainError("Não foi possível preparar o envio.", 503);
   return {
     path,
     token: data.token,
     signedUrl: data.signedUrl,
     publicUrl: storage.getPublicUrl(path).data.publicUrl,
   };
+}
+
+/** Link assinado para enviar uma foto manual à fila de publicações. */
+export async function photoUploadUrl(contentType: string) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const extension =
+    contentType === "image/png"
+      ? "png"
+      : contentType === "image/jpeg"
+        ? "jpg"
+        : null;
+  if (!extension)
+    throw new DomainError("Envie uma imagem JPG ou PNG.", 415);
+  const path = `photos/${crypto.randomUUID()}.${extension}`;
+  const storage = createSupabaseAdmin().storage.from("marketing");
+  const { data, error } = await storage.createSignedUploadUrl(path);
+  if (error || !data)
+    throw new DomainError("Não foi possível preparar o envio da foto.", 503);
+  return {
+    path,
+    signedUrl: data.signedUrl,
+    publicUrl: storage.getPublicUrl(path).data.publicUrl,
+  };
+}
+
+export const manualPhotoSchema = z
+  .object({
+    path: z.string().regex(/^photos\/[0-9a-f-]{36}\.(?:jpg|png)$/i),
+    caption: z.string().trim().max(2200).default(""),
+    theme: z.string().trim().max(200).default("Publicação manual"),
+  })
+  .strict();
+
+/** Foto enviada pelo admin: agenda no próximo dia escolhido ou salva como rascunho. */
+export async function createManualPhoto(
+  input: z.infer<typeof manualPhotoSchema>,
+) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  assertOn(account);
+  const settings = settingsOf(account);
+  const admin = createSupabaseAdmin();
+  const storage = admin.storage.from("marketing");
+  const imageUrl = storage.getPublicUrl(input.path).data.publicUrl;
+  const { data: taken } = await admin
+    .from("marketing_posts")
+    .select("scheduled_for")
+    .eq("status", "scheduled")
+    .not("scheduled_for", "is", null);
+  const scheduledFor =
+    settings.autoPublish
+      ? nextSlots(
+          1,
+          settings.postHour,
+          (taken || []).map((post) => post.scheduled_for as string),
+          settings.postsPerWeek,
+          new Date(),
+          settings.postDays,
+        )[0]
+      : undefined;
+  if (
+    settings.autoPublish &&
+    (!account?.access_token_enc || !account.ig_user_id)
+  )
+    throw new DomainError(
+      "Conecte o Instagram antes de agendar publicação automática.",
+      409,
+    );
+  const { data, error } = await admin
+    .from("marketing_posts")
+    .insert({
+      format: "post",
+      theme: input.theme || "Publicação manual",
+      slides: [{ title: "Foto", body: "", imageUrl }],
+      caption: input.caption,
+      origin: "admin",
+      status: scheduledFor ? "scheduled" : "draft",
+      scheduled_for: scheduledFor || null,
+    })
+    .select(columns)
+    .single();
+  if (error || !data)
+    throw new DomainError("Não foi possível adicionar a foto à fila.", 503);
+  return rowToPost(data);
 }
 
 export async function marketingPostForImage(id: string) {
@@ -557,7 +1042,11 @@ async function publishOne(post: MarketingPost) {
       creds.igUserId,
       creds.token,
       post.format === "reel"
-        ? { format: "reel", videoUrl: post.videoUrl || "", caption: post.caption }
+        ? {
+            format: "reel",
+            videoUrl: post.videoUrl || "",
+            caption: post.caption,
+          }
         : {
             format: post.format,
             imageUrls: post.slides.map((_, i) => imageUrl(post, i)),
@@ -577,11 +1066,19 @@ async function publishOne(post: MarketingPost) {
       .eq("id", post.id);
     return true;
   } catch (cause) {
+    const message =
+      cause instanceof Error ? cause.message : "Falha ao publicar";
+    const errorMessage =
+      /not authorized application|error validating access token|oauth exception|invalid oauth access token/i.test(
+        message,
+      )
+        ? "A Meta recusou a autorização do Instagram. Reconecte a conta no Marketing e autorize a publicação de conteúdo."
+        : message;
     await admin
       .from("marketing_posts")
       .update({
         status: "failed",
-        error: (cause instanceof Error ? cause.message : "Falha ao publicar").slice(0, 500),
+        error: errorMessage.slice(0, 500),
         updated_at: new Date().toISOString(),
       })
       .eq("id", post.id);
@@ -614,16 +1111,28 @@ export async function publishMarketingNow(id: string) {
   if (error) throw new DomainError("Não foi possível publicar.", 503);
   if (!data) throw new DomainError("Esse post já está sendo publicado.", 409);
   await publishOne(rowToPost(data));
-  const { data: after } = await admin.from("marketing_posts").select(columns).eq("id", id).single();
+  const { data: after } = await admin
+    .from("marketing_posts")
+    .select(columns)
+    .eq("id", id)
+    .single();
   return rowToPost(after!);
 }
 
 /** Roda a cada 15 minutos: publica o que venceu, mantém a fila do piloto automático e lê curtidas. */
 export async function runMarketing(now = new Date()) {
-  const report = { published: 0, failed: 0, generated: 0, reels: 0, insights: 0 };
+  const report = {
+    published: 0,
+    failed: 0,
+    generated: 0,
+    reels: 0,
+    insights: 0,
+  };
   if (isDemo()) return report;
-  // Desligado no /admin: nada sai, nada é criado; a fila espera.
-  if (!isOn(await readAccount())) return report;
+  const account = await readAccount();
+  // A chave geral pausa recursos de IA, não publicações manuais já aprovadas.
+  const mode = marketingRunMode(isOn(account), await platformAiEnabled());
+  if (mode === "paused") return report;
   const admin = createSupabaseAdmin();
   // Posts esquecidos em "publicando" por queda do servidor voltam para a fila.
   await admin
@@ -631,13 +1140,48 @@ export async function runMarketing(now = new Date()) {
     .update({ status: "scheduled" })
     .eq("status", "publishing")
     .lt("updated_at", new Date(now.getTime() - 20 * 60_000).toISOString());
-  for (let i = 0; i < 3; i++) {
-    const { data: id } = await admin.rpc("claim_marketing_post");
-    if (!id) break;
-    const { data } = await admin.from("marketing_posts").select(columns).eq("id", id).single();
-    if (!data) continue;
-    if (await publishOne(rowToPost(data))) report.published++;
-    else report.failed++;
+  if (mode === "full") {
+    for (let i = 0; i < 3; i++) {
+      const { data: id } = await admin.rpc("claim_marketing_post");
+      if (!id) break;
+      const { data } = await admin
+        .from("marketing_posts")
+        .select(columns)
+        .eq("id", id)
+        .single();
+      if (!data) continue;
+      if (await publishOne(rowToPost(data))) report.published++;
+      else report.failed++;
+    }
+  } else {
+    // Posts uploaded and scheduled by the admin are not AI actions. Keep them
+    // publishable while the platform-wide switch pauses generated content.
+    const { data: dueManualPosts, error } = await admin
+      .from("marketing_posts")
+      .select(columns)
+      .eq("status", "scheduled")
+      .eq("origin", "admin")
+      .lte("scheduled_for", now.toISOString())
+      .order("scheduled_for", { ascending: true })
+      .limit(3);
+    if (error)
+      throw new DomainError("Não foi possível consultar os posts agendados.", 503);
+    for (const candidate of dueManualPosts || []) {
+      const { data, error: claimError } = await admin
+        .from("marketing_posts")
+        .update({ status: "publishing", updated_at: now.toISOString() })
+        .eq("id", candidate.id)
+        .eq("status", "scheduled")
+        .eq("origin", "admin")
+        .select(columns)
+        .maybeSingle();
+      if (claimError)
+        throw new DomainError("Não foi possível iniciar a publicação agendada.", 503);
+      if (!data) continue;
+      if (await publishOne(rowToPost(data))) report.published++;
+      else report.failed++;
+    }
+    return report;
   }
   const creds = await credentials();
   if (!creds) return report;
@@ -646,20 +1190,35 @@ export async function runMarketing(now = new Date()) {
     ? Date.parse(creds.account.last_generated_at as string)
     : 0;
   const ai = aiKeyOf(creds.account);
-  if (settings.autopilot && ai && now.getTime() - last > 20 * 3_600_000) {
+  if (
+    settings.autopilot &&
+    ai &&
+    mode === "full" &&
+    now.getTime() - last > 20 * 3_600_000
+  ) {
     const week = new Date(now.getTime() + 7 * 86_400_000).toISOString();
     const { data: queued } = await admin
       .from("marketing_posts")
       .select("status,scheduled_for")
       .in("status", ["draft", "scheduled"])
       .is("source_id", null)
-      .gte("created_at", new Date(now.getTime() - 7 * 86_400_000).toISOString());
+      .gte(
+        "created_at",
+        new Date(now.getTime() - 7 * 86_400_000).toISOString(),
+      );
     const scheduled = (queued || []).filter(
-      (p) => p.status === "scheduled" && p.scheduled_for && p.scheduled_for <= week,
+      (p) =>
+        p.status === "scheduled" && p.scheduled_for && p.scheduled_for <= week,
     );
     const drafts = (queued || []).filter((p) => p.status === "draft").length;
-    const missing = settings.postsPerWeek - scheduled.length - (settings.autoPublish ? 0 : drafts);
-    await admin.from("marketing_account").update({ last_generated_at: now.toISOString() }).eq("id", 1);
+    const missing =
+      settings.postsPerWeek -
+      scheduled.length -
+      (settings.autoPublish ? 0 : drafts);
+    await admin
+      .from("marketing_account")
+      .update({ last_generated_at: now.toISOString() })
+      .eq("id", 1);
     if (missing > 0) {
       try {
         const ideas = await generateIdeas({
@@ -676,6 +1235,7 @@ export async function runMarketing(now = new Date()) {
               scheduled.map((p) => p.scheduled_for as string),
               settings.postsPerWeek,
               now,
+              settings.postDays,
             )
           : [];
         report.generated = (await insertIdeas(ideas, slots)).length;
@@ -695,7 +1255,10 @@ export async function runMarketing(now = new Date()) {
       .from("marketing_posts")
       .select("id,ig_media_id")
       .eq("status", "published")
-      .gte("published_at", new Date(now.getTime() - 30 * 86_400_000).toISOString())
+      .gte(
+        "published_at",
+        new Date(now.getTime() - 30 * 86_400_000).toISOString(),
+      )
       .not("ig_media_id", "is", null)
       .limit(30);
     for (const row of recent || []) {
@@ -703,7 +1266,10 @@ export async function runMarketing(now = new Date()) {
         const m = await mediaInsights(row.ig_media_id as string, creds.token);
         await admin
           .from("marketing_posts")
-          .update({ likes: m.like_count ?? null, comments: m.comments_count ?? null })
+          .update({
+            likes: m.like_count ?? null,
+            comments: m.comments_count ?? null,
+          })
           .eq("id", row.id);
         report.insights++;
       } catch {
@@ -725,11 +1291,16 @@ export async function refreshMarketingToken() {
       `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(creds.token)}`,
       { signal: AbortSignal.timeout(10_000), cache: "no-store" },
     );
-    const body = (await response.json().catch(() => ({}))) as { access_token?: string };
+    const body = (await response.json().catch(() => ({}))) as {
+      access_token?: string;
+    };
     if (!response.ok || !body.access_token) return false;
     await createSupabaseAdmin()
       .from("marketing_account")
-      .update({ access_token_enc: encryptSecret(body.access_token), updated_at: new Date().toISOString() })
+      .update({
+        access_token_enc: encryptSecret(body.access_token),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", 1);
     return true;
   } catch {

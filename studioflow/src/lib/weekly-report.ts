@@ -59,8 +59,15 @@ export function weeklySummary(
   receipts: WeeklyReceipt[],
   sales: WeeklySale[],
   now = new Date(),
+  reportPeriod?: { from: string; to: string },
 ) {
-  const period = weeklyPeriod(week, now);
+  const period = reportPeriod ?? weeklyPeriod(week, now);
+  if (!validPeriod(period)) throw new DomainError("Período inválido.");
+  const dayCount =
+    Math.round((Date.parse(period.to) - Date.parse(period.from)) / 86400000) +
+    1;
+  if (dayCount < 1 || dayCount > 7)
+    throw new DomainError("Use um período de até sete dias.");
   const relevant = appointments.filter(
     (a) =>
       a.businessId === store.business.id &&
@@ -129,7 +136,7 @@ export function weeklySummary(
       }))
       .filter((s) => s.count > 0)
       .sort((a, b) => b.count - a.count),
-    days: Array.from({ length: 7 }, (_, i) => {
+    days: Array.from({ length: dayCount }, (_, i) => {
       const day = new Date(`${period.from}T12:00:00Z`);
       day.setUTCDate(day.getUTCDate() + i);
       const date = day.toISOString().slice(0, 10);

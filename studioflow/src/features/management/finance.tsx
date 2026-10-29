@@ -49,9 +49,16 @@ export default function FinancePage() {
     [preset, setPreset] = useState<FinancePreset>("month");
   const [open, setOpen] = useState(false),
     [appointmentId, setAppointmentId] = useState("");
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [showAllPending, setShowAllPending] = useState(false);
   const action = useFormAction(),
     editable = canMutate("payments");
   const summary = data ? financeSummary(data, period) : null;
+  const pendingItems = (summary?.outstanding ?? []).filter(({ appointment }) =>
+    appointment.customerName
+      .toLocaleLowerCase("pt-BR")
+      .includes(pendingSearch.toLocaleLowerCase("pt-BR")),
+  );
   const allOutstanding =
     data?.appointments.filter(
       (item) => item.status === "completed" && balanceFor(item, data) > 0,
@@ -198,7 +205,8 @@ export default function FinancePage() {
               <div className="management-bars">
                 {summary.paymentMethods.map((item, index) => {
                   const amount =
-                    item.amountCents + summary.productMethods[index].amountCents;
+                    item.amountCents +
+                    summary.productMethods[index].amountCents;
                   return (
                     <div key={item.method}>
                       <div className="management-bar-label">
@@ -230,26 +238,54 @@ export default function FinancePage() {
                   </p>
                 </div>
               </div>
+              <div className="receivables-summary">
+                <span>{summary.outstanding.length} atendimentos com saldo</span>
+                <strong>{money(reais(summary.dueCents))}</strong>
+              </div>
+              {summary.outstanding.length > 6 && (
+                <FormField label="Encontrar cliente com saldo">
+                  <input
+                    value={pendingSearch}
+                    onChange={(e) => {
+                      setPendingSearch(e.target.value);
+                      setShowAllPending(false);
+                    }}
+                    placeholder="Buscar pelo nome…"
+                  />
+                </FormField>
+              )}
               {summary.outstanding.length ? (
-                <div className="finance-pending-list">
-                  {summary.outstanding.map(({ appointment, dueCents }) => (
+                <div className="finance-pending-list receivables-list">
+                  {(showAllPending
+                    ? pendingItems
+                    : pendingItems.slice(0, 6)
+                  ).map(({ appointment, dueCents }) => (
                     <div key={appointment.id}>
                       <div>
                         <strong>{appointment.customerName}</strong>
                         <small>
                           {dateLabel(appointment.start, "dd MMM · HH:mm")}
                         </small>
+                        <small>
+                          {appointment.serviceIds
+                            .map(
+                              (id) =>
+                                data?.services.find((s) => s.id === id)?.name,
+                            )
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
                       </div>
                       <strong>{money(reais(dueCents))}</strong>
                       {editable && (
                         <button
-                          className="management-icon-button"
+                          className="management-link-button"
                           aria-label={
                             "Registrar pagamento de " + appointment.customerName
                           }
                           onClick={() => register(appointment.id)}
                         >
-                          <ArrowUpRight size={17} />
+                          Receber <ArrowUpRight size={15} />
                         </button>
                       )}
                     </div>
@@ -260,6 +296,21 @@ export default function FinancePage() {
                   title="Tudo em dia neste período"
                   description="Não há atendimentos concluídos com saldo a receber."
                 />
+              )}
+              {pendingItems.length > 6 && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowAllPending(!showAllPending)}
+                >
+                  {showAllPending
+                    ? "Mostrar menos"
+                    : `Ver mais ${pendingItems.length - 6} atendimentos`}
+                </Button>
+              )}
+              {pendingSearch && !pendingItems.length && (
+                <p className="management-muted">
+                  Nenhum saldo encontrado para esse nome.
+                </p>
               )}
             </Card>
           </div>

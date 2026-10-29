@@ -784,15 +784,6 @@ function Thread({
                 <UserCircle size={16} /> Assumir
               </Button>
             )}
-            {status !== "ai" && (
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() => void act({ action: "status", status: "ai" })}
-              >
-                <ChatCircleText size={16} /> Devolver ao StudioFlow
-              </Button>
-            )}
             {status !== "closed" && (
               <Button
                 variant="ghost"

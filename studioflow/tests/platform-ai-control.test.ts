@@ -5,6 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import {
   platformAiEnabled,
   platformAiSchema,
+  assertPlatformAiEnabled,
 } from "../src/services/platform-ai-control";
 import {
   processConversation,
@@ -59,6 +60,14 @@ test("global AI switch is off by default and cannot be changed by tenant members
   }
 });
 
+test("shared AI control rejects a disabled or unreadable global state", async () => {
+  await assert.rejects(
+    assertPlatformAiEnabled(async () => false),
+    /controle geral/,
+  );
+  await assertPlatformAiEnabled(async () => true);
+});
+
 test("unavailable production switch fails closed before provider execution", async () => {
   const previous = process.env.STUDIOFLOW_DEMO_MODE;
   process.env.STUDIOFLOW_DEMO_MODE = "false";
@@ -89,7 +98,7 @@ test("unavailable production switch fails closed before provider execution", asy
         throw Error("Disabled AI must not call the provider");
       },
     );
-    assert.equal(manual, true);
+    assert.equal(manual, false, "a temporary global pause must preserve AI assignment");
     assert.equal(
       platformAiSchema.safeParse({ enabled: "true" }).success,
       false,

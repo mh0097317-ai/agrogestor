@@ -8,6 +8,8 @@ import {
 } from "../src/services/assistant/n8n-whatsapp";
 import { verifiedN8nReply } from "../src/services/assistant/n8n-reply";
 import { readDemo } from "../src/services/server-demo";
+import { createSeed } from "../src/lib/seed";
+import { welcomeReply } from "../src/services/assistant/welcome-reply";
 import type { Interpretation } from "../src/services/assistant/understanding";
 
 const config = {
@@ -134,6 +136,61 @@ const interpretation: Interpretation = {
   missing: [],
   nextAction: "ANSWER",
 };
+
+test("verified n8n price reply greets, groups real staff offers and rejects foreign catalog data", () => {
+  const store = createSeed();
+  const now = new Date("2026-10-14T22:00:00Z");
+  store.appointments = [];
+  store.blockedTimes = [];
+  store.settings.minNotice = 0;
+  store.settings.openDays = [0, 1, 2, 3, 4, 5, 6];
+  const service = store.services.find((s) => s.active)!;
+  const people = store.professionals.filter((p) => p.active).slice(0, 2);
+  for (const person of people) {
+    person.days = store.settings.openDays;
+    if (!service.professionalIds.includes(person.id))
+      service.professionalIds.push(person.id);
+  }
+  const selection = {
+    ...interpretation,
+    intent: "PRICE" as const,
+    serviceIds: [service.id],
+    date: "2026-10-15",
+  };
+  const result = verifiedN8nReply(
+    "Corte: R$ 999. Temos 03:00.",
+    selection,
+    store,
+    "Boa noite, quanto custa?",
+    now,
+  );
+  const reply = welcomeReply(result.reply, [], "Boa noite, quanto custa?", now);
+  assert.match(reply, /^Boa noite! Tudo bem\?/);
+  assert.match(reply, /fica R\$/);
+  assert.match(reply, /Tenho estas opções disponíveis:\n\n/);
+  assert.doesNotMatch(reply, /999|03:00|reservado|confirmado/i);
+  for (const person of people) {
+    const displayName = person.name.toLowerCase();
+    assert.equal(reply.toLowerCase().split(displayName).length - 1, 1);
+  }
+  assert.match(reply, /Com quem você prefere marcar\?/);
+  store.services.push({
+    ...service,
+    id: "foreign-service",
+    businessId: "foreign-business",
+  });
+  assert.throws(
+    () =>
+      verifiedN8nReply(
+        "Olá",
+        { ...selection, serviceIds: ["foreign-service"] },
+        store,
+        "Preço",
+        now,
+      ),
+    /scope/,
+  );
+});
 
 test("n8n proposals cannot confirm bookings or offer unverified prices/slots", async () => {
   const store = await readDemo("barber-011");
