@@ -173,3 +173,36 @@ test("the text says more times are in the list", async () => {
   assert.match(reply || "", /e mais \d+ horários/);
   assert.match(reply || "", /lista abaixo/);
 });
+
+test("a second unreadable media goes to the team instead of repeating", async () => {
+  const { generalReply } =
+    await import("../src/services/assistant/general-reply");
+  const { store } = fixture();
+  const noModel = (async () => {
+    throw new Error("model called");
+  }) as unknown as CreateMessage;
+  const first = await generalReply(
+    noModel,
+    "[O cliente enviou um áudio.]",
+    store,
+    [],
+    now,
+  );
+  assert.match(first.reply, /Não consegui ler/);
+  const second = await generalReply(
+    noModel,
+    "[O cliente enviou um áudio.]",
+    store,
+    [
+      {
+        id: "a",
+        role: "assistant",
+        body: first.reply,
+        createdAt: new Date(now.getTime() - 60_000).toISOString(),
+      },
+    ],
+    now,
+  );
+  assert.ok(second.handoff);
+  assert.doesNotMatch(second.reply, /Não consegui ler/);
+});

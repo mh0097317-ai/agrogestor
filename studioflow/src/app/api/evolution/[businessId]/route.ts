@@ -10,7 +10,11 @@ import {
   evolutionImage,
   parseEvolutionChanges,
 } from "@/services/whatsapp/evolution";
-import { linkForWebhook, saveLinkState } from "@/services/whatsapp/link";
+import {
+  duplicatesShopLink,
+  linkForWebhook,
+  saveLinkState,
+} from "@/services/whatsapp/link";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { requestOrigin } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -51,6 +55,8 @@ export async function POST(
   try {
     if (delivery.state)
       await saveLinkState(businessId, delivery.state, professionalId);
+    // Same number as the shop link: the shop link already got this message.
+    if (await duplicatesShopLink(businessId, professionalId)) return plain("ok");
     const changes = parseEvolutionChanges(body);
     if (changes.messages.length || changes.phones.length) {
       const admin = createSupabaseAdmin();

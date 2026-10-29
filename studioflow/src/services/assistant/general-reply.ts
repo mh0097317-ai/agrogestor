@@ -65,6 +65,14 @@ export async function generalReply(
             : /^\[O cliente enviou/.test(text.trim())
               ? "Não consegui ler esse conteúdo. Pode mandar sua pergunta por texto?"
               : "";
+  // A second unreadable audio/photo in a row goes to a person, not the same line again.
+  if (fixed && fixed === lastReply.trim() && /^Não consegui ler/.test(fixed))
+    return {
+      history: [],
+      reply: "Vou pedir para a equipe ver sua mensagem e já te respondem por aqui.",
+      handoff: "Mídia que a atendente virtual não conseguiu ler",
+      usage: { input: 0, output: 0 },
+    };
   if (fixed)
     return { history: [], reply: fixed, usage: { input: 0, output: 0 } };
   const response = await create({

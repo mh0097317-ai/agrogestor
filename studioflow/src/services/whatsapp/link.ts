@@ -66,6 +66,30 @@ async function readRow(businessId: string, professionalId?: string) {
   return data;
 }
 
+/** Last 11 digits: "5562984674376", "62984674376" and a 55 prefix compare equal. */
+const sameNumber = (a?: string | null, b?: string | null) => {
+  const left = (a || "").replace(/\D/g, "").slice(-11);
+  return left.length >= 10 && left === (b || "").replace(/\D/g, "").slice(-11);
+};
+
+/**
+ * The same phone connected both as the shop's WhatsApp and as a professional's.
+ * Every message then reaches two instances: the shop link answers, and the
+ * professional link must stay silent. Otherwise each reply echoes into the
+ * other chat as a "team" message, hands it to a person and the AI stops.
+ */
+export async function duplicatesShopLink(
+  businessId: string,
+  professionalId?: string | null,
+) {
+  if (!professionalId || isDemo()) return false;
+  const [professional, shop] = await Promise.all([
+    readRow(businessId, professionalId).catch(() => null),
+    readRow(businessId).catch(() => null),
+  ]);
+  return shop?.status === "open" && sameNumber(shop.phone, professional?.phone);
+}
+
 /** Status shown in the panel (no secrets). */
 export async function readWhatsAppLink(
   businessId: string,
@@ -484,7 +508,8 @@ export async function conversationSender(
   professionalId?: string | null,
   role: "staff" | "assistant" = "staff",
 ): Promise<Sender | null> {
-  if (!professionalId) return shopSender(businessId, role);
+  if (!professionalId || (await duplicatesShopLink(businessId, professionalId)))
+    return shopSender(businessId, role);
   const row = await readRow(businessId, professionalId);
   return row?.status === "open" && (await evolutionReady())
     ? (to, body, menu) =>
