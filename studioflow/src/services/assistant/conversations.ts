@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { cleanName } from "@/lib/person-name";
+import { dropPendingCharge } from "../server-payments";
+import {
+  changeBooking,
+  manageReply,
+  moveDoneEvent,
+  pendingMove,
+} from "./manage-booking";
 import type Anthropic from "@anthropic-ai/sdk";
 import { DomainError } from "@/lib/availability";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
@@ -748,6 +755,75 @@ async function answerPending(
     await repo.progress?.(conversationId, { state: "SILENT" });
     return null;
   }
+  // Cancel/reschedule is answered from the agenda, without a model call.
+  const customerText = pending.filter((m) => m.role === "customer").at(-1)!.body;
+  const managed =
+    conversation.channel === "whatsapp" &&
+    !pending.some((message) => message.role === "staff")
+      ? await manageReply({
+          store: scopedStore,
+          text: customerText,
+          messages: await repo.messages(conversationId),
+          phone: conversation.contactPhone,
+          change: (action, appointment) =>
+            changeBooking(
+              delivery.slug,
+              scopedStore,
+              appointment,
+              conversation.contactPhone,
+              action,
+            ),
+        })
+      : null;
+  if (managed) {
+    await repo.startRun?.(conversationId, cursor);
+    if (managed.cancelled) {
+      await dropPendingCharge(managed.cancelled).catch(() => undefined);
+      await logActivity(scopedStore.business.id, {
+        source: "recepcionista",
+        action: "Cancelou pelo WhatsApp",
+        detail: `${managed.cancelled.customerName} · ${activityWhen(managed.cancelled.start)}`,
+        actor: "Recepcionista",
+      });
+    }
+    if ((await repo.get(conversationId))?.status !== "ai") return null;
+    await repo.progress?.(conversationId, { state: "SENDING" });
+    let sentId = await delivery.send?.(
+      managed.reply,
+      managed.handoff ? null : managed.menu || null,
+    );
+    if (
+      sentId &&
+      conversation.whatsappProfessionalId &&
+      !sentId.startsWith(`${conversation.whatsappProfessionalId}:`)
+    )
+      sentId = `${conversation.whatsappProfessionalId}:${sentId}`;
+    await repo.addMessage(
+      conversationId,
+      "assistant",
+      managed.reply,
+      sentId || undefined,
+    );
+    if (managed.event)
+      await repo.addMessage(conversationId, "event", managed.event);
+    await repo.update(conversationId, {
+      aiCursor: cursor,
+      history: [
+        ...conversation.history,
+        { role: "user", content: text },
+        { role: "assistant", content: managed.reply },
+      ].slice(-40) as History,
+      ...(managed.handoff ? { status: "human", unreadDelta: 1 } : {}),
+    });
+    await repo.progress?.(conversationId, { state: "SENT" });
+    if (managed.handoff)
+      await repo.addMessage(
+        conversationId,
+        "event",
+        `Pediu a equipe: ${managed.handoff}`,
+      );
+    return managed.reply;
+  }
   if (!create) {
     await repo.progress?.(conversationId, {
       state: "FAILED",
@@ -803,6 +879,7 @@ async function answerPending(
           conversation.whatsappProfessionalId,
         )
       : null;
+  let moved = false;
   const ctx: AssistantContext = {
     channel: conversation.channel,
     professionalId: undefined,
@@ -840,6 +917,41 @@ async function answerPending(
         );
       if (await repo.bookedSince?.(conversationId, cursor))
         throw new DomainError("O pedido já possui um agendamento.", 409);
+      // A "remarcar" asked in this chat moves that appointment instead of
+      // creating a second one.
+      const moving =
+        conversation.channel === "whatsapp"
+          ? pendingMove(
+              await repo.messages(conversationId),
+              await loadStore(delivery.slug),
+              conversation.contactPhone,
+            )
+          : undefined;
+      if (moving) {
+        const appointment = await changeBooking(
+          delivery.slug,
+          scopedStore,
+          moving,
+          conversation.contactPhone,
+          "reschedule",
+          input.start,
+          input.professionalId,
+        );
+        moved = true;
+        await repo.addMessage(
+          conversationId,
+          "event",
+          moveDoneEvent(moving.id),
+        );
+        await notifyNewBooking(delivery.slug, appointment.id, delivery.origin);
+        await logActivity(appointment.businessId, {
+          source: "recepcionista",
+          action: "Remarcou pelo WhatsApp",
+          detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
+          actor: "Recepcionista",
+        });
+        return appointment;
+      }
       const appointment = await bookWithPayments(
         delivery.slug,
         {
@@ -1046,6 +1158,11 @@ async function answerPending(
       customerText: text,
       ctx,
     }));
+  if (moved && result.reply)
+    result.reply = result.reply.replace(
+      /^Tudo certo! Agendamento confirmado para/,
+      "Pronto! Seu horário foi remarcado para",
+    );
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);
