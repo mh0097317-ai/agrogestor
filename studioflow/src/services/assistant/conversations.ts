@@ -66,9 +66,7 @@ import { generalReply } from "./general-reply";
 import { availabilityReply } from "./availability-reply";
 import { imageUnavailableText, understandImage } from "./vision";
 import type { AssistantContext } from "./agent";
-import {
-  whatsappBurstDelayMs,
-} from "./idle-price-resume";
+import { manualPauseMs, whatsappBurstDelayMs } from "./idle-price-resume";
 
 type History = Anthropic.Beta.BetaMessageParam[];
 type AssistantSettingsRow = {
@@ -650,6 +648,9 @@ export async function processConversation(
   }
 }
 
+/** answerPending's signal that newer messages arrived: run another round. */
+const superseded = "\u0000superseded";
+
 /** One answer for the pending messages; null when there is nothing to do. */
 async function answerPending(
   repo: ConversationRepo,
@@ -1183,6 +1184,17 @@ async function answerPending(
     return null;
   }
   if ((await repo.get(conversationId))?.status !== "ai") return null;
+  // The customer kept typing while this answer was generated: answer all of it
+  // in the next round instead of sending a reply that ignores the new messages.
+  if (
+    conversation.channel === "whatsapp" &&
+    !result.booked &&
+    !result.handoff &&
+    (await repo.messages(conversationId, cursor)).some(
+      (message) => message.role === "customer",
+    )
+  )
+    return superseded;
   let sentId: string | void = undefined;
   if (result.reply && delivery.send) {
     if (understanding)
@@ -1537,6 +1549,16 @@ export async function receiveWhatsAppMessages(input: {
     }
     if (conversation.status === "human") {
       const messageAt = message.createdAt || new Date().toISOString();
+      // Someone from the team is talking in this chat: the AI stays out.
+      const personTalking = (await repo.messages(conversation.id)).some(
+        (m) =>
+          m.role === "staff" &&
+          Date.parse(m.createdAt) > Date.parse(messageAt) - manualPauseMs,
+      );
+      if (personTalking) {
+        await repo.update(conversation.id, { unreadDelta: 1 });
+        continue;
+      }
       const cursor = cursorBefore(messageAt);
       await repo.update(conversation.id, {
         status: "ai",

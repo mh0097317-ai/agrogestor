@@ -79,10 +79,14 @@ export async function sendAppointmentReminders() {
         )
           return;
         const send =
+          // Automatic: recorded as the assistant, so it never reads as a
+          // person taking over the chat.
           (await conversationSender(
             row.business_id,
             appointment.professionalId,
-          )) || (await conversationSender(row.business_id));
+            "assistant",
+          )) ||
+          (await conversationSender(row.business_id, null, "assistant"));
         if (!send) return;
         const { data: claimed, error: claimError } = await admin.rpc(
           "claim_staged_appointment_reminder",

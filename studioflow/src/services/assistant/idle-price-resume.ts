@@ -1,8 +1,10 @@
 import type { ConversationMessage, Store } from "@/types";
 import { exactPriceSelection } from "./routine-reply";
 
-export const whatsappBurstDelayMs = 350;
-const manualPauseMs = 30 * 60_000;
+// Customers often split one request over a few quick messages.
+export const whatsappBurstDelayMs = 3000;
+/** A person who wrote in the chat keeps it for this long. */
+export const manualPauseMs = 30 * 60_000;
 
 /** Only a fresh, exact catalog question may end a stale mirrored manual pause. */
 export function idlePriceResumeCursor(input: {

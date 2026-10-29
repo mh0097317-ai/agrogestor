@@ -144,6 +144,9 @@ async function setup(name: string) {
     cleanup,
     messages,
     conversation,
+    repo,
+    delivery,
+    sent,
   };
 }
 
@@ -221,6 +224,62 @@ test("too close to the time goes to the team", async () => {
     const reply = await t.say("quero cancelar");
     assert.match(reply.body, /até 2 horas antes/);
     assert.equal((await readDemo(t.slug)).appointments[0].status, "confirmed");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a reply is held back when the customer kept typing, then one answer covers both", async () => {
+  const t = await setup("burst");
+  try {
+    let typed = false;
+    t.repo.takeTurn = async () => {
+      // The customer sends another message while the first one is answered.
+      if (!typed) {
+        typed = true;
+        await t.repo.addMessage(t.conversation.id, "customer", "tudo certo?");
+      }
+      return true;
+    };
+    await t.repo.addMessage(t.conversation.id, "customer", "Boa tarde");
+    // Understanding says "general"; the general reply is plain text.
+    const create = (async (params: { tools?: unknown[] }) =>
+      params.tools
+        ? {
+            content: [
+              {
+                type: "tool_use",
+                id: "i",
+                name: "interpretar_pedido",
+                input: {
+                  intent: "GENERAL",
+                  stage: "UNDERSTANDING",
+                  confidence: 1,
+                  serviceIds: [],
+                  professionalId: "",
+                  date: "",
+                  time: "",
+                  missing: [],
+                  nextAction: "ANSWER",
+                  acknowledgement: "",
+                },
+              },
+            ],
+            stop_reason: "tool_use",
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }
+        : {
+            content: [
+              {
+                type: "text",
+                text: "Tudo certo por aqui! Em que posso ajudar?",
+              },
+            ],
+            stop_reason: "end_turn",
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }) as unknown as Parameters<typeof processConversation>[3];
+    await processConversation(t.repo, t.conversation.id, t.delivery, create);
+    assert.equal(t.sent.length, 1, "one reply for both messages");
   } finally {
     await t.cleanup();
   }
