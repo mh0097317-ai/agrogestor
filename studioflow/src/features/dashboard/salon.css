@@ -512,10 +512,19 @@
 .sl-empty p {
   color: var(--sl-muted);
 }
-/* Phones: chair cards to swipe, the scene stays on larger screens. */
+/* Phones: the 3D room on top, chair cards to swipe below it. */
 @media (max-width: 760px) {
-  .sl-main {
+  .sl-side,
+  .sl-waiting,
+  .sl-ai {
     display: none;
+  }
+  .sl-scene-card {
+    padding: 6px;
+    border-radius: 18px;
+  }
+  .sl-scene {
+    aspect-ratio: 4 / 3;
   }
   .sl-mobile-wait {
     display: flex;
@@ -908,5 +917,53 @@
 @container (max-width: 560px) {
   .sl-3d-hint {
     display: none;
+  }
+}
+
+/* Narrow rooms: the chair labels shrink to number, name and status. */
+@container (max-width: 560px) {
+  .sl-tag {
+    min-width: 0;
+    padding: 0.35em 0.55em 0.35em 0.4em;
+    gap: 0;
+    font-size: 10px;
+    border-radius: 999px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  }
+  .sl-tag-sub,
+  .sl-tag-line,
+  .sl-tag-head .avatar {
+    display: none !important;
+  }
+  .sl-tag-head strong::after {
+    content: "";
+    display: inline-block;
+    width: 0.6em;
+    height: 0.6em;
+    margin-left: 0.4em;
+    border-radius: 50%;
+    background: var(--tone);
+    vertical-align: 0.05em;
+  }
+  .sl-gap-chip {
+    top: auto;
+    bottom: 3%;
+    padding: 0.5em 0.7em;
+    font-size: 10px;
+  }
+  .sl-gap-chip em {
+    display: none;
+  }
+  .sl-3d-tools {
+    gap: 6px;
+    font-size: 11px;
+  }
+  .sl-3d-view button,
+  .sl-3d-reset {
+    min-height: 28px;
+    padding: 0 10px;
+  }
+  .sl-area {
+    font-size: 10px;
   }
 }

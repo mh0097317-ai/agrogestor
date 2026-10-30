@@ -1057,7 +1057,8 @@ export function createSalonScene(input: {
   const sun = new THREE.DirectionalLight(0xffe6c4, 1.7);
   sun.position.set(-W * 0.3, 10, D * 0.85);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const touch = matchMedia("(pointer: coarse)").matches;
+  sun.shadow.mapSize.setScalar(touch ? 1024 : 2048);
   sun.shadow.radius = 4;
   sun.shadow.bias = -0.0003;
   sun.shadow.normalBias = 0.02;
@@ -1095,8 +1096,8 @@ export function createSalonScene(input: {
       ),
     ),
   );
-  // Room above the back wall for the chair labels.
-  corners.push(new THREE.Vector3(-W / 2, H + 1.1, -D / 2));
+  // Room above the back wall for the chair labels, when they sit there.
+  const labelRoom = new THREE.Vector3(-W / 2, H + 1.1, -D / 2);
   const fit = () => {
     let d = homePosition.distanceTo(home);
     for (let i = 0; i < 6; i++) {
@@ -1104,7 +1105,9 @@ export function createSalonScene(input: {
       camera.lookAt(home);
       camera.updateMatrixWorld();
       let edge = 0;
-      for (const c of corners) {
+      for (const c of canvas.clientWidth < 560
+        ? corners
+        : [...corners, labelRoom]) {
         point.copy(c).project(camera);
         edge = Math.max(edge, Math.abs(point.x), Math.abs(point.y));
       }
@@ -1114,6 +1117,9 @@ export function createSalonScene(input: {
     controls.minDistance = d * 0.42;
     controls.maxDistance = d * 1.08;
   };
+  // On touch screens a vertical swipe keeps scrolling the page; sideways
+  // turns the room and two fingers zoom.
+  canvas.style.touchAction = "pan-y";
   controls.update();
 
   let disposed = false;
@@ -1142,7 +1148,12 @@ export function createSalonScene(input: {
     return [
       ...stations
         .filter((s) => s.id)
-        .map((s) => project(s.id, s.x, H + 0.12, -D / 2, w, h)),
+        .map((s) =>
+          // Narrow rooms: each small label right above its chair.
+          w < 560
+            ? project(s.id, s.x, 1.95, chairZ, w, h)
+            : project(s.id, s.x, H + 0.12, -D / 2, w, h),
+        ),
       project("reception", W / 2, H + 0.12, deskZ, w, h),
       project("waiting", cx - 1.2, 0.05, cz + 1.2, w, h),
     ];

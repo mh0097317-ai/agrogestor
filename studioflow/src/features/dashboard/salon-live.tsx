@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -135,6 +135,23 @@ export function SalonLive({
   }, [refresh]);
   const chair =
     model.chairs.find((c) => c.professional.id === selected) || model.chairs[0];
+  const cards = useRef<HTMLDivElement>(null);
+  // On phones the chosen chair's card slides into view under the room.
+  function choose(id: string) {
+    setSelected(id);
+    const list = cards.current;
+    const i = model.chairs.findIndex((c) => c.professional.id === id);
+    const card = list?.children[i];
+    if (!list || !card || !matchMedia("(max-width: 760px)").matches) return;
+    list.scrollTo({
+      left:
+        list.scrollLeft +
+        card.getBoundingClientRect().left -
+        list.getBoundingClientRect().left -
+        16,
+      behavior: "smooth",
+    });
+  }
   const spots = layout(Math.min(model.chairs.length, 8));
   const assistant =
     hasModule(data.access?.modules, "recepcionista") &&
@@ -262,12 +279,12 @@ export function SalonLive({
                 shopName={data.business.name}
                 category={data.business.category}
                 selected={chair?.professional.id || ""}
-                onSelect={setSelected}
+                onSelect={choose}
                 onArea={(area) => {
                   if (area === "reception")
                     router.push(`/dashboard/agenda?date=${model.day}`);
                   else if (model.waiting[0])
-                    setSelected(model.waiting[0].professionalId);
+                    choose(model.waiting[0].professionalId);
                 }}
                 areas={{
                   reception: (
@@ -288,7 +305,7 @@ export function SalonLive({
                     index={i}
                     data={data}
                     on={chair?.professional.id === c.professional.id}
-                    onClick={() => setSelected(c.professional.id)}
+                    onClick={() => choose(c.professional.id)}
                   />
                 )}
                 fallback={
@@ -806,7 +823,7 @@ export function SalonLive({
       )}
 
       {model.chairs.length > 0 && (
-        <div className="sl-cards" aria-label="Cadeiras">
+        <div className="sl-cards" aria-label="Cadeiras" ref={cards}>
           {model.chairs.map((c) => (
             <ChairPanel
               key={c.professional.id}
