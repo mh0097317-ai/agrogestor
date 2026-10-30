@@ -3,17 +3,42 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
+  CalendarCheck,
+  ChatCircleText,
+  CheckCircle,
   CircleNotch,
   Eye,
   EyeSlash,
   ShieldCheck,
+  Wallet,
 } from "@phosphor-icons/react/dist/ssr";
 import { Brand } from "@/components/brand";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { inviteRedirect } from "@/lib/invite-redirect";
+import { showcaseSlug } from "@/lib/showcase";
 import "./login.css";
 import "@/components/auth-card.css";
+
+/** Supabase answers in English; the owner reads Portuguese. */
+export function accessError(error: unknown, fallback: string) {
+  const text = error instanceof Error ? error.message : "";
+  if (/invalid login credentials/i.test(text))
+    return "E-mail ou senha não conferem. Confira e tente de novo.";
+  if (/email not confirmed/i.test(text))
+    return "Confirme seu e-mail pelo link que enviamos antes de entrar.";
+  if (/already registered|already been registered/i.test(text))
+    return "Já existe uma conta com esse e-mail. Entre ou crie uma nova senha.";
+  if (/rate limit|too many|seconds/i.test(text))
+    return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
+  if (/password should be|weak password/i.test(text))
+    return "Escolha uma senha mais forte, com 8 ou mais caracteres.";
+  if (/fetch|network/i.test(text))
+    return "Sem conexão com o servidor. Confira a internet e tente de novo.";
+  return text && !/^[A-Za-z0-9 ,.'"()_-]+$/.test(text) ? text : fallback;
+}
+
 export function LoginForm({
   initialSignup = false,
 }: {
@@ -28,6 +53,8 @@ export function LoginForm({
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const [visible, setVisible] = useState(false);
+  // "Esqueci minha senha" swaps the login form for the reset request.
+  const [forgot, setForgot] = useState(false);
   const configured = !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     dev = process.env.NODE_ENV !== "production";
   async function submit(event: React.FormEvent) {
@@ -44,7 +71,15 @@ export function LoginForm({
         throw new Error(
           "O acesso por conta está em preparação. Você já pode explorar a demonstração.",
         );
-      if (signup) {
+      if (forgot) {
+        const { error } = await client.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login/nova-senha")}`,
+        });
+        if (error) throw error;
+        setMessage(
+          "Se esse e-mail tiver uma conta, o link para criar a nova senha chega em instantes. Confira também o spam.",
+        );
+      } else if (signup) {
         const { data, error } = await client.auth.signUp({
           email,
           password,
@@ -81,7 +116,12 @@ export function LoginForm({
       }
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Não foi possível entrar.",
+        accessError(
+          error,
+          forgot
+            ? "Não foi possível enviar o link. Tente de novo."
+            : "Não foi possível entrar. Tente de novo.",
+        ),
       );
     } finally {
       setBusy(false);
@@ -90,6 +130,7 @@ export function LoginForm({
   function switchMode(next: boolean) {
     if (busy) return;
     setSignup(next);
+    setForgot(false);
     setVisible(false);
     setError("");
     setMessage("");
@@ -161,6 +202,13 @@ export function LoginForm({
       </Link>
       <div className={`ac-card ${signup ? "is-register" : ""}`}>
         <div className="ac-bg" aria-hidden="true">
+          <span className="ac-live">
+            <CheckCircle size={20} weight="fill" />
+            <span>
+              <b>Novo agendamento pelo WhatsApp</b>
+              Corte + barba · amanhã às 14:30
+            </span>
+          </span>
           <span className="ac-photo-caption">
             Seu espaço.
             <br />
@@ -188,10 +236,20 @@ export function LoginForm({
         <div className="ac-hero is-login" aria-hidden={signup}>
           <span className="ac-hero-eyebrow">Primeira vez por aqui?</span>
           <h2>Mais tempo para o que você faz de melhor.</h2>
-          <p>
-            Agenda, clientes e atendimento em um espaço feito para o seu
-            negócio.
-          </p>
+          <ul className="ac-perks">
+            <li>
+              <CalendarCheck size={18} weight="duotone" /> Agenda online aberta
+              24 horas
+            </li>
+            <li>
+              <ChatCircleText size={18} weight="duotone" /> Recepcionista com IA
+              no WhatsApp
+            </li>
+            <li>
+              <Wallet size={18} weight="duotone" /> Caixa e comissão sem
+              planilha
+            </li>
+          </ul>
           <button
             type="button"
             className="ac-switch"
@@ -209,12 +267,50 @@ export function LoginForm({
           aria-hidden={signup}
           inert={signup}
         >
-          <span className="ac-eyebrow">Entrar</span>
-          <h1>Bom ter você aqui.</h1>
-          <p className="ac-sub">
-            Entre para acompanhar sua agenda, atender seus clientes e cuidar do negócio.
-          </p>
-          {credentials("login")}
+          {forgot ? (
+            <>
+              <span className="ac-eyebrow">Nova senha</span>
+              <h1>Vamos criar uma nova senha.</h1>
+              <p className="ac-sub">
+                Digite o e-mail da sua conta. Mandamos um link para você
+                escolher a nova senha.
+              </p>
+              <label className="ac-field">
+                E-mail
+                <input
+                  required
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Seu e-mail de acesso"
+                  tabIndex={signup ? -1 : 0}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <span className="ac-eyebrow">Entrar</span>
+              <h1>Bom ter você aqui.</h1>
+              <p className="ac-sub">
+                Entre para acompanhar sua agenda, atender seus clientes e
+                cuidar do negócio.
+              </p>
+              {credentials("login")}
+              <button
+                type="button"
+                className="ac-forgot"
+                onClick={() => {
+                  setForgot(true);
+                  setError("");
+                  setMessage("");
+                }}
+                tabIndex={signup ? -1 : 0}
+              >
+                Esqueci minha senha
+              </button>
+            </>
+          )}
           {!signup && feedback}
           <button
             disabled={busy || !configured}
@@ -226,8 +322,21 @@ export function LoginForm({
             ) : (
               <ArrowRight size={18} />
             )}
-            Entrar no painel
+            {forgot ? "Enviar link" : "Entrar no painel"}
           </button>
+          {forgot && (
+            <button
+              type="button"
+              className="ac-back"
+              onClick={() => {
+                setForgot(false);
+                setError("");
+                setMessage("");
+              }}
+            >
+              <ArrowLeft size={16} /> Voltar para o login
+            </button>
+          )}
           <button
             type="button"
             className="ac-mobile-switch"
@@ -315,7 +424,7 @@ export function LoginForm({
       <p className="ac-foot">
         <ShieldCheck size={15} /> Os dados de cada estabelecimento ficam
         separados e protegidos.
-        <Link href="/barber-011">Ver a experiência do cliente</Link>
+        <Link href={`/${showcaseSlug}`}>Ver a experiência do cliente</Link>
         <Link href="/admin/login">Acesso administrativo</Link>
       </p>
     </main>

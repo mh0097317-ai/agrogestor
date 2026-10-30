@@ -75,6 +75,7 @@ export const config = {
     "/api/admin/:path*",
     "/onboarding/:path*",
     "/login",
+    "/login/nova-senha",
     "/auth/:path*",
     "/api/workspace",
     "/api/workspace/:path*",

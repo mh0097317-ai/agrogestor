@@ -122,3 +122,44 @@ test("off day and outside hours read as off", () => {
   assert.equal(model.chairs[0].state, "off");
   assert.equal(model.chairs[1].state, "off");
 });
+
+test("chairs in use, the average wait and yesterday are measured for the top cards", () => {
+  const { store, book } = fixture();
+  book(0, "14:05", "15:05", "in_progress");
+  book(1, "13:50", "14:30", "in_progress");
+  book(2, "14:45", "15:25", "confirmed", { checkedInAt: at("14:22") });
+  book(3, "15:00", "15:20", "confirmed", { checkedInAt: at("14:12") });
+  // Yesterday: two bookings, one paid in the morning and one at night.
+  const y1 = book(0, "09:00", "09:40", "completed");
+  y1.start = new Date("2026-10-29T09:00:00-03:00").toISOString();
+  y1.end = new Date("2026-10-29T09:40:00-03:00").toISOString();
+  const y2 = book(1, "19:00", "19:40", "completed");
+  y2.start = new Date("2026-10-29T19:00:00-03:00").toISOString();
+  y2.end = new Date("2026-10-29T19:40:00-03:00").toISOString();
+  store.payments.push(
+    {
+      id: "p1",
+      businessId: store.business.id,
+      appointmentId: y1.id,
+      amount: 40,
+      method: "pix",
+      createdAt: new Date("2026-10-29T09:45:00-03:00").toISOString(),
+    },
+    {
+      id: "p2",
+      businessId: store.business.id,
+      appointmentId: y2.id,
+      amount: 60,
+      method: "pix",
+      createdAt: new Date("2026-10-29T19:45:00-03:00").toISOString(),
+    },
+  );
+  const model = salonModel(store, now);
+  assert.equal(model.inUse, 2);
+  assert.equal(model.working, 4);
+  // Waiting since 14:22 and 14:12 at 14:32: 10 and 20 minutes.
+  assert.equal(model.waitMinutes, 15);
+  assert.equal(model.yesterday.total, 2);
+  // Only what had come in by 14:32 yesterday counts.
+  assert.equal(model.yesterday.cash, 40);
+});

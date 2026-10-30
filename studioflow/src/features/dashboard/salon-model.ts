@@ -44,6 +44,13 @@ export interface SalonModel {
   /** The first free window today of at least 30 minutes. */
   gap?: { professional: Professional; start: string; minutes: number };
   feed: SalonEvent[];
+  /** Chairs with someone being served now, of the chairs working now. */
+  inUse: number;
+  working: number;
+  /** Average minutes the checked-in clients have been waiting. */
+  waitMinutes: number;
+  /** Yesterday, for comparison: whole-day bookings and cash up to this time. */
+  yesterday: { total: number; cash: number };
 }
 
 const clock = new Intl.DateTimeFormat("en-GB", {
@@ -234,6 +241,25 @@ export function salonModel(data: Store, now = Date.now()): SalonModel {
     });
   }
   feed.sort((a, b) => b.at.localeCompare(a.at));
+  const before = businessDay(new Date(now - 86_400_000));
+  const yesterday = {
+    total: data.appointments.filter(
+      (a) =>
+        a.businessId === data.business.id &&
+        !["cancelled", "no_show"].includes(a.status) &&
+        businessDay(a.start) === before,
+    ).length,
+    cash: data.payments
+      .filter(
+        (p) =>
+          businessDay(p.createdAt) === before &&
+          minutesOf(p.createdAt) <= nowMin,
+      )
+      .reduce((sum, p) => sum + p.amount, 0),
+  };
+  const waits = waiting
+    .map((a) => (now - Date.parse(a.checkedInAt!)) / 60000)
+    .filter((m) => m >= 0);
   return {
     day,
     chairs,
@@ -243,6 +269,13 @@ export function salonModel(data: Store, now = Date.now()): SalonModel {
     total: today.filter((a) => a.status !== "no_show").length,
     occupancy: available ? Math.min(1, booked / available) : 0,
     gap,
+    inUse: chairs.filter((c) => c.state === "busy" || c.state === "late")
+      .length,
+    working: chairs.filter((c) => c.state !== "off").length,
+    waitMinutes: waits.length
+      ? Math.round(waits.reduce((sum, m) => sum + m, 0) / waits.length)
+      : 0,
+    yesterday,
     feed: feed
       .slice(0, 6)
       .map((e) => ({ ...e, time: dateLabel(e.at, "HH:mm") })),

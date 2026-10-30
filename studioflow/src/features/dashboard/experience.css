@@ -686,3 +686,54 @@
     transition: none;
   }
 }
+
+/* Início follows the width it really has: the side menu takes part of the
+   window, so the columns are chosen by the content area, not the screen. */
+.ov .ov-flow {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  container: ov-flow / inline-size;
+}
+@media (max-width: 767px) {
+  .ov .ov-flow {
+    display: contents;
+  }
+}
+@media (min-width: 768px) {
+  @container ov-flow (min-width: 1081px) {
+    .ov .ov-body {
+      grid-template-columns: minmax(0, 1fr) 300px;
+    }
+    .ov .ov-aside {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @container ov-flow (max-width: 1080px) {
+    .ov .ov-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ov .ov-aside {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+    .ov .ov-aside > .ov-attention,
+    .ov .ov-aside > .ov-extra {
+      grid-column: 1 / -1;
+    }
+    .ov .ov-insights {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container ov-flow (max-width: 880px) {
+    .ov .ov-operating-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @container ov-flow (max-width: 620px) {
+    .ov .ov-aside,
+    .ov .ov-insights {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

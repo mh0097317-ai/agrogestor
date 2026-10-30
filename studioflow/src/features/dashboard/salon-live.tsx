@@ -1,10 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CaretRight, Plus } from "@phosphor-icons/react/dist/ssr";
+import {
+  Armchair,
+  ArrowDownRight,
+  ArrowUpRight,
+  CalendarCheck,
+  CaretRight,
+  Clock,
+  CurrencyCircleDollar,
+  Plus,
+} from "@phosphor-icons/react/dist/ssr";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/components/toast";
+import { Avatar } from "@/components/ui";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { dateLabel, money } from "@/lib/utils";
 import { hasModule } from "@/lib/modules";
@@ -44,6 +54,24 @@ function short(chair: Chair) {
   if (chair.state === "break") return `até ${chair.freeUntil}`;
   if (chair.state === "free") return "Livre";
   return "Folga";
+}
+
+/** Today against yesterday, as a signed percentage; nothing when there is no base. */
+function Trend({ today, before }: { today: number; before: number }) {
+  if (!before) return null;
+  const change = Math.round(((today - before) / before) * 100);
+  const up = change >= 0;
+  return (
+    <em className={`sl-trend ${up ? "is-up" : "is-down"}`}>
+      {up ? (
+        <ArrowUpRight size={13} weight="bold" />
+      ) : (
+        <ArrowDownRight size={13} weight="bold" />
+      )}
+      {up ? "+" : ""}
+      {change}%
+    </em>
+  );
 }
 
 /** Chairs on the two back walls of an isometric room (viewBox 900x600),
@@ -139,6 +167,77 @@ export function SalonLive({
         </div>
       </header>
 
+      <div className="sl-kpis">
+        <div className="sl-kpi">
+          <span className="sl-kpi-icon" aria-hidden="true">
+            <CalendarCheck size={20} weight="duotone" />
+          </span>
+          <span className="sl-kpi-label">Agendamentos hoje</span>
+          <span className="sl-kpi-value">
+            <strong>{model.total}</strong>
+            <Trend today={model.total} before={model.yesterday.total} />
+          </span>
+          <small>
+            {model.done} {model.done === 1 ? "concluído" : "concluídos"} ·{" "}
+            {Math.max(0, model.total - model.done)}{" "}
+            {model.total - model.done === 1 ? "restante" : "restantes"}
+          </small>
+        </div>
+        <div className="sl-kpi">
+          <span className="sl-kpi-icon" aria-hidden="true">
+            <Armchair size={20} weight="duotone" />
+          </span>
+          <span className="sl-kpi-label">Cadeiras em uso</span>
+          <span className="sl-kpi-value">
+            <strong>
+              {model.working
+                ? `${Math.round((model.inUse / model.working) * 100)}%`
+                : "—"}
+            </strong>
+          </span>
+          <i
+            className="sl-kpi-bar"
+            style={{
+              width: `${model.working ? Math.round((model.inUse / model.working) * 100) : 0}%`,
+            }}
+          />
+          <small>
+            {model.working
+              ? `${model.inUse} de ${model.working} agora · agenda ${Math.round(model.occupancy * 100)}% cheia`
+              : "Ninguém no expediente agora"}
+          </small>
+        </div>
+        <div className="sl-kpi">
+          <span className="sl-kpi-icon" aria-hidden="true">
+            <Clock size={20} weight="duotone" />
+          </span>
+          <span className="sl-kpi-label">Clientes na espera</span>
+          <span className="sl-kpi-value">
+            <strong>{model.waiting.length}</strong>
+          </span>
+          <small>
+            {model.waiting.length
+              ? `há ${model.waitMinutes} min em média`
+              : "Ninguém esperando agora"}
+          </small>
+        </div>
+        <div className="sl-kpi">
+          <span className="sl-kpi-icon" aria-hidden="true">
+            <CurrencyCircleDollar size={20} weight="duotone" />
+          </span>
+          <span className="sl-kpi-label">Caixa de hoje</span>
+          <span className="sl-kpi-value">
+            <strong>{money(model.cash)}</strong>
+            <Trend today={model.cash} before={model.yesterday.cash} />
+          </span>
+          <small>
+            {model.yesterday.cash
+              ? "Comparado a ontem até esta hora"
+              : "Pagamentos registrados hoje"}
+          </small>
+        </div>
+      </div>
+
       {model.chairs.length === 0 ? (
         <div className="sl-empty">
           <strong>Cadastre sua equipe para ver o salão.</strong>
@@ -172,6 +271,10 @@ export function SalonLive({
                       fill="#D3C4AB"
                     />
                   </pattern>
+                  <radialGradient id="sl-light">
+                    <stop offset="0" stopColor="#FFF1CF" stopOpacity="0.95" />
+                    <stop offset="1" stopColor="#FFF1CF" stopOpacity="0" />
+                  </radialGradient>
                   <linearGradient id="sl-glass" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0" stopColor="#E7ECE9" />
                     <stop offset="1" stopColor="#C9D3CF" />
@@ -207,6 +310,69 @@ export function SalonLive({
                   stroke="#BFAE92"
                   strokeWidth="2"
                 />
+                {spots.map((spot, i) => {
+                  const x =
+                    spot.wall === "l" ? 50 + 400 * spot.t : 450 + 400 * spot.t;
+                  const y =
+                    spot.wall === "l" ? 390 - 200 * spot.t : 190 + 200 * spot.t;
+                  return (
+                    <ellipse
+                      key={`light-${i}`}
+                      cx={x}
+                      cy={y - 150}
+                      rx="70"
+                      ry="58"
+                      fill="url(#sl-light)"
+                    />
+                  );
+                })}
+                {/* The shop's sign on the right wall, by the corner. */}
+                <g transform="matrix(1 0.5 0 1 0 0)">
+                  <rect
+                    x="472"
+                    y="-196"
+                    width="94"
+                    height="62"
+                    rx="4"
+                    fill="#1F1A15"
+                    stroke="#B08A4F"
+                    strokeWidth="2"
+                  />
+                  <text
+                    x="519"
+                    y="-166"
+                    textAnchor="middle"
+                    fill="#D9B77A"
+                    fontFamily="Fraunces, Georgia, serif"
+                    fontSize={Math.min(
+                      12,
+                      120 / Math.max(6, data.business.name.length),
+                    )}
+                    textLength={data.business.name.length > 11 ? 82 : undefined}
+                    lengthAdjust="spacingAndGlyphs"
+                    letterSpacing="0.5"
+                  >
+                    {data.business.name.toUpperCase()}
+                  </text>
+                  <line
+                    x1="492"
+                    y1="-157"
+                    x2="546"
+                    y2="-157"
+                    stroke="#B08A4F"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x="519"
+                    y="-145"
+                    textAnchor="middle"
+                    fill="#B8AD9C"
+                    fontSize="6"
+                    letterSpacing="1.5"
+                  >
+                    {(data.business.category || "Barbearia").toUpperCase()}
+                  </text>
+                </g>
                 {spots.map((spot, i) => (
                   <polygon
                     key={i}
@@ -233,6 +399,17 @@ export function SalonLive({
                   strokeWidth="5"
                 />
                 <circle cx="450" cy="36" r="8" fill="#B08A4F" />
+                <polygon
+                  points="282,488 442,408 540,457 380,537"
+                  fill="#3F332A"
+                />
+                <polygon
+                  points="298,488 442,416 524,457 380,529"
+                  fill="none"
+                  stroke="#8A6430"
+                  strokeWidth="1.5"
+                  opacity="0.7"
+                />
                 <polygon
                   points="285,507 435,432 475,452 325,527"
                   fill="#5B4636"
@@ -279,7 +456,55 @@ export function SalonLive({
                   points="650,452 676,439 690,446 664,459"
                   fill="#D9B77A"
                 />
+                <polygon
+                  points="690,431 712,420 712,398 690,409"
+                  fill="#1E1813"
+                />
+                <polygon
+                  points="693,428 709,420 709,402 693,410"
+                  fill="#5F7480"
+                />
+                <rect x="699" y="428" width="4" height="8" fill="#1E1813" />
+                {[
+                  [104, 393],
+                  [796, 393],
+                ].map(([x, y]) => (
+                  <g key={x}>
+                    <path
+                      d={`M${x} ${y - 30} q-26 -18 -20 -46 q16 14 20 40 q2 -34 20 -44 q4 30 -16 48 q24 -16 36 -6 q-14 16 -40 8 Z`}
+                      fill="#5E7A4E"
+                    />
+                    <path
+                      d={`M${x - 4} ${y - 28} q-30 -2 -38 -22 q22 -2 38 18 Z`}
+                      fill="#7A9663"
+                    />
+                    <polygon
+                      points={`${x - 14},${y - 26} ${x},${y - 33} ${x + 14},${y - 26} ${x},${y - 19}`}
+                      fill="#C9B79A"
+                    />
+                    <polygon
+                      points={`${x - 14},${y - 26} ${x},${y - 19} ${x},${y} ${x - 12},${y - 6}`}
+                      fill="#A8957A"
+                    />
+                    <polygon
+                      points={`${x},${y - 19} ${x + 14},${y - 26} ${x + 12},${y - 6} ${x},${y}`}
+                      fill="#8F7D64"
+                    />
+                  </g>
+                ))}
               </svg>
+              {model.gap && (
+                <Link
+                  className="sl-gap-chip"
+                  href={`/dashboard/agenda?date=${model.day}`}
+                >
+                  <span>Vaga sobrando</span>
+                  <strong>
+                    {model.gap.start} com {first(model.gap.professional.name)}
+                  </strong>
+                  <em>{model.gap.minutes} min</em>
+                </Link>
+              )}
               {model.chairs
                 .slice(0, 8)
                 .map((c, i) => ({ c, spot: spots[i] }))
@@ -302,6 +527,11 @@ export function SalonLive({
                       aria-label={`${c.professional.name}: ${look.label}`}
                     >
                       <span className="sl-pill">
+                        <Avatar
+                          name={c.professional.name}
+                          src={c.professional.photo}
+                          size={22}
+                        />
                         <i />
                         <strong>{first(c.professional.name)}</strong>
                         <b>{short(c)}</b>
@@ -321,6 +551,42 @@ export function SalonLive({
                           rx="50"
                           ry="22"
                         />
+                        {occupied && (
+                          <g>
+                            <rect
+                              x="87"
+                              y="96"
+                              width="5"
+                              height="22"
+                              rx="2"
+                              fill="#1B1511"
+                            />
+                            <rect
+                              x="95"
+                              y="96"
+                              width="5"
+                              height="22"
+                              rx="2"
+                              fill="#1B1511"
+                            />
+                            <path
+                              d="M82 64 Q93 54 104 64 L102 100 L84 100 Z"
+                              fill="#2B211A"
+                            />
+                            <path
+                              d="M87 70 L99 70 L98 100 L88 100 Z"
+                              fill="#8A6430"
+                            />
+                            <path
+                              d="M84 68 L66 56"
+                              stroke="#2B211A"
+                              strokeWidth="5"
+                              strokeLinecap="round"
+                            />
+                            <circle cx="93" cy="49" r="9" fill="#8A6A52" />
+                            <path d="M84 47 Q93 36 102 47 Z" fill="#1B1511" />
+                          </g>
+                        )}
                         <ellipse
                           cx="60"
                           cy="120"
@@ -475,40 +741,6 @@ export function SalonLive({
           )}
         </div>
       )}
-
-      <div className="sl-stats">
-        <div>
-          <span>Caixa de hoje</span>
-          <strong>{money(model.cash)}</strong>
-        </div>
-        <div>
-          <span>Atendimentos</span>
-          <strong>
-            {model.done} de {model.total}
-          </strong>
-        </div>
-        <div>
-          <span>Agenda ocupada hoje</span>
-          <strong>{Math.round(model.occupancy * 100)}%</strong>
-          <i style={{ width: `${Math.round(model.occupancy * 100)}%` }} />
-        </div>
-        <div className="sl-gap">
-          <span>Vaga sobrando hoje</span>
-          {model.gap ? (
-            <>
-              <strong>
-                {model.gap.start} com {first(model.gap.professional.name)} ·{" "}
-                {model.gap.minutes} min
-              </strong>
-              <Link href={`/dashboard/agenda?date=${model.day}`}>
-                Ver na agenda
-              </Link>
-            </>
-          ) : (
-            <strong>Agenda cheia</strong>
-          )}
-        </div>
-      </div>
     </section>
   );
 }

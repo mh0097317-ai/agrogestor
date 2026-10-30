@@ -237,109 +237,112 @@ export function Overview() {
       {["owner", "admin", "manager"].includes(data.viewer?.role || "owner") && (
         <MonthRecapCard data={data} now={now} />
       )}
-      {hasModule(data.access?.modules, "recepcionista") && (
-        <div className="ov-operating-grid">
-          <OverviewWhatsApp data={data} />
-          <StudioFlowResults data={data} now={now} />
-        </div>
-      )}
-      <div className="ov-body">
-        <div className="ov-main">
-          <OverviewAgenda
-            data={data}
-            rows={model.appointments}
-            date={date}
-            onDate={setDate}
-            onSelect={setDetail}
-            canEdit={canEdit}
-            now={now}
-            onCreate={
-              canMutate("appointments") ? () => setCreate(true) : undefined
-            }
-          />
-          <div className="ov-insights">
-            <WeekRevenueCard data={data} day={day} />
-            <OccupancyCard data={data} day={day} />
+      {/* Sized by the room it really has, not by the window. */}
+      <div className="ov-flow">
+        {hasModule(data.access?.modules, "recepcionista") && (
+          <div className="ov-operating-grid">
+            <OverviewWhatsApp data={data} />
+            <StudioFlowResults data={data} now={now} />
           </div>
-          <section className="ov-upcoming ov-card">
-            <div className="ov-card-head">
-              <h2>
-                {today ? "Próximos agendamentos" : `Agenda de ${dayName}`}
-              </h2>
-              <Link href={`/dashboard/agenda?date=${day}`}>Ver todos</Link>
-            </div>
-            {upcoming.length ? (
-              <ul role="list" className="sf-stagger">
-                {upcoming.map((a) => (
-                  <li key={a.id}>
-                    <UpcomingRow
-                      appointment={a}
-                      data={data}
-                      onClick={() => setDetail(a)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="ov-empty">
-                <p>
-                  {today
-                    ? "Nenhum próximo agendamento para hoje."
-                    : "Nenhum agendamento nesta data."}
-                </p>
-                {canMutate("appointments") && (
-                  <Button variant="secondary" onClick={() => setCreate(true)}>
-                    <Plus size={16} weight="bold" /> Novo agendamento
-                  </Button>
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-        <aside className="ov-aside">
-          <section className="ov-card ov-calendar" aria-label="Calendário">
-            <MiniCalendar
-              selected={date}
-              onSelect={setDate}
-              appointmentDays={data.appointments
-                .filter((a) => a.status !== "cancelled")
-                .map((a) => businessDay(a.start))}
+        )}
+        <div className="ov-body">
+          <div className="ov-main">
+            <OverviewAgenda
+              data={data}
+              rows={model.appointments}
+              date={date}
+              onDate={setDate}
+              onSelect={setDetail}
+              canEdit={canEdit}
+              now={now}
+              onCreate={
+                canMutate("appointments") ? () => setCreate(true) : undefined
+              }
             />
-          </section>
-          <section className="ov-card ov-summary">
-            <h2>Resumo do dia</h2>
-            <dl>
-              <div>
-                <dt>Ticket médio</dt>
-                <dd>{money(model.ticket)}</dd>
+            <div className="ov-insights">
+              <WeekRevenueCard data={data} day={day} />
+              <OccupancyCard data={data} day={day} />
+            </div>
+            <section className="ov-upcoming ov-card">
+              <div className="ov-card-head">
+                <h2>
+                  {today ? "Próximos agendamentos" : `Agenda de ${dayName}`}
+                </h2>
+                <Link href={`/dashboard/agenda?date=${day}`}>Ver todos</Link>
               </div>
-              <div>
-                <dt>Clientes atendidos</dt>
-                <dd>{model.attended}</dd>
-              </div>
-              <div>
-                <dt>Taxa de comparecimento</dt>
-                <dd>
-                  {model.attendanceRate === undefined
-                    ? "—"
-                    : `${Math.round(model.attendanceRate * 100)}%`}
-                </dd>
-              </div>
-            </dl>
-          </section>
-          <AttentionCard
-            data={data}
-            now={now}
-            canEdit={canEdit}
-            onOpen={setDetail}
-          />
-          <details className="ov-extra">
-            <summary>Lembretes, lista de espera e avaliações</summary>
-            <RemindersCard data={data} now={now} />
-            <WaitlistCard data={data} now={now} canEdit={canEdit} />
-            <ReviewsCard data={data} />
-          </details>
-        </aside>
+              {upcoming.length ? (
+                <ul role="list" className="sf-stagger">
+                  {upcoming.map((a) => (
+                    <li key={a.id}>
+                      <UpcomingRow
+                        appointment={a}
+                        data={data}
+                        onClick={() => setDetail(a)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="ov-empty">
+                  <p>
+                    {today
+                      ? "Nenhum próximo agendamento para hoje."
+                      : "Nenhum agendamento nesta data."}
+                  </p>
+                  {canMutate("appointments") && (
+                    <Button variant="secondary" onClick={() => setCreate(true)}>
+                      <Plus size={16} weight="bold" /> Novo agendamento
+                    </Button>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+          <aside className="ov-aside">
+            <section className="ov-card ov-calendar" aria-label="Calendário">
+              <MiniCalendar
+                selected={date}
+                onSelect={setDate}
+                appointmentDays={data.appointments
+                  .filter((a) => a.status !== "cancelled")
+                  .map((a) => businessDay(a.start))}
+              />
+            </section>
+            <section className="ov-card ov-summary">
+              <h2>Resumo do dia</h2>
+              <dl>
+                <div>
+                  <dt>Ticket médio</dt>
+                  <dd>{money(model.ticket)}</dd>
+                </div>
+                <div>
+                  <dt>Clientes atendidos</dt>
+                  <dd>{model.attended}</dd>
+                </div>
+                <div>
+                  <dt>Taxa de comparecimento</dt>
+                  <dd>
+                    {model.attendanceRate === undefined
+                      ? "—"
+                      : `${Math.round(model.attendanceRate * 100)}%`}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <AttentionCard
+              data={data}
+              now={now}
+              canEdit={canEdit}
+              onOpen={setDetail}
+            />
+            <details className="ov-extra">
+              <summary>Lembretes, lista de espera e avaliações</summary>
+              <RemindersCard data={data} now={now} />
+              <WaitlistCard data={data} now={now} canEdit={canEdit} />
+              <ReviewsCard data={data} />
+            </details>
+          </aside>
+        </div>
       </div>
       <AppointmentForm
         open={create}

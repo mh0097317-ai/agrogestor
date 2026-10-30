@@ -18,12 +18,30 @@
 .sl-mobile-wait {
   display: none;
 }
-.sl .tone-busy { --tone: #8a6430; --glow: rgba(217, 183, 122, 0.45); }
-.sl .tone-late { --tone: #a8481c; --glow: rgba(240, 180, 143, 0.5); }
-.sl .tone-due { --tone: #1f5d8a; --glow: rgba(150, 190, 220, 0.45); }
-.sl .tone-free { --tone: #2e6a55; --glow: rgba(156, 203, 182, 0.55); }
-.sl .tone-break { --tone: #6f675e; --glow: rgba(207, 199, 188, 0.5); }
-.sl .tone-off { --tone: #8c8378; --glow: rgba(220, 214, 205, 0.4); }
+.sl .tone-busy {
+  --tone: #8a6430;
+  --glow: rgba(217, 183, 122, 0.45);
+}
+.sl .tone-late {
+  --tone: #a8481c;
+  --glow: rgba(240, 180, 143, 0.5);
+}
+.sl .tone-due {
+  --tone: #1f5d8a;
+  --glow: rgba(150, 190, 220, 0.45);
+}
+.sl .tone-free {
+  --tone: #2e6a55;
+  --glow: rgba(156, 203, 182, 0.55);
+}
+.sl .tone-break {
+  --tone: #6f675e;
+  --glow: rgba(207, 199, 188, 0.5);
+}
+.sl .tone-off {
+  --tone: #8c8378;
+  --glow: rgba(220, 214, 205, 0.4);
+}
 .sl-kicker {
   display: block;
   font-size: 11px;
@@ -73,7 +91,9 @@
   animation: sl-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sl-pulse {
-  50% { box-shadow: 0 0 0 7px rgba(46, 106, 85, 0.06); }
+  50% {
+    box-shadow: 0 0 0 7px rgba(46, 106, 85, 0.06);
+  }
 }
 .sl-btn {
   display: inline-flex;
@@ -474,50 +494,6 @@
 .sl-cards {
   display: none;
 }
-.sl-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
-}
-.sl-stats > div {
-  background: var(--sl-card);
-  border: 1px solid var(--sl-line);
-  border-radius: 18px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.sl-stats span {
-  font-size: 13px;
-  color: var(--sl-muted);
-}
-.sl-stats strong {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 28px;
-}
-.sl-stats i {
-  display: block;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--sl-gold);
-  box-shadow: 0 0 0 0 transparent;
-}
-.sl-stats .sl-gap {
-  background: #fbf3e4;
-  border-color: #e8d3ae;
-}
-.sl-gap strong {
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 700;
-}
-.sl-gap a {
-  color: var(--sl-gold);
-  font-weight: 700;
-  font-size: 14px;
-}
 .sl-empty {
   background: var(--sl-card);
   border: 1px solid var(--sl-line);
@@ -581,12 +557,6 @@
   .sl-head-actions .sl-btn-line {
     display: none;
   }
-  .sl-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .sl-stats strong {
-    font-size: 22px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .sl-live i {
@@ -594,5 +564,160 @@
   }
   .sl-chair {
     transition: none;
+  }
+}
+
+/* The day in four numbers, above the room */
+.sl {
+  container: sl / inline-size;
+}
+.sl-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+/* Four in a row, or two by two: never three and an orphan. */
+@container sl (max-width: 860px) {
+  .sl-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sl-kpi {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "icon value"
+    "icon bar"
+    "icon note";
+  column-gap: 12px;
+  row-gap: 2px;
+  align-content: start;
+  padding: 16px 18px;
+  background: var(--sl-card);
+  border: 1px solid var(--sl-line);
+  border-radius: 18px;
+  min-width: 0;
+}
+.sl-kpi-icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #f4ece0;
+  color: var(--sl-gold);
+}
+.sl-kpi-label {
+  grid-area: label;
+  font-size: 13px;
+  color: var(--sl-muted);
+}
+.sl-kpi-value {
+  grid-area: value;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.sl-kpi-value strong {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.sl-kpi small {
+  grid-area: note;
+  font-size: 12.5px;
+  color: var(--sl-muted);
+}
+.sl-kpi-bar {
+  grid-area: bar;
+  display: block;
+  height: 6px;
+  margin: 4px 0 2px;
+  border-radius: 999px;
+  background: var(--sl-gold);
+  max-width: 100%;
+}
+.sl-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.sl-trend.is-up {
+  color: #2e6a55;
+}
+.sl-trend.is-down {
+  color: #a8481c;
+}
+
+/* A free slot worth filling, on the room itself */
+.sl-gap-chip {
+  position: absolute;
+  left: 2.5%;
+  top: 3%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  padding: 0.75em 1em;
+  border-radius: 14px;
+  background: #fbf3e4;
+  border: 1px dashed #c9a465;
+  color: #6b4e25;
+  font-size: clamp(9px, 1.25cqw, 12.5px);
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(22, 19, 15, 0.08);
+}
+.sl-gap-chip span {
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sl-gap-chip strong {
+  color: var(--sl-ink);
+  font-size: 1.1em;
+}
+.sl-gap-chip em {
+  font-style: normal;
+}
+.sl-gap-chip:hover {
+  border-style: solid;
+}
+
+/* The barber's face on each chair's tag */
+.sl-pill .avatar {
+  width: 1.9em !important;
+  height: 1.9em !important;
+  min-width: 1.9em !important;
+  margin-left: -0.45em;
+  font-size: 0.75em;
+  border: 1.5px solid var(--sl-card);
+}
+
+@media (max-width: 760px) {
+  .sl-kpis {
+    gap: 10px;
+  }
+  .sl-kpi {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "label" "value" "bar" "note";
+    padding: 14px;
+  }
+  .sl-kpi-icon {
+    display: none;
+  }
+  .sl-kpi-value strong {
+    font-size: 22px;
+  }
+  .sl-kpi small {
+    font-size: 12px;
   }
 }

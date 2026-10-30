@@ -19,6 +19,9 @@ export async function GET(request: Request) {
         .eq("user_id", user!.id)
         .eq("active", true)
         .limit(1);
+      // A password reset link lands on the page that sets the new one.
+      if (url.searchParams.get("next") === "/login/nova-senha")
+        return NextResponse.redirect(new URL("/login/nova-senha", origin));
       return NextResponse.redirect(
         new URL(
           inviteRedirect(url.searchParams.get("next")) ||
