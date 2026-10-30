@@ -21,6 +21,7 @@ import { hasModule } from "@/lib/modules";
 import type { Appointment, PaymentMethod, Store } from "@/types";
 import { balanceFor, reais } from "@/features/management/finance-helpers";
 import { salonModel, type Chair, type ChairState } from "./salon-model";
+import { Salon3D } from "./salon-3d";
 import "./salon.css";
 
 const looks: Record<ChairState, { label: string; tone: string }> = {
@@ -253,246 +254,477 @@ export function SalonLive({
         <div className="sl-main">
           <div className="sl-scene-card">
             <div className="sl-scene">
-              <svg viewBox="0 0 900 600" aria-hidden="true" className="sl-room">
-                <defs>
-                  <pattern
-                    id="sl-floor"
-                    width="0.125"
-                    height="0.125"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <rect width="0.125" height="0.125" fill="#EBE2D2" />
-                    <rect width="0.0625" height="0.0625" fill="#D3C4AB" />
-                    <rect
-                      x="0.0625"
-                      y="0.0625"
-                      width="0.0625"
-                      height="0.0625"
-                      fill="#D3C4AB"
-                    />
-                  </pattern>
-                  <radialGradient id="sl-light">
-                    <stop offset="0" stopColor="#FFF1CF" stopOpacity="0.95" />
-                    <stop offset="1" stopColor="#FFF1CF" stopOpacity="0" />
-                  </radialGradient>
-                  <linearGradient id="sl-glass" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#E7ECE9" />
-                    <stop offset="1" stopColor="#C9D3CF" />
-                  </linearGradient>
-                </defs>
-                <polygon points="50,390 450,190 450,10 50,210" fill="#EFE7D9" />
-                <polygon
-                  points="450,190 850,390 850,210 450,10"
-                  fill="#E5DAC8"
-                />
-                <polygon
-                  points="50,390 450,190 450,140 50,340"
-                  fill="#D8CAB3"
-                />
-                <polygon
-                  points="450,190 850,390 850,340 450,140"
-                  fill="#CDBEA5"
-                />
-                <line
-                  x1="450"
-                  y1="10"
-                  x2="450"
-                  y2="190"
-                  stroke="#C9B99E"
-                  strokeWidth="2"
-                />
-                <g transform="matrix(400 -200 400 200 50 390)">
-                  <rect width="1" height="1" fill="url(#sl-floor)" />
-                </g>
-                <polygon
-                  points="50,390 450,190 850,390 450,590"
-                  fill="none"
-                  stroke="#BFAE92"
-                  strokeWidth="2"
-                />
-                {spots.map((spot, i) => {
-                  const x =
-                    spot.wall === "l" ? 50 + 400 * spot.t : 450 + 400 * spot.t;
-                  const y =
-                    spot.wall === "l" ? 390 - 200 * spot.t : 190 + 200 * spot.t;
-                  return (
-                    <ellipse
-                      key={`light-${i}`}
-                      cx={x}
-                      cy={y - 150}
-                      rx="70"
-                      ry="58"
-                      fill="url(#sl-light)"
-                    />
-                  );
-                })}
-                {/* The shop's sign on the right wall, by the corner. */}
-                <g transform="matrix(1 0.5 0 1 0 0)">
-                  <rect
-                    x="472"
-                    y="-196"
-                    width="94"
-                    height="62"
-                    rx="4"
-                    fill="#1F1A15"
-                    stroke="#B08A4F"
-                    strokeWidth="2"
+              <Salon3D
+                chairs={model.chairs}
+                waiting={model.waiting.length}
+                shopName={data.business.name}
+                category={data.business.category}
+                selected={chair?.professional.id || ""}
+                onSelect={setSelected}
+                label={(c, i) => (
+                  <ChairTag
+                    chair={c}
+                    index={i}
+                    data={data}
+                    on={chair?.professional.id === c.professional.id}
+                    onClick={() => setSelected(c.professional.id)}
                   />
-                  <text
-                    x="519"
-                    y="-166"
-                    textAnchor="middle"
-                    fill="#D9B77A"
-                    fontFamily="Fraunces, Georgia, serif"
-                    fontSize={Math.min(
-                      12,
-                      120 / Math.max(6, data.business.name.length),
-                    )}
-                    textLength={data.business.name.length > 11 ? 82 : undefined}
-                    lengthAdjust="spacingAndGlyphs"
-                    letterSpacing="0.5"
-                  >
-                    {data.business.name.toUpperCase()}
-                  </text>
-                  <line
-                    x1="492"
-                    y1="-157"
-                    x2="546"
-                    y2="-157"
-                    stroke="#B08A4F"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x="519"
-                    y="-145"
-                    textAnchor="middle"
-                    fill="#B8AD9C"
-                    fontSize="6"
-                    letterSpacing="1.5"
-                  >
-                    {(data.business.category || "Barbearia").toUpperCase()}
-                  </text>
-                </g>
-                {spots.map((spot, i) => (
-                  <polygon
-                    key={i}
-                    points={mirror(spot)}
-                    fill="url(#sl-glass)"
-                    stroke="#B08A4F"
-                    strokeWidth="6"
-                    strokeLinejoin="round"
-                  />
-                ))}
-                <rect
-                  x="441"
-                  y="40"
-                  width="18"
-                  height="96"
-                  rx="9"
-                  fill="#FFFDF9"
-                  stroke="#B08A4F"
-                  strokeWidth="3"
-                />
-                <path
-                  d="M444 52 L456 64 M444 70 L456 82 M444 88 L456 100 M444 106 L456 118"
-                  stroke="#A8481C"
-                  strokeWidth="5"
-                />
-                <circle cx="450" cy="36" r="8" fill="#B08A4F" />
-                <polygon
-                  points="282,488 442,408 540,457 380,537"
-                  fill="#3F332A"
-                />
-                <polygon
-                  points="298,488 442,416 524,457 380,529"
-                  fill="none"
-                  stroke="#8A6430"
-                  strokeWidth="1.5"
-                  opacity="0.7"
-                />
-                <polygon
-                  points="285,507 435,432 475,452 325,527"
-                  fill="#5B4636"
-                />
-                <polygon
-                  points="285,507 325,527 325,541 285,521"
-                  fill="#3E2F24"
-                />
-                <polygon
-                  points="325,527 475,452 475,466 325,541"
-                  fill="#4A392C"
-                />
-                <polygon
-                  points="285,507 435,432 435,398 285,473"
-                  fill="#6B5442"
-                />
-                {model.waiting.slice(0, 3).map((a, i) => (
-                  <g key={a.id}>
-                    <circle
-                      cx={335 + i * 45}
-                      cy={452 - i * 22}
-                      r="11"
-                      fill="#7A5A44"
-                    />
-                    <path
-                      d={`M${318 + i * 45} ${498 - i * 22} Q${335 + i * 45} ${462 - i * 22} ${352 + i * 45} ${490 - i * 22} Z`}
-                      fill="#E9DFCF"
-                    />
-                  </g>
-                ))}
-                <polygon
-                  points="600,470 700,420 730,435 630,485"
-                  fill="#2A221B"
-                />
-                <polygon
-                  points="600,470 630,485 630,520 600,505"
-                  fill="#1E1813"
-                />
-                <polygon
-                  points="630,485 730,435 730,470 630,520"
-                  fill="#3A2E24"
-                />
-                <polygon
-                  points="650,452 676,439 690,446 664,459"
-                  fill="#D9B77A"
-                />
-                <polygon
-                  points="690,431 712,420 712,398 690,409"
-                  fill="#1E1813"
-                />
-                <polygon
-                  points="693,428 709,420 709,402 693,410"
-                  fill="#5F7480"
-                />
-                <rect x="699" y="428" width="4" height="8" fill="#1E1813" />
-                {[
-                  [104, 393],
-                  [796, 393],
-                ].map(([x, y]) => (
-                  <g key={x}>
-                    <path
-                      d={`M${x} ${y - 30} q-26 -18 -20 -46 q16 14 20 40 q2 -34 20 -44 q4 30 -16 48 q24 -16 36 -6 q-14 16 -40 8 Z`}
-                      fill="#5E7A4E"
-                    />
-                    <path
-                      d={`M${x - 4} ${y - 28} q-30 -2 -38 -22 q22 -2 38 18 Z`}
-                      fill="#7A9663"
-                    />
-                    <polygon
-                      points={`${x - 14},${y - 26} ${x},${y - 33} ${x + 14},${y - 26} ${x},${y - 19}`}
-                      fill="#C9B79A"
-                    />
-                    <polygon
-                      points={`${x - 14},${y - 26} ${x},${y - 19} ${x},${y} ${x - 12},${y - 6}`}
-                      fill="#A8957A"
-                    />
-                    <polygon
-                      points={`${x},${y - 19} ${x + 14},${y - 26} ${x + 12},${y - 6} ${x},${y}`}
-                      fill="#8F7D64"
-                    />
-                  </g>
-                ))}
-              </svg>
+                )}
+                fallback={
+                  <>
+                    <svg
+                      viewBox="0 0 900 600"
+                      aria-hidden="true"
+                      className="sl-room"
+                    >
+                      <defs>
+                        <pattern
+                          id="sl-floor"
+                          width="0.125"
+                          height="0.125"
+                          patternUnits="userSpaceOnUse"
+                        >
+                          <rect width="0.125" height="0.125" fill="#EBE2D2" />
+                          <rect width="0.0625" height="0.0625" fill="#D3C4AB" />
+                          <rect
+                            x="0.0625"
+                            y="0.0625"
+                            width="0.0625"
+                            height="0.0625"
+                            fill="#D3C4AB"
+                          />
+                        </pattern>
+                        <radialGradient id="sl-light">
+                          <stop
+                            offset="0"
+                            stopColor="#FFF1CF"
+                            stopOpacity="0.95"
+                          />
+                          <stop
+                            offset="1"
+                            stopColor="#FFF1CF"
+                            stopOpacity="0"
+                          />
+                        </radialGradient>
+                        <linearGradient
+                          id="sl-glass"
+                          x1="0"
+                          y1="0"
+                          x2="1"
+                          y2="1"
+                        >
+                          <stop offset="0" stopColor="#E7ECE9" />
+                          <stop offset="1" stopColor="#C9D3CF" />
+                        </linearGradient>
+                      </defs>
+                      <polygon
+                        points="50,390 450,190 450,10 50,210"
+                        fill="#EFE7D9"
+                      />
+                      <polygon
+                        points="450,190 850,390 850,210 450,10"
+                        fill="#E5DAC8"
+                      />
+                      <polygon
+                        points="50,390 450,190 450,140 50,340"
+                        fill="#D8CAB3"
+                      />
+                      <polygon
+                        points="450,190 850,390 850,340 450,140"
+                        fill="#CDBEA5"
+                      />
+                      <line
+                        x1="450"
+                        y1="10"
+                        x2="450"
+                        y2="190"
+                        stroke="#C9B99E"
+                        strokeWidth="2"
+                      />
+                      <g transform="matrix(400 -200 400 200 50 390)">
+                        <rect width="1" height="1" fill="url(#sl-floor)" />
+                      </g>
+                      <polygon
+                        points="50,390 450,190 850,390 450,590"
+                        fill="none"
+                        stroke="#BFAE92"
+                        strokeWidth="2"
+                      />
+                      {spots.map((spot, i) => {
+                        const x =
+                          spot.wall === "l"
+                            ? 50 + 400 * spot.t
+                            : 450 + 400 * spot.t;
+                        const y =
+                          spot.wall === "l"
+                            ? 390 - 200 * spot.t
+                            : 190 + 200 * spot.t;
+                        return (
+                          <ellipse
+                            key={`light-${i}`}
+                            cx={x}
+                            cy={y - 150}
+                            rx="70"
+                            ry="58"
+                            fill="url(#sl-light)"
+                          />
+                        );
+                      })}
+                      {/* The shop's sign on the right wall, by the corner. */}
+                      <g transform="matrix(1 0.5 0 1 0 0)">
+                        <rect
+                          x="472"
+                          y="-196"
+                          width="94"
+                          height="62"
+                          rx="4"
+                          fill="#1F1A15"
+                          stroke="#B08A4F"
+                          strokeWidth="2"
+                        />
+                        <text
+                          x="519"
+                          y="-166"
+                          textAnchor="middle"
+                          fill="#D9B77A"
+                          fontFamily="Fraunces, Georgia, serif"
+                          fontSize={Math.min(
+                            12,
+                            120 / Math.max(6, data.business.name.length),
+                          )}
+                          textLength={
+                            data.business.name.length > 11 ? 82 : undefined
+                          }
+                          lengthAdjust="spacingAndGlyphs"
+                          letterSpacing="0.5"
+                        >
+                          {data.business.name.toUpperCase()}
+                        </text>
+                        <line
+                          x1="492"
+                          y1="-157"
+                          x2="546"
+                          y2="-157"
+                          stroke="#B08A4F"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x="519"
+                          y="-145"
+                          textAnchor="middle"
+                          fill="#B8AD9C"
+                          fontSize="6"
+                          letterSpacing="1.5"
+                        >
+                          {(
+                            data.business.category || "Barbearia"
+                          ).toUpperCase()}
+                        </text>
+                      </g>
+                      {spots.map((spot, i) => (
+                        <polygon
+                          key={i}
+                          points={mirror(spot)}
+                          fill="url(#sl-glass)"
+                          stroke="#B08A4F"
+                          strokeWidth="6"
+                          strokeLinejoin="round"
+                        />
+                      ))}
+                      <rect
+                        x="441"
+                        y="40"
+                        width="18"
+                        height="96"
+                        rx="9"
+                        fill="#FFFDF9"
+                        stroke="#B08A4F"
+                        strokeWidth="3"
+                      />
+                      <path
+                        d="M444 52 L456 64 M444 70 L456 82 M444 88 L456 100 M444 106 L456 118"
+                        stroke="#A8481C"
+                        strokeWidth="5"
+                      />
+                      <circle cx="450" cy="36" r="8" fill="#B08A4F" />
+                      <polygon
+                        points="282,488 442,408 540,457 380,537"
+                        fill="#3F332A"
+                      />
+                      <polygon
+                        points="298,488 442,416 524,457 380,529"
+                        fill="none"
+                        stroke="#8A6430"
+                        strokeWidth="1.5"
+                        opacity="0.7"
+                      />
+                      <polygon
+                        points="285,507 435,432 475,452 325,527"
+                        fill="#5B4636"
+                      />
+                      <polygon
+                        points="285,507 325,527 325,541 285,521"
+                        fill="#3E2F24"
+                      />
+                      <polygon
+                        points="325,527 475,452 475,466 325,541"
+                        fill="#4A392C"
+                      />
+                      <polygon
+                        points="285,507 435,432 435,398 285,473"
+                        fill="#6B5442"
+                      />
+                      {model.waiting.slice(0, 3).map((a, i) => (
+                        <g key={a.id}>
+                          <circle
+                            cx={335 + i * 45}
+                            cy={452 - i * 22}
+                            r="11"
+                            fill="#7A5A44"
+                          />
+                          <path
+                            d={`M${318 + i * 45} ${498 - i * 22} Q${335 + i * 45} ${462 - i * 22} ${352 + i * 45} ${490 - i * 22} Z`}
+                            fill="#E9DFCF"
+                          />
+                        </g>
+                      ))}
+                      <polygon
+                        points="600,470 700,420 730,435 630,485"
+                        fill="#2A221B"
+                      />
+                      <polygon
+                        points="600,470 630,485 630,520 600,505"
+                        fill="#1E1813"
+                      />
+                      <polygon
+                        points="630,485 730,435 730,470 630,520"
+                        fill="#3A2E24"
+                      />
+                      <polygon
+                        points="650,452 676,439 690,446 664,459"
+                        fill="#D9B77A"
+                      />
+                      <polygon
+                        points="690,431 712,420 712,398 690,409"
+                        fill="#1E1813"
+                      />
+                      <polygon
+                        points="693,428 709,420 709,402 693,410"
+                        fill="#5F7480"
+                      />
+                      <rect
+                        x="699"
+                        y="428"
+                        width="4"
+                        height="8"
+                        fill="#1E1813"
+                      />
+                      {[
+                        [104, 393],
+                        [796, 393],
+                      ].map(([x, y]) => (
+                        <g key={x}>
+                          <path
+                            d={`M${x} ${y - 30} q-26 -18 -20 -46 q16 14 20 40 q2 -34 20 -44 q4 30 -16 48 q24 -16 36 -6 q-14 16 -40 8 Z`}
+                            fill="#5E7A4E"
+                          />
+                          <path
+                            d={`M${x - 4} ${y - 28} q-30 -2 -38 -22 q22 -2 38 18 Z`}
+                            fill="#7A9663"
+                          />
+                          <polygon
+                            points={`${x - 14},${y - 26} ${x},${y - 33} ${x + 14},${y - 26} ${x},${y - 19}`}
+                            fill="#C9B79A"
+                          />
+                          <polygon
+                            points={`${x - 14},${y - 26} ${x},${y - 19} ${x},${y} ${x - 12},${y - 6}`}
+                            fill="#A8957A"
+                          />
+                          <polygon
+                            points={`${x},${y - 19} ${x + 14},${y - 26} ${x + 12},${y - 6} ${x},${y}`}
+                            fill="#8F7D64"
+                          />
+                        </g>
+                      ))}
+                    </svg>
+                    {model.chairs
+                      .slice(0, 8)
+                      .map((c, i) => ({ c, spot: spots[i] }))
+                      // Back chairs first, so a front chair is drawn over them.
+                      .sort((a, b) => a.spot.y - b.spot.y)
+                      .map(({ c, spot }) => {
+                        const look = looks[c.state];
+                        const on = chair?.professional.id === c.professional.id;
+                        const occupied =
+                          c.state === "busy" || c.state === "late";
+                        return (
+                          <button
+                            key={c.professional.id}
+                            className={`sl-chair tone-${look.tone} ${on ? "is-on" : ""}`}
+                            style={{
+                              left: `${(spot.x - 58.5) / 9}%`,
+                              top: `${(spot.y - 185) / 6}%`,
+                            }}
+                            onClick={() => setSelected(c.professional.id)}
+                            aria-pressed={on}
+                            aria-label={`${c.professional.name}: ${look.label}`}
+                          >
+                            <span className="sl-pill">
+                              <Avatar
+                                name={c.professional.name}
+                                src={c.professional.photo}
+                                size={22}
+                              />
+                              <i />
+                              <strong>{first(c.professional.name)}</strong>
+                              <b>{short(c)}</b>
+                            </span>
+                            <svg
+                              viewBox="0 0 120 140"
+                              aria-hidden="true"
+                              style={{
+                                transform:
+                                  spot.wall === "r" ? "scaleX(-1)" : undefined,
+                              }}
+                            >
+                              <ellipse
+                                className="sl-glow"
+                                cx="60"
+                                cy="122"
+                                rx="50"
+                                ry="22"
+                              />
+                              {occupied && (
+                                <g>
+                                  <rect
+                                    x="87"
+                                    y="96"
+                                    width="5"
+                                    height="22"
+                                    rx="2"
+                                    fill="#1B1511"
+                                  />
+                                  <rect
+                                    x="95"
+                                    y="96"
+                                    width="5"
+                                    height="22"
+                                    rx="2"
+                                    fill="#1B1511"
+                                  />
+                                  <path
+                                    d="M82 64 Q93 54 104 64 L102 100 L84 100 Z"
+                                    fill="#2B211A"
+                                  />
+                                  <path
+                                    d="M87 70 L99 70 L98 100 L88 100 Z"
+                                    fill="#8A6430"
+                                  />
+                                  <path
+                                    d="M84 68 L66 56"
+                                    stroke="#2B211A"
+                                    strokeWidth="5"
+                                    strokeLinecap="round"
+                                  />
+                                  <circle
+                                    cx="93"
+                                    cy="49"
+                                    r="9"
+                                    fill="#8A6A52"
+                                  />
+                                  <path
+                                    d="M84 47 Q93 36 102 47 Z"
+                                    fill="#1B1511"
+                                  />
+                                </g>
+                              )}
+                              <ellipse
+                                cx="60"
+                                cy="120"
+                                rx="22"
+                                ry="8"
+                                fill="#2B221B"
+                              />
+                              <rect
+                                x="56"
+                                y="96"
+                                width="8"
+                                height="24"
+                                fill="#9A8F82"
+                              />
+                              <polygon
+                                points="30,92 60,78 92,94 62,108"
+                                fill="#2B211A"
+                              />
+                              <polygon
+                                points="30,92 62,108 62,117 30,101"
+                                fill="#1B1511"
+                              />
+                              <polygon
+                                points="62,108 92,94 92,103 62,117"
+                                fill="#3A2C22"
+                              />
+                              <polygon
+                                points="34,88 60,76 60,30 34,42"
+                                fill="#2B211A"
+                              />
+                              <polygon
+                                points="34,42 60,30 60,34 34,46"
+                                fill="#C9A465"
+                              />
+                              <polygon
+                                points="40,32 56,24 56,12 40,20"
+                                fill="#3A2C22"
+                              />
+                              <line
+                                x1="30"
+                                y1="84"
+                                x2="62"
+                                y2="100"
+                                stroke="#C9A465"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                              <line
+                                x1="60"
+                                y1="72"
+                                x2="92"
+                                y2="88"
+                                stroke="#C9A465"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                              <polygon
+                                points="70,114 92,104 100,108 78,118"
+                                fill="#9A8F82"
+                              />
+                              {occupied && (
+                                <>
+                                  <path
+                                    d="M34 96 L70 108 L86 92 Q66 56 46 58 Z"
+                                    fill="#F3ECE0"
+                                    stroke="#D8CDBB"
+                                    strokeWidth="1.5"
+                                  />
+                                  <circle
+                                    cx="54"
+                                    cy="48"
+                                    r="11"
+                                    fill="#7A5A44"
+                                  />
+                                  <path
+                                    d="M44 44 Q54 32 64 44 Z"
+                                    fill="#2B211A"
+                                  />
+                                </>
+                              )}
+                            </svg>
+                          </button>
+                        );
+                      })}
+                  </>
+                }
+              />
               {model.gap && (
                 <Link
                   className="sl-gap-chip"
@@ -505,164 +737,6 @@ export function SalonLive({
                   <em>{model.gap.minutes} min</em>
                 </Link>
               )}
-              {model.chairs
-                .slice(0, 8)
-                .map((c, i) => ({ c, spot: spots[i] }))
-                // Back chairs first, so a front chair is drawn over them.
-                .sort((a, b) => a.spot.y - b.spot.y)
-                .map(({ c, spot }) => {
-                  const look = looks[c.state];
-                  const on = chair?.professional.id === c.professional.id;
-                  const occupied = c.state === "busy" || c.state === "late";
-                  return (
-                    <button
-                      key={c.professional.id}
-                      className={`sl-chair tone-${look.tone} ${on ? "is-on" : ""}`}
-                      style={{
-                        left: `${(spot.x - 58.5) / 9}%`,
-                        top: `${(spot.y - 185) / 6}%`,
-                      }}
-                      onClick={() => setSelected(c.professional.id)}
-                      aria-pressed={on}
-                      aria-label={`${c.professional.name}: ${look.label}`}
-                    >
-                      <span className="sl-pill">
-                        <Avatar
-                          name={c.professional.name}
-                          src={c.professional.photo}
-                          size={22}
-                        />
-                        <i />
-                        <strong>{first(c.professional.name)}</strong>
-                        <b>{short(c)}</b>
-                      </span>
-                      <svg
-                        viewBox="0 0 120 140"
-                        aria-hidden="true"
-                        style={{
-                          transform:
-                            spot.wall === "r" ? "scaleX(-1)" : undefined,
-                        }}
-                      >
-                        <ellipse
-                          className="sl-glow"
-                          cx="60"
-                          cy="122"
-                          rx="50"
-                          ry="22"
-                        />
-                        {occupied && (
-                          <g>
-                            <rect
-                              x="87"
-                              y="96"
-                              width="5"
-                              height="22"
-                              rx="2"
-                              fill="#1B1511"
-                            />
-                            <rect
-                              x="95"
-                              y="96"
-                              width="5"
-                              height="22"
-                              rx="2"
-                              fill="#1B1511"
-                            />
-                            <path
-                              d="M82 64 Q93 54 104 64 L102 100 L84 100 Z"
-                              fill="#2B211A"
-                            />
-                            <path
-                              d="M87 70 L99 70 L98 100 L88 100 Z"
-                              fill="#8A6430"
-                            />
-                            <path
-                              d="M84 68 L66 56"
-                              stroke="#2B211A"
-                              strokeWidth="5"
-                              strokeLinecap="round"
-                            />
-                            <circle cx="93" cy="49" r="9" fill="#8A6A52" />
-                            <path d="M84 47 Q93 36 102 47 Z" fill="#1B1511" />
-                          </g>
-                        )}
-                        <ellipse
-                          cx="60"
-                          cy="120"
-                          rx="22"
-                          ry="8"
-                          fill="#2B221B"
-                        />
-                        <rect
-                          x="56"
-                          y="96"
-                          width="8"
-                          height="24"
-                          fill="#9A8F82"
-                        />
-                        <polygon
-                          points="30,92 60,78 92,94 62,108"
-                          fill="#2B211A"
-                        />
-                        <polygon
-                          points="30,92 62,108 62,117 30,101"
-                          fill="#1B1511"
-                        />
-                        <polygon
-                          points="62,108 92,94 92,103 62,117"
-                          fill="#3A2C22"
-                        />
-                        <polygon
-                          points="34,88 60,76 60,30 34,42"
-                          fill="#2B211A"
-                        />
-                        <polygon
-                          points="34,42 60,30 60,34 34,46"
-                          fill="#C9A465"
-                        />
-                        <polygon
-                          points="40,32 56,24 56,12 40,20"
-                          fill="#3A2C22"
-                        />
-                        <line
-                          x1="30"
-                          y1="84"
-                          x2="62"
-                          y2="100"
-                          stroke="#C9A465"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="60"
-                          y1="72"
-                          x2="92"
-                          y2="88"
-                          stroke="#C9A465"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                        <polygon
-                          points="70,114 92,104 100,108 78,118"
-                          fill="#9A8F82"
-                        />
-                        {occupied && (
-                          <>
-                            <path
-                              d="M34 96 L70 108 L86 92 Q66 56 46 58 Z"
-                              fill="#F3ECE0"
-                              stroke="#D8CDBB"
-                              strokeWidth="1.5"
-                            />
-                            <circle cx="54" cy="48" r="11" fill="#7A5A44" />
-                            <path d="M44 44 Q54 32 64 44 Z" fill="#2B211A" />
-                          </>
-                        )}
-                      </svg>
-                    </button>
-                  );
-                })}
               <div className="sl-waiting">
                 <span>Na espera</span>
                 {model.waiting.length ? (
@@ -742,6 +816,71 @@ export function SalonLive({
         </div>
       )}
     </section>
+  );
+}
+
+/** The numbered card over each chair in the 3D room. */
+function ChairTag({
+  chair: c,
+  index,
+  data,
+  on,
+  onClick,
+}: {
+  chair: Chair;
+  index: number;
+  data: Store;
+  on: boolean;
+  onClick: () => void;
+}) {
+  const look = looks[c.state];
+  const a = c.current;
+  const finishing = c.state === "busy" && c.minutesLeft <= 10;
+  const title =
+    a && (c.state === "busy" || c.state === "late" || c.state === "due")
+      ? services(a, data)
+      : c.state === "free"
+        ? "Disponível"
+        : look.label;
+  const line =
+    c.state === "busy"
+      ? finishing
+        ? `Finalizando · ${c.minutesLeft} min restantes`
+        : `${dateLabel(a!.start, "HH:mm")} · Em atendimento`
+      : c.state === "late"
+        ? `${-c.minutesLeft} min além do horário`
+        : c.state === "due"
+          ? `${dateLabel(a!.start, "HH:mm")} · Hora de começar`
+          : c.state === "free"
+            ? c.next
+              ? `Próximo: ${dateLabel(c.next.start, "HH:mm")}`
+              : "Livre até o fim do dia"
+            : c.state === "break"
+              ? `Volta às ${c.freeUntil}`
+              : "Fora do expediente";
+  return (
+    <button
+      type="button"
+      className={`sl-tag tone-${finishing ? "due" : look.tone} ${on ? "is-on" : ""}`}
+      onClick={onClick}
+      aria-pressed={on}
+      aria-label={`Cadeira ${index + 1}, ${c.professional.name}: ${line}`}
+    >
+      <span className="sl-tag-head">
+        <b>{index + 1}</b>
+        <Avatar
+          name={c.professional.name}
+          src={c.professional.photo}
+          size={22}
+        />
+        <strong>{first(c.professional.name)}</strong>
+      </span>
+      <span className="sl-tag-sub">{title}</span>
+      <span className="sl-tag-line">
+        <i />
+        {line}
+      </span>
+    </button>
   );
 }
 
