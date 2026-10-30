@@ -37,5 +37,11 @@ export function welcomeReply(
       : hour < 18 && hour >= 12
         ? "Boa tarde"
         : "Boa noite";
-  return `${hello}! Tudo bem?\n\n${reply}`;
+  // "Tudo bem?" is a question: answering it with "Ótimo!" reads as if the
+  // customer had already replied.
+  const rest = reply.replace(
+    /^(?:ótimo|otimo|perfeito|beleza|show|certo|maravilha)[!.,]\s*/i,
+    "",
+  );
+  return `${hello}! Tudo bem?\n\n${rest.charAt(0).toUpperCase()}${rest.slice(1)}`;
 }

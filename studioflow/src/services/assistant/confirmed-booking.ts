@@ -5,6 +5,12 @@ import type { ConversationMessage, Store } from "@/types";
 import { runTool, type AssistantContext, type TurnResult } from "./agent";
 import { nameAnswer, type Interpretation } from "./understanding";
 import { offeredChoice } from "./offered-choice";
+import { menuSelection } from "./booking-menu";
+
+const displayName = (value: string) =>
+  value === value.toUpperCase()
+    ? value.toLowerCase().replace(/(^|\s)\p{L}/gu, (c) => c.toUpperCase())
+    : value;
 
 /** Closing a sale is a backend operation, never permission delegated to n8n. */
 export function completeBookingSelection(selection: Interpretation) {
@@ -43,9 +49,34 @@ export async function finishConfirmedBooking(input: {
   ctx: AssistantContext;
   beforeBooking: () => Promise<void>;
 }): Promise<TurnResult | null> {
-  const { selection, text, recent, store, ctx } = input;
-  if (!completeBookingSelection(selection)) return null;
+  const { text, recent, store, ctx } = input;
+  if (!completeBookingSelection(input.selection)) return null;
   const now = ctx.now || new Date();
+  // A slot tapped in the list a moment ago: the same day, time and services.
+  const tapped = (body: string) => {
+    const chosen = menuSelection(store, body);
+    return chosen?.time &&
+      chosen.date === input.selection.date &&
+      chosen.time === input.selection.time &&
+      chosen.serviceIds.join() === input.selection.serviceIds.join() &&
+      (!input.selection.professionalId ||
+        input.selection.professionalId === "any" ||
+        chosen.professionalId === input.selection.professionalId)
+      ? chosen
+      : null;
+  };
+  // Answering the name must not drop the barber picked in the list.
+  let picked: Interpretation | null = null;
+  for (let i = recent.length - 1; i >= 0 && !picked; i--) {
+    const message = recent[i];
+    if (now.getTime() - Date.parse(message.createdAt) > 30 * 60_000) break;
+    if (message.role === "customer") picked = tapped(message.body);
+  }
+  const selection: Interpretation =
+    picked?.professionalId &&
+    (!input.selection.professionalId || input.selection.professionalId === "any")
+      ? { ...input.selection, professionalId: picked.professionalId }
+      : input.selection;
   const confirmsSummary = (value: string, previous?: ConversationMessage) =>
     /^(sim|pode sim|pode ser|confirmado)[.!]?$/i.test(value.trim()) &&
     previous?.role === "assistant" &&
@@ -67,6 +98,7 @@ export async function finishConfirmedBooking(input: {
     if (
       consent(message.body, selection.time) ||
       confirmsSummary(message.body, recent[i - 1]) ||
+      !!tapped(message.body) ||
       (chosen?.date === selection.date &&
         chosen.time === selection.time &&
         chosen.serviceIds.join() === selection.serviceIds.join() &&
@@ -107,15 +139,17 @@ export async function finishConfirmedBooking(input: {
     handoff,
     usage: { input: 0, output: 0 },
   });
-  if (!authorized)
+  if (!authorized) {
+    const person = store.professionals.find(
+      (p) => p.id === selection.professionalId,
+    );
     return response(
       `Posso confirmar ${store.services
         .filter((s) => selection.serviceIds.includes(s.id))
-        .map((s) => s.name)
-        .join(
-          " + ",
-        )} em ${selection.date.split("-").reverse().join("/")} às ${selection.time}?`,
+        .map((s) => s.name.toLowerCase())
+        .join(" + ")}${person ? ` com ${displayName(person.name)}` : ""} em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long" }).format(new Date(`${selection.date}T12:00:00Z`))}, ${selection.date.split("-").reverse().join("/")}, às ${selection.time}?`,
     );
+  }
   let name = ctx.customerName || answeringName;
   if (!name) {
     for (let i = recent.length - 1; i > 0; i--) {

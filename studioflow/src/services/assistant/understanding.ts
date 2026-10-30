@@ -84,7 +84,7 @@ export function nameAnswer(text: string, recent: ConversationMessage[]) {
   const value = text
     .trim()
     .replace(
-      /^(?:sou (?:o |a )?|me chamo |meu nome [eé] |aqui [eé] (?:o |a )?|[eé] (?:o |a ))/i,
+      /^(?:(?:pode )?me cham(?:a|e|ar) (?:de |como )?|pode chamar (?:de )?|sou (?:o |a )?|me chamo |meu nome [eé] |aqui [eé] (?:o |a )?|[eé] (?:o |a ))/i,
       "",
     )
     .trim();
@@ -411,15 +411,29 @@ export async function understandMessage(
   let known =
     productSelection(current, store, recent, at) ||
     offeredChoice(current, store, recent, at);
-  if (!known && nameAnswer(current, recent)) {
+  const last = recent.at(-1);
+  const approves =
+    /^(?:sim|pode sim|pode ser|confirmad[oa]|confirmar|confirmo|pode confirmar)[.!]?$/i.test(
+      current,
+    ) &&
+    last?.role === "assistant" &&
+    /posso confirmar/i.test(last.body);
+  if (!known && (approves || nameAnswer(current, recent))) {
     const index = recent.findLastIndex((m) => m.role === "customer");
-    if (index >= 0)
-      known = offeredChoice(
-        recent[index].body,
-        store,
-        recent.slice(0, index),
-        at,
-      );
+    if (index >= 0) {
+      // The name answers "como você prefere ser chamado?" asked right after a
+      // slot was tapped in the list: that slot is the choice to close.
+      const tapped = menuSelection(store, recent[index].body);
+      known =
+        tapped?.time && tapped.professionalId
+          ? { ...tapped, missing: [], nextAction: "CONFIRM" }
+          : offeredChoice(
+              recent[index].body,
+              store,
+              recent.slice(0, index),
+              at,
+            );
+    }
   }
   if (known) return { interpretation: known, usage: { input: 0, output: 0 } };
   const price = exactPriceSelection(current, store);

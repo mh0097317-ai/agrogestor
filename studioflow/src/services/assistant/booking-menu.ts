@@ -60,7 +60,31 @@ export function bookingMenu(
   selection: Interpretation | undefined,
   text: string,
   now = new Date(),
+  reply = "",
 ): BookingMenu | null {
+  // Asking the name: the answer is typed, a list would only restart the choice.
+  if (/como você prefere ser chamado|qual nome você prefere/i.test(reply))
+    return null;
+  // A summary to approve gets two buttons, never another list of times.
+  if (/posso confirmar/i.test(reply)) {
+    const day = /\b(\d{2})\/(\d{2})\/(\d{4})\b/.exec(reply);
+    const chosen = (selection?.serviceIds || [])
+      .map((id) => store.services.find((s) => s.id === id && s.active))
+      .filter((s) => !!s);
+    if (!day || !chosen.length) return null;
+    return menu("Confirmar horário", "Responder", [
+      {
+        id: "Sim",
+        title: "Confirmar",
+        description: "Reservar este horário",
+      },
+      {
+        id: `Consultar horários para ${chosen.map((s) => readable(s.name)).join(" + ")} no dia ${day[0]}`,
+        title: "Outro horário",
+        description: "Ver os outros horários do dia",
+      },
+    ]);
+  }
   const period = requestedTimePeriod(text);
   const suffix =
     period === "morning"
@@ -142,8 +166,11 @@ export function bookingMenu(
     .map((id) => readable(services.find((s) => s.id === id)!.name))
     .join(" + ");
   let date = resolveBookingDate(selection?.date || "", now);
-  // A price offer may propose the nearest verified day, but never selects or books it.
-  if (!date && !selection?.date && selection?.intent === "PRICE") {
+  // No day asked: the list opens on the nearest free day, the same one the
+  // message describes, with "Outros dias" for the rest. Never selects or books.
+  const proposed =
+    !date && !selection?.date && !/p[aá]gina \d+ dos dias/i.test(text);
+  if (proposed) {
     const nearest = Object.values(
       nextFreeByProfessional(store, ids, now, 14, (slot) =>
         matchesTimePeriod(slot.time, period),
@@ -151,13 +178,19 @@ export function bookingMenu(
     )
       .filter(
         (slot) =>
-          !selection.professionalId ||
+          !selection?.professionalId ||
           selection.professionalId === "any" ||
           slot.professionalId === selection.professionalId,
       )
       .sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0];
     if (nearest) date = localDate(new Date(nearest.start));
   }
+  const otherDays = {
+    id: `Consultar ${serviceNames}: página 1 dos dias`,
+    title: "Outros dias",
+    description: "Escolher outro dia",
+  };
+  const room = proposed && date ? 8 : 9;
   if (!date) {
     const page = Number(/p[aá]gina (\d+) dos dias/i.exec(text)?.[1] || 1);
     if (page < 1 || page > 8) return null;
@@ -209,7 +242,7 @@ export function bookingMenu(
           ),
     );
     const rows = orderedSlots
-      .slice((page - 1) * 9, page * 9)
+      .slice((page - 1) * room, page * room)
       .flatMap((slot) => {
         const person = store.professionals.find(
           (candidate) =>
@@ -227,12 +260,13 @@ export function bookingMenu(
           },
         ];
       });
-    if (orderedSlots.length > page * 9)
+    if (orderedSlots.length > page * room)
       rows.push({
         id: `Consultar ${serviceNames} no dia ${dateText(date)}: página ${page + 1} dos horários`,
         title: "Mais horários",
         description: "Ver outras opções disponíveis",
       });
+    if (proposed) rows.push(otherDays);
     return wrap(`Horários · ${dayLabel(date)}`, "Escolher horário", rows);
   }
   const person = store.professionals.find(
@@ -243,17 +277,18 @@ export function bookingMenu(
   const slots = availableSlots(store, ids, pro, date, now).filter(
     (s) => matchesTimePeriod(s.time, period) && (!after || s.time > after),
   );
-  const rows = slots.slice(0, 9).map((s) => ({
+  const rows = slots.slice(0, room).map((s) => ({
     id: `Consultar a opção: ${serviceNames} no dia ${dateText(date)} às ${s.time} com ${readable(person.name)}`,
     title: s.time,
     description: `${name(person.name)} · ${dayLabel(date)}`,
   }));
-  if (slots.length > 9)
+  if (slots.length > room)
     rows.push({
-      id: `Consultar horários para ${serviceNames} no dia ${dateText(date)} com ${readable(person.name)} após ${slots[8].time}`,
+      id: `Consultar horários para ${serviceNames} no dia ${dateText(date)} com ${readable(person.name)} após ${slots[room - 1].time}`,
       title: "Mais horários",
       description: "Ver opções mais tarde",
     });
+  if (proposed) rows.push(otherDays);
   return wrap(`Horários · ${name(person.name)}`, "Ver horários", rows);
 }
 

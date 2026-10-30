@@ -1186,7 +1186,13 @@ export async function answerPending(
         verified.reply,
         handoff
           ? null
-          : bookingMenu(scopedStore, understanding.interpretation, text),
+          : bookingMenu(
+              scopedStore,
+              understanding.interpretation,
+              text,
+              undefined,
+              verified.reply,
+            ),
       );
       if (
         sentId &&
@@ -1280,7 +1286,13 @@ export async function answerPending(
       result.reply,
       result.booked || result.handoff || pureGreeting(result.reply)
         ? null
-        : bookingMenu(scopedStore, understanding?.interpretation, text),
+        : bookingMenu(
+            scopedStore,
+            understanding?.interpretation,
+            text,
+            undefined,
+            result.reply,
+          ),
     );
     if (
       sentId &&
