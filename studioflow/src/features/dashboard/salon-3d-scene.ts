@@ -351,7 +351,7 @@ export function createSalonScene(input: {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -403,6 +403,18 @@ export function createSalonScene(input: {
   // Skirting
   scene.add(at(box(W, 0.14, 0.04, mat.woodDark), 0, 0.07, -D / 2 + 0.02));
 
+  // Soft warm glow texture for the mirrors' halos
+  const haloCanvas = document.createElement("canvas");
+  haloCanvas.width = haloCanvas.height = 128;
+  const hg = haloCanvas.getContext("2d")!;
+  const gradient = hg.createRadialGradient(64, 64, 10, 64, 64, 64);
+  gradient.addColorStop(0, "rgba(255, 196, 120, 0.55)");
+  gradient.addColorStop(1, "rgba(255, 196, 120, 0)");
+  hg.fillStyle = gradient;
+  hg.fillRect(0, 0, 128, 128);
+  const haloMap = new THREE.CanvasTexture(haloCanvas);
+  haloMap.colorSpace = THREE.SRGBColorSpace;
+
   // Stations along the back wall
   const left = -W / 2 + 1.3;
   const span = W - 1.3 - 3.6;
@@ -422,8 +434,18 @@ export function createSalonScene(input: {
     const z = -D / 2;
     scene.add(at(box(1.35, 0.86, 0.5, mat.wood), x, 0.43, z + 0.27));
     scene.add(at(box(1.4, 0.04, 0.54, mat.marble), x, 0.88, z + 0.27));
-    const frame = at(box(1.06, 1.36, 0.04, mat.glow), x, 1.75, z + 0.03);
-    scene.add(frame);
+    // Warm halo on the wall, a lit frame and the mirror itself.
+    const halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.7, 1.95),
+      new THREE.MeshBasicMaterial({
+        map: haloMap,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    scene.add(at(halo, x, 1.75, z + 0.012));
+    scene.add(at(box(1.12, 1.42, 0.04, mat.glow), x, 1.75, z + 0.03));
     scene.add(
       at(
         new THREE.Mesh(new THREE.PlaneGeometry(0.98, 1.28), mat.glass),
@@ -540,8 +562,10 @@ export function createSalonScene(input: {
 
   // Camera from the front left, looking into the back right corner
   const camera = new THREE.PerspectiveCamera(34, 1.5, 0.1, 100);
-  const target = new THREE.Vector3(W * 0.04, 0.7, -D * 0.12);
-  camera.position.set(-W * 0.42, Math.max(6.2, W * 0.62), D * 1.32);
+  const target = new THREE.Vector3(-W * 0.02, 0.6, -D * 0.08);
+  // From the front left, far enough to keep every station in the frame.
+  const view = new THREE.Vector3(-0.42, 0.58, 0.7).normalize();
+  camera.position.copy(target).addScaledVector(view, Math.max(13, W * 1.28));
   const controls = new OrbitControls(camera, canvas);
   controls.target.copy(target);
   controls.enableDamping = true;
