@@ -37,6 +37,27 @@
   text-transform: uppercase;
 }
 
+/* The sales site's demo shop says so above the cover */
+.pp-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 10px var(--pp-gutter);
+  background: var(--pp-ink);
+  color: var(--pp-paper);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+.pp-showcase a {
+  color: #d9b77a;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
 /* Cover: the photo, plain, with the opening hours on a paper label */
 .pp-cover {
   position: relative;

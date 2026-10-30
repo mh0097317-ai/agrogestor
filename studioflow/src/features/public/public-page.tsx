@@ -27,6 +27,7 @@ import {
 import { usePublicCatalog } from "./use-public-catalog";
 import type { PublicCatalog } from "./types";
 import { money } from "@/lib/utils";
+import { showcaseSlug } from "@/lib/showcase";
 import { AssistantChat } from "./assistant-chat";
 import { businessClock, publicAccentStyle } from "./public-branding";
 import { PublicServices } from "./public-services";
@@ -204,6 +205,13 @@ export function PublicPage({
         Ir para os serviços
       </a>
       <PublicRefreshNotice error={error} refreshing={loading} retry={reload} />
+      {slug === showcaseSlug && (
+        <p className="pp-showcase">
+          Barbearia de demonstração do StudioFlow. Pode agendar: ninguém
+          recebe aviso.
+          <Link href="/">Quero a minha</Link>
+        </p>
+      )}
 
       <header className="pp-cover">
         {business.cover ? (

@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { legal } from "@/features/legal/legal";
+import { showcaseSlug } from "@/lib/showcase";
 import { DayStory, LiveDemo, NoShowCalculator } from "./landing-motion";
 import "./landing.css";
 
@@ -89,12 +90,17 @@ const faq = [
   ],
 ] as const;
 
-function Cta({ dark = false }: { dark?: boolean }) {
+function Cta({ dark = false, demo = false }: { dark?: boolean; demo?: boolean }) {
   return (
     <div className="lp-ctas">
       <Link href={start} className={`lp-btn ${dark ? "is-light" : ""}`}>
         Testar grátis <ArrowRight size={18} weight="bold" />
       </Link>
+      {demo && (
+        <Link href={`/${showcaseSlug}`} className="lp-btn-ghost">
+          Ver demonstração ao vivo
+        </Link>
+      )}
       {whatsapp && (
         <a href={whatsapp} className={`lp-btn-ghost ${dark ? "is-light" : ""}`} target="_blank" rel="noreferrer">
           <WhatsAppIcon size={18} /> Falar no WhatsApp
@@ -138,7 +144,7 @@ export function Landing() {
               Página própria, agenda online, lembrete no WhatsApp e uma recepcionista com IA que responde enquanto você corta.
               Tudo numa assinatura só.
             </p>
-            <Cta />
+            <Cta demo />
             <ul className="lp-trust">
               <li><Check size={16} weight="bold" /> Sem app para o cliente baixar</li>
               <li><Check size={16} weight="bold" /> Sem fidelidade</li>
@@ -146,7 +152,7 @@ export function Landing() {
             </ul>
           </div>
           <div className="lp-hero-art" aria-hidden="true">
-            <img className="lp-shot-desk" src="/landing/dashboard.webp" alt="" width={1600} height={1000} />
+            <img className="lp-shot-desk" src="/landing/salon.webp" alt="" width={1600} height={1000} />
             <LiveDemo />
           </div>
         </section>
@@ -180,6 +186,9 @@ export function Landing() {
               <li><DeviceMobile size={20} weight="duotone" /> Vira app na tela de início do cliente</li>
               <li><Bell size={20} weight="duotone" /> Lembrete no WhatsApp e por e-mail</li>
             </ul>
+            <Link href={`/${showcaseSlug}`} className="lp-btn is-outline">
+              Agendar na barbearia de exemplo <ArrowRight size={18} weight="bold" />
+            </Link>
           </div>
           <div className="lp-phone is-solo">
             <img src="/landing/phone-book.webp" alt="Tela de agendamento com serviços, fotos e preços" width={780} height={1688} loading="lazy" />
@@ -212,17 +221,17 @@ export function Landing() {
         <section className="lp-feature is-wide" data-reveal>
           <div className="lp-feature-text">
             <p className="lp-eyebrow">Painel do dono</p>
-            <h2>O dia inteiro numa tela.</h2>
+            <h2>Sua barbearia ao vivo, vista de cima.</h2>
             <p>
-              Quem está na cadeira, quem chega em seguida, quanto entrou hoje, comissão de cada barbeiro, clientes que sumiram
-              e o que a recepcionista resolveu sozinha. No computador ou no celular.
+              Cada cadeira mostra quem está sendo atendido, quanto falta e quem vem depois. Quem chegou espera no sofá.
+              Concluir e cobrar é um toque, e o caixa do dia muda na hora. No computador ou no celular.
             </p>
             <ul className="lp-list is-row">
               <li><ChartLineUp size={20} weight="duotone" /> Relatórios por canal</li>
               <li><CurrencyCircleDollar size={20} weight="duotone" /> Sinal por Pix e clube de assinatura</li>
             </ul>
           </div>
-          <img className="lp-shot-wide" src="/landing/dashboard.webp" alt="Painel do dono com o dia, recebidos e atendimentos" width={1600} height={1000} loading="lazy" />
+          <img className="lp-shot-wide" src="/landing/salon.webp" alt="Salão ao vivo: as cadeiras vistas de cima com o barbeiro, o cliente e o tempo que falta" width={1600} height={1000} loading="lazy" />
         </section>
 
         <section className="lp-feature is-wide is-reverse" data-reveal>

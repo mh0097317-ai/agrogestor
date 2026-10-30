@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "StudioFlow · Sua barbearia agendando sozinha, 24 horas",
     description:
       "Página própria, agendamento online, lembrete no WhatsApp e recepcionista com IA para barbearias.",
-    images: ["/landing/dashboard.webp"],
+    images: ["/landing/salon.webp"],
     locale: "pt_BR",
     type: "website",
   },
