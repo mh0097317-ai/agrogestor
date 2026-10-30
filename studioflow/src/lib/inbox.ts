@@ -32,8 +32,8 @@ export function inboxLabel(item: ConversationSummary, now = Date.now()) {
   if (needsAttention(item, now)) return "Precisa de atenção";
   if (item.status === "human") return "Com a equipe";
   if (item.runState === "SILENT") return "Fora do atendimento";
-  if (processing.has(item.runState || "")) return "StudioFlow atendendo";
-  return "Com StudioFlow";
+  if (processing.has(item.runState || "")) return "IA respondendo";
+  return "Com a IA";
 }
 
 export function inboxQueue(item: ConversationSummary, now = Date.now()) {

@@ -8,9 +8,10 @@ import {
   pendingMove,
 } from "./manage-booking";
 import type Anthropic from "@anthropic-ai/sdk";
-import { DomainError } from "@/lib/availability";
+import { chooseProfessional, DomainError } from "@/lib/availability";
 import { createSupabaseAdmin, readBusinessAccess } from "@/lib/supabase/server";
 import type {
+  Appointment,
   ConversationChannel,
   ConversationMessage,
   ConversationStatus,
@@ -555,6 +556,12 @@ export interface Delivery {
   send?: (body: string, menu?: BookingMenu | null) => Promise<string | void>;
   origin: string;
   slug: string;
+  /**
+   * The owner's test chat: the same answer path, but bookings, cancellations
+   * and moves are only checked against the agenda, never saved, and nobody
+   * is notified. It also runs while the platform switch is off.
+   */
+  simulate?: boolean;
 }
 
 const handoffNotice =
@@ -649,11 +656,62 @@ export async function processConversation(
   }
 }
 
+/** The receipt token a simulated booking carries instead of a real one. */
+export const simulatedToken = "simulacao";
+
+/** What a cancel or move would leave, without touching the agenda. */
+function simulatedChange(
+  appointment: Appointment,
+  action: "cancel" | "reschedule",
+): Appointment {
+  return action === "cancel"
+    ? { ...appointment, status: "cancelled" }
+    : appointment;
+}
+
+/**
+ * The booking the assistant would make, checked against the agenda like a
+ * real one (it throws when the slot is taken) but never saved.
+ */
+function simulatedBooking(
+  store: Store,
+  input: Parameters<AssistantContext["book"]>[0],
+  moving?: Appointment,
+): Appointment {
+  const serviceIds = moving ? moving.serviceIds : input.serviceIds;
+  const professional = chooseProfessional(
+    store,
+    serviceIds,
+    input.professionalId || moving?.professionalId || "any",
+    input.start,
+    moving?.id,
+  );
+  const services = store.services.filter((s) => serviceIds.includes(s.id));
+  const minutes = services.reduce((sum, s) => sum + s.duration, 0);
+  return {
+    ...(moving || {}),
+    id: moving?.id || `${simulatedToken}-${Date.now()}`,
+    businessId: store.business.id,
+    customerId: moving?.customerId || "",
+    customerName: moving?.customerName || cleanName(input.name) || "Cliente",
+    customerPhone: moving?.customerPhone || input.phone,
+    serviceIds,
+    professionalId: professional.id,
+    start: input.start,
+    end: new Date(Date.parse(input.start) + minutes * 60000).toISOString(),
+    price: moving?.price ?? services.reduce((sum, s) => sum + s.price, 0),
+    status: "confirmed",
+    reminder: true,
+    createdAt: moving?.createdAt || new Date().toISOString(),
+    token: simulatedToken,
+  } as Appointment;
+}
+
 /** answerPending's signal that newer messages arrived: run another round. */
 const superseded = "\u0000superseded";
 
 /** One answer for the pending messages; null when there is nothing to do. */
-async function answerPending(
+export async function answerPending(
   repo: ConversationRepo,
   conversationId: string,
   delivery: Delivery,
@@ -707,7 +765,8 @@ async function answerPending(
     await repo.update(conversationId, { aiCursor: cursor, unreadDelta: 1 });
     return null;
   }
-  if (!(await platformAiEnabled()))
+  const simulate = !!delivery.simulate;
+  if (!simulate && !(await platformAiEnabled()))
     return toHuman("IA desativada pelo admin da plataforma.");
   if (
     conversation.channel === "whatsapp" &&
@@ -768,18 +827,20 @@ async function answerPending(
           messages: await repo.messages(conversationId),
           phone: conversation.contactPhone,
           change: (action, appointment) =>
-            changeBooking(
-              delivery.slug,
-              scopedStore,
-              appointment,
-              conversation.contactPhone,
-              action,
-            ),
+            simulate
+              ? Promise.resolve(simulatedChange(appointment, action))
+              : changeBooking(
+                  delivery.slug,
+                  scopedStore,
+                  appointment,
+                  conversation.contactPhone,
+                  action,
+                ),
         })
       : null;
   if (managed) {
     await repo.startRun?.(conversationId, cursor);
-    if (managed.cancelled) {
+    if (managed.cancelled && !simulate) {
       await dropPendingCharge(managed.cancelled).catch(() => undefined);
       await logActivity(scopedStore.business.id, {
         source: "recepcionista",
@@ -875,7 +936,7 @@ async function answerPending(
     ? !!store.paymentAccount
     : !!(await getPaymentAccount(store.business.id));
   const n8n =
-    conversation.channel === "whatsapp"
+    conversation.channel === "whatsapp" && !simulate
       ? n8nWhatsAppConfiguration(
           repo.businessId,
           conversation.whatsappProfessionalId,
@@ -914,7 +975,7 @@ async function answerPending(
           "O cliente apenas selecionou uma opção do menu. Peça a confirmação antes de reservar.",
           409,
         );
-      if (!(await platformAiEnabled()))
+      if (!simulate && !(await platformAiEnabled()))
         throw new DomainError("IA desligada pelo admin.", 409);
       const fresh = await repo.get(conversationId);
       if (
@@ -939,6 +1000,11 @@ async function answerPending(
               conversation.contactPhone,
             )
           : undefined;
+      if (simulate) {
+        const appointment = simulatedBooking(scopedStore, input, moving);
+        if (moving) moved = true;
+        return appointment;
+      }
       if (moving) {
         const appointment = await changeBooking(
           delivery.slug,
@@ -1190,7 +1256,7 @@ async function answerPending(
         { role: "assistant", content: result.reply },
       ];
   }
-  if (!(await platformAiEnabled())) {
+  if (!simulate && !(await platformAiEnabled())) {
     await repo.update(conversationId, { aiCursor: cursor, unreadDelta: 1 });
     return null;
   }

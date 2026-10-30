@@ -1,0 +1,406 @@
+/* The receptionist's test chat, drawn like a WhatsApp conversation. */
+.sim {
+  --sim-ink: #16130f;
+  --sim-muted: #6b6259;
+  --sim-line: #e4dacb;
+  --sim-card: #fffdf9;
+  --sim-wall: #efe7da;
+  --sim-out: #dcf5d0;
+  --sim-in: #ffffff;
+  --sim-green: #1f7a55;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.sim-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sim-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a6430;
+}
+.sim-intro h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.15;
+}
+.sim-intro p {
+  margin: 0;
+  color: var(--sim-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sim-persona {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  text-align: left;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--sim-muted);
+}
+.sim-persona select {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--sim-line);
+  border-radius: 10px;
+  background: var(--sim-card);
+  color: var(--sim-ink);
+  font: inherit;
+  font-size: 14px;
+}
+.sim-phone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: min(640px, 78vh);
+  min-height: 460px;
+  border: 1px solid var(--sim-line);
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--sim-wall);
+  box-shadow: 0 18px 40px rgba(22, 19, 15, 0.1);
+}
+.sim-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #16130f;
+  color: #f4f0e8;
+}
+.sim-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #d9b77a;
+  color: #16130f;
+  font-weight: 700;
+}
+.sim-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.sim-who strong {
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sim-who small {
+  color: #c9bfae;
+  font-size: 12px;
+}
+.sim-reset {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(244, 240, 232, 0.1);
+  color: #f4f0e8;
+  cursor: pointer;
+}
+.sim-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sim-chat {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35) 0 2px, transparent 3px) 0 0 / 28px 28px,
+    var(--sim-wall);
+}
+.sim-empty {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--sim-muted);
+  font-size: 14px;
+}
+.sim-empty svg {
+  color: var(--sim-green);
+}
+.sim-empty p {
+  margin: 0;
+}
+.sim-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.sim-starters button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #cdbfa8;
+  border-radius: 999px;
+  background: var(--sim-card);
+  color: var(--sim-ink);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.sim-starters button:hover {
+  border-color: var(--sim-ink);
+}
+.sim-bubble {
+  max-width: 84%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 1px 1px rgba(22, 19, 15, 0.08);
+  animation: sim-in 220ms ease both;
+}
+.sim-bubble p {
+  margin: 0;
+  padding: 8px 11px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14.5px;
+  line-height: 1.42;
+  color: var(--sim-ink);
+}
+.sim-bubble.is-customer {
+  align-self: flex-end;
+  background: var(--sim-out);
+  border-top-right-radius: 4px;
+}
+.sim-bubble.is-assistant {
+  align-self: flex-start;
+  background: var(--sim-in);
+  border-top-left-radius: 4px;
+}
+.sim-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 0;
+  border-top: 1px solid #ece6dc;
+  background: none;
+  color: #1a73c9;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sim-bubble.is-typing {
+  flex-direction: row;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.sim-bubble.is-typing i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b8ad9c;
+  animation: sim-dot 1s infinite ease-in-out;
+}
+.sim-bubble.is-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.sim-bubble.is-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.sim-note {
+  align-self: center;
+  max-width: 92%;
+  margin: 4px 0;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: #fbf3e4;
+  border: 1px solid #e8d3ae;
+  color: #6b4e25;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+}
+.sim-note.is-handoff {
+  background: #16130f;
+  border-color: #16130f;
+  color: #f4f0e8;
+}
+.sim-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 72%;
+  display: flex;
+  flex-direction: column;
+  background: var(--sim-card);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -14px 34px rgba(22, 19, 15, 0.22);
+  animation: sim-up 220ms ease both;
+  z-index: 2;
+}
+.sim-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--sim-line);
+}
+.sim-sheet-head button {
+  border: 0;
+  background: none;
+  color: var(--sim-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sim-sheet ul {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  overflow-y: auto;
+}
+.sim-sheet li button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid #f1ebe1;
+  background: none;
+  color: var(--sim-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sim-sheet li button:hover {
+  background: #f8f3ea;
+}
+.sim-sheet li strong {
+  font-size: 15px;
+}
+.sim-sheet li small {
+  color: var(--sim-muted);
+  font-size: 12.5px;
+}
+.sim-error {
+  margin: 0;
+  padding: 8px 14px;
+  background: #fbeeea;
+  color: #9b2c1f;
+  font-size: 13px;
+}
+.sim-compose {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: #f4efe6;
+  border-top: 1px solid var(--sim-line);
+}
+.sim-compose input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--sim-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sim-ink);
+  font: inherit;
+  font-size: 15px;
+}
+.sim-compose button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sim-green);
+  color: #fff;
+  cursor: pointer;
+}
+.sim-compose button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sim-foot {
+  margin: 0;
+  color: var(--sim-muted);
+  font-size: 12.5px;
+}
+@keyframes sim-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes sim-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sim-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-bubble,
+  .sim-sheet,
+  .sim-bubble.is-typing i {
+    animation: none;
+  }
+}
+
+/* Recepcionista IA: settings and the test chat side by side when there is room. */
+.training-layout {
+  container: training / inline-size;
+}
+.training-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+@container training (min-width: 980px) {
+  .training-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  }
+  .training-columns > .sim {
+    position: sticky;
+    top: 20px;
+  }
+}

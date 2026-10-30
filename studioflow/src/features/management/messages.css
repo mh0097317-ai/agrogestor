@@ -3,15 +3,15 @@
   gap: 22px;
 }
 .app-shell .chat-page .sf-module-header {
-  min-height: 130px;
-  padding-block: 10px 23px;
+  min-height: 0;
+  padding-block: 4px 14px;
 }
 .app-shell .chat-page .sf-module-header h1 {
-  font-size: clamp(40px, 3.7vw, 52px);
+  font-size: clamp(30px, 2.7vw, 38px);
 }
 .app-shell .chat-page .chat-layout {
-  grid-template-columns: minmax(285px, 330px) minmax(0, 1fr);
-  height: max(540px, calc(100dvh - 290px));
+  grid-template-columns: minmax(285px, 340px) minmax(0, 1fr);
+  height: max(540px, calc(100dvh - 210px));
   min-height: 540px;
   border-radius: 14px;
   box-shadow: 0 12px 32px #30281708;

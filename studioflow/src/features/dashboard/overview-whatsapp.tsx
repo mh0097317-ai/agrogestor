@@ -94,7 +94,7 @@ export function OverviewWhatsApp({ data }: { data: Store }) {
         </div>
         <div>
           <strong>{count("ai")}</strong>
-          <span>Com StudioFlow</span>
+          <span>Com a IA</span>
         </div>
         <div>
           <strong>{count("human")}</strong>

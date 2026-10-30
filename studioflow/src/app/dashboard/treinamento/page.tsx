@@ -7,6 +7,7 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
 import { hasModule } from "@/lib/modules";
 import { AssistantSettings } from "@/features/management/assistant-settings";
+import { AssistantSimulator } from "@/features/management/assistant-simulator";
 import { ManagementBoundary } from "@/features/management/shared";
 
 export default function TrainingPage() {
@@ -27,16 +28,21 @@ export default function TrainingPage() {
       {data &&
         (hasModule(data.access?.modules, "recepcionista") ? (
           canManage ? (
-            <Card className="training-surface">
-              <AssistantSettings
-                store={data}
-                canManage={canManage}
-                onSaved={refresh}
-                onOpenWhatsApp={() =>
-                  router.push("/dashboard/configuracoes?aba=whatsapp")
-                }
-              />
-            </Card>
+            <div className="training-layout">
+              <div className="training-columns">
+                <Card className="training-surface">
+                  <AssistantSettings
+                    store={data}
+                    canManage={canManage}
+                    onSaved={refresh}
+                    onOpenWhatsApp={() =>
+                      router.push("/dashboard/configuracoes?aba=whatsapp")
+                    }
+                  />
+                </Card>
+                <AssistantSimulator store={data} />
+              </div>
+            </div>
           ) : (
             <Card>
               O responsável pelo estabelecimento configura o treinamento. Você

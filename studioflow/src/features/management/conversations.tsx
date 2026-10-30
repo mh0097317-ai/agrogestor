@@ -22,6 +22,7 @@ import {
   Info,
   CalendarDots,
   CheckCircle,
+  Robot,
 } from "@phosphor-icons/react/dist/ssr";
 import { InstagramIcon, WhatsAppIcon } from "@/components/brand-icons";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
@@ -60,7 +61,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 const statusText: Record<ConversationStatus, string> = {
-  ai: "Com StudioFlow",
+  ai: "Com a IA",
   human: "Com a equipe",
   closed: "Concluída",
 };
@@ -120,6 +121,36 @@ const channelName = (item: ConversationSummary, store: Store) =>
     : item.channel === "instagram"
       ? "Instagram Direct"
       : "Chat do site";
+
+/** WhatsApp shows *text* in bold; the panel shows it the same way. */
+function whatsappBold(text: string) {
+  return text
+    .split(/(\*[^*\n]+\*)/g)
+    .map((part, i) =>
+      /^\*[^*\n]+\*$/.test(part) ? (
+        <strong key={i}>{part.slice(1, -1)}</strong>
+      ) : (
+        <Fragment key={i}>{part}</Fragment>
+      ),
+    );
+}
+
+/** One-tap starts for the team's most common answers. */
+function quickReplies(store: Store) {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  return [
+    { label: "Já confiro", text: "Um instante, já confiro para você." },
+    {
+      label: "Link para agendar",
+      text: `Você escolhe o horário por aqui: ${origin}/${store.business.slug}/agendar`,
+    },
+    {
+      label: "Horário confirmado",
+      text: "Seu horário está confirmado. Até lá!",
+    },
+    { label: "Obrigado", text: "Obrigado pela preferência!" },
+  ];
+}
 
 export default function ConversationsPage() {
   const { data } = useWorkspace();
@@ -353,32 +384,64 @@ function ConversationsContent({ store }: { store: Store }) {
               </button>
             </div>
             {inboxTab === "conversations" && (
-              <label className="chat-queue-select">
-                <span>Situação</span>
-                <select
-                  aria-label="Filtrar situação"
-                  value={filter}
-                  onChange={(event) =>
-                    setFilter(event.target.value as typeof filter)
-                  }
+              <>
+                <div
+                  className="chat-queue-tabs"
+                  role="group"
+                  aria-label="Situação das conversas"
                 >
                   {(
                     [
-                      ["all", "Todas"],
-                      ["attention", "Precisa de atenção"],
-                      ["unread", "Não lidas"],
+                      ["attention", "Precisam de você"],
+                      ["ai", "Com a IA"],
                       ["human", "Com a equipe"],
-                      ["ai", "Com StudioFlow"],
-                      ["closed", "Concluídas"],
-                      ["outside", "Fora do atendimento"],
+                      ["all", "Todas"],
                     ] as const
                   ).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label} · {count(value)}
-                    </option>
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={filter === value}
+                      className={
+                        value === "attention" && count("attention")
+                          ? "is-urgent"
+                          : ""
+                      }
+                      onClick={() => setFilter(value)}
+                    >
+                      {label}
+                      <b>{count(value)}</b>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+                <label className="chat-queue-select">
+                  <span className="sr-only">Mais filtros</span>
+                  <select
+                    aria-label="Mais filtros"
+                    value={
+                      ["unread", "closed", "outside"].includes(filter)
+                        ? filter
+                        : ""
+                    }
+                    onChange={(event) =>
+                      setFilter((event.target.value || "all") as typeof filter)
+                    }
+                  >
+                    <option value="">Mais filtros</option>
+                    {(
+                      [
+                        ["unread", "Não lidas"],
+                        ["closed", "Concluídas"],
+                        ["outside", "Fora do atendimento"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label} · {count(value)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
           </div>
           <div className="chat-inbox-items">
@@ -452,7 +515,7 @@ function ConversationsContent({ store }: { store: Store }) {
                     </small>
                     <span>
                       {item.latestRole === "assistant"
-                        ? "StudioFlow: "
+                        ? "IA: "
                         : item.latestRole === "staff"
                           ? "Equipe: "
                           : ""}
@@ -538,7 +601,12 @@ function Thread({
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [status, setStatus] = useState(summary.status);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [contextOpen, setContextOpen] = useState(false);
+  // Wide screens keep the customer's details in view.
+  const [contextOpen, setContextOpen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1280px) and (min-height: 1000px)").matches,
+  );
   const context = customerContext(store, summary);
   const composer = useRef<HTMLTextAreaElement>(null);
   const [busy, setBusy] = useState(false);
@@ -679,6 +747,38 @@ function Thread({
           <span className="chat-mobile-status">{statusText[status]}</span>
         </div>
         <span className={`chat-status is-${status}`}>{statusText[status]}</span>
+        {canAnswer &&
+          (status === "ai" ? (
+            <Button
+              className="chat-take"
+              disabled={busy}
+              onClick={() => void act({ action: "status", status: "human" })}
+            >
+              <UserCircle size={16} />
+              <span className="chat-take-long">Assumir conversa</span>
+              <span className="chat-take-short">Assumir</span>
+            </Button>
+          ) : status === "human" ? (
+            <Button
+              variant="secondary"
+              className="chat-take"
+              disabled={busy}
+              onClick={() => void act({ action: "status", status: "ai" })}
+            >
+              <Robot size={16} />
+              <span className="chat-take-long">Devolver para a IA</span>
+              <span className="chat-take-short">Devolver</span>
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              className="chat-take"
+              disabled={busy}
+              onClick={() => void act({ action: "status", status: "human" })}
+            >
+              Reabrir
+            </Button>
+          ))}
         <button
           type="button"
           className="chat-context-toggle"
@@ -701,6 +801,21 @@ function Thread({
           <DotsThree size={24} weight="bold" />
         </button>
       </header>
+      <div className={`chat-mode-banner is-${status}`} role="status">
+        {status === "ai" ? (
+          <>
+            <Robot size={16} weight="duotone" /> A recepcionista IA está
+            atendendo. Se você responder, assume a conversa.
+          </>
+        ) : status === "human" ? (
+          <>
+            <UserCircle size={16} weight="duotone" /> Você está atendendo. A IA
+            está pausada nesta conversa.
+          </>
+        ) : (
+          <>Conversa encerrada. O histórico continua disponível.</>
+        )}
+      </div>
       {contextOpen && (
         <div
           id={`chat-context-${summary.id}`}
@@ -775,15 +890,6 @@ function Thread({
         )}
         {canAnswer && (
           <div className="chat-actions">
-            {status !== "human" && (
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() => void act({ action: "status", status: "human" })}
-              >
-                <UserCircle size={16} /> Assumir
-              </Button>
-            )}
             {status !== "closed" && (
               <Button
                 variant="ghost"
@@ -808,13 +914,6 @@ function Thread({
             )}
           </div>
         )}
-        <div className="chat-thread-mode">
-          {status === "ai"
-            ? "StudioFlow atende assuntos da casa. Ao responder, você assume esta conversa."
-            : status === "human"
-              ? "A equipe está no controle. O StudioFlow não responde enquanto você atende."
-              : "Conversa encerrada. O histórico continua disponível."}
-        </div>
         {canAnswer && summary.channel === "whatsapp" && (
           <div className="chat-thread-mode">
             {analysisReason ||
@@ -945,7 +1044,7 @@ function Thread({
             message.role === "customer"
               ? who(summary)
               : message.role === "assistant"
-                ? "StudioFlow"
+                ? "Recepcionista IA"
                 : "Equipe";
           return (
             <Fragment key={message.id}>
@@ -959,7 +1058,7 @@ function Thread({
                   <small className="chat-message-author">{sender}</small>
                 )}
                 <p>
-                  {message.body}
+                  {whatsappBold(message.body)}
                   <time
                     className="chat-message-time"
                     dateTime={message.createdAt}
@@ -977,6 +1076,24 @@ function Thread({
         <p className="chat-error" role="alert">
           {error}
         </p>
+      )}
+      {canAnswer && (
+        <div className="chat-quick" aria-label="Respostas rápidas">
+          {quickReplies(store).map((quick) => (
+            <button
+              key={quick.label}
+              type="button"
+              onClick={() => {
+                onDraftChange(
+                  draft.trim() ? `${draft.trim()} ${quick.text}` : quick.text,
+                );
+                composer.current?.focus();
+              }}
+            >
+              {quick.label}
+            </button>
+          ))}
+        </div>
       )}
       {canAnswer && (
         <form className="chat-reply" onSubmit={reply}>
@@ -1022,10 +1139,10 @@ function Thread({
           </span>
           <span>
             {status === "ai"
-              ? "Ao enviar, você assume o atendimento e pausa o StudioFlow nesta conversa."
+              ? "Ao enviar, você assume o atendimento e pausa a IA nesta conversa."
               : status === "closed"
                 ? "Ao enviar, você reabre e assume esta conversa."
-                : "Você está atendendo · StudioFlow pausado nesta conversa"}
+                : "Você está atendendo · IA pausada nesta conversa"}
           </span>
         </p>
       )}

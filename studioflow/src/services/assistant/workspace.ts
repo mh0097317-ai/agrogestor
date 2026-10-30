@@ -589,3 +589,76 @@ export async function conversationAction(
     await repo.update(id, { status: "human", unread: 0 });
   return { ok: true };
 }
+
+export const simulateSchema = z.object({
+  text: z.string().trim().min(1, "Escreva a mensagem.").max(1000),
+  phone: z.string().trim().max(20).default(""),
+  name: z.string().trim().max(80).default(""),
+  messages: z
+    .array(
+      z.object({
+        id: z.string().max(80),
+        role: z.enum(["customer", "assistant", "staff", "event"]),
+        body: z.string().max(4000),
+        createdAt: z.string().max(40),
+      }),
+    )
+    .max(80)
+    .default([]),
+  history: z.array(z.unknown()).max(40).default([]),
+});
+
+/**
+ * The owner's test chat with the receptionist: the WhatsApp answer path in
+ * simulation mode. It spends AI turns like a real chat, so it counts against
+ * the daily limit, but it sends nothing and books nothing.
+ */
+export async function simulateAssistant(
+  input: z.infer<typeof simulateSchema>,
+  origin: string,
+) {
+  const { simulateWhatsApp } = await import("./simulator");
+  const { businessCreate } = await import("./provider");
+  const { getPublicStore } = await import("../server-store");
+  let businessId: string;
+  let slug: string;
+  let takeTurn: () => Promise<boolean> = async () => true;
+  let addTokens: (input: number, output: number) => Promise<void> = async () =>
+    undefined;
+  if (isDemo()) {
+    slug = await demoWorkspaceSlug();
+    businessId = (await readDemo(slug)).business.id;
+  } else {
+    const membership = await member(editors);
+    businessId = membership.businessId;
+    const { data: business } = await createSupabaseAdmin()
+      .from("businesses")
+      .select("tenant_id,slug")
+      .eq("id", businessId)
+      .single();
+    if (!business)
+      throw new DomainError("Estabelecimento não encontrado.", 404);
+    slug = business.slug;
+    const live = liveRepo(businessId, business.tenant_id);
+    takeTurn = () => live.takeTurn();
+    addTokens = (i, o) => live.addTokens(i, o);
+  }
+  const digits = input.phone
+    .replace(/\D/g, "")
+    .replace(/^55(?=\d{10,11}$)/, "");
+  return simulateWhatsApp({
+    businessId,
+    slug,
+    origin,
+    // A number no real customer has, unless the owner tests as one.
+    phone: /^\d{10,11}$/.test(digits) ? digits : "11000000000",
+    name: input.name || "Cliente de teste",
+    text: input.text,
+    messages: input.messages,
+    history: input.history as never,
+    create: await businessCreate(businessId),
+    store: () => getPublicStore(slug),
+    takeTurn,
+    addTokens,
+  });
+}
