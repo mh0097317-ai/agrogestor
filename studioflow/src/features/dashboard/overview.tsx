@@ -29,6 +29,7 @@ import {
 } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
 import { overviewModel } from "./overview-model";
+import { SalonLive } from "./salon-live";
 import { OverviewAgenda } from "./overview-agenda";
 import { RemindersCard, WaitlistCard } from "./overview-growth";
 import {
@@ -47,7 +48,7 @@ export function Overview() {
   const [create, setCreate] = useState(false);
   const [detail, setDetail] = useState<Appointment | null>(null);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60000);
+    const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
   if (loading)
@@ -115,111 +116,123 @@ export function Overview() {
 
   return (
     <div className="ov">
-      <section className="ov-command" aria-label="Seu dia no StudioFlow">
-        <div className="ov-command-intro">
-          <div className="ov-command-date">
-            <span>{today ? "Seu dia, em foco" : "Sua agenda, em foco"}</span>
-            <time>{dayName}</time>
-          </div>
-          <h1>
-            {greeting},<br />
-            <em>{firstName}.</em>
-          </h1>
-          <p>
-            {today
-              ? "Cuide de quem chega. O resto, a gente organiza."
-              : "Um dia de cada vez. Tudo no seu lugar."}
-          </p>
-          <div className="ov-command-actions">
-            {canEdit && (
-              <Button onClick={() => setCreate(true)}>
-                <Plus size={17} /> Novo agendamento
-              </Button>
-            )}
-            <Link href={`/dashboard/agenda?date=${day}`}>
-              Abrir agenda <CaretRight size={16} />
-            </Link>
-          </div>
-          <span className="ov-command-foot">
-            {data.professionals.filter((person) => person.active).length}{" "}
-            profissionais na equipe <span>{clock} · Brasília</span>
-          </span>
-        </div>
-        <div className="ov-command-focus">
-          {data.business.cover && (
-            <img
-              className="ov-command-photo"
-              src={data.business.cover}
-              alt=""
-            />
-          )}
-          {nowCard ? (
-            <NowCard
-              appointment={nowCard}
-              data={data}
-              now={now}
-              canEdit={canEdit}
-              onOpen={setDetail}
-            />
-          ) : (
-            <div className="ov-command-empty">
-              <span className="sf-eyebrow">
-                <Clock size={17} />{" "}
-                {day < businessDay(new Date(now))
-                  ? "Resumo da data"
-                  : "Próximo atendimento"}
-              </span>
-              <strong>
-                {today ? (
-                  <>
-                    Um respiro
-                    <br />
-                    na agenda.
-                  </>
-                ) : day < businessDay(new Date(now)) ||
-                  model.appointments.length > 0 ? (
-                  <>
-                    Agenda
-                    <br />
-                    conferida.
-                  </>
-                ) : (
-                  <>
-                    Seu dia está
-                    <br />
-                    em aberto.
-                  </>
-                )}
-              </strong>
-              <p>
-                {today
-                  ? "Nenhum próximo atendimento hoje. Aproveite para organizar o próximo dia."
-                  : model.appointments.length > 0 ||
-                      day < businessDay(new Date(now))
-                    ? "Consulte os atendimentos e os detalhes desta data na agenda."
-                    : "Crie o primeiro agendamento para esta data."}
-              </p>
+      {today && (
+        <SalonLive
+          data={data}
+          now={now}
+          onOpen={setDetail}
+          onCreate={canEdit ? () => setCreate(true) : undefined}
+        />
+      )}
+      {!today && (
+        <section className="ov-command" aria-label="Seu dia no StudioFlow">
+          <div className="ov-command-intro">
+            <div className="ov-command-date">
+              <span>{today ? "Seu dia, em foco" : "Sua agenda, em foco"}</span>
+              <time>{dayName}</time>
+            </div>
+            <h1>
+              {greeting},<br />
+              <em>{firstName}.</em>
+            </h1>
+            <p>
+              {today
+                ? "Cuide de quem chega. O resto, a gente organiza."
+                : "Um dia de cada vez. Tudo no seu lugar."}
+            </p>
+            <div className="ov-command-actions">
+              {canEdit && (
+                <Button onClick={() => setCreate(true)}>
+                  <Plus size={17} /> Novo agendamento
+                </Button>
+              )}
               <Link href={`/dashboard/agenda?date=${day}`}>
-                Planejar agenda <CaretRight size={16} />
+                Abrir agenda <CaretRight size={16} />
               </Link>
             </div>
-          )}
-        </div>
-      </section>
-
-      <div className="ov-kpis sf-stagger">
-        {kpis.map(({ label, value, icon: Icon }) => (
-          <div className="ov-kpi" key={label}>
-            <span className="ov-kpi-icon">
-              <Icon size={22} weight="duotone" />
+            <span className="ov-command-foot">
+              {data.professionals.filter((person) => person.active).length}{" "}
+              profissionais na equipe <span>{clock} · Brasília</span>
             </span>
-            <div>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
           </div>
-        ))}
-      </div>
+          <div className="ov-command-focus">
+            {data.business.cover && (
+              <img
+                className="ov-command-photo"
+                src={data.business.cover}
+                alt=""
+              />
+            )}
+            {nowCard ? (
+              <NowCard
+                appointment={nowCard}
+                data={data}
+                now={now}
+                canEdit={canEdit}
+                onOpen={setDetail}
+              />
+            ) : (
+              <div className="ov-command-empty">
+                <span className="sf-eyebrow">
+                  <Clock size={17} />{" "}
+                  {day < businessDay(new Date(now))
+                    ? "Resumo da data"
+                    : "Próximo atendimento"}
+                </span>
+                <strong>
+                  {today ? (
+                    <>
+                      Um respiro
+                      <br />
+                      na agenda.
+                    </>
+                  ) : day < businessDay(new Date(now)) ||
+                    model.appointments.length > 0 ? (
+                    <>
+                      Agenda
+                      <br />
+                      conferida.
+                    </>
+                  ) : (
+                    <>
+                      Seu dia está
+                      <br />
+                      em aberto.
+                    </>
+                  )}
+                </strong>
+                <p>
+                  {today
+                    ? "Nenhum próximo atendimento hoje. Aproveite para organizar o próximo dia."
+                    : model.appointments.length > 0 ||
+                        day < businessDay(new Date(now))
+                      ? "Consulte os atendimentos e os detalhes desta data na agenda."
+                      : "Crie o primeiro agendamento para esta data."}
+                </p>
+                <Link href={`/dashboard/agenda?date=${day}`}>
+                  Planejar agenda <CaretRight size={16} />
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {!today && (
+        <div className="ov-kpis sf-stagger">
+          {kpis.map(({ label, value, icon: Icon }) => (
+            <div className="ov-kpi" key={label}>
+              <span className="ov-kpi-icon">
+                <Icon size={22} weight="duotone" />
+              </span>
+              <div>
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {["owner", "admin", "manager"].includes(data.viewer?.role || "owner") && (
         <MonthRecapCard data={data} now={now} />

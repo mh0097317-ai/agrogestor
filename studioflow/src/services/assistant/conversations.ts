@@ -890,7 +890,17 @@ async function answerPending(
         (customer) =>
           customer.phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") ===
           conversation.contactPhone,
-      )?.name || nameAnswer(text, recent),
+      )?.name ||
+      // Someone who already has a booking from this number is known by it.
+      cleanName(
+        store.appointments.find(
+          (a) =>
+            a.status !== "cancelled" &&
+            a.customerPhone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") ===
+              conversation.contactPhone,
+        )?.customerName || "",
+      ) ||
+      nameAnswer(text, recent),
     verifiedPhone:
       conversation.channel === "whatsapp"
         ? conversation.contactPhone
