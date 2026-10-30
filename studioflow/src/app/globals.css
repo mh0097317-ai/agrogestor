@@ -334,6 +334,15 @@ img {
   display: flex;
   padding: 3px;
 }
+.toast .toast-action {
+  margin-left: 4px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f4f0e8;
+  color: #16130f;
+  font-weight: 700;
+  font-size: 14px;
+}
 .spin {
   animation: spin 1s linear infinite;
 }

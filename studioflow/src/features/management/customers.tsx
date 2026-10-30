@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Button, EmptyState, PageHeader } from "@/components/ui";
 import { useWorkspace } from "@/hooks/use-workspace";
@@ -33,6 +33,15 @@ export default function CustomersPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState<Customer | null | undefined>();
+  // Links from other screens open a search or the "Em atraso" list.
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    queueMicrotask(() => {
+      if (query.get("filtro") === "retorno") setFilter("return");
+      const term = query.get("q");
+      if (term) setSearch(term);
+    });
+  }, []);
   const customers = useMemo(
     () =>
       (data?.customers ?? [])

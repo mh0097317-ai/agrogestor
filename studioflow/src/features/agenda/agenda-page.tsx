@@ -37,6 +37,7 @@ import { MobileDayAgenda } from "./mobile-day-agenda";
 import { DayFocus } from "./day-focus";
 import { DayTimeline } from "./day-timeline";
 import { AgendaWeekStrip, WeekOverview, MonthOverview } from "./period-views";
+import { WeekHeatmap } from "./week-heatmap";
 import {
   appointmentsOn,
   validAgendaDate,
@@ -184,6 +185,52 @@ export function AgendaPage() {
         professionalId || (activeFilter === "all" ? undefined : activeFilter),
     });
     setCreate(true);
+  }
+  /** A booking dragged on the board, with a way back. */
+  async function move(
+    appointment: Appointment,
+    start: string,
+    professionalId: string,
+  ) {
+    const before = {
+      start: appointment.start,
+      professionalId: appointment.professionalId,
+    };
+    const first = appointment.customerName.trim().split(/\s+/)[0];
+    const person = data?.professionals.find((p) => p.id === professionalId);
+    const moved = professionalId !== appointment.professionalId;
+    try {
+      await mutate("appointments", "update", {
+        id: appointment.id,
+        start,
+        professionalId,
+      });
+      toast(
+        `Horário de ${first} passou para ${dateLabel(start, "HH:mm")}${moved && person ? ` com ${person.name.split(" ")[0]}` : ""}.`,
+        {
+          label: "Desfazer",
+          run: () =>
+            void mutate("appointments", "update", {
+              id: appointment.id,
+              ...before,
+            })
+              .then(() => toast("Pronto, o horário voltou para como estava."))
+              .catch((failure) =>
+                toast(
+                  failure instanceof Error
+                    ? failure.message
+                    : "Não foi possível desfazer.",
+                ),
+              ),
+        },
+      );
+    } catch (failure) {
+      toast(
+        failure instanceof Error
+          ? failure.message
+          : "Não foi possível remarcar.",
+      );
+    }
   }
   function openBlock(value: BlockedTime) {
     setBlock(value);
@@ -396,16 +443,24 @@ export function AgendaPage() {
                   : format(date, "MMMM", { locale: ptBR })}
             </h2>
           </div>
-          <div className="calendar-legend">
-            <span>
-              <i /> Atendimento
-            </span>
-            <span>
-              <i className="calendar-legend-break" /> Intervalo
-            </span>
-            <span>
-              <i className="calendar-legend-block" /> Bloqueio
-            </span>
+          <div className="calendar-legend" aria-label="Cores da agenda">
+            {(
+              [
+                ["completed", "Concluído"],
+                ["in_progress", "Atendendo"],
+                ["arrived", "Chegou"],
+                ["confirmed", "Confirmado"],
+                ["pending", "A confirmar"],
+                ["deposit", "Aguardando sinal"],
+                ["gap", "Livre"],
+                ["break", "Intervalo"],
+                ["block", "Bloqueio"],
+              ] as const
+            ).map(([key, label]) => (
+              <span key={key}>
+                <i className={`calendar-legend-${key}`} /> {label}
+              </span>
+            ))}
           </div>
         </div>
         {view === "day" && (
@@ -419,6 +474,7 @@ export function AgendaPage() {
               onAdd={add}
               onDetail={setDetail}
               onBlock={openBlock}
+              onMove={move}
               now={now}
             />
           </div>
@@ -450,6 +506,17 @@ export function AgendaPage() {
           />
         )}
       </Card>
+      {view === "week" && (
+        <WeekHeatmap
+          data={data}
+          days={weekDays}
+          professionals={professionals.filter((p) => p.active)}
+          today={today}
+          onSelect={(nextDate) =>
+            changeCalendar({ date: nextDate, view: "day" })
+          }
+        />
+      )}
       <div
         className={`calendar-day-overview ${view === "month" ? "calendar-month-list" : ""}`}
       >
