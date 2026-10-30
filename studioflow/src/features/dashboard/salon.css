@@ -728,7 +728,7 @@
   inset: 0;
   overflow: hidden;
   border-radius: 16px;
-  background: radial-gradient(ellipse at 62% 28%, #2b2219 0%, #15110d 72%);
+  background: radial-gradient(ellipse at 50% 45%, #f6f0e6 0%, #e9dfcf 78%);
 }
 .sl-3d canvas {
   display: block;
@@ -749,7 +749,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: #c9bfae;
+  color: var(--sl-muted);
   font-size: 14px;
 }
 .sl-3d-tag {
@@ -832,5 +832,81 @@
   .sl-3d canvas,
   .sl-tag {
     transition: none;
+  }
+}
+
+/* 3D room: view switch, camera reset and the area labels */
+.sl-3d-tools {
+  position: absolute;
+  right: 2%;
+  bottom: 3%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  z-index: 2;
+}
+.sl-3d-view {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(22, 19, 15, 0.82);
+  backdrop-filter: blur(6px);
+}
+.sl-3d-view button,
+.sl-3d-reset {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #d9cfbf;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sl-3d-view button[aria-pressed="true"] {
+  background: var(--sl-gold-soft, #d9b77a);
+  color: #16130f;
+}
+.sl-3d-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(251, 248, 242, 0.92);
+  color: var(--sl-ink);
+  border: 1px solid var(--sl-line);
+}
+.sl-3d-hint {
+  flex-basis: 100%;
+  text-align: right;
+  color: var(--sl-muted);
+  font-size: 11px;
+}
+.sl-3d-tag.is-area {
+  pointer-events: none;
+}
+.sl-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.45em 0.8em;
+  border-radius: 999px;
+  background: rgba(22, 19, 15, 0.78);
+  color: #f4efe6;
+  font-size: clamp(9px, 1.1cqw, 12px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.sl-area svg {
+  color: var(--sl-gold-soft, #d9b77a);
+}
+@container (max-width: 560px) {
+  .sl-3d-hint {
+    display: none;
   }
 }

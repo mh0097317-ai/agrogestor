@@ -1,11 +1,44 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { ArrowsClockwise } from "@phosphor-icons/react/dist/ssr";
 import type { Chair } from "./salon-model";
-import type { SalonScene } from "./salon-3d-scene";
+import type { SalonArea, SalonScene } from "./salon-3d-scene";
+
+type View = "3d" | "2d";
+const viewKey = "studioflow:salon-view";
+const viewListeners = new Set<() => void>();
+function readView(): View {
+  try {
+    const saved = localStorage.getItem(viewKey);
+    if (saved === "3d" || saved === "2d") return saved;
+  } catch {}
+  return "3d";
+}
+function subscribeView(listener: () => void) {
+  viewListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    viewListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+function saveView(view: View) {
+  try {
+    localStorage.setItem(viewKey, view);
+  } catch {}
+  viewListeners.forEach((listener) => listener());
+}
 
 /**
  * The live salon in real 3D (three.js, loaded only here). Labels are HTML
- * placed over each chair; when WebGL is missing the drawn room is shown.
+ * placed over each chair; the drawn room stays as the flat view and as the
+ * fallback when WebGL is missing or lost.
  */
 export function Salon3D({
   chairs,
@@ -14,7 +47,9 @@ export function Salon3D({
   category,
   selected,
   onSelect,
+  onArea,
   label,
+  areas,
   fallback,
 }: {
   chairs: Chair[];
@@ -23,7 +58,9 @@ export function Salon3D({
   category: string;
   selected: string;
   onSelect: (id: string) => void;
+  onArea: (area: SalonArea) => void;
   label: (chair: Chair, index: number) => ReactNode;
+  areas: Record<SalonArea, ReactNode>;
   fallback: ReactNode;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -31,16 +68,18 @@ export function Salon3D({
   const tags = useRef(new Map<string, HTMLDivElement>());
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
+  const view = useSyncExternalStore(subscribeView, readView, () => "3d");
+  const flat = failed || view === "2d";
   const shown = chairs.slice(0, 8);
   const states = shown.map((c) => `${c.professional.id}:${c.state}`).join("|");
-  const latest = useRef({ shown, waiting, onSelect, selected });
+  const latest = useRef({ shown, waiting, onSelect, onArea, selected });
   useEffect(() => {
-    latest.current = { shown, waiting, onSelect, selected };
+    latest.current = { shown, waiting, onSelect, onArea, selected };
   });
 
   useEffect(() => {
     const element = canvas.current;
-    if (!element) return;
+    if (flat || !element) return;
     let disposed = false;
     const observer = new ResizeObserver(() => scene.current?.resize());
     observer.observe(element);
@@ -58,6 +97,8 @@ export function Salon3D({
           })),
           waiting: now.waiting,
           onSelect: (id) => latest.current.onSelect(id),
+          onArea: (area) => latest.current.onArea(area),
+          onFailure: () => !disposed && setFailed(true),
           onAnchors: (anchors) => {
             for (const a of anchors) {
               const tag = tags.current.get(a.id);
@@ -76,9 +117,10 @@ export function Salon3D({
       observer.disconnect();
       scene.current?.dispose();
       scene.current = null;
+      setReady(false);
     };
     // The room is rebuilt only when its shape changes.
-  }, [shopName, category, shown.length]);
+  }, [flat, shopName, category, shown.length]);
 
   useEffect(() => {
     scene.current?.update(
@@ -89,11 +131,51 @@ export function Salon3D({
       waiting,
     );
   }, [states, waiting, ready]);
+  // Glide to a chair the owner picks; the first selection only highlights.
+  const focused = useRef(false);
   useEffect(() => {
-    scene.current?.select(selected);
+    if (!ready) return;
+    scene.current?.select(selected, focused.current);
+    focused.current = true;
   }, [selected, ready]);
 
-  if (failed) return <>{fallback}</>;
+  const toolbar = (
+    <div className="sl-3d-tools">
+      {!failed && (
+        <div className="sl-3d-view" role="group" aria-label="Visualização">
+          {(["3d", "2d"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => saveView(v)}
+            >
+              {v === "3d" ? "3D" : "Planta"}
+            </button>
+          ))}
+        </div>
+      )}
+      {!flat && ready && (
+        <>
+          <button
+            type="button"
+            className="sl-3d-reset"
+            onClick={() => scene.current?.resetCamera()}
+          >
+            <ArrowsClockwise size={14} weight="bold" /> Centralizar
+          </button>
+          <span className="sl-3d-hint">Arraste para girar · role para aproximar</span>
+        </>
+      )}
+    </div>
+  );
+  if (flat)
+    return (
+      <>
+        {fallback}
+        {toolbar}
+      </>
+    );
   return (
     <div className={`sl-3d ${ready ? "is-ready" : ""}`}>
       <canvas ref={canvas} aria-hidden="true" />
@@ -109,7 +191,20 @@ export function Salon3D({
           {label(chair, i)}
         </div>
       ))}
+      {(Object.keys(areas) as SalonArea[]).map((area) => (
+        <div
+          key={area}
+          className="sl-3d-tag is-area"
+          ref={(node) => {
+            if (node) tags.current.set(area, node);
+            else tags.current.delete(area);
+          }}
+        >
+          {areas[area]}
+        </div>
+      ))}
       {!ready && <span className="sl-3d-loading">Montando o salão…</span>}
+      {toolbar}
     </div>
   );
 }

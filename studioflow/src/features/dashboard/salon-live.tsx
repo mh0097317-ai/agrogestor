@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Armchair,
   ArrowDownRight,
@@ -120,6 +121,7 @@ export function SalonLive({
   onCreate?: () => void;
 }) {
   const { refresh } = useWorkspace();
+  const router = useRouter();
   const model = salonModel(data, now);
   const [selected, setSelected] = useState(
     model.chairs[0]?.professional.id || "",
@@ -261,6 +263,25 @@ export function SalonLive({
                 category={data.business.category}
                 selected={chair?.professional.id || ""}
                 onSelect={setSelected}
+                onArea={(area) => {
+                  if (area === "reception")
+                    router.push(`/dashboard/agenda?date=${model.day}`);
+                  else if (model.waiting[0])
+                    setSelected(model.waiting[0].professionalId);
+                }}
+                areas={{
+                  reception: (
+                    <span className="sl-area">
+                      <CalendarCheck size={13} weight="bold" /> Recepção
+                    </span>
+                  ),
+                  waiting: (
+                    <span className="sl-area">
+                      <Clock size={13} weight="bold" /> Espera ·{" "}
+                      {model.waiting.length}
+                    </span>
+                  ),
+                }}
                 label={(c, i) => (
                   <ChairTag
                     chair={c}
