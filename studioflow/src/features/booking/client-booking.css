@@ -1,12 +1,12 @@
 /* Booking choices: spacious cards and a clear, persistent next step. */
 .bk {
-  --bk-ink: #292b2e;
+  --bk-ink: #16130f;
   --bk-text: #4e4b46;
   --bk-muted: #716d65;
   --bk-line: #dfdbd2;
   --bk-soft: #eae7df;
   --bk-paper: #f5f3ee;
-  --bk-navy: #292b2e;
+  --bk-navy: #16130f;
   --bk-width: 720px;
 }
 .bk .bk-top {
@@ -78,7 +78,7 @@
 }
 .bk .bk-option:hover {
   border-color: #b3ada2;
-  box-shadow: 0 8px 22px #292b2e08;
+  box-shadow: 0 8px 22px #16130f08;
 }
 .bk .bk-option.is-selected {
   border-color: var(--bk-fill);
@@ -230,7 +230,7 @@
   border: 1px solid var(--bk-line);
   border-radius: 20px;
   background: #fffdf9f7;
-  box-shadow: 0 12px 45px #292b2e16;
+  box-shadow: 0 12px 45px #16130f16;
   transform: translate(-50%, 150%);
 }
 .bk .bk-bar.is-visible {

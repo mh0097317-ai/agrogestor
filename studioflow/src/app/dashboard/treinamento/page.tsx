@@ -16,7 +16,7 @@ export default function TrainingPage() {
   return (
     <ManagementBoundary>
       <PageHeader
-        title="Treinamento da IA"
+        title="Recepcionista IA"
         description="Seu jeito de conversar, em cada atendimento."
         actions={
           <Link className="management-link-button" href="/dashboard/conversas">

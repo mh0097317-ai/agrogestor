@@ -7,7 +7,7 @@
   place-items: center;
   overflow: hidden;
   padding: 24px;
-  background: #25272a;
+  background: #1f1a15;
   color: #f5f1e9;
   pointer-events: none;
   animation: sf-signature-away 250ms cubic-bezier(0.3, 0, 0.2, 1) 800ms forwards;
@@ -36,7 +36,7 @@
   overflow: visible;
 }
 .sf-signature-mark rect {
-  fill: #25272a;
+  fill: #1f1a15;
 }
 .sf-signature-mark .brand-arch {
   transform-origin: center;
@@ -148,7 +148,7 @@
   padding: 9px 15px;
   border: 1px solid #ffffff42;
   border-radius: 99px;
-  background: #25272ade;
+  background: #1f1a15de;
   color: #f5f1e9;
   font:
     400 12px var(--font-ui),

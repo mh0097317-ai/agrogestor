@@ -2092,9 +2092,9 @@
     cursor: pointer;
   }
   .mobile-professional-switch button[aria-pressed="true"] {
-    background: #292b2e;
+    background: #16130f;
     color: #f7f5ef;
-    border-color: #292b2e;
+    border-color: #16130f;
   }
   .mobile-professional-switch span {
     display: grid;

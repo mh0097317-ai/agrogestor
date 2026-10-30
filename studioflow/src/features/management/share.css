@@ -12,7 +12,7 @@
 .work-studio h2 {
   margin: 10px 0;
   font: 500 clamp(26px, 3vw, 38px)/1.16 var(--serif);
-  color: #292b2e;
+  color: #16130f;
 }
 .work-studio header p {
   color: #776453;
@@ -67,7 +67,7 @@
   border: 1px solid #dfd0be;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 15px 35px #292b2e12;
+  box-shadow: 0 15px 35px #16130f12;
 }
 .work-studio-preview.is-story {
   aspect-ratio: 9 / 16;
@@ -528,8 +528,8 @@
   border-color: #a5805b;
 }
 .share-mode-nav button.is-selected {
-  background: #292b2e;
-  border-color: #292b2e;
+  background: #16130f;
+  border-color: #16130f;
   color: #fff7ec;
 }
 .share-mode-nav button > span:nth-child(2) {
@@ -637,7 +637,7 @@
 .work-format-options button[aria-pressed="true"] {
   background: #f1e6d6;
   border-color: #9f7b51;
-  color: #292b2e;
+  color: #16130f;
 }
 .work-format-options small {
   grid-column: 2;
@@ -675,7 +675,7 @@
   aspect-ratio: auto;
   min-height: 410px;
   max-width: 420px;
-  background: #292b2e;
+  background: #16130f;
   box-shadow: 0 16px 36px #39271a14;
 }
 .work-studio-preview.is-empty::before {

@@ -52,7 +52,7 @@ async function renderArtwork(input: Artwork) {
     image.naturalHeight * ratio,
   );
   ctx.restore();
-  ctx.fillStyle = "#292b2e";
+  ctx.fillStyle = "#16130f";
   ctx.fillRect(0, photoHeight, 1080, 8);
   ctx.fillStyle = "#64666a";
   ctx.font = "600 25px sans-serif";
@@ -62,7 +62,7 @@ async function renderArtwork(input: Artwork) {
     photoHeight + 68,
     950,
   );
-  ctx.fillStyle = "#292b2e";
+  ctx.fillStyle = "#16130f";
   ctx.font = "500 58px Georgia";
   const words = input.title.trim().split(/\s+/);
   const lines: string[] = [];

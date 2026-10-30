@@ -2,7 +2,7 @@
 .pp {
   --pp-paper: #f5f3ee;
   --pp-paper-2: #eae7df;
-  --pp-ink: #292b2e;
+  --pp-ink: #16130f;
   --pp-text: #4e4b46;
   --pp-muted: #716d65;
   --pp-line: #dfdbd2;
@@ -45,7 +45,7 @@
 .pp .pp-cta {
   min-height: 54px;
   border-radius: 12px;
-  box-shadow: 0 6px 16px #292b2e12;
+  box-shadow: 0 6px 16px #16130f12;
 }
 .pp-links {
   gap: 10px;
@@ -132,7 +132,7 @@
   gap: 16px;
 }
 .pp-menu .pp-menu-row:hover {
-  background: #292b2e04;
+  background: #16130f04;
 }
 .pp-menu .pp-menu-number {
   font-weight: 500;
@@ -194,7 +194,7 @@
   border-radius: 24px;
   background: #fffdf9;
   padding: 28px;
-  box-shadow: 0 18px 45px #292b2e08;
+  box-shadow: 0 18px 45px #16130f08;
 }
 .pp .pp-book-card h2 {
   font-size: 30px;

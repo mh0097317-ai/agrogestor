@@ -101,7 +101,7 @@ export function PageHeader({
     Agenda: ["01", "Seu tempo, bem cuidado"],
     Clientes: ["02", "Relacionamento"],
     Conversas: ["03", "Atendimento"],
-    "Treinamento da IA": ["03", "Seu jeito de atender"],
+    "Recepcionista IA": ["03", "Seu jeito de atender"],
     Serviços: ["04", "Seu catálogo"],
     Produtos: ["05", "Sua vitrine"],
     Equipe: ["06", "Quem faz acontecer"],

@@ -18,7 +18,7 @@
   padding: max(12px, env(safe-area-inset-top))
     max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
     max(12px, env(safe-area-inset-left));
-  background: #20222570;
+  background: #16130f70;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
 }
@@ -100,9 +100,9 @@
   overflow-wrap: anywhere;
 }
 .mobile-module-grid a.is-current {
-  background: #292b2e;
+  background: #16130f;
   color: #fffdf9;
-  border-color: #292b2e;
+  border-color: #16130f;
 }
 .mobile-module-grid a.is-current svg {
   color: #dfc69e;

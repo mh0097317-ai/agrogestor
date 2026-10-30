@@ -5,7 +5,7 @@
   border: 1px solid #ddcab3;
   border-radius: 14px;
   background: #f8f1e8;
-  color: #292b2e;
+  color: #16130f;
 }
 .training-coach h3 {
   font: 500 26px/1.25 var(--serif);
@@ -112,7 +112,7 @@
 .assistant-settings .assistant-overview {
   border: 0;
   border-radius: 22px;
-  background: #292b2e;
+  background: #16130f;
   color: #eeeeea;
   grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.8fr);
 }

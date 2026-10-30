@@ -22,6 +22,7 @@ import {
   CaretRight,
   ChartLineUp,
   ChatCircleDots,
+  ChatsCircle,
   Copy,
   Crown,
   DotsThree,
@@ -57,10 +58,16 @@ import { format } from "date-fns";
 const links = [
   { path: "/dashboard", label: "Início", icon: SquaresFour },
   { path: "/dashboard/agenda", label: "Agenda", icon: CalendarDots },
+  {
+    path: "/dashboard/conversas",
+    label: "Conversas",
+    icon: ChatsCircle,
+    module: "recepcionista" as ModuleKey,
+  },
   { path: "/dashboard/clientes", label: "Clientes", icon: UsersThree },
   {
     path: "/dashboard/treinamento",
-    label: "Treinamento da IA",
+    label: "Recepcionista IA",
     icon: ChatCircleDots,
     module: "recepcionista" as ModuleKey,
   },
@@ -90,23 +97,30 @@ const links = [
 const navigationGroups: Record<string, string> = {
   "/dashboard": "Dia a dia",
   "/dashboard/agenda": "Dia a dia",
+  "/dashboard/conversas": "Dia a dia",
   "/dashboard/clientes": "Dia a dia",
-  "/dashboard/treinamento": "Crescimento",
-  "/dashboard/servicos": "Seu negócio",
-  "/dashboard/produtos": "Seu negócio",
-  "/dashboard/equipe": "Seu negócio",
-  "/dashboard/financeiro": "Seu negócio",
-  "/dashboard/relatorios": "Seu negócio",
-  "/dashboard/clube": "Crescimento",
-  "/dashboard/divulgar": "Crescimento",
+  "/dashboard/financeiro": "Dinheiro",
+  "/dashboard/relatorios": "Dinheiro",
+  "/dashboard/servicos": "Cadastro",
+  "/dashboard/produtos": "Cadastro",
+  "/dashboard/equipe": "Cadastro",
+  "/dashboard/clube": "Cadastro",
+  "/dashboard/divulgar": "Crescer",
+  "/dashboard/treinamento": "Crescer",
   "/dashboard/configuracoes": "Preferências",
 };
 const navigationOrder = [
   "Dia a dia",
-  "Seu negócio",
-  "Crescimento",
+  "Dinheiro",
+  "Cadastro",
+  "Crescer",
   "Preferências",
 ];
+/** Pages outside the menu still name themselves in the top bar. */
+const pageLabels: Record<string, string> = {
+  "/dashboard/operacao": "Saúde da operação",
+  "/dashboard/ativacao": "Ativação",
+};
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <WorkspaceProvider>
@@ -227,7 +241,10 @@ function Shell({ children }: { children: ReactNode }) {
       setSigningOut(false);
     }
   }
-  const page = links.find((l) => l.path === pathname)?.label || "Início";
+  const page =
+    links.find((l) => l.path === pathname)?.label ||
+    pageLabels[pathname] ||
+    "Início";
   // Only what the business's plan includes shows up in the menu.
   const menu = links.filter(
     (link) =>

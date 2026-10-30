@@ -12,7 +12,7 @@
   font-size: 12px;
 }
 .receivables-summary strong {
-  color: #292b2e;
+  color: #16130f;
   font: 500 28px var(--serif);
 }
 .app-shell .receivables-list {
@@ -188,7 +188,7 @@
 }
 .crm-overview strong {
   font: 500 36px var(--serif);
-  color: #292b2e;
+  color: #16130f;
 }
 .crm-overview small {
   font-size: 11px;
@@ -242,7 +242,7 @@
   grid-column: 1;
   grid-row: 2;
   font-size: 20px;
-  color: #292b2e;
+  color: #16130f;
 }
 .app-shell .crm-visits::before {
   content: "Atendimentos";
@@ -299,7 +299,7 @@
 }
 .settings-assistant-shortcut strong {
   display: block;
-  color: #292b2e;
+  color: #16130f;
   font: 500 25px var(--serif);
   margin-top: 8px;
 }

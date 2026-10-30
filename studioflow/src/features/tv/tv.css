@@ -1,6 +1,6 @@
 /* Reception display: graphite frame, an ivory appointment board, a quiet showcase. */
 .tv {
-  --tv-ink: #25272a;
+  --tv-ink: #1f1a15;
   --tv-paper: #f6f3ed;
   --tv-muted: #b7b5b0;
   --tv-gold: #d4bc91;
@@ -9,7 +9,7 @@
   width: 100%;
   height: 100dvh;
   overflow: hidden;
-  background: #202225;
+  background: #16130f;
   color: var(--tv-paper);
   font-size: clamp(14px, 1.08vw, 24px);
   line-height: 1.45;
@@ -258,7 +258,7 @@
   align-items: baseline;
   margin: 0;
   padding-bottom: 1vw;
-  border-bottom: 1px solid #282a2c1a;
+  border-bottom: 1px solid #2a241d1a;
   font: 500 1.7em/1.1 var(--serif);
   letter-spacing: -0.02em;
 }
@@ -284,7 +284,7 @@
   align-items: center;
   gap: 1vw;
   padding: 1vw 0;
-  border-bottom: 1px solid #282a2c12;
+  border-bottom: 1px solid #2a241d12;
 }
 .tv-list li:last-child {
   border-bottom: 0;
@@ -321,7 +321,7 @@
   white-space: nowrap;
 }
 .tv-list li.is-here em {
-  background: #292b2e;
+  background: #16130f;
   color: #fff;
 }
 .tv-list em.is-late {
@@ -368,7 +368,7 @@
   min-height: 0;
   padding: clamp(24px, 2.5vw, 60px);
   padding-left: 0;
-  background: #202225;
+  background: #16130f;
 }
 .tv-showcase-label {
   grid-row: 1;
@@ -419,8 +419,8 @@
   background: linear-gradient(
     180deg,
     transparent 25%,
-    #15171915 45%,
-    #151719ed 100%
+    #120f0c15 45%,
+    #120f0ced 100%
   );
 }
 .tv-ad-text {
@@ -457,7 +457,7 @@
   border: 1px solid #ffffff40;
   padding: 0.35em 0.8em;
   border-radius: 99px;
-  background: #25272a90;
+  background: #1f1a1590;
   color: #f6f3ed;
   font-size: 0.65em;
 }
@@ -847,7 +847,7 @@
 }
 
 .tv-welcome {
-  background: #202225;
+  background: #16130f;
 }
 .tv-welcome-photo {
   background: #35373a;
