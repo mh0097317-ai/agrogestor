@@ -180,6 +180,16 @@ export async function instanceOwner(instance: string) {
   };
 }
 
+/** "digitando…" in the customer's chat while the answer is written. */
+export async function sendTyping(instance: string, number: string, ms = 8000) {
+  const digits = number.replace(/\D/g, "");
+  if (!/^[0-9]{10,15}$/.test(digits)) return;
+  await evo(`/chat/sendPresence/${encodeURIComponent(instance)}`, {
+    method: "POST",
+    body: JSON.stringify({ number: digits, presence: "composing", delay: ms }),
+  });
+}
+
 export async function sendText(
   instance: string,
   number: string,

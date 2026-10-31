@@ -11,9 +11,11 @@ export function customerReminder(
   store: Store,
   appointment: Appointment,
   minutes = 120,
+  now = new Date(),
 ) {
+  const zone = { timeZone: "America/Sao_Paulo" } as const;
   const time = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
+    ...zone,
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(appointment.start));
@@ -24,18 +26,28 @@ export function customerReminder(
   const professional = store.professionals.find(
     (p) => p.id === appointment.professionalId,
   );
-  const day = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(appointment.start));
-  const lead =
-    minutes === 720
-      ? "Faltam cerca de 12 horas"
-      : minutes === 60
-        ? "Falta cerca de 1 hora"
-        : "Faltam cerca de 2 horas";
-  return `Oi, ${firstName(appointment.customerName) || "tudo bem"}! ${lead} para seu horário na ${store.business.name}.\n\n${service ? `${displayName(service)} · ` : ""}${day} às ${time}${professional ? ` com ${displayName(professional.name)}` : ""}. Se precisar ajustar, fale com a equipe por aqui. Até lá!`;
+  const date = (value: Date, options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("pt-BR", { ...zone, ...options }).format(value);
+  const start = new Date(appointment.start);
+  const day = date(start, { day: "2-digit", month: "2-digit" });
+  const iso = (value: Date) =>
+    new Intl.DateTimeFormat("en-CA", zone).format(value);
+  const today = iso(now) === iso(start);
+  const tomorrow = iso(new Date(now.getTime() + 86_400_000)) === iso(start);
+  const when = today
+    ? `hoje, ${day}`
+    : tomorrow
+      ? `amanhã, ${day}`
+      : `${date(start, { weekday: "long" })}, ${day}`;
+  const name = firstName(appointment.customerName);
+  const what = service ? displayName(service).toLowerCase() : "horário";
+  const withWho = professional ? ` com ${displayName(professional.name)}` : "";
+  // Three different notes, short like a person writes, never the same template.
+  if (minutes === 720)
+    return `Oi, ${name || "tudo bem"}! Passando pra lembrar do seu ${what}${withWho} ${when}, às ${time}, aqui na ${store.business.name}. Se precisar mudar, é só me chamar por aqui.`;
+  if (minutes === 60)
+    return `${name ? `${name}, falta` : "Falta"} 1 hora pro seu ${what}${withWho}: ${when}, às ${time}. Até já!`;
+  return `Oi, ${name || "tudo bem"}! Daqui a 2 horas é o seu ${what}${withWho} na ${store.business.name}: ${when}, às ${time}. Te esperamos!`;
 }
 
 /** No AI calls. Atomic claims prevent repeated sends, even with concurrent jobs. */
@@ -85,8 +97,7 @@ export async function sendAppointmentReminders() {
             row.business_id,
             appointment.professionalId,
             "assistant",
-          )) ||
-          (await conversationSender(row.business_id, null, "assistant"));
+          )) || (await conversationSender(row.business_id, null, "assistant"));
         if (!send) return;
         const { data: claimed, error: claimError } = await admin.rpc(
           "claim_staged_appointment_reminder",

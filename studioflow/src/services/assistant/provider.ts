@@ -179,7 +179,10 @@ type AiCredential = {
 function anthropicProviderCreate(
   credential: AiCredential,
   baseURL?: string,
+  pinned?: string,
 ): CreateMessage {
+  // The receptionist pins its model; other features follow the vault choice.
+  const model = pinned || credential.model;
   const client = new Anthropic({
     apiKey: credential.key,
     ...(baseURL ? { baseURL } : {}),
@@ -189,10 +192,7 @@ function anthropicProviderCreate(
   });
   return async (params) => {
     try {
-      return await client.beta.messages.create({
-        ...params,
-        model: credential.model,
-      });
+      return await client.beta.messages.create({ ...params, model });
     } catch (error) {
       // Only repair explicitly unsupported optional provider features. Domain
       // validation, tenant checks and booking constraints remain in StudioFlow.
@@ -203,6 +203,14 @@ function anthropicProviderCreate(
       const unsupportedCache =
         /cache_control/i.test(error.message) &&
         /unsupported|not supported|unknown|extra inputs/i.test(error.message);
+      // Older models (e.g. Claude Haiku 4.5) take no effort setting.
+      const unsupportedEffort =
+        /effort|output_config/i.test(error.message) && !!params.output_config;
+      if (unsupportedEffort) {
+        const rest = { ...params };
+        delete rest.output_config;
+        return client.beta.messages.create({ ...rest, model });
+      }
       if (!unsupportedStrict && !unsupportedCache) throw error;
       console.warn("StudioFlow provider compatibility:", {
         provider: credential.provider,
@@ -220,25 +228,35 @@ function anthropicProviderCreate(
             }
           : {}),
         ...(unsupportedCache ? { cache_control: undefined } : {}),
-        model: credential.model,
+        model,
       });
     }
   };
 }
 
-function credentialCreate(credential: AiCredential): CreateMessage {
+function credentialCreate(
+  credential: AiCredential,
+  pinned?: string,
+): CreateMessage {
   if (credential.provider === "openai")
     return openAiCreate(credential.key, credential.model);
   if (credential.provider === "mwapi")
-    return anthropicProviderCreate(credential, "https://api.mwapi.dev");
-  return anthropicProviderCreate(credential);
+    return anthropicProviderCreate(credential, "https://api.mwapi.dev", pinned);
+  return anthropicProviderCreate(credential, undefined, pinned);
 }
 
 function shouldFailover(error: unknown) {
-  if (error instanceof DomainError) return error.status === 502 || error.status === 503;
+  if (error instanceof DomainError)
+    return error.status === 502 || error.status === 503;
   if (!error || typeof error !== "object") return false;
   const status = "status" in error ? Number(error.status) : undefined;
-  if (status === 401 || status === 403 || status === 408 || status === 429 || (status !== undefined && status >= 500))
+  if (
+    status === 401 ||
+    status === 403 ||
+    status === 408 ||
+    status === 429 ||
+    (status !== undefined && status >= 500)
+  )
     return true;
   const name = "name" in error ? String(error.name) : "";
   return (
@@ -270,15 +288,21 @@ export async function runWithAiFailover<T>(
   }
 }
 
+/**
+ * `model` pins a Claude model for this use (the receptionist runs on the
+ * model it was built and tested with); without it the vault or the AI mode
+ * in /admin decides. An OpenAI key keeps its own model.
+ */
 export async function businessCreate(
   businessId: string,
+  model?: string,
 ): Promise<CreateMessage | null> {
   const credential = await businessAiCredential(businessId);
   if (!credential)
-    return claudeCreate(tierModel(await businessAiTier(businessId)));
-  const primary = credentialCreate(credential);
+    return claudeCreate(model || tierModel(await businessAiTier(businessId)));
+  const primary = credentialCreate(credential, model);
   const fallback = credential.fallback
-    ? credentialCreate(credential.fallback)
+    ? credentialCreate(credential.fallback, model)
     : null;
   if (!fallback) return primary;
   return async (params) => {

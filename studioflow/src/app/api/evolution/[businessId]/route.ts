@@ -4,6 +4,7 @@ import { receiveWhatsAppMessages } from "@/services/assistant/conversations";
 import {
   parseEvolution,
   sendText,
+  sendTyping,
   sendBookingMenu,
   sendWhatsAppAudio,
   evolutionAudio,
@@ -56,7 +57,8 @@ export async function POST(
     if (delivery.state)
       await saveLinkState(businessId, delivery.state, professionalId);
     // Same number as the shop link: the shop link already got this message.
-    if (await duplicatesShopLink(businessId, professionalId)) return plain("ok");
+    if (await duplicatesShopLink(businessId, professionalId))
+      return plain("ok");
     const changes = parseEvolutionChanges(body);
     if (changes.messages.length || changes.phones.length) {
       const admin = createSupabaseAdmin();
@@ -132,6 +134,7 @@ export async function POST(
                 )
             : undefined,
         })),
+      typing: (to) => sendTyping(link.instance, to),
       send: async (to, text, menu, audio) => {
         const result = await (menu
           ? sendBookingMenu(link.instance, to, text, menu)
@@ -142,7 +145,8 @@ export async function POST(
           } catch (error) {
             console.error("StudioFlow voice reply error:", {
               code:
-                error instanceof Error && error.message.startsWith("elevenlabs-speech-")
+                error instanceof Error &&
+                error.message.startsWith("elevenlabs-speech-")
                   ? error.message
                   : "whatsapp-audio-send-failed",
             });

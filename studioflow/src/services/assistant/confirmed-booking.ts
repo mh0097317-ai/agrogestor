@@ -74,7 +74,8 @@ export async function finishConfirmedBooking(input: {
   }
   const selection: Interpretation =
     picked?.professionalId &&
-    (!input.selection.professionalId || input.selection.professionalId === "any")
+    (!input.selection.professionalId ||
+      input.selection.professionalId === "any")
       ? { ...input.selection, professionalId: picked.professionalId }
       : input.selection;
   const confirmsSummary = (value: string, previous?: ConversationMessage) =>
@@ -147,7 +148,9 @@ export async function finishConfirmedBooking(input: {
       `Posso confirmar ${store.services
         .filter((s) => selection.serviceIds.includes(s.id))
         .map((s) => s.name.toLowerCase())
-        .join(" + ")}${person ? ` com ${displayName(person.name)}` : ""} em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long" }).format(new Date(`${selection.date}T12:00:00Z`))}, ${selection.date.split("-").reverse().join("/")}, às ${selection.time}?`,
+        .join(
+          " + ",
+        )}${person ? ` com ${displayName(person.name)}` : ""} em ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long" }).format(new Date(`${selection.date}T12:00:00Z`))}, ${selection.date.split("-").reverse().join("/")}, às ${selection.time}?`,
     );
   }
   let name = ctx.customerName || answeringName;

@@ -18,6 +18,9 @@ import { changeRequest } from "../src/services/assistant/manage-booking";
 import type { BookingMenu } from "../src/services/assistant/booking-menu";
 import type { ConversationMessage } from "../src/types";
 
+// The previous engine (interpreter + rules), kept as a switch while v3 settles.
+process.env.STUDIOFLOW_ASSISTANT_ENGINE = "v2";
+
 function memoryRepo() {
   const conversations = new Map<string, Conversation>();
   const messages = new Map<string, ConversationMessage[]>();

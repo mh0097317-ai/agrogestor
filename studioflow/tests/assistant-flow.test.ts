@@ -14,6 +14,9 @@ import {
 import type { CreateMessage } from "../src/services/assistant/agent";
 import type { ConversationMessage } from "../src/types";
 
+// The previous engine (interpreter + rules), kept as a switch while v3 settles.
+process.env.STUDIOFLOW_ASSISTANT_ENGINE = "v2";
+
 /** In-memory storage with the same contract as the database. */
 function memoryRepo(
   realIds = false,

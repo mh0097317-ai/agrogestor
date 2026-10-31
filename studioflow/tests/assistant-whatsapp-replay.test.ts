@@ -13,6 +13,9 @@ import {
 import type { BookingMenu } from "../src/services/assistant/booking-menu";
 import type { ConversationMessage } from "../src/types";
 
+// The previous engine (interpreter + rules), kept as a switch while v3 settles.
+process.env.STUDIOFLOW_ASSISTANT_ENGINE = "v2";
+
 /*
  * The conversation a real owner tested on WhatsApp, tap by tap: service, day,
  * slot, name. It used to loop asking the name again and never booked.

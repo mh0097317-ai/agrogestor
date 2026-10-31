@@ -2,7 +2,7 @@ import type { ConversationMessage, Store } from "@/types";
 import { exactPriceSelection } from "./routine-reply";
 
 // Customers often split one request over a few quick messages.
-export const whatsappBurstDelayMs = 3000;
+export const whatsappBurstDelayMs = 1500;
 /** A person who wrote in the chat keeps it for this long. */
 export const manualPauseMs = 30 * 60_000;
 

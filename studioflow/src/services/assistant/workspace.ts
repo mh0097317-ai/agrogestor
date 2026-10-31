@@ -619,6 +619,7 @@ export async function simulateAssistant(
 ) {
   const { simulateWhatsApp } = await import("./simulator");
   const { businessCreate } = await import("./provider");
+  const { receptionistModel, receptionistV3 } = await import("./receptionist");
   const { getPublicStore } = await import("../server-store");
   let businessId: string;
   let slug: string;
@@ -656,7 +657,10 @@ export async function simulateAssistant(
     text: input.text,
     messages: input.messages,
     history: input.history as never,
-    create: await businessCreate(businessId),
+    create: await businessCreate(
+      businessId,
+      receptionistV3(true) ? receptionistModel : undefined,
+    ),
     store: () => getPublicStore(slug),
     takeTurn,
     addTokens,

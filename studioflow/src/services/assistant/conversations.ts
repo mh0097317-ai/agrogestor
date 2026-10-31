@@ -29,6 +29,13 @@ import { hasModule } from "@/lib/modules";
 import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
 import { businessCreate } from "./provider";
 import { platformAiEnabled } from "../platform-ai-control";
+import {
+  receptionistTurn,
+  receptionistModel,
+  receptionistV3,
+  upcomingFor,
+  customerWords,
+} from "./receptionist";
 import { assistantScheduleOpen } from "@/lib/assistant-schedule";
 import {
   bookingMenu,
@@ -78,23 +85,28 @@ type AssistantSettingsRow = {
   open_start: string;
   open_end: string;
 };
-function assistantAllowedNow(settings: AssistantSettingsRow | null, at = new Date()) {
+function assistantAllowedNow(
+  settings: AssistantSettingsRow | null,
+  at = new Date(),
+) {
   return Boolean(
     settings?.assistant_enabled &&
-      assistantScheduleOpen(
-        {
-          enabled: settings.assistant_schedule_enabled === true,
-          days: settings.open_days || [],
-          start: settings.open_start || "",
-          end: settings.open_end || "",
-        },
-        at,
-      ),
+    assistantScheduleOpen(
+      {
+        enabled: settings.assistant_schedule_enabled === true,
+        days: settings.open_days || [],
+        start: settings.open_start || "",
+        end: settings.open_end || "",
+      },
+      at,
+    ),
   );
 }
 function cursorBefore(value: string) {
   const time = Date.parse(value);
-  return new Date(Number.isFinite(time) ? time - 1 : Date.now() - 1).toISOString();
+  return new Date(
+    Number.isFinite(time) ? time - 1 : Date.now() - 1,
+  ).toISOString();
 }
 export interface Conversation {
   id: string;
@@ -590,7 +602,12 @@ export async function processConversation(
         repo,
         conversationId,
         delivery,
-        create === undefined ? await businessCreate(repo.businessId) : create,
+        create === undefined
+          ? await businessCreate(
+              repo.businessId,
+              receptionistV3(delivery.simulate) ? receptionistModel : undefined,
+            )
+          : create,
       );
     } catch (error) {
       const code = failureCode(error);
@@ -644,6 +661,37 @@ export async function processConversation(
         .catch(() => undefined);
       const failed = await repo.get(conversationId).catch(() => null);
       say = failed && failed.channel !== "whatsapp" ? handoffNotice : null;
+      // A customer being served is never left without an answer. Only when
+      // nothing may have gone out yet: an uncertain send is never repeated.
+      // A first contact may be a personal chat on a shared number: there the
+      // team sees the event and decides.
+      const serving =
+        failed?.channel === "whatsapp" &&
+        (await repo.messages(conversationId).catch(() => [])).some(
+          (m) =>
+            m.role === "assistant" &&
+            Date.now() - Date.parse(m.createdAt) < 86_400_000,
+        );
+      if (
+        serving &&
+        run?.state !== "SENDING" &&
+        delivery.send &&
+        !delivery.simulate
+      ) {
+        const sorry =
+          "Opa, só um instante! Já chamei alguém da equipe para continuar com você por aqui.";
+        try {
+          const sentId = await delivery.send(sorry, null);
+          await repo.addMessage(
+            conversationId,
+            "assistant",
+            sorry,
+            sentId || undefined,
+          );
+        } catch {
+          /* The event above already asks the team to look at it. */
+        }
+      }
       if (say)
         await repo
           .addMessage(conversationId, "assistant", say)
@@ -817,7 +865,9 @@ export async function answerPending(
     return null;
   }
   // Cancel/reschedule is answered from the agenda, without a model call.
-  const customerText = pending.filter((m) => m.role === "customer").at(-1)!.body;
+  const customerText = pending
+    .filter((m) => m.role === "customer")
+    .at(-1)!.body;
   const managed =
     conversation.channel === "whatsapp" &&
     !pending.some((message) => message.role === "staff")
@@ -905,7 +955,11 @@ export async function answerPending(
     });
     return toHuman("Limite diário da atendente virtual atingido.");
   }
-  if (conversation.channel === "whatsapp") {
+  // v3: one conversational model call decides; v2 kept only as a switch back.
+  const v3 = receptionistV3(delivery.simulate);
+  if (conversation.channel === "whatsapp" && v3)
+    await repo.startRun?.(conversationId, cursor);
+  if (conversation.channel === "whatsapp" && !v3) {
     await repo.startRun?.(conversationId, cursor);
     understanding = await understandMessage(
       create,
@@ -957,8 +1011,9 @@ export async function answerPending(
         store.appointments.find(
           (a) =>
             a.status !== "cancelled" &&
-            a.customerPhone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") ===
-              conversation.contactPhone,
+            a.customerPhone
+              .replace(/\D/g, "")
+              .replace(/^55(?=\d{10,11}$)/, "") === conversation.contactPhone,
         )?.customerName || "",
       ) ||
       nameAnswer(text, recent),
@@ -1227,21 +1282,112 @@ export async function answerPending(
       throw new N8nTurnError();
     }
   }
-  const result =
+  const result: import("./agent").TurnResult & {
+    menu?: BookingMenu | null;
+  } =
     closed ||
-    (await runAssistant({
-      create,
-      store,
-      history: conversation.history,
-      interpretation: understanding?.interpretation,
-      transcript: contextText(recent),
-      bookingContext,
-      onStage: async (state) => {
-        if (understanding) await repo.progress?.(conversationId, { state });
-      },
-      customerText: text,
-      ctx,
-    }));
+    (v3
+      ? await (async () => {
+          await repo.progress?.(conversationId, { state: "GENERATING" });
+          const transcript = (await repo.messages(conversationId)).filter(
+            (m) =>
+              m.createdAt < pending[0].createdAt &&
+              Date.parse(pending[0].createdAt) - Date.parse(m.createdAt) <
+                7 * 86_400_000,
+          );
+          const earlier = transcript.flatMap(
+            (m): { role: "user" | "assistant"; text: string }[] =>
+              m.role === "customer"
+                ? [
+                    {
+                      role: "user" as const,
+                      text: customerWords(m.body, scopedStore),
+                    },
+                  ]
+                : m.role === "assistant"
+                  ? [{ role: "assistant" as const, text: m.body }]
+                  : m.role === "staff"
+                    ? [
+                        {
+                          role: "assistant" as const,
+                          text: `[Equipe] ${m.body}`,
+                        },
+                      ]
+                    : m.body.startsWith("Lista enviada")
+                      ? [{ role: "assistant" as const, text: `[${m.body}]` }]
+                      : [],
+          );
+          // Times offered or chosen in the last hours may be booked now.
+          const known = transcript
+            .filter(
+              (m) =>
+                Date.parse(pending[0].createdAt) - Date.parse(m.createdAt) <
+                6 * 3_600_000,
+            )
+            .flatMap((m) =>
+              [
+                ...customerWords(m.body, scopedStore).matchAll(
+                  /\b([01]?\d|2[0-3])(?::([0-5]\d)|h([0-5]\d)?)(?!\d)/g,
+                ),
+              ].map((x) => `${x[1].padStart(2, "0")}:${x[2] || x[3] || "00"}`),
+            );
+          const history = customerBookingContext(
+            scopedStore,
+            conversation.contactPhone,
+            undefined,
+            pending[0].createdAt,
+          );
+          const turn = await receptionistTurn({
+            create,
+            store: scopedStore,
+            ctx: {
+              ...ctx,
+              professionalId: conversation.whatsappProfessionalId || undefined,
+            },
+            earlier,
+            text,
+            known,
+            context: [
+              conversation.channel === "whatsapp"
+                ? upcomingFor(
+                    scopedStore,
+                    conversation.contactPhone,
+                    new Date(),
+                  )
+                : "",
+              history
+                ? `Atendimentos anteriores deste cliente (só referência): ${history.replace(/\n/g, "; ")}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" | "),
+          });
+          return {
+            history: [
+              ...conversation.history,
+              { role: "user", content: text },
+              { role: "assistant", content: turn.reply || "(sem resposta)" },
+            ].slice(-40) as History,
+            reply: turn.reply,
+            handoff: turn.handoff,
+            booked: turn.booked,
+            usage: turn.usage,
+            menu: turn.menu,
+          };
+        })()
+      : await runAssistant({
+          create,
+          store,
+          history: conversation.history,
+          interpretation: understanding?.interpretation,
+          transcript: contextText(recent),
+          bookingContext,
+          onStage: async (state) => {
+            if (understanding) await repo.progress?.(conversationId, { state });
+          },
+          customerText: text,
+          ctx,
+        }));
   if (moved && result.reply)
     result.reply = result.reply.replace(
       /^Tudo certo! Agendamento confirmado para/,
@@ -1250,7 +1396,9 @@ export async function answerPending(
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);
-  if (result.reply) {
+  if (result.reply && v3 && conversation.channel === "whatsapp")
+    result.reply = whatsappText(result.reply);
+  if (result.reply && !v3) {
     const original = result.reply;
     result.reply = welcomeReply(original, recent, text, replyTime);
     if (conversation.channel === "whatsapp")
@@ -1280,19 +1428,21 @@ export async function answerPending(
     return superseded;
   let sentId: string | void = undefined;
   if (result.reply && delivery.send) {
-    if (understanding)
+    if (understanding || v3)
       await repo.progress?.(conversationId, { state: "SENDING" });
     sentId = await delivery.send(
       result.reply,
-      result.booked || result.handoff || pureGreeting(result.reply)
-        ? null
-        : bookingMenu(
-            scopedStore,
-            understanding?.interpretation,
-            text,
-            undefined,
-            result.reply,
-          ),
+      v3
+        ? result.menu || null
+        : result.booked || result.handoff || pureGreeting(result.reply)
+          ? null
+          : bookingMenu(
+              scopedStore,
+              understanding?.interpretation,
+              text,
+              undefined,
+              result.reply,
+            ),
     );
     if (
       sentId &&
@@ -1319,7 +1469,15 @@ export async function answerPending(
       result.reply,
       sentId || undefined,
     );
-  if (understanding)
+  if (v3 && result.reply && result.menu)
+    await repo.addMessage(
+      conversationId,
+      "event",
+      `Lista enviada: ${result.menu.title} (${result.menu.rows
+        .map((row) => row.title)
+        .join(", ")})`.slice(0, 600),
+    );
+  if (understanding || v3)
     await repo.progress?.(conversationId, {
       state: result.reply ? "SENT" : "SILENT",
     });
@@ -1503,6 +1661,8 @@ export async function receiveWhatsAppMessages(input: {
     menu?: BookingMenu | null,
     audio?: Uint8Array,
   ) => Promise<string | void>;
+  /** Shows "digitando…" to the customer; best effort. */
+  typing?: (to: string) => Promise<void>;
 }) {
   const slug = await slugOf(input.businessId);
   // Sem acesso liberado ou sem a recepcionista no plano: a mensagem não é tratada.
@@ -1512,12 +1672,15 @@ export async function receiveWhatsAppMessages(input: {
   const repo = liveRepo(input.businessId, input.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
-    .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
+    .select(
+      "assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end",
+    )
     .eq("business_id", input.businessId)
     .maybeSingle();
   const globalAiEnabled = await platformAiEnabled();
   const assistantActive =
-    globalAiEnabled && assistantAllowedNow(settings as AssistantSettingsRow | null);
+    globalAiEnabled &&
+    assistantAllowedNow(settings as AssistantSettingsRow | null);
   const { brazilPhone } = await import("./whatsapp");
   // Reply to the exact number WhatsApp used (it may lack the 9 of new numbers).
   const touched = new Map<string, { to: string; replyWithAudio: boolean }>();
@@ -1696,7 +1859,9 @@ export async function receiveWhatsAppMessages(input: {
     await new Promise((resolve) => setTimeout(resolve, whatsappBurstDelayMs));
     const { data: freshSettings } = await createSupabaseAdmin()
       .from("business_settings")
-      .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
+      .select(
+        "assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end",
+      )
       .eq("business_id", input.businessId)
       .maybeSingle();
     if (
@@ -1707,6 +1872,7 @@ export async function receiveWhatsAppMessages(input: {
     for (const [id, target] of touched) {
       const conversation = await repo.get(id);
       if (!conversation || conversation.status !== "ai") continue;
+      void input.typing?.(target.to).catch(() => undefined);
       await processConversation(repo, id, {
         origin: input.origin,
         slug,
@@ -1855,12 +2021,15 @@ export async function receiveInstagram(
   const repo = liveRepo(account.businessId, account.tenantId);
   const { data: settings } = await createSupabaseAdmin()
     .from("business_settings")
-    .select("assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end")
+    .select(
+      "assistant_enabled,assistant_schedule_enabled,open_days,open_start,open_end",
+    )
     .eq("business_id", account.businessId)
     .maybeSingle();
   const globalAiEnabled = await platformAiEnabled();
   const assistantActive =
-    globalAiEnabled && assistantAllowedNow(settings as AssistantSettingsRow | null);
+    globalAiEnabled &&
+    assistantAllowedNow(settings as AssistantSettingsRow | null);
   const touched = new Map<string, string>();
   for (const message of messages) {
     if (message.recipient && message.recipient !== account.igUserId) continue;

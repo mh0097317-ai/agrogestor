@@ -146,7 +146,7 @@ test("reminders greet the real first name and write names normally", async () =>
     720,
   );
   assert.match(text, /^Oi, Gislayniel!/);
-  assert.match(text, /com Matheus\./);
+  assert.match(text, /com Matheus\b/);
 });
 
 test("the text says more times are in the list", async () => {

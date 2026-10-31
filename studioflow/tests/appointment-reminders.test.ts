@@ -14,7 +14,7 @@ test("customer reminder uses actual appointment data and Sao Paulo time", () => 
   assert.ok(text.includes("Ana"));
   assert.ok(text.includes("16:00"));
   assert.ok(text.includes(store.business.name));
-  assert.ok(text.includes(store.services[0].name));
+  assert.ok(text.toLowerCase().includes(store.services[0].name.toLowerCase()));
   assert.ok(
     text.includes(
       store.professionals.find((p) => p.id === appointment.professionalId)!
@@ -31,14 +31,28 @@ test("reminder steps explain their own lead time and show the real date", () => 
       start: "2026-10-15T12:00:00Z",
       customerName: "Ana",
     };
-  for (const [step, label] of [
-    [720, "12 horas"],
-    [120, "2 horas"],
-    [60, "1 hora"],
-  ] as const) {
-    const text = customerReminder(store, appointment, step);
-    assert.ok(text.includes(label));
+  const texts = ([720, 120, 60] as const).map((step) =>
+    customerReminder(store, appointment, step),
+  );
+  assert.match(texts[0], /lembrar/);
+  assert.match(texts[1], /2 horas/);
+  assert.match(texts[2], /1 hora/);
+  for (const text of texts) {
     assert.ok(text.includes("15/10"));
     assert.ok(text.includes("09:00"));
   }
+  assert.equal(new Set(texts).size, 3, "three different notes");
+});
+
+test("reminders say hoje and amanhã when they are", () => {
+  const store = createSeed();
+  const appointment = {
+    ...store.appointments[0],
+    start: "2026-10-15T19:00:00Z",
+    customerName: "Ana",
+  };
+  const eve = new Date("2026-10-14T22:00:00Z");
+  assert.match(customerReminder(store, appointment, 720, eve), /amanhã, 15\/10/);
+  const day = new Date("2026-10-15T17:00:00Z");
+  assert.match(customerReminder(store, appointment, 120, day), /hoje, 15\/10/);
 });
