@@ -879,8 +879,10 @@ export async function answerPending(
   const customerText = pending
     .filter((m) => m.role === "customer")
     .at(-1)!.body;
+  // The v3 receptionist cancels and moves bookings itself, in conversation.
   const managed =
     conversation.channel === "whatsapp" &&
+    !receptionistV3(simulate) &&
     !pending.some((message) => message.role === "staff")
       ? await manageReply({
           store: scopedStore,
@@ -1119,6 +1121,38 @@ export async function answerPending(
         actor: "Recepcionista",
       });
       return appointment;
+    },
+    change: async (action, appointment, start, professionalId) => {
+      if (simulate)
+        return action === "cancel"
+          ? simulatedChange(appointment, action)
+          : {
+              ...appointment,
+              start: start!,
+              professionalId: professionalId || appointment.professionalId,
+            };
+      const changed = await changeBooking(
+        delivery.slug,
+        scopedStore,
+        appointment,
+        conversation.contactPhone,
+        action,
+        start,
+        professionalId,
+      );
+      if (action === "cancel")
+        await dropPendingCharge(changed).catch(() => undefined);
+      else await notifyNewBooking(delivery.slug, changed.id, delivery.origin);
+      await logActivity(changed.businessId, {
+        source: "recepcionista",
+        action:
+          action === "cancel"
+            ? "Cancelou pelo WhatsApp"
+            : "Remarcou pelo WhatsApp",
+        detail: `${changed.customerName} · ${activityWhen(changed.start)}`,
+        actor: "Recepcionista",
+      });
+      return changed;
     },
   };
   const direct =

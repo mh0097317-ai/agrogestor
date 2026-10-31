@@ -134,6 +134,30 @@ class Chat {
         this.store.appointments.push(appointment);
         return appointment;
       },
+      change: async (action, appointment, start, professionalId) => {
+        const live = this.store.appointments.find(
+          (a) => a.id === appointment.id,
+        )!;
+        if (action === "cancel") {
+          live.status = "cancelled";
+          return live;
+        }
+        const slot = availableSlots(
+          this.store,
+          live.serviceIds,
+          professionalId || live.professionalId,
+          localDate(new Date(start!)),
+        ).find((s) => s.start === new Date(start!).toISOString());
+        if (!slot)
+          throw new DomainError("Esse horário acabou de ser ocupado.", 409);
+        live.end = new Date(
+          Date.parse(slot.start) +
+            (Date.parse(live.end) - Date.parse(live.start)),
+        ).toISOString();
+        live.start = slot.start;
+        live.professionalId = slot.professionalId;
+        return live;
+      },
     };
     const known = this.earlier.slice(-12).flatMap((m) => timesIn(m.text));
     const started = Date.now();
@@ -635,7 +659,59 @@ export const scenarios: Scenario[] = [
       c.hold(s.slot, s.professional.id, s.service.id);
       const r = await c.say("quero cancelar meu horário");
       c.clean(r.reply);
+      if (c.booked[0].status !== "cancelled") {
+        const sure = await c.say("não precisa remarcar, pode cancelar sim");
+        c.clean(sure.reply);
+      }
+      c.expect(c.booked[0].status === "cancelled", "não cancelou o horário");
       c.expect(!c.made, "marcou em vez de cancelar");
+    },
+  },
+  {
+    name: "Remarca para mais tarde",
+    run: async (c, s) => {
+      const held = s.slots[0];
+      c.hold(held, s.professional.id, s.service.id);
+      const offer = await c.say(
+        "consigo passar meu horário pra mais tarde nesse mesmo dia?",
+      );
+      c.clean(offer.reply);
+      const time =
+        timesIn(offer.reply).find((t) => t > held.time) ||
+        offer.menu?.rows
+          .map((r) => timesIn(r.title)[0])
+          .find((t) => t && t > held.time);
+      if (!time) return void c.problems.push("não ofereceu horário mais tarde");
+      const r = await c.say(`pode ser às ${time}`);
+      c.clean(r.reply);
+      const mine = c.booked[0];
+      c.expect(!c.made, "criou outro horário em vez de remarcar");
+      c.expect(
+        mine.status !== "cancelled" &&
+          new Intl.DateTimeFormat("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(mine.start)) === time,
+        `não remarcou para ${time}`,
+      );
+    },
+  },
+  {
+    name: "Não vou conseguir ir",
+    run: async (c, s) => {
+      c.hold(s.slot, s.professional.id, s.service.id);
+      const r = await c.say("putz, não vou conseguir ir no meu horário");
+      c.clean(r.reply);
+      c.expect(
+        c.booked[0].status !== "cancelled",
+        "cancelou sem o cliente confirmar",
+      );
+      c.expect(!c.made, "marcou outro horário do nada");
+      c.expect(
+        /remarc|outro (dia|hor)|mudar|trocar|passar/i.test(r.reply),
+        "não ofereceu remarcar",
+      );
     },
   },
   {

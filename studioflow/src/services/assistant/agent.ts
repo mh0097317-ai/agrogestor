@@ -102,6 +102,13 @@ export interface AssistantContext {
   /** Fresh public store of the business (availability changes). */
   loadStore: () => Promise<Store>;
   book: (input: BookRequest) => Promise<Appointment>;
+  /** Cancels or moves one of this verified customer's own bookings. */
+  change?: (
+    action: "cancel" | "reschedule",
+    appointment: Appointment,
+    start?: string,
+    professionalId?: string,
+  ) => Promise<Appointment>;
   /** Payments online on: deposit rules apply. */
   payments: boolean;
   /** The validated interpretation authorizes mutation, never the model alone. */

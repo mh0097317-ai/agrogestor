@@ -77,6 +77,9 @@ async function setup(name: string) {
 }
 
 test("the test chat cancels like WhatsApp but leaves the agenda untouched", async () => {
+  // The step-by-step cancel of the previous engine (v3 has its own tests).
+  const engine = process.env.STUDIOFLOW_ASSISTANT_ENGINE;
+  process.env.STUDIOFLOW_ASSISTANT_ENGINE = "v2";
   const t = await setup("cancel");
   try {
     const ask = await t.say("Quero cancelar meu horário");
@@ -96,6 +99,8 @@ test("the test chat cancels like WhatsApp but leaves the agenda untouched", asyn
     // The transcript carries over between turns.
     assert.equal(done.messages.filter((m) => m.role === "customer").length, 2);
   } finally {
+    if (engine === undefined) delete process.env.STUDIOFLOW_ASSISTANT_ENGINE;
+    else process.env.STUDIOFLOW_ASSISTANT_ENGINE = engine;
     await t.cleanup();
   }
 });

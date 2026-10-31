@@ -425,3 +425,93 @@ test("booking the customer's own slot again says it is already booked", async ()
     await t.cleanup();
   }
 });
+
+async function bookLucas(t: Awaited<ReturnType<typeof setup>>) {
+  const pro = t.pros[0];
+  const slot = t.slot(pro);
+  await t.say(`SF_SLOT|${t.day}|${slot.time}|${pro.id}|${t.service.id}`, [
+    () => reply("Como você prefere ser chamado?"),
+  ]);
+  await t.say("Lucas", [
+    () =>
+      tool("agendar", {
+        servicos: [t.service.id],
+        profissional: pro.id,
+        inicio: slot.start,
+        nome: "Lucas",
+        telefone: "",
+        cpf: "",
+      }),
+    () => reply("Fechado, Lucas!"),
+  ]);
+  return { pro, slot };
+}
+const codeIn = (params: Params) =>
+  /código ([0-9a-f]{8})/.exec(lastText(params))?.[1] || "";
+
+test("cancels the customer's own booking only after the tool runs", async () => {
+  const t = await setup("cancel");
+  try {
+    await bookLucas(t);
+    let code = "";
+    await t.say("não vou conseguir ir, pode cancelar", [
+      (params) => {
+        code = codeIn(params);
+        assert.ok(code, "the booking code reaches the model");
+        return reply("Poxa! Cancelei aqui, tá?");
+      },
+      (params) => {
+        assert.match(lastText(params), /Nada foi cancelado/);
+        return tool("cancelar_horario", { codigo: code });
+      },
+      (params) => {
+        assert.match(lastResult(params), /Horário cancelado/);
+        return reply("Pronto, Lucas, cancelado. Quando quiser, é só chamar!");
+      },
+    ]);
+    const store = await readDemo(t.slug);
+    assert.equal(store.appointments.length, 1);
+    assert.equal(store.appointments[0].status, "cancelled");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("reschedules in place instead of booking a second time", async () => {
+  const t = await setup("move");
+  try {
+    const { pro } = await bookLucas(t);
+    const later = t.slot(pro, 4);
+    let code = "";
+    await t.say(`dá pra passar pras ${later.time}?`, [
+      (params) => {
+        code = codeIn(params);
+        return tool("remarcar_horario", {
+          codigo: code,
+          inicio: later.start,
+          profissional: pro.id,
+        });
+      },
+      (params) => {
+        assert.match(lastResult(params), /remarcado/);
+        return reply(`Feito! Passei pras ${later.time}.`);
+      },
+    ]);
+    const store = await readDemo(t.slug);
+    assert.equal(store.appointments.length, 1);
+    assert.equal(
+      Date.parse(store.appointments[0].start),
+      Date.parse(later.start),
+    );
+    // Someone else's code or a made-up one is refused.
+    await t.say("cancela o horário abc12345", [
+      () => tool("cancelar_horario", { codigo: "abc12345" }),
+      (params) => {
+        assert.match(lastResult(params), /Não achei esse horário/);
+        return reply("Não achei esse horário aqui.");
+      },
+    ]);
+  } finally {
+    await t.cleanup();
+  }
+});

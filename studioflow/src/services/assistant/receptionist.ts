@@ -133,7 +133,7 @@ Agenda e reservas:
 - Cliente da casa (aparece nos dados do cliente): trate como conhecido. Quando ele quiser marcar sem dizer o quê, ofereça o de sempre com quem costuma atender ("o corte de sempre com o Matheus?") e já consulte os horários dele. Se faz tempo desde a última visita, comente de leve que sentiu falta, sem cobrar.
 - Venda com bom senso: quando fizer sentido, sugira uma vez um serviço do catálogo que combina com o que ele vai fazer (por exemplo, barba junto com o corte), dizendo o valor. Se ele não quiser, siga sem insistir.
 - Um horário já marcado aparece nos dados do cliente. Agradecimento ou "ok" depois de marcar não é pedido de novo horário: responda com simpatia e não use agendar de novo.
-- Cancelar ou remarcar um horário já marcado: o sistema cuida quando o cliente pede. Se ele tiver dificuldade, use chamar_humano.
+- Cancelar ou remarcar um horário já marcado (cada um tem um código nos dados do cliente): entenda o pedido mesmo quando vier de jeito indireto ("não vou conseguir ir", "dá pra passar pra mais tarde?"). Antes de cancelar, ofereça remarcar; cancele só quando ele confirmar, com cancelar_horario. Para remarcar, consulte ver_horarios, deixe ele escolher e use remarcar_horario (não use agendar, que criaria outro horário). Só diga que cancelou ou remarcou depois que a ferramenta der certo. Se a ferramenta recusar (fora do prazo, por exemplo), explique com simpatia e, se ele precisar, use chamar_humano.
 - ${channel === "whatsapp" ? "Marque pela conversa mesmo; não mande o cliente para o site." : "Marque pela conversa mesmo."}${onlineBookingEnabled(settings) ? "" : " Não existe página de agendamento online para oferecer."}
 
 Quando chamar a equipe (chamar_humano): reclamação, pedido para falar com uma pessoa, assunto que você não sabe responder com os dados abaixo, ou algo que exige decisão do dono (desconto, exceção). Depois diga ao cliente, com suas palavras, que alguém da equipe já vai responder.
@@ -255,6 +255,50 @@ export const receptionistTools: Anthropic.Beta.BetaTool[] = [
         "telefone",
         "cpf",
       ],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "cancelar_horario",
+    description:
+      "Cancela um horário já marcado deste cliente. Só depois que ele confirmar que quer cancelar.",
+    strict: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        codigo: {
+          type: "string",
+          description: "Código do horário, como aparece nos dados do cliente.",
+        },
+      },
+      required: ["codigo"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "remarcar_horario",
+    description:
+      "Muda um horário já marcado deste cliente para um novo horário que veio de ver_horarios e que ele escolheu.",
+    strict: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        codigo: {
+          type: "string",
+          description: "Código do horário marcado, dos dados do cliente.",
+        },
+        inicio: {
+          type: "string",
+          description:
+            "Campo inicio do novo horário, como veio de ver_horarios.",
+        },
+        profissional: {
+          type: "string",
+          description:
+            'Id do profissional do novo horário, ou "any" para manter.',
+        },
+      },
+      required: ["codigo", "inicio", "profissional"],
       additionalProperties: false,
     },
   },
@@ -461,6 +505,8 @@ export interface ReceptionistResult {
   reply: string;
   menu: BookingMenu | null;
   booked?: Appointment;
+  /** A booking of this customer cancelled or moved in this turn. */
+  changed?: { action: "cancel" | "reschedule"; appointment: Appointment };
   handoff?: string;
   silent?: boolean;
   usage: { input: number; output: number };
@@ -488,6 +534,7 @@ export async function receptionistTurn(input: {
   const state: {
     handoff?: string;
     booked?: Appointment;
+    changed?: ReceptionistResult["changed"];
     silent?: boolean;
     menu?: BookingMenu | null;
   } = {};
@@ -516,6 +563,67 @@ export async function receptionistTurn(input: {
     if (name === "ficar_em_silencio") {
       state.silent = true;
       return { content: "Ok, sem resposta." };
+    }
+    if (name === "cancelar_horario" || name === "remarcar_horario") {
+      const code = String(args.codigo || "")
+        .trim()
+        .toLowerCase();
+      const digits = (value: string) =>
+        value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+      const own = ctx.verifiedPhone ? digits(ctx.verifiedPhone) : "";
+      const appointment = own
+        ? (await ctx.loadStore()).appointments.find(
+            (a) =>
+              ["confirmed", "pending"].includes(a.status) &&
+              Date.parse(a.start) > now.getTime() &&
+              digits(a.customerPhone) === own &&
+              !!code &&
+              a.id.toLowerCase().startsWith(code),
+          )
+        : undefined;
+      if (!ctx.change || !appointment)
+        return {
+          content: own
+            ? "Não achei esse horário entre os marcados por este cliente. Confira o código nos dados do cliente."
+            : "Só dá para alterar horário pelo WhatsApp do próprio cliente. Use chamar_humano.",
+          isError: true,
+        };
+      const action = name === "cancelar_horario" ? "cancel" : "reschedule";
+      let start: string | undefined;
+      if (action === "reschedule") {
+        const when = new Date(String(args.inicio || ""));
+        const at = Number.isFinite(when.getTime())
+          ? clock(when.toISOString())
+          : "";
+        if (!at || !seen.has(at))
+          return {
+            content:
+              "Esse horário não foi oferecido nem escolhido nesta conversa. Consulte ver_horarios e deixe o cliente escolher.",
+            isError: true,
+          };
+        start = when.toISOString();
+      }
+      const pro = String(args.profissional || "");
+      try {
+        const done = await ctx.change(
+          action,
+          appointment,
+          start,
+          pro && pro !== "any" ? pro : undefined,
+        );
+        state.changed = { action, appointment: done };
+        return {
+          content:
+            action === "cancel"
+              ? "Horário cancelado. Confirme para o cliente com simpatia e, se fizer sentido, deixe a porta aberta para marcar outro dia."
+              : `Horário remarcado para ${fmt(done.start, { weekday: "long", day: "2-digit", month: "2-digit" })} às ${clock(done.start)}. Confirme para o cliente.`,
+        };
+      } catch (error) {
+        return {
+          content: `Não deu para ${action === "cancel" ? "cancelar" : "remarcar"}: ${error instanceof Error ? error.message : "erro"} Explique ao cliente; se ele precisar, chame a equipe.`,
+          isError: true,
+        };
+      }
     }
     if (name === "agendar") {
       const start = new Date(String(args.inicio || ""));
@@ -563,6 +671,13 @@ export async function receptionistTurn(input: {
       )
     )
       return "Nada foi marcado ainda: só diga que marcou depois que agendar der certo.";
+    if (
+      !state.changed &&
+      /\b(?:cancelei|remarquei|(?:foi|est[aá]|ficou) (?:cancelad|remarcad)|(?:cancelamento|remarca[cç][aã]o) (?:feit|confirmad))/i.test(
+        reply,
+      )
+    )
+      return "Nada foi cancelado nem remarcado ainda: só diga isso depois que a ferramenta der certo.";
     const unknownTimes = times(reply).filter((t) => !seen.has(t));
     if (
       unknownTimes.length &&
@@ -622,6 +737,7 @@ export async function receptionistTurn(input: {
     menu:
       state.handoff || state.booked || state.silent ? null : state.menu || null,
     booked: state.booked,
+    changed: state.changed,
     handoff:
       state.handoff ||
       (turn.stop === "refusal"
@@ -710,7 +826,7 @@ export function upcomingFor(store: Store, phone: string, now: Date) {
         .filter(Boolean)
         .join(" + ");
       const person = store.professionals.find((p) => p.id === a.professionalId);
-      return `${display(names || "atendimento").toLowerCase()} ${fmt(a.start, { weekday: "long", day: "2-digit", month: "2-digit" })} às ${clock(a.start)}${person ? ` com ${display(person.name)}` : ""}`;
+      return `${display(names || "atendimento").toLowerCase()} ${fmt(a.start, { weekday: "long", day: "2-digit", month: "2-digit" })} às ${clock(a.start)}${person ? ` com ${display(person.name)}` : ""} (código ${a.id.slice(0, 8)})`;
     })
     .join("; ")}`;
 }
