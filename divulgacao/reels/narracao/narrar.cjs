@@ -48,9 +48,9 @@ const seconds = (file) =>
   console.log(`fim da fala ${end.toFixed(2)}s / vídeo ${vlen.toFixed(2)}s${end > vlen ? "  ⚠ PASSOU" : ""}`);
   const inputs = placed.flatMap((p) => ["-i", p.file]);
   const delays = placed.map((p, i) => `[${i + 1}:a]atempo=${TEMPO},adelay=${Math.round(p.start * 1000)}:all=1[a${i}]`).join(";");
-  const mix = `${delays};${placed.map((_, i) => `[a${i}]`).join("")}amix=inputs=${placed.length}:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=7,apad[a]`;
+  const mix = `${delays};${placed.map((_, i) => `[a${i}]`).join("")}amix=inputs=${placed.length}:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=7,aresample=48000,aformat=channel_layouts=stereo,apad[a]`;
   const out = path.join(__dirname, "..", "out", `${reel}-narrado${voiceId ? "-" + voiceId : ""}.mp4`);
   execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", video, ...inputs, "-filter_complex", mix,
-    "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", out]);
+    "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-shortest", "-movflags", "+faststart", out]);
   console.log(out);
 })().catch((e) => { console.error(e.message); process.exit(1); });
