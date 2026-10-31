@@ -9,7 +9,7 @@ const path = require("node:path");
   await page.goto("file://" + path.resolve(src));
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(300);
-  const duration = await page.evaluate(() => window.DURATION);
+  const duration = Math.max(Number(process.env.MIN_DURATION || 0), await page.evaluate(() => window.DURATION));
   if (only) {
     // Stills for review: comma-separated seconds.
     for (const s of only.split(",")) {

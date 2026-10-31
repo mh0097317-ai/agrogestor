@@ -1,39 +1,120 @@
 {
-  "01-madrugada": [
-    [0.3, "Duas e catorze da manhã. Barbearia fechada, você dormindo…"],
-    [3.4, "E o cliente mandando mensagem pedindo horário."],
-    [5.6, "Quem responde é a recepcionista do Studio Flow: mostra os horários livres e já marca."],
-    [10.6, "Você acorda e o horário já tá na agenda. Sem digitar nada."],
-    [14.3, "Sua recepcionista não dorme. Comenta EU que eu te mostro."]
+ "01-madrugada": [
+  [
+   0.3,
+   "Duas e catorze da manhã. Barbearia fechada, você dormindo…"
   ],
-  "02-faltas": [
-    [0.2, "Barbeiro, faz essa conta comigo."],
-    [2.9, "Quatro faltas por semana, corte a quarenta reais…"],
-    [4.8, "no mês são seiscentos e quarenta reais de cadeira vazia."],
-    [7.7, "O Studio Flow manda lembrete no WhatsApp na véspera, duas horas antes e uma hora antes."],
-    [12.6, "Menos falta, cadeira cheia."],
-    [15.3, "Comenta LEMBRETE que eu te mostro."]
+  [
+   3.4,
+   "E o cliente mandando mensagem pedindo horário."
   ],
-  "03-caderno": [
-    [0.3, "Agenda no caderno funciona…"],
-    [2.9, "até o dia que você marca dois clientes no mesmo horário."],
-    [6.3, "No Studio Flow é diferente."],
-    [7.8, "A agenda não deixa marcar dois no mesmo horário,"],
-    [9.8, "mostra o horário livre na hora,"],
-    [11.8, "e ainda diz quem marcou, e como."],
-    [14.0, "Aposenta o caderno. Comenta AGENDA."]
+  [
+   5.6,
+   "Quem responde é a recepcionista do Studio Flow, e já marca."
   ],
-  "04-salao-ao-vivo": [
-    [0.3, "Sua barbearia inteira no bolso."],
-    [2.9, "Abre o celular e você já vê quantos horários tem hoje e quantas cadeiras estão em uso."],
-    [7.9, "Quem tá na cadeira, e quanto falta pra acabar."],
-    [11.0, "Mesmo fora, você tá lá. Comenta AO VIVO."]
+  [
+   10.6,
+   "Você acorda e o horário já tá na agenda. Sem digitar nada."
   ],
-  "05-cliente-sumido": [
-    [0.3, "Trinta e sete dias sem aparecer. Será que foi pro concorrente?"],
-    [3.2, "O Studio Flow manda uma mensagem pra quem sumiu."],
-    [6.6, "E quando ele responde, a recepcionista já marca."],
-    [10.4, "Quarenta clientes sumidos, um em cada quatro voltando: quatrocentos reais de volta pro caixa."],
-    [14.6, "Quem sumiu volta pra cadeira. Comenta VOLTA."]
+  [
+   14.3,
+   "Sua recepcionista não dorme. Comenta EU que eu te mostro."
   ]
+ ],
+ "02-faltas": [
+  [
+   0.2,
+   "Barbeiro, faz essa conta comigo."
+  ],
+  [
+   2.9,
+   "Quatro faltas por semana, corte a quarenta reais…"
+  ],
+  [
+   4.8,
+   "no mês são seiscentos e quarenta reais de cadeira vazia."
+  ],
+  [
+   7.7,
+   "O Studio Flow manda lembrete no WhatsApp na véspera, duas horas antes e uma hora antes."
+  ],
+  [
+   12.6,
+   "Menos falta, cadeira cheia."
+  ],
+  [
+   15.3,
+   "Comenta LEMBRETE que eu te mostro."
+  ]
+ ],
+ "03-caderno": [
+  [
+   0.3,
+   "Agenda no caderno funciona…"
+  ],
+  [
+   2.9,
+   "até o dia que você marca dois clientes no mesmo horário."
+  ],
+  [
+   6.3,
+   "No Studio Flow é diferente."
+  ],
+  [
+   7.8,
+   "A agenda não deixa marcar dois no mesmo horário,"
+  ],
+  [
+   9.8,
+   "mostra o horário livre na hora,"
+  ],
+  [
+   11.8,
+   "e ainda diz quem marcou, e como."
+  ],
+  [
+   14.0,
+   "Aposenta o caderno. Comenta AGENDA."
+  ]
+ ],
+ "04-salao-ao-vivo": [
+  [
+   0.3,
+   "Sua barbearia inteira no bolso."
+  ],
+  [
+   2.9,
+   "Abre o celular e você já vê quantos horários tem hoje e quantas cadeiras estão em uso."
+  ],
+  [
+   7.9,
+   "Quem tá na cadeira, e quanto falta pra acabar."
+  ],
+  [
+   11.0,
+   "Mesmo fora, você tá lá. Comenta AO VIVO."
+  ]
+ ],
+ "05-cliente-sumido": [
+  [
+   0.3,
+   "Trinta e sete dias sem aparecer. Será que foi pro concorrente?"
+  ],
+  [
+   3.2,
+   "O Studio Flow manda uma mensagem pra quem sumiu."
+  ],
+  [
+   6.6,
+   "E quando ele responde, a recepcionista já marca."
+  ],
+  [
+   10.4,
+   "Quarenta clientes sumidos, um em cada quatro voltando: quatrocentos reais de volta pro caixa."
+  ],
+  [
+   14.6,
+   "Quem sumiu volta pra cadeira. Comenta VOLTA."
+  ]
+ ]
 }
