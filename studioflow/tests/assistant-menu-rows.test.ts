@@ -245,6 +245,31 @@ test("the assistant greets back, then answers only about the business", async ()
   assert.ok(await may(`Consultar horários para ${service.name}`, staffChat));
   for (const text of ["Dá pra marcar pra sábado?", "vocês atendem hoje?"])
     assert.ok(await may(text, staffChat), text);
+  // However the customer asks, with slang and shorthand.
+  for (const text of [
+    "Oi,lindo! Qual o valor do corte ?",
+    "qto vc cobra no degradê?",
+    "vlr do pezinho?",
+    "tem hr hj?",
+    "dá pra passar aí agora?",
+    "posso ir 15h?",
+    "vcs tão abertos?",
+    "aceita pix?",
+    "onde fica a barbearia?",
+    "faz luzes?",
+    "quero fazer a barba sexta",
+    "tá demorando muito a fila?",
+  ])
+    assert.ok(await may(text, staffChat), text);
+  // A personal chat stays personal.
+  for (const text of [
+    "amanhã te ligo",
+    "vc viu o jogo ontem?",
+    "te amo",
+    "chego em 10 minutos",
+    "manda foto",
+  ])
+    assert.equal(await may(text, staffChat), false, text);
   // Mid-flow answers to a business question keep going.
   assert.ok(
     await may("sim", [
