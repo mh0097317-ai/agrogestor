@@ -316,8 +316,13 @@ export function liveRepo(
         ...(createdAt ? { created_at: createdAt } : {}),
       });
       if (error?.code === "23505") return false;
-      if (error)
+      if (error) {
+        await recordError("assistant", "message-save-failed", {
+          businessId,
+          detail: { pg: error.code || null, role, length: body.length },
+        });
         throw new DomainError("Não foi possível guardar a mensagem.", 503);
+      }
       await admin
         .from("conversations")
         .update({ last_message_at: new Date().toISOString() })
@@ -2116,6 +2121,8 @@ export async function receiveInstagram(
         ? await audioText(() => downloadUrl(message.audioUrl!))
         : "[Áudio recebido para atendimento manual]"
       : message.text;
+    // Stickers, reactions and story mentions arrive with no text.
+    if (!body.trim()) continue;
     const messageAt = message.createdAt || new Date().toISOString();
     if (
       !(await repo.addMessage(

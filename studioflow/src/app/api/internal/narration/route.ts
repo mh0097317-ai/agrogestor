@@ -1,6 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { elevenLabsCredential } from "@/services/assistant/speech";
+import {
+  elevenLabsCredential,
+  synthesizeWhatsAppReply,
+} from "@/services/assistant/speech";
+import { transcribe } from "@/services/assistant/transcribe";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import {
   findChats,
@@ -19,6 +23,7 @@ export const maxDuration = 60;
 
 const input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("voices") }),
+  z.object({ action: z.literal("selftest") }),
   z.object({ action: z.literal("whatsapp"), slug: z.string().min(3).max(80) }),
   z.object({
     action: z.literal("timeline"),
@@ -153,6 +158,25 @@ export async function POST(request: Request) {
   }
   const config = await elevenLabsCredential();
   if (!config) return new Response("no voice", { status: 409 });
+  if (body.action === "selftest") {
+    // Fala uma frase e transcreve de volta: confere as duas permissões.
+    const audio = await synthesizeWhatsAppReply(
+      "Oi, tem horário amanhã de manhã?",
+    ).catch((e: unknown) => (e instanceof Error ? e.message : "erro"));
+    if (!(audio instanceof Uint8Array))
+      return Response.json({
+        speech: String(audio),
+        transcription: "não testada",
+      });
+    const text = await transcribe(
+      audio.buffer.slice(
+        audio.byteOffset,
+        audio.byteOffset + audio.byteLength,
+      ) as ArrayBuffer,
+      "audio/mpeg",
+    ).catch((e: unknown) => `ERRO ${e instanceof Error ? e.message : "?"}`);
+    return Response.json({ speech: "ok", transcription: text });
+  }
   if (body.action === "voices") {
     const response = await fetch("https://api.elevenlabs.io/v1/voices", {
       headers: { "xi-api-key": config.key },
