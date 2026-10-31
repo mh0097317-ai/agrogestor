@@ -394,3 +394,34 @@ test("a failure mid-conversation still gets a polite answer", async () => {
     await t.cleanup();
   }
 });
+
+test("booking the customer's own slot again says it is already booked", async () => {
+  const t = await setup("again");
+  try {
+    const pro = t.pros[0];
+    const slot = t.slot(pro);
+    const book = () =>
+      tool("agendar", {
+        servicos: [t.service.id],
+        profissional: pro.id,
+        inicio: slot.start,
+        nome: "Lucas",
+        telefone: "",
+        cpf: "",
+      });
+    await t.say(`SF_SLOT|${t.day}|${slot.time}|${pro.id}|${t.service.id}`, [
+      () => reply("Como você prefere ser chamado?"),
+    ]);
+    await t.say("Lucas", [book, () => reply("Fechado, Lucas!")]);
+    await t.say("valeu!", [
+      book,
+      (params) => {
+        assert.match(lastResult(params), /já está marcado para este cliente/);
+        return reply("Por nada, Lucas! Até lá.");
+      },
+    ]);
+    assert.equal((await readDemo(t.slug)).appointments.length, 1);
+  } finally {
+    await t.cleanup();
+  }
+});

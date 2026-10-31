@@ -129,7 +129,8 @@ Agenda e reservas:
 - Ofereça no máximo três horários na mensagem, os que mais combinam com o que o cliente pediu. Para mostrar mais opções, use mostrar_lista: a lista aparece como botão no WhatsApp, junto com a sua mensagem. Use a lista quando ajudar a escolher (vários horários, dias ou serviços), não em toda mensagem, e nunca ao pedir o nome, confirmar ou bater papo.
 - Quando o cliente escolher um horário (tocando na lista ou escrevendo), confira se é para o serviço e o dia certos. Se você ainda não sabe o nome dele, pergunte como ele prefere ser chamado. Com nome, serviço, profissional, dia e horário definidos e o cliente de acordo, use agendar. Escolher um horário oferecido já é concordar; não peça "posso confirmar?" duas vezes.
 - Só diga que marcou depois que agendar der certo. Se o horário acabou de ser ocupado, ofereça outros.
-- Se o cliente não tiver preferência de profissional, consulte com profissional "any" e diga com quem é cada horário.
+- Se o cliente não tiver preferência de profissional, consulte com profissional "any" e diga com quem é cada horário. Quando ele escolher um horário sem dizer com quem e mais de um profissional estiver livre, não pergunte: marque com um deles e diga com quem ficou. Só pergunte se ele mostrou que tem preferência.
+- Um horário já marcado aparece nos dados do cliente. Agradecimento ou "ok" depois de marcar não é pedido de novo horário: responda com simpatia e não use agendar de novo.
 - Cancelar ou remarcar um horário já marcado: o sistema cuida quando o cliente pede. Se ele tiver dificuldade, use chamar_humano.
 - ${channel === "whatsapp" ? "Marque pela conversa mesmo; não mande o cliente para o site." : "Marque pela conversa mesmo."}${onlineBookingEnabled(settings) ? "" : " Não existe página de agendamento online para oferecer."}
 
@@ -519,6 +520,21 @@ export async function receptionistTurn(input: {
       const at = Number.isFinite(start.getTime())
         ? clock(start.toISOString())
         : "";
+      // Already this customer's: say so instead of failing on the taken slot.
+      const digits = (value: string) =>
+        value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+      const mine = (await ctx.loadStore()).appointments.find(
+        (a) =>
+          ["confirmed", "pending"].includes(a.status) &&
+          Date.parse(a.start) === start.getTime() &&
+          !!ctx.verifiedPhone &&
+          digits(a.customerPhone) === digits(ctx.verifiedPhone),
+      );
+      if (mine)
+        return {
+          content:
+            "Este horário já está marcado para este cliente (reserva confirmada). Não marque de novo; só confirme para ele que está tudo certo.",
+        };
       if (!at || !seen.has(at))
         return {
           content:

@@ -4,7 +4,7 @@ import type { Appointment, Store } from "@/types";
 import type { CreateMessage } from "./engine/agent-loop";
 import type { AssistantContext } from "./agent";
 import type { BookingMenu } from "./booking-menu";
-import { receptionistTurn } from "./receptionist";
+import { receptionistTurn, upcomingFor } from "./receptionist";
 
 /*
  * Conversas de teste da recepcionista com o modelo de verdade, numa cópia da
@@ -108,6 +108,8 @@ class Chat {
       earlier: this.earlier,
       text,
       known,
+      // As in WhatsApp: the receptionist knows what this number has booked.
+      context: upcomingFor(this.store, phone, new Date()),
     });
     const seconds = (Date.now() - started) / 1000;
     if (turn.handoff) this.handoffs++;
@@ -338,8 +340,14 @@ export const scenarios: Scenario[] = [
         `🎤 e aí, tem como fazer ${lower(s.service.name)} dia ${s.day.slice(8)} depois das 18?`,
       );
       c.clean(r.reply);
-      for (const t of timesIn(r.reply).filter((x) => x !== "18:00"))
-        c.expect(t >= "18:00", `ofereceu ${t}, antes das 18h`);
+      // With nothing after 18h, saying so and offering earlier is right.
+      const none =
+        /n[aã]o (?:tem|h[aá]|tenho|consigo)|sem hor[aá]rio|lotad|ocupad/i.test(
+          r.reply,
+        );
+      if (!none)
+        for (const t of timesIn(r.reply).filter((x) => x !== "18:00"))
+          c.expect(t >= "18:00", `ofereceu ${t}, antes das 18h, sem avisar`);
     },
   },
   {
