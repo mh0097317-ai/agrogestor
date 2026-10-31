@@ -144,6 +144,24 @@ export async function instanceState(instance: string): Promise<LinkState> {
   );
   return normalState(data.instance?.state);
 }
+/** Where the instance delivers messages (no query string or headers). */
+export async function webhookTarget(instance: string) {
+  const data = await evo<{
+    enabled?: boolean;
+    url?: string;
+    events?: string[];
+  }>(`/webhook/find/${encodeURIComponent(instance)}`).catch(() => null);
+  let target = "";
+  try {
+    const url = new URL(data?.url || "");
+    target = `${url.host}${url.pathname}`;
+  } catch {}
+  return {
+    enabled: !!data?.enabled,
+    target,
+    events: data?.events?.length || 0,
+  };
+}
 export const normalState = (state?: string): LinkState =>
   state === "open" ? "open" : state === "connecting" ? "connecting" : "close";
 

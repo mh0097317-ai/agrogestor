@@ -1,6 +1,13 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { elevenLabsCredential } from "@/services/assistant/speech";
+import { createSupabaseAdmin } from "@/lib/supabase/server";
+import {
+  findChats,
+  findMessages,
+  instanceState,
+  webhookTarget,
+} from "@/services/whatsapp/evolution";
 
 /*
  * TEMPORÁRIO: narração dos Reels de divulgação com a voz ElevenLabs da
@@ -12,6 +19,11 @@ export const maxDuration = 60;
 
 const input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("voices") }),
+  z.object({ action: z.literal("whatsapp"), slug: z.string().min(3).max(80) }),
+  z.object({
+    action: z.literal("timeline"),
+    conversationId: z.string().uuid(),
+  }),
   z.object({
     action: z.literal("speak"),
     text: z.string().trim().min(1).max(400),
@@ -38,9 +50,109 @@ export async function POST(request: Request) {
   if (!allowed(request)) return new Response("not found", { status: 404 });
   const parsed = input.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return new Response("bad request", { status: 400 });
+  const body = parsed.data;
+  if (body.action === "timeline") {
+    // Só horário, direção e tipo das últimas mensagens no servidor do
+    // WhatsApp, sem texto: mostra se a mensagem chegou lá.
+    const admin = createSupabaseAdmin();
+    const { data: chat } = await admin
+      .from("conversations")
+      .select("business_id,contact_phone")
+      .eq("id", body.conversationId)
+      .single();
+    if (!chat) return new Response("no chat", { status: 404 });
+    const { data: link } = await admin
+      .from("whatsapp_links")
+      .select("instance")
+      .eq("business_id", chat.business_id)
+      .single();
+    if (!link) return new Response("no link", { status: 404 });
+    const tail = (v?: string) => (v || "").replace(/\D/g, "").slice(-8);
+    const want = tail(chat.contact_phone);
+    const chats = await findChats(link.instance).catch(() => []);
+    const stamp = (m: unknown) => {
+      const r = m as {
+        messageTimestamp?: number | string;
+        key?: { fromMe?: boolean };
+      };
+      return {
+        at: r?.messageTimestamp
+          ? new Date(Number(r.messageTimestamp) * 1000).toISOString()
+          : "",
+        fromMe: !!r?.key?.fromMe,
+      };
+    };
+    const recent = chats
+      .map((c) => ({
+        chat: tail(
+          c.lastMessage?.key?.remoteJidAlt ||
+            c.lastMessage?.key?.senderPn ||
+            c.remoteJid,
+        ).slice(-4),
+        lid: (c.remoteJid || "").endsWith("@lid"),
+        ...stamp(c.lastMessage),
+      }))
+      .sort((x, y) => y.at.localeCompare(x.at))
+      .slice(0, 8);
+    const mine = chats.filter((c) =>
+      [
+        c.remoteJid,
+        c.lastMessage?.key?.remoteJidAlt,
+        c.lastMessage?.key?.senderPn,
+      ].some((j) => tail(j || "") === want),
+    );
+    const timeline = [];
+    for (const c of mine) {
+      const records = (await findMessages(
+        link.instance,
+        { remoteJid: c.remoteJid },
+        30,
+      ).catch(() => [])) as { messageType?: string }[];
+      timeline.push(
+        ...records.map((r) => ({ ...stamp(r), type: r.messageType || "" })),
+      );
+    }
+    return Response.json({
+      recentChats: recent,
+      thisChat: timeline.sort((x, y) => y.at.localeCompare(x.at)).slice(0, 12),
+    });
+  }
+  if (body.action === "whatsapp") {
+    // Diagnóstico só de leitura: estado real das instâncias e destino do webhook.
+    const admin = createSupabaseAdmin();
+    const { data: shop } = await admin
+      .from("businesses")
+      .select("id")
+      .eq("slug", body.slug)
+      .single();
+    if (!shop) return new Response("no shop", { status: 404 });
+    const [{ data: main }, { data: pros }] = await Promise.all([
+      admin
+        .from("whatsapp_links")
+        .select("instance,status")
+        .eq("business_id", shop.id),
+      admin
+        .from("professional_whatsapp_links")
+        .select("instance,status")
+        .eq("business_id", shop.id),
+    ]);
+    const rows = [
+      ...(main || []).map((r) => ({ ...r, kind: "shop" })),
+      ...(pros || []).map((r) => ({ ...r, kind: "pro" })),
+    ];
+    return Response.json(
+      await Promise.all(
+        rows.map(async (r) => ({
+          kind: r.kind,
+          saved: r.status,
+          live: await instanceState(r.instance).catch(() => "erro"),
+          webhook: await webhookTarget(r.instance),
+        })),
+      ),
+    );
+  }
   const config = await elevenLabsCredential();
   if (!config) return new Response("no voice", { status: 409 });
-  const body = parsed.data;
   if (body.action === "voices") {
     const response = await fetch("https://api.elevenlabs.io/v1/voices", {
       headers: { "xi-api-key": config.key },
