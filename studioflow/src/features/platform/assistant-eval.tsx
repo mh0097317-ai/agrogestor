@@ -16,6 +16,14 @@ interface Result {
   problems: string[];
   turns: Turn[];
 }
+interface Day {
+  day: string;
+  replies: number;
+  p50: number | null;
+  p90: number | null;
+  failures: number;
+  alerts: number;
+}
 interface Run {
   passed: number;
   total: number;
@@ -38,6 +46,7 @@ export function AssistantEval({
       shops.find((s) => /coliseu/i.test(s.slug))?.slug || shops[0]?.slug || "",
   );
   const [run, setRun] = useState<Run | null>(null);
+  const [health, setHealth] = useState<Day[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -48,7 +57,10 @@ export function AssistantEval({
       signal: abort.signal,
     })
       .then((r) => (r.ok ? r.json() : { runs: [] }))
-      .then((data) => setRun(data.runs?.[0] || null))
+      .then((data) => {
+        setRun(data.runs?.[0] || null);
+        setHealth(data.health || []);
+      })
       .catch(() => undefined);
     return () => abort.abort();
   }, [slug]);
@@ -102,6 +114,42 @@ export function AssistantEval({
           </button>
         </div>
       </div>
+      {health.length > 0 && (
+        <div className="pf-eval-health">
+          <strong>No WhatsApp, últimos 7 dias</strong>
+          <table>
+            <thead>
+              <tr>
+                <th>Dia</th>
+                <th>Respostas</th>
+                <th>Tempo (metade)</th>
+                <th>Tempo (9 de 10)</th>
+                <th>Falhas</th>
+                <th>Avisos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {health.map((d) => (
+                <tr key={d.day}>
+                  <td>
+                    {new Date(`${d.day}T12:00:00Z`).toLocaleDateString(
+                      "pt-BR",
+                      { weekday: "short", day: "2-digit", month: "2-digit" },
+                    )}
+                  </td>
+                  <td>{d.replies}</td>
+                  <td>{d.p50 == null ? "—" : `${d.p50}s`}</td>
+                  <td className={Number(d.p90) > 12 ? "is-bad" : ""}>
+                    {d.p90 == null ? "—" : `${d.p90}s`}
+                  </td>
+                  <td className={d.failures ? "is-bad" : ""}>{d.failures}</td>
+                  <td>{d.alerts}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {error && (
         <p className="pf-eval-error" role="alert">
           {error}

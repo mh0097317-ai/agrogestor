@@ -29,6 +29,7 @@ import { hasModule } from "@/lib/modules";
 import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
 import { businessCreate } from "./provider";
 import { platformAiEnabled } from "../platform-ai-control";
+import { alertOwner } from "./alerts";
 import {
   receptionistTurn,
   receptionistModel,
@@ -661,6 +662,14 @@ export async function processConversation(
         .catch(() => undefined);
       const failed = await repo.get(conversationId).catch(() => null);
       say = failed && failed.channel !== "whatsapp" ? handoffNotice : null;
+      // The owner hears about it right away, not when a customer complains.
+      if (failed?.channel === "whatsapp" && !delivery.simulate)
+        await alertOwner({
+          businessId: repo.businessId,
+          kind: "failed",
+          conversationId,
+          phone: failed.contactPhone,
+        });
       // A customer being served is never left without an answer. Only when
       // nothing may have gone out yet: an uncertain send is never repeated.
       // A first contact may be a personal chat on a shared number: there the

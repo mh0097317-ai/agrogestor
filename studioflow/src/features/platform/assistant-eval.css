@@ -133,3 +133,36 @@
   color: #6e655b;
   font-size: 12.5px;
 }
+.pf-eval-health {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+.pf-eval-health strong {
+  font-size: 14px;
+}
+.pf-eval-health table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pf-eval-health th,
+.pf-eval-health td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #efe7da;
+  text-align: right;
+  white-space: nowrap;
+}
+.pf-eval-health th:first-child,
+.pf-eval-health td:first-child {
+  text-align: left;
+}
+.pf-eval-health th {
+  color: #8a7f72;
+  font-weight: 600;
+}
+.pf-eval-health td.is-bad {
+  color: #9b2c1f;
+  font-weight: 600;
+}

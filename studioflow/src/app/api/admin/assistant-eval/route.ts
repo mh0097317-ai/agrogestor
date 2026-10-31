@@ -18,20 +18,24 @@ export const maxDuration = 300;
 
 const input = z.object({ slug: z.string().min(1).max(120) }).strict();
 
-/** Last test runs of a shop's receptionist. */
+/** Last test runs of a shop's receptionist and how it did, day by day. */
 export async function GET(request: Request) {
   try {
     await requirePlatformAdmin();
     const slug = new URL(request.url).searchParams.get("slug") || "";
     const store = await getPublicStore(input.parse({ slug }).slug);
-    const { data, error } = await createSupabaseAdmin()
-      .from("assistant_eval_runs")
-      .select("id,model,passed,total,results,created_at")
-      .eq("business_id", store.business.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const admin = createSupabaseAdmin();
+    const [{ data, error }, health] = await Promise.all([
+      admin
+        .from("assistant_eval_runs")
+        .select("id,model,passed,total,results,created_at")
+        .eq("business_id", store.business.id)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      admin.rpc("assistant_health", { p_business: store.business.id }),
+    ]);
     if (error) throw new DomainError("Não foi possível ler os testes.", 503);
-    return respond({ runs: data || [] });
+    return respond({ runs: data || [], health: health.data || [] });
   } catch (e) {
     return failure(e);
   }

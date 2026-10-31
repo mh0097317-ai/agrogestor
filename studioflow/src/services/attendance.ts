@@ -193,7 +193,7 @@ export async function sendAttendanceChecks(origin: string) {
 }
 
 /** Owner: the professional's own WhatsApp if the owner also attends, else the shop number. */
-async function ownerPhone(store: Store) {
+export async function ownerPhone(store: Store) {
   const { data } = await createSupabaseAdmin()
     .from("business_members")
     .select("user_id")

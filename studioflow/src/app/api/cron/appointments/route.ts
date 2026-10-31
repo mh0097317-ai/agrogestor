@@ -16,6 +16,7 @@ import {
   sendAttendanceChecks,
   sendOwnerUnsettledAlerts,
 } from "@/services/attendance";
+import { checkAssistantHealth } from "@/services/assistant/alerts";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     dailyReports,
     platformWeeklyReport,
     weeklyEmails,
+    assistantHealth,
   ] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(origin),
@@ -56,6 +58,8 @@ export async function POST(request: Request) {
     weeklySendWindow()
       ? sendWeeklyEmails().catch(() => ({ checked: 0, sent: 0, failed: 1 }))
       : { checked: 0, sent: 0, failed: 0 },
+    // Customers waiting and a disconnected WhatsApp reach the owner.
+    checkAssistantHealth().catch(() => "failed"),
   ]);
   return Response.json({
     ...customers,
@@ -67,5 +71,6 @@ export async function POST(request: Request) {
     dailyReports,
     platformWeeklyReport,
     weeklyEmails,
+    assistantHealth,
   });
 }
