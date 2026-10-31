@@ -12,7 +12,7 @@
     "test:smoke": "node scripts/http-smoke.mjs",
     "db:seed:generate": "tsx scripts/generate-supabase-seed.mts",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build",
-    "eval:recepcionista": "tsx --test --test-concurrency=4 tests/receptionist-eval.ts"
+    "eval:recepcionista": "tsx --test tests/receptionist-eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

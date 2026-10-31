@@ -1,0 +1,135 @@
+/* Teste da recepcionista: botão, placar e cada conversa abrível. */
+.pf-eval {
+  margin: 0 0 20px;
+  padding: 18px 20px;
+  border: 1px solid #e4dacb;
+  border-radius: 14px;
+  background: #fffdf9;
+}
+.pf-eval-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+}
+.pf-eval-head > div:nth-child(2) {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.pf-eval-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f4f0e8;
+  color: #8a6430;
+}
+.pf-eval h2 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+.pf-eval p {
+  margin: 0;
+  color: #6e655b;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.pf-eval-actions {
+  display: flex;
+  gap: 8px;
+}
+.pf-eval-actions select,
+.pf-eval-actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+.pf-eval-actions select {
+  border: 1px solid #e4dacb;
+  background: #fff;
+}
+.pf-eval-actions button {
+  border: 0;
+  background: #16130f;
+  color: #f4f0e8;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pf-eval-actions button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.pf-eval-error {
+  margin-top: 12px !important;
+  color: #9b2c1f !important;
+}
+.pf-eval-run {
+  margin-top: 16px;
+}
+.pf-eval-run > strong {
+  font-size: 15px;
+}
+.pf-eval-run > strong.is-ok {
+  color: #2f7a4b;
+}
+.pf-eval-run > strong.is-bad {
+  color: #9b2c1f;
+}
+.pf-eval-run > small {
+  margin-left: 8px;
+  color: #8a7f72;
+}
+.pf-eval-run > ul {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-eval-run summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.pf-eval-run li.is-ok > details > summary svg {
+  color: #2f7a4b;
+}
+.pf-eval-run li.is-bad > details > summary svg {
+  color: #9b2c1f;
+}
+.pf-eval-run summary em {
+  flex-basis: 100%;
+  padding-left: 22px;
+  color: #9b2c1f;
+  font-style: normal;
+  font-size: 13px;
+}
+.pf-eval-run ol {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 6px 22px;
+  padding: 0;
+  list-style: none;
+}
+.pf-eval-run ol p {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #f4f0e8;
+  color: #16130f;
+  white-space: pre-wrap;
+}
+.pf-eval-run ol p.is-customer {
+  justify-self: end;
+  background: #dcf5d0;
+}
+.pf-eval-run ol p.is-list {
+  background: none;
+  color: #6e655b;
+  font-size: 12.5px;
+}

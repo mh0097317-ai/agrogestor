@@ -8,6 +8,7 @@ import {
 import { PlatformWhatsApp } from "./platform-whatsapp";
 import { WeeklyReports } from "@/features/management/weekly-reports";
 import { PlatformAiControl } from "./ai-control";
+import { AssistantEval } from "./assistant-eval";
 import { ClientAudit } from "./client-audit";
 import { notifyWorkspaceChange } from "@/lib/workspace-sync";
 import {
@@ -644,6 +645,11 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           )}
         {["overview", "operations", "receptionists"].includes(view) && (
           <PlatformAiControl />
+        )}
+        {view === "receptionists" && items && (
+          <AssistantEval
+            shops={items.map((item) => ({ slug: item.slug, name: item.name }))}
+          />
         )}
         {view === "overview" && <WeeklyReports platform canSchedule />}
         {view === "overview" && items && monitoring && (
