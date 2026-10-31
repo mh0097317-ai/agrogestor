@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; }
+  .app { width: 360px; height: 360px; border-radius: 86px; background: #25d366; margin: 0 auto; position: relative; display: grid; place-items: center; }
+  .app svg { width: 210px; height: 210px; }
+  .badge { position: absolute; right: -50px; top: -50px; min-width: 170px; height: 170px; border-radius: 85px; background: #e5383b; color: #fff; display: grid; place-items: center; font-weight: 650; font-size: 90px; padding: 0 30px; border: 10px solid var(--ink); }
+  #s1 .q { margin-top: 90px; font-family: "Fraunces", serif; font-size: 96px; line-height: 1.05; padding: 0 70px; }
+  #s1 .q em { font-style: italic; color: var(--brass); }
+  .note { position: absolute; left: 70px; right: 70px; background: rgba(255,255,255,.95); color: var(--ink); border-radius: 30px; padding: 26px 32px; font-size: 34px; display: flex; gap: 24px; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+  .note b { display: block; font-size: 28px; }
+  .note i { width: 70px; height: 70px; border-radius: 18px; background: #25d366; flex: none; }
+  #s2 { padding: 330px 70px 0; }
+  #s2 .cap { position: static; margin-bottom: 50px; }
+  .lead { display: flex; align-items: center; gap: 34px; padding: 40px 0; border-bottom: 2px solid #e6dccb; font-size: 48px; }
+  .lead .av { width: 130px; height: 130px; border-radius: 50%; background: #d9cdb8; display: grid; place-items: center; font-weight: 650; font-size: 48px; flex: none; }
+  .lead .tx { flex: 1; }
+  .lead .tx small { display: block; font-size: 34px; color: var(--muted); margin-top: 4px; }
+  .lead .st { font-size: 32px; font-weight: 650; padding: 14px 24px; border-radius: 999px; background: #dcefe2; color: #2f7a4a; white-space: nowrap; }
+  .count { margin-top: 80px; text-align: center; font-family: "Fraunces", serif; font-size: 100px; }
+  .count b { font-weight: 450; color: #2f7a4a; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="app" id="ap">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.2-.3.3-.1.6.2.3.8 1.4 1.8 2.2 1.2 1.1 2.2 1.4 2.5 1.6.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.3.1.2.1.8-.3 1.6z"/></svg>
+        <div class="badge" id="bd">0</div>
+      </div>
+      <div class="q" id="q">E você <em>com a máquina na mão.</em></div>
+    </div>
+    <div class="note" id="n1" style="top:120px"><i></i><div><b>Carlos</b>tem horário hoje?</div></div>
+    <div class="note" id="n2" style="top:270px"><i></i><div><b>Pedro</b>quanto tá o corte + barba?</div></div>
+    <div class="note" id="n3" style="top:420px"><i></i><div><b>Marcos</b>amanhã 9h dá?</div></div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">A recepcionista <em>respondeu todo mundo.</em></div>
+    <div class="lead" id="r1"><div class="av">C</div><div class="tx">Carlos<small>hoje 16:00 com Lucas</small></div><div class="st">✓ marcado</div></div>
+    <div class="lead" id="r2"><div class="av">P</div><div class="tx">Pedro<small>preço enviado · R$ 65</small></div><div class="st">✓ respondido</div></div>
+    <div class="lead" id="r3"><div class="av">M</div><div class="tx">Marcos<small>amanhã 9:00 com João</small></div><div class="st">✓ marcado</div></div>
+    <div class="lead" id="r4"><div class="av">R</div><div class="tx">Rafael<small>remarcou pra sábado</small></div><div class="st">✓ remarcado</div></div>
+    <div class="count" id="ct">Não lidas: <b id="nl">47</b></div>
+  </section>
+  <section class="scene dark end" id="s3">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Você corta. <em>Ela atende.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta EU</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+window.DURATION = 16;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 4.6);
+  pop($("#ap"), t, 0.1, 0.5, 0);
+  const n = Math.round(p(t, 0.5, 3.4, ease.inOut) * 47);
+  $("#bd").textContent = n;
+  $("#bd").style.transform = `scale(${1 + (Math.sin(t * 18) * 0.05) * (n > 0 && n < 47 ? 1 : 0)})`;
+  $("#ap").style.transform += ` rotate(${n > 0 && n < 47 ? Math.sin(t * 50) * 3 : 0}deg)`;
+  pop($("#n1"), t, 0.8, 0.35, -60);
+  pop($("#n2"), t, 1.5, 0.35, -60);
+  pop($("#n3"), t, 2.2, 0.35, -60);
+  words($("#q"), t, 2.9, 0.1);
+
+  scene($("#s2"), t, 4.4, 11.4);
+  words($("#c2"), t, 4.6);
+  ["#r1", "#r2", "#r3", "#r4"].forEach((r, i) => pop($(r), t, 5.4 + i * 0.7, 0.4, 40));
+  pop($("#ct"), t, 8.4, 0.4, 0);
+  const left = Math.round(47 * (1 - p(t, 8.6, 10.2, ease.inOut)));
+  $("#nl").textContent = left;
+  $("#nl").style.color = left ? "var(--red)" : "#2f7a4a";
+
+  scene($("#s3"), t, 11.2, 99);
+  pop($("#lg"), t, 11.3, 0.5, 0);
+  words($("#h"), t, 11.5, 0.1);
+  pop($("#cta"), t, 12.6);
+};
+window.render(0);
+</script>
+</body>
+</html>

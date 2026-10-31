@@ -110,3 +110,77 @@ Comenta VOLTA que eu te mostro.
 3. **"Comissão sem briga"**: financeiro com quanto cada barbeiro fez na semana.
 4. **"Modo TV na recepção"**: a TV mostrando a fila e as vagas do dia.
 5. **"Antes x depois do WhatsApp do dono"**: 47 mensagens não lidas → 0.
+
+---
+
+# Leva 2 (Reels 06–10)
+
+Calendário sugerido: continue terça e quinta, alternando com a leva 1:
+06 Pix → 10 Não lidas → 07 Marca sozinho → 08 Comissão → 09 Modo TV.
+
+## 06 · Pix na hora de marcar (17 s)
+
+**Gancho:** cartão "Sábado 10:00 · Diego S." levando o carimbo **NÃO VEIO**. "Marcou, sumiu e nem avisou."
+**Meio:** celular com a tela de sinal: R$ 15, QR do Pix aparecendo, e o check verde "Pix recebido. Horário garantido."
+**Virada:** "Quem paga sinal, aparece." Barras comparando 10 faltas sem sinal com 2 faltas com sinal (ilustração).
+**Final:** "Horário marcado é horário pago." · Comenta PIX
+
+**Legenda:**
+Cliente que marca e não aparece custa caro. 💸
+No StudioFlow ele garante o horário com um sinalzinho no Pix, que é descontado no dia. Quem paga, aparece.
+Comenta PIX que eu te mostro como funciona.
+
+**Hashtags:** #barbearia #barbeiro #pix #faltas #donodebarbearia #studioflow
+
+## 07 · O cliente marca sozinho (17 s)
+
+**Gancho:** "Seu cliente marca sozinho. Olha o tempo." O cronômetro começa.
+**Meio:** o link de agendamento de verdade, passo a passo: serviço, barbeiro, horário, dados, "Tá marcado!". O cronômetro para em 00:17.
+**Final:** "Agenda aberta 24 horas. Sem você parar o corte." · Comenta LINK
+
+**Legenda:**
+17 segundos. Foi o tempo do cliente escolher o serviço, o barbeiro, o horário e confirmar, sem te mandar uma mensagem.
+É o link da sua barbearia no StudioFlow: funciona 24h e já manda lembrete no WhatsApp.
+Comenta LINK que eu te mando o da demonstração.
+
+**Hashtags:** #barbearia #agendamentoonline #barbeiro #linkdeagendamento #studioflow
+
+## 08 · Comissão sem briga (17 s)
+
+**Gancho:** fim do mês, mensagens dos barbeiros: "chefe, quanto deu minha comissão?", "acho que tá faltando corte meu aí 🤔".
+**Meio:** a tela real do Financeiro: tudo que entrou no mês e a comissão calculada sozinha.
+**Virada:** "E cada um vê o seu." Barras de Lucas, João e Ana enchendo com o valor de cada um.
+**Final:** "Comissão certa, sem discussão." · Comenta COMISSÃO
+
+**Legenda:**
+Todo fim de mês é a mesma conversa: "quanto deu minha comissão?" 😅
+No StudioFlow o financeiro já soma tudo que entrou e calcula a comissão de cada barbeiro. Sem caderno e sem discussão.
+Comenta COMISSÃO que eu te mostro.
+
+**Hashtags:** #barbearia #comissao #gestaodebarbearia #financeiro #donodebarbearia #studioflow
+
+## 09 · Modo TV (17 s)
+
+**Gancho:** TV antiga chiando "NOVELA DAS 3". "A TV da sua recepção tá vendendo o quê?"
+**Meio:** "Liga o Modo TV." A câmera passa pela tela real: quem está atendendo, quem chega em seguida, o QR para agendar o próximo corte e o serviço que mais vende.
+**Final:** "Sua TV vira vendedora." · Comenta TV
+
+**Legenda:**
+Sua TV da recepção pode vender por você. 📺
+O Modo TV do StudioFlow mostra a fila do dia, quem está atendendo, o QR pro cliente já marcar o próximo corte e o serviço em destaque. É só abrir num navegador da TV.
+Comenta TV que eu te mostro.
+
+**Hashtags:** #barbearia #recepcao #marketingparabarbearia #barbeiro #studioflow
+
+## 10 · 47 mensagens não lidas (16 s)
+
+**Gancho:** o ícone do WhatsApp tremendo e o contador subindo até **47**, com notificações caindo: "tem horário hoje?", "quanto tá o corte + barba?". "E você com a máquina na mão."
+**Meio:** "A recepcionista respondeu todo mundo." Lista com marcado, respondido, marcado e remarcado. "Não lidas" desce de 47 para **0**.
+**Final:** "Você corta. Ela atende." · Comenta EU
+
+**Legenda:**
+47 mensagens não lidas e você no meio de um degradê. 😮‍💨
+A recepcionista do StudioFlow responde no WhatsApp da barbearia, passa preço, marca e remarca. Você só corta.
+Comenta EU que eu te mostro funcionando.
+
+**Hashtags:** #barbearia #whatsapp #inteligenciaartificial #barbeiro #donodebarbearia #studioflow

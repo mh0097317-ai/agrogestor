@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; padding: 0 70px; }
+  .oldtv { width: 760px; height: 470px; margin: 0 auto 70px; border-radius: 30px; border: 18px solid #2a2520; background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 3px, transparent 3px 6px), radial-gradient(#5a5047, #1b1712); position: relative; overflow: hidden; }
+  .oldtv span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 46px; color: rgba(255,255,255,.6); letter-spacing: .1em; }
+  #s1 .q { font-family: "Fraunces", serif; font-size: 104px; line-height: 1.04; }
+  #s1 .q em { font-style: italic; color: var(--brass); }
+  #s2 { background: #0f0d0a; }
+  #s2 .cap { top: 110px; color: var(--cream); }
+  .frame { position: absolute; left: 40px; width: 1000px; top: 640px; height: 562px; border-radius: 24px; border: 16px solid #000; box-shadow: 0 50px 120px rgba(0,0,0,.6); overflow: hidden; background: #000; }
+  .frame img { position: absolute; left: 0; top: 0; width: 1600px; transform-origin: 0 0; }
+  .stand { position: absolute; left: 470px; top: 1210px; width: 140px; height: 60px; background: #1d1915; border-radius: 0 0 10px 10px; }
+  .tag { position: absolute; left: 70px; right: 70px; top: 1340px; text-align: center; font-size: 46px; font-weight: 650; color: var(--brass); }
+  .tag small { display: block; font-size: 34px; color: rgba(244,239,230,.7); font-weight: 400; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="oldtv" id="tv"><span>NOVELA DAS 3</span></div>
+      <div class="q" id="q">A TV da sua recepção <em>tá vendendo o quê?</em></div>
+    </div>
+  </section>
+  <section class="scene dark" id="s2">
+    <div class="cap" id="c2">Liga o <em>Modo TV.</em></div>
+    <div class="frame" id="fr"><img src="img/tv.webp" id="im"></div>
+    <div class="stand"></div>
+    <div class="tag" id="tg"></div>
+  </section>
+  <section class="scene dark end" id="s3">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Sua TV vira <em>vendedora.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta TV</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+// tv.webp is 1600x900, frame inner is 968x530.
+const W = 968, H = 530;
+const shots = [
+  // [x, y, w, h, from, title, sub]
+  [0, 0, 1600, 900, 3.0, "Tudo da barbearia na tela", "quem está atendendo, quem chega e o relógio"],
+  [40, 240, 1030, 300, 5.6, "Quem está atendendo agora", "e quem é o próximo de cada barbeiro"],
+  [40, 520, 1030, 330, 7.9, "Quem chega em seguida", "o cliente já vê a hora dele"],
+  [1120, 30, 460, 290, 10.1, "QR para agendar o próximo corte", "ele marca ali mesmo, esperando"],
+  [1120, 320, 460, 520, 12.2, "O serviço que mais vende", "propaganda rodando o dia todo"],
+];
+const cam = (s) => {
+  const z = Math.min(W / s[2], H / s[3]);
+  return [W / 2 - (s[0] + s[2] / 2) * z, H / 2 - (s[1] + s[3] / 2) * z, z];
+};
+window.DURATION = 17;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 3.0);
+  const flick = Math.sin(t * 40) > 0.6 ? 0.8 : 1;
+  $("#tv").style.filter = `brightness(${flick})`;
+  pop($("#tv"), t, 0.1, 0.5, 40);
+  words($("#q"), t, 0.6, 0.1);
+
+  scene($("#s2"), t, 2.8, 14.6);
+  words($("#c2"), t, 3.0);
+  const on = p(t, 2.9, 3.5, ease.out);
+  $("#fr").style.transform = `scale(${lerp(0.9, 1, on)})`;
+  $("#im").style.opacity = p(t, 3.1, 3.5, ease.lin);
+  let c = cam(shots[0]), prev = c, cur = shots[0];
+  for (const s of shots) {
+    if (t < s[4]) break;
+    const k = p(t, s[4], s[4] + 0.9, ease.inOut);
+    const n = cam(s);
+    c = [lerp(prev[0], n[0], k), lerp(prev[1], n[1], k), lerp(prev[2], n[2], k)];
+    prev = n; cur = s;
+  }
+  $("#im").style.transform = `translate(${c[0]}px, ${c[1]}px) scale(${c[2] * (1600 / 1600)})`;
+  $("#tg").innerHTML = `${cur[5]}<small>${cur[6]}</small>`;
+  const tk = p(t, cur[4] + 0.6, cur[4] + 1.0);
+  $("#tg").style.opacity = tk;
+  $("#tg").style.transform = `translateY(${(1 - tk) * 30}px)`;
+
+  scene($("#s3"), t, 14.4, 99);
+  pop($("#lg"), t, 14.5, 0.5, 0);
+  words($("#h"), t, 14.7, 0.1);
+  pop($("#cta"), t, 15.6);
+};
+window.render(0);
+</script>
+</body>
+</html>

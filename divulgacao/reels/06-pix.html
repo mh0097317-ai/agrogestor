@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; }
+  .slot { width: 820px; margin: 0 auto; background: #241f19; border-radius: 40px; padding: 50px 56px; text-align: left; position: relative; }
+  .slot .k { font-size: 30px; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); font-weight: 650; }
+  .slot .h { font-family: "Fraunces", serif; font-size: 96px; margin-top: 14px; }
+  .slot .w { font-size: 40px; opacity: .75; margin-top: 8px; }
+  .stamp { position: absolute; right: -30px; top: 40px; border: 8px solid var(--red); color: var(--red); font-weight: 650; font-size: 46px; letter-spacing: .08em;
+    padding: 14px 28px; border-radius: 18px; text-transform: uppercase; transform: rotate(-12deg); background: rgba(22,19,15,.6); }
+  #s1 .sub { margin-top: 70px; font-family: "Fraunces", serif; font-size: 84px; line-height: 1.05; padding: 0 70px; }
+  #s1 .sub em { font-style: italic; color: var(--brass); }
+  #s2 .cap { top: 90px; }
+  #s2 .phone { top: 330px; }
+  #s2 .screen { background: var(--cream); padding: 120px 50px 0; }
+  .pixcard { background: var(--paper); border-radius: 36px; padding: 40px; box-shadow: 0 10px 30px rgba(22,19,15,.08); text-align: center; }
+  .pixcard .t { font-family: "Fraunces", serif; font-size: 56px; line-height: 1.1; }
+  .pixcard .v { font-family: "Fraunces", serif; font-size: 120px; margin: 20px 0 4px; }
+  .pixcard small { font-size: 28px; color: var(--muted); display: block; line-height: 1.4; }
+  .qr { width: 330px; height: 330px; margin: 34px auto 10px; display: grid; grid-template-columns: repeat(21, 1fr); gap: 0; background: #fff; padding: 14px; border-radius: 16px; }
+  .qr i { display: block; }
+  .copy { margin-top: 26px; background: var(--ink); color: var(--cream); border-radius: 22px; padding: 26px; font-size: 32px; font-weight: 650; }
+  .paid { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(244,239,230,.9); }
+  .paid .ok { width: 300px; height: 300px; border-radius: 50%; background: #2f7a4a; display: grid; place-items: center; color: #fff; font-size: 170px; }
+  .paid p { font-family: "Fraunces", serif; font-size: 66px; text-align: center; margin-top: 40px; }
+  #s3 { display: grid; place-items: center; padding: 0 70px; }
+  .vs { display: grid; gap: 40px; width: 100%; }
+  .row { background: var(--paper); border-radius: 40px; padding: 44px 50px; box-shadow: 0 20px 50px rgba(22,19,15,.1); }
+  .row .k { font-size: 32px; letter-spacing: .14em; text-transform: uppercase; font-weight: 650; color: var(--muted); }
+  .row .bar { height: 46px; border-radius: 23px; background: #ece4d6; margin-top: 24px; overflow: hidden; }
+  .row .bar i { display: block; height: 100%; border-radius: 23px; }
+  .row b { display: block; font-family: "Fraunces", serif; font-weight: 450; font-size: 72px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="slot" id="sl">
+        <div class="k">Sábado · 10:00</div>
+        <div class="h">Diego S.</div>
+        <div class="w">Corte + barba · reservado</div>
+        <div class="stamp" id="st">Não veio</div>
+      </div>
+      <div class="sub" id="sub">Marcou, sumiu <em>e nem avisou.</em></div>
+    </div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">Agora ele <em>garante com Pix.</em></div>
+    <div class="phone" id="ph"><div class="screen">
+      <div class="notch"></div>
+      <div class="pixcard">
+        <div class="t">Sinal para garantir seu horário</div>
+        <div class="v">R$ 15</div>
+        <small>Descontado no dia · sáb 10:00 com Lucas</small>
+        <div class="qr" id="qr"></div>
+        <div class="copy">Copiar código Pix</div>
+      </div>
+      <div class="paid" id="pd"><div><div class="ok">✓</div><p>Pix recebido.<br>Horário garantido.</p></div></div>
+    </div></div>
+  </section>
+  <section class="scene" id="s3">
+    <div class="vs">
+      <div class="cap" style="position:static;margin-bottom:20px" id="c3">Quem paga sinal, <em>aparece.</em></div>
+      <div class="row" id="r1"><div class="k">Sem sinal</div><div class="bar"><i id="b1" style="background:var(--red)"></i></div><b id="v1">0 faltas</b></div>
+      <div class="row" id="r2"><div class="k">Com sinal por Pix</div><div class="bar"><i id="b2" style="background:#2f7a4a"></i></div><b id="v2">0 faltas</b></div>
+      <p style="font-size:30px;color:var(--muted)" id="nt">Ilustração: 10 faltas por mês caindo para 2.</p>
+    </div>
+  </section>
+  <section class="scene dark end" id="s4">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Horário marcado <em>é horário pago.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta PIX</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+// A decorative QR pattern (deterministic), not a real payment code.
+(() => {
+  const q = $("#qr");
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+    const finder = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13);
+    const ring = finder && ((x % 14 === 0 || x % 14 === 6 || y % 14 === 0 || y % 14 === 6) || ((x % 14) >= 2 && (x % 14) <= 4 && (y % 14) >= 2 && (y % 14) <= 4));
+    const on = finder ? ring : rnd() > 0.52;
+    const i = document.createElement("i");
+    i.style.background = on ? "#16130f" : "transparent";
+    q.appendChild(i);
+  }
+})();
+window.DURATION = 17;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 3.6);
+  pop($("#sl"), t, 0.1, 0.5, 60);
+  const k = p(t, 1.0, 1.35, ease.back);
+  $("#st").style.opacity = p(t, 1.0, 1.1, ease.lin);
+  $("#st").style.transform = `rotate(-12deg) scale(${lerp(2.4, 1, k)})`;
+  words($("#sub"), t, 1.6, 0.1);
+
+  scene($("#s2"), t, 3.4, 10.0);
+  words($("#c2"), t, 3.6);
+  const ph = p(t, 3.4, 4.3);
+  $("#ph").style.transform = `translateY(${(1 - ph) * 280}px)`;
+  $$("#qr i").forEach((c, i) => { c.style.opacity = p(t, 4.4 + (i % 21) * 0.025, 4.8 + (i % 21) * 0.025, ease.lin); });
+  const paid = p(t, 7.0, 7.4, ease.lin);
+  $("#pd").style.opacity = paid;
+  $("#pd .ok").style.transform = `scale(${lerp(0.3, 1, p(t, 7.0, 7.5, ease.back))})`;
+
+  scene($("#s3"), t, 9.8, 14.2);
+  words($("#c3"), t, 9.9);
+  pop($("#r1"), t, 10.4, 0.45, 40);
+  pop($("#r2"), t, 10.9, 0.45, 40);
+  const a = p(t, 10.8, 11.8, ease.inOut), b = p(t, 11.3, 12.3, ease.inOut);
+  $("#b1").style.width = `${a * 100}%`;
+  $("#b2").style.width = `${b * 20}%`;
+  $("#v1").textContent = `${Math.round(a * 10)} faltas`;
+  $("#v2").textContent = `${Math.round(b * 2)} faltas`;
+  pop($("#nt"), t, 12.2, 0.4, 0);
+
+  scene($("#s4"), t, 14.0, 99);
+  pop($("#lg"), t, 14.1, 0.5, 0);
+  words($("#h"), t, 14.3, 0.1);
+  pop($("#cta"), t, 15.3);
+};
+window.render(0);
+</script>
+</body>
+</html>

@@ -116,5 +116,131 @@
    14.6,
    "Quem sumiu volta pra cadeira. Comenta VOLTA."
   ]
+ ],
+ "06-pix": [
+  [
+   0.3,
+   "Marcou, sumiu e nem avisou. Quem nunca?"
+  ],
+  [
+   3.6,
+   "Agora o cliente garante o horário com um sinal no Pix."
+  ],
+  [
+   7.1,
+   "Pagou, tá garantido. E o valor é descontado no dia."
+  ],
+  [
+   10.0,
+   "Quem paga sinal, aparece."
+  ],
+  [
+   14.2,
+   "Horário marcado é horário pago. Comenta PIX."
+  ]
+ ],
+ "07-marca-sozinho": [
+  [
+   0.3,
+   "Seu cliente marca sozinho. Olha o tempo."
+  ],
+  [
+   3.4,
+   "Escolhe o serviço,"
+  ],
+  [
+   4.8,
+   "escolhe o barbeiro,"
+  ],
+  [
+   6.9,
+   "escolhe o horário,"
+  ],
+  [
+   9.2,
+   "coloca o nome e pronto."
+  ],
+  [
+   12.0,
+   "Menos de vinte segundos, sem você parar o corte."
+  ],
+  [
+   14.4,
+   "Comenta LINK que eu te mando."
+  ]
+ ],
+ "08-comissao": [
+  [
+   0.3,
+   "Fim do mês. Todo barbeiro perguntando quanto deu a comissão…"
+  ],
+  [
+   4.6,
+   "No Studio Flow já tá tudo somado: o que entrou no mês"
+  ],
+  [
+   8.4,
+   "e a comissão de cada um, calculada sozinha."
+  ],
+  [
+   10.2,
+   "E cada barbeiro vê o seu."
+  ],
+  [
+   14.2,
+   "Comissão certa, sem discussão. Comenta COMISSÃO."
+  ]
+ ],
+ "09-modo-tv": [
+  [
+   0.3,
+   "A TV da sua recepção tá vendendo o quê?"
+  ],
+  [
+   3.0,
+   "Liga o Modo TV."
+  ],
+  [
+   5.6,
+   "Mostra quem está atendendo,"
+  ],
+  [
+   7.9,
+   "quem chega em seguida,"
+  ],
+  [
+   10.1,
+   "um QR pro cliente marcar o próximo corte"
+  ],
+  [
+   12.2,
+   "e o serviço que mais vende."
+  ],
+  [
+   14.6,
+   "Sua TV vira vendedora. Comenta TV."
+  ]
+ ],
+ "10-nao-lidas": [
+  [
+   0.3,
+   "Quarenta e sete mensagens não lidas… e você com a máquina na mão."
+  ],
+  [
+   4.6,
+   "A recepcionista do Studio Flow respondeu todo mundo:"
+  ],
+  [
+   6.4,
+   "marcou, mandou preço, remarcou."
+  ],
+  [
+   8.6,
+   "Não lidas: zero."
+  ],
+  [
+   11.4,
+   "Você corta, ela atende. Comenta EU."
+  ]
  ]
 }

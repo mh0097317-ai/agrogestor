@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { padding: 260px 70px 0; }
+  #s1 .cap { position: static; color: var(--cream); }
+  .bub { margin-top: 34px; max-width: 80%; padding: 26px 32px; border-radius: 30px; font-size: 40px; line-height: 1.3; background: #2a2520; }
+  .bub b { display: block; font-size: 26px; color: var(--brass); margin-bottom: 6px; }
+  .bub.r { margin-left: auto; background: #3a2f22; }
+  #s2 .cap { top: 90px; }
+  #s2 .phone { top: 330px; }
+  #s2 .screen img { position: absolute; left: 0; top: 0; width: 716px; }
+  .call { position: absolute; background: var(--ink); color: var(--cream); font-size: 36px; font-weight: 650; padding: 22px 32px; border-radius: 26px; box-shadow: 0 20px 50px rgba(22,19,15,.3); white-space: nowrap; }
+  #k1 { left: 40px; top: 760px; } #k2 { right: 40px; top: 1180px; }
+  #s3 { padding: 230px 70px 0; }
+  #s3 .cap { position: static; margin-bottom: 60px; }
+  .who { display: grid; grid-template-columns: 120px 1fr; gap: 30px; align-items: center; margin-bottom: 44px; }
+  .who img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
+  .who .n { font-size: 38px; font-weight: 650; display: flex; justify-content: space-between; }
+  .who .n b { font-family: "Fraunces", serif; font-weight: 450; font-size: 52px; }
+  .who .track { height: 34px; background: #ece4d6; border-radius: 17px; margin-top: 12px; overflow: hidden; }
+  .who .track i { display: block; height: 100%; background: var(--brass); border-radius: 17px; }
+  .who small { font-size: 28px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div class="cap" id="c1">Fim do mês na barbearia:</div>
+    <div class="bub" id="b1"><b>Lucas</b>chefe, quanto deu minha comissão?</div>
+    <div class="bub r" id="b2"><b>Você</b>peraí que vou somar no caderno…</div>
+    <div class="bub" id="b3"><b>João</b>acho que tá faltando corte meu aí 🤔</div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">No StudioFlow <em>já está somado.</em></div>
+    <div class="phone" id="ph"><div class="screen"><div class="notch"></div><img src="img/financeiro-m.png" id="im"></div></div>
+    <div class="call" id="k1">Tudo que entrou no mês</div>
+    <div class="call" id="k2">Comissão calculada sozinha</div>
+  </section>
+  <section class="scene" id="s3">
+    <div class="cap" id="c3">E cada um vê <em>o seu.</em></div>
+    <div class="who" id="w1"><img src="img/lucas.jpg"><div><div class="n">Lucas <b id="v1">R$ 0</b></div><div class="track"><i id="t1"></i></div><small>41 atendimentos</small></div></div>
+    <div class="who" id="w2"><img src="img/joao.jpg"><div><div class="n">João <b id="v2">R$ 0</b></div><div class="track"><i id="t2"></i></div><small>33 atendimentos</small></div></div>
+    <div class="who" id="w3"><img src="img/ana.jpg"><div><div class="n">Ana <b id="v3">R$ 0</b></div><div class="track"><i id="t3"></i></div><small>22 atendimentos</small></div></div>
+  </section>
+  <section class="scene dark end" id="s4">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Comissão certa, <em>sem discussão.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta COMISSÃO</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+// financeiro-m.png is 390x1700 shown at 716 wide (scale 1.836).
+window.DURATION = 17;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 4.6);
+  words($("#c1"), t, 0.1);
+  pop($("#b1"), t, 0.8);
+  pop($("#b2"), t, 1.9);
+  pop($("#b3"), t, 3.0);
+
+  scene($("#s2"), t, 4.4, 10.2);
+  words($("#c2"), t, 4.6);
+  const ph = p(t, 4.4, 5.2);
+  $("#ph").style.transform = `translateY(${(1 - ph) * 280}px)`;
+  $("#im").style.transform = `translateY(${-lerp(820, 1520, p(t, 7.2, 8.2, ease.inOut))}px)`;
+  pop($("#k1"), t, 5.6, 0.45, 30);
+  if (t > 7.0) $("#k1").style.opacity = 1 - p(t, 7.0, 7.3, ease.lin);
+  pop($("#k2"), t, 8.4, 0.45, 30);
+
+  scene($("#s3"), t, 10.0, 14.2);
+  words($("#c3"), t, 10.1);
+  [["#w1", "#t1", "#v1", 410, 10.6], ["#w2", "#t2", "#v2", 335, 10.9], ["#w3", "#t3", "#v3", 220, 11.2]].forEach(([w, tr, v, val, a]) => {
+    pop($(w), t, a, 0.4, 30);
+    const k = p(t, a + 0.2, a + 1.3, ease.inOut);
+    $(tr).style.width = `${(val / 410) * 100 * k}%`;
+    $(v).textContent = money(val * k);
+  });
+
+  scene($("#s4"), t, 14.0, 99);
+  pop($("#lg"), t, 14.1, 0.5, 0);
+  words($("#h"), t, 14.3, 0.1);
+  pop($("#cta"), t, 15.3);
+};
+window.render(0);
+</script>
+</body>
+</html>

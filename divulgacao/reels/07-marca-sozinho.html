@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; padding: 0 70px; }
+  #s1 .q { font-family: "Fraunces", serif; font-size: 112px; line-height: 1.04; }
+  #s1 .q em { font-style: italic; color: var(--brass); }
+  #s2 .timer { position: absolute; top: 80px; left: 0; right: 0; text-align: center; font-family: "Fraunces", serif; font-size: 150px; letter-spacing: -0.02em; line-height: 1; }
+  #s2 .timer small { display: block; font-family: "Hanken", sans-serif; font-size: 32px; letter-spacing: .2em; text-transform: uppercase; color: var(--brass-d); font-weight: 650; margin-top: 8px; }
+  #s2 .phone { top: 360px; }
+  #s2 .screen { background: var(--cream); }
+  .step { position: absolute; inset: 0; background: var(--cream); padding: 120px 44px 0; }
+  .step img { position: absolute; left: 0; top: 0; width: 716px; }
+  .bar { display: flex; justify-content: space-between; margin-bottom: 50px; }
+  .bar span { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #d9cdb8; display: grid; place-items: center; font-size: 30px; color: var(--muted); }
+  .bar span.on { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .bar span.done { background: var(--brass); color: var(--ink); border-color: var(--brass); }
+  .step h3 { font-family: "Fraunces", serif; font-weight: 450; font-size: 64px; line-height: 1.05; margin-bottom: 40px; }
+  .pro { display: flex; align-items: center; gap: 30px; background: var(--paper); border-radius: 30px; padding: 26px 30px; margin-bottom: 22px; border: 3px solid transparent; font-size: 38px; }
+  .pro img { position: static; width: 110px; height: 110px; border-radius: 50%; object-fit: cover; }
+  .pro small { display: block; font-size: 26px; color: var(--muted); }
+  .pro.sel { border-color: var(--ink); }
+  .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .chip { background: var(--paper); border-radius: 22px; padding: 28px 0; text-align: center; font-size: 38px; font-weight: 650; border: 3px solid transparent; }
+  .chip.sel { background: var(--ink); color: var(--cream); }
+  .day { font-size: 34px; color: var(--muted); margin: 0 0 24px; }
+  .field { background: var(--paper); border-radius: 22px; padding: 30px; font-size: 38px; margin-bottom: 22px; border: 2px solid #e6dccb; }
+  .field small { display: block; font-size: 24px; color: var(--muted); margin-bottom: 6px; }
+  .done-card { text-align: center; padding-top: 80px; }
+  .done-card .ok { width: 220px; height: 220px; border-radius: 50%; background: #2f7a4a; color: #fff; display: grid; place-items: center; font-size: 130px; margin: 0 auto 40px; }
+  .done-card p { font-size: 36px; color: var(--muted); line-height: 1.5; }
+  .tap { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--brass); margin: -60px 0 0 -60px; z-index: 9; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div><div class="kicker">Sem ligação, sem esperar resposta</div>
+    <div class="q" id="q" style="margin-top:40px">Seu cliente marca <em>sozinho.</em> Olha o tempo.</div></div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="timer"><span id="tm">00:00</span><small>cronômetro</small></div>
+    <div class="phone" id="ph"><div class="screen">
+      <div class="notch"></div>
+      <div class="step" id="p1"><img src="img/phone-book.webp"></div>
+      <div class="step" id="p2">
+        <div class="bar"><span class="done">✓</span><span class="on">2</span><span>3</span><span>4</span><span>5</span></div>
+        <h3>Com quem você quer cortar?</h3>
+        <div class="pro" id="pr1"><img src="img/lucas.jpg"><div>Lucas<small>Próximo livre: hoje 16:00</small></div></div>
+        <div class="pro"><img src="img/joao.jpg"><div>João<small>Próximo livre: amanhã 9:30</small></div></div>
+        <div class="pro"><img src="img/ana.jpg"><div>Ana<small>Próximo livre: hoje 17:30</small></div></div>
+      </div>
+      <div class="step" id="p3">
+        <div class="bar"><span class="done">✓</span><span class="done">✓</span><span class="on">3</span><span>4</span><span>5</span></div>
+        <h3>Escolha o horário</h3>
+        <div class="day">Hoje · tarde</div>
+        <div class="chips"><div class="chip">14:00</div><div class="chip">15:00</div><div class="chip" id="ch">16:00</div><div class="chip">16:40</div><div class="chip">17:20</div><div class="chip">18:00</div></div>
+      </div>
+      <div class="step" id="p4">
+        <div class="bar"><span class="done">✓</span><span class="done">✓</span><span class="done">✓</span><span class="on">4</span><span>5</span></div>
+        <h3>Seus dados</h3>
+        <div class="field"><small>Nome</small><span id="nm"></span></div>
+        <div class="field"><small>WhatsApp</small><span id="tel"></span></div>
+      </div>
+      <div class="step" id="p5">
+        <div class="bar"><span class="done">✓</span><span class="done">✓</span><span class="done">✓</span><span class="done">✓</span><span class="on">5</span></div>
+        <div class="done-card"><div class="ok" id="ok">✓</div><h3>Tá marcado!</h3><p>Corte masculino · hoje 16:00<br>com Lucas · lembrete no WhatsApp</p></div>
+      </div>
+      <div class="tap" id="tap"></div>
+    </div></div>
+  </section>
+  <section class="scene dark end" id="s3">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Agenda aberta <em>24 horas.</em> Sem você parar o corte.</h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta LINK</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+const typed = (text, t, a, per = 0.06) => text.slice(0, Math.max(0, Math.floor((t - a) / per)));
+// Taps: [time, x, y] inside the screen (716 wide).
+const taps = [[4.0, 629, 748], [6.1, 400, 470], [8.3, 560, 450], [11.3, 358, 1300]];
+window.DURATION = 17;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 2.9);
+  words($("#q"), t, 0.2, 0.1);
+
+  scene($("#s2"), t, 2.7, 14.0);
+  const ph = p(t, 2.7, 3.5);
+  $("#ph").style.transform = `translateY(${(1 - ph) * 260}px)`;
+  const clock = Math.min(18, Math.max(0, (t - 3.4) * (18 / 9.4)));
+  $("#tm").textContent = `00:${String(Math.floor(clock)).padStart(2, "0")}`;
+  // Screens slide in from the right.
+  const at = [3.3, 4.6, 6.7, 9.0, 11.8];
+  ["#p1", "#p2", "#p3", "#p4", "#p5"].forEach((s, i) => {
+    const k = i === 0 ? 1 : p(t, at[i], at[i] + 0.45, ease.inOut);
+    $(s).style.transform = `translateX(${(1 - k) * 760}px)`;
+    $(s).style.display = t >= at[i] || i === 0 ? "" : "none";
+  });
+  $("#pr1").classList.toggle("sel", t > 6.1);
+  $("#ch").classList.toggle("sel", t > 8.3);
+  $("#nm").textContent = typed("Bruno Costa", t, 9.5);
+  $("#tel").textContent = typed("(62) 9 8888-1234", t, 10.3, 0.05);
+  $("#ok").style.transform = `scale(${lerp(0.2, 1, p(t, 12.0, 12.5, ease.back))})`;
+  const tap = taps.find(([a]) => t >= a && t < a + 0.5);
+  if (tap) {
+    const k = p(t, tap[0], tap[0] + 0.5, ease.out);
+    Object.assign($("#tap").style, { display: "", left: `${tap[1]}px`, top: `${tap[2]}px`, opacity: 1 - k, transform: `scale(${lerp(0.4, 1.4, k)})` });
+  } else $("#tap").style.display = "none";
+
+  scene($("#s3"), t, 13.8, 99);
+  pop($("#lg"), t, 13.9, 0.5, 0);
+  words($("#h"), t, 14.1, 0.09);
+  pop($("#cta"), t, 15.4);
+};
+window.render(0);
+</script>
+</body>
+</html>
