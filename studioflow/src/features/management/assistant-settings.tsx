@@ -54,6 +54,10 @@ export function AssistantSettings({
   const [limit, setLimit] = useState(
     String(settings.assistantDailyLimit || 300),
   );
+  const [winback, setWinback] = useState(settings.winbackEnabled || false);
+  const [winbackDays, setWinbackDays] = useState(
+    String(settings.winbackDays || 35),
+  );
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const connections =
@@ -83,6 +87,8 @@ export function AssistantSettings({
         assistantName: name,
         assistantInstructions: instructions,
         assistantDailyLimit: Number(limit) || 300,
+        winbackEnabled: winback,
+        winbackDays: Math.min(120, Math.max(20, Number(winbackDays) || 35)),
       });
       toast(
         enabled ? "Atendente virtual ligada." : "Atendente virtual desligada.",
@@ -182,6 +188,30 @@ export function AssistantSettings({
                 <small>
                   A IA acompanha os dias e horários cadastrados em Horários e
                   regras ({settings.openStart} às {settings.openEnd}).
+                </small>
+              </span>
+            </label>
+            <label className="assistant-toggle">
+              <input
+                type="checkbox"
+                checked={winback}
+                onChange={(event) => setWinback(event.target.checked)}
+              />
+              <span>
+                <strong>Chamar de volta quem sumiu</strong>
+                <small>
+                  Uma mensagem pelo WhatsApp para quem não volta há{" "}
+                  <input
+                    className="assistant-inline-number"
+                    type="number"
+                    min={20}
+                    max={120}
+                    value={winbackDays}
+                    onChange={(event) => setWinbackDays(event.target.value)}
+                    aria-label="Dias sem voltar"
+                  />{" "}
+                  dias, oferecendo o serviço de sempre. No máximo uma a cada 60
+                  dias por cliente; quem responder PARAR não recebe mais.
                 </small>
               </span>
             </label>

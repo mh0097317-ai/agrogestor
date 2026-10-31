@@ -18,6 +18,7 @@ import {
 } from "@/services/attendance";
 import { checkAssistantHealth } from "@/services/assistant/alerts";
 import { runNightlyEval } from "@/services/assistant/nightly-eval";
+import { sendWinbacks } from "@/services/assistant/winback";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     weeklyEmails,
     assistantHealth,
     nightlyEval,
+    winbacks,
   ] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(origin),
@@ -64,6 +66,8 @@ export async function POST(request: Request) {
     checkAssistantHealth().catch(() => "failed"),
     // Madrugada: as conversas de teste da recepcionista, uma loja por vez.
     runNightlyEval().catch(() => "failed"),
+    // 10h: quem sumiu, nas lojas que ligaram a mensagem de retorno.
+    sendWinbacks().catch(() => "failed"),
   ]);
   return Response.json({
     ...customers,
@@ -77,5 +81,6 @@ export async function POST(request: Request) {
     weeklyEmails,
     assistantHealth,
     nightlyEval,
+    winbacks,
   });
 }

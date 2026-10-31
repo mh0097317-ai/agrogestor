@@ -98,6 +98,8 @@ export function normalizeStoreTimes(store: Store): Store {
   store.settings.assistantName ??= "Recepção";
   store.settings.assistantInstructions ??= "";
   store.settings.assistantDailyLimit ??= 300;
+  store.settings.winbackEnabled ??= false;
+  store.settings.winbackDays ??= 35;
   // A Pix hold past its deadline frees the slot right away; the database
   // catches up under the business lock on the next write.
   expireHolds(store);

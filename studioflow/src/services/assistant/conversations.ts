@@ -35,8 +35,10 @@ import {
   receptionistModel,
   receptionistV3,
   upcomingFor,
+  customerProfile,
   customerWords,
 } from "./receptionist";
+import { winbackStop } from "./winback";
 import { assistantScheduleOpen } from "@/lib/assistant-schedule";
 import {
   bookingMenu,
@@ -1297,6 +1299,20 @@ export async function answerPending(
     closed ||
     (v3
       ? await (async () => {
+          const stop =
+            conversation.channel === "whatsapp" &&
+            !delivery.simulate &&
+            (await winbackStop(
+              repo.businessId,
+              conversation.contactPhone,
+              text,
+            ).catch(() => null));
+          if (stop)
+            return {
+              history: conversation.history,
+              reply: stop,
+              usage: { input: 0, output: 0 },
+            };
           await repo.progress?.(conversationId, { state: "GENERATING" });
           const transcript = (await repo.messages(conversationId)).filter(
             (m) =>
@@ -1340,12 +1356,14 @@ export async function answerPending(
                 ),
               ].map((x) => `${x[1].padStart(2, "0")}:${x[2] || x[3] || "00"}`),
             );
-          const history = customerBookingContext(
-            scopedStore,
-            conversation.contactPhone,
-            undefined,
-            pending[0].createdAt,
-          );
+          const profile =
+            conversation.channel === "whatsapp"
+              ? customerProfile(
+                  scopedStore,
+                  conversation.contactPhone,
+                  new Date(),
+                )
+              : "";
           const turn = await receptionistTurn({
             create,
             store: scopedStore,
@@ -1364,9 +1382,7 @@ export async function answerPending(
                     new Date(),
                   )
                 : "",
-              history
-                ? `Atendimentos anteriores deste cliente (só referência): ${history.replace(/\n/g, "; ")}`
-                : "",
+              profile,
             ]
               .filter(Boolean)
               .join(" | "),

@@ -681,3 +681,12 @@
     font-size: 14px;
   }
 }
+.assistant-toggle .assistant-inline-number {
+  width: 56px;
+  margin: 0 2px;
+  padding: 1px 6px;
+  border: 1px solid #d9cdb8;
+  border-radius: 3px;
+  font: inherit;
+  text-align: center;
+}

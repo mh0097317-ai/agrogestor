@@ -98,6 +98,8 @@ async function transaction<T>(
     store.settings.assistantName ??= "Recepção";
     store.settings.assistantInstructions ??= "";
     store.settings.assistantDailyLimit ??= 300;
+  store.settings.winbackEnabled ??= false;
+  store.settings.winbackDays ??= 35;
     expireHolds(store);
     const result = await operation(store);
     if (persist) {

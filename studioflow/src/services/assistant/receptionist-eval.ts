@@ -4,7 +4,7 @@ import type { Appointment, Store } from "@/types";
 import type { CreateMessage } from "./engine/agent-loop";
 import type { AssistantContext } from "./agent";
 import type { BookingMenu } from "./booking-menu";
-import { receptionistTurn, upcomingFor } from "./receptionist";
+import { customerProfile, receptionistTurn, upcomingFor } from "./receptionist";
 
 /*
  * Conversas de teste da recepcionista com o modelo de verdade, numa cópia da
@@ -59,6 +59,7 @@ class Chat {
     professionalId: string,
     serviceId: string,
     mine = true,
+    status: Appointment["status"] = "confirmed",
   ) {
     const service = this.store.services.find((s) => s.id === serviceId)!;
     this.store.appointments.push({
@@ -74,7 +75,7 @@ class Chat {
       end: new Date(
         Date.parse(slot.start) + service.duration * 60_000,
       ).toISOString(),
-      status: "confirmed",
+      status,
       price: service.price,
       reminder: true,
       notes: "",
@@ -144,7 +145,12 @@ class Chat {
       text,
       known,
       // As in WhatsApp: the receptionist knows what this number has booked.
-      context: upcomingFor(this.store, phone, new Date()),
+      context: [
+        upcomingFor(this.store, phone, new Date()),
+        customerProfile(this.store, phone, new Date()),
+      ]
+        .filter(Boolean)
+        .join(" | "),
     });
     const seconds = (Date.now() - started) / 1000;
     if (turn.handoff) this.handoffs++;
@@ -678,6 +684,33 @@ export const scenarios: Scenario[] = [
       const r = await c.say("qual o primeiro horário livre que vocês têm?");
       c.clean(r.reply);
       c.expect(timesIn(r.reply).length > 0 || !!r.menu, "não ofereceu horário");
+    },
+  },
+  {
+    name: "Cliente da casa quer o de sempre",
+    customer: "Rafael",
+    run: async (c, s) => {
+      for (const ago of [70, 45, 20])
+        c.hold(
+          {
+            start: new Date(
+              Date.parse(s.slot.start) - ago * 86_400_000,
+            ).toISOString(),
+          },
+          s.professional.id,
+          s.service.id,
+          true,
+          "completed",
+        );
+      const r = await c.say("fala! quero marcar de novo");
+      c.clean(r.reply);
+      const first = lower(s.professional.name.split(" ")[0]);
+      c.expect(
+        lower(r.reply).includes(first) ||
+          lower(r.reply).includes(lower(s.service.name).split(" ")[0]),
+        "não lembrou do serviço nem de quem costuma atender",
+      );
+      c.expect(!c.made, "marcou sem o cliente escolher");
     },
   },
   {

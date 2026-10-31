@@ -38,6 +38,8 @@ export const assistantSchema = z.object({
     .trim()
     .max(1500, "Use no máximo 1.500 caracteres."),
   assistantDailyLimit: z.number().int().min(10).max(5000),
+  winbackEnabled: z.boolean().default(false),
+  winbackDays: z.number().int().min(20).max(120).default(35),
 });
 export const whatsappSchema = z.object({
   phoneNumberId: z
@@ -100,6 +102,8 @@ export async function updateAssistant(input: z.infer<typeof assistantSchema>) {
       assistant_name: input.assistantName,
       assistant_instructions: input.assistantInstructions,
       assistant_daily_limit: input.assistantDailyLimit,
+      winback_enabled: input.winbackEnabled,
+      winback_days: input.winbackDays,
     })
     .eq("business_id", businessId);
   if (error) throw new DomainError("Não foi possível salvar a atendente.", 503);

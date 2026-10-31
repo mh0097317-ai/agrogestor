@@ -191,6 +191,9 @@ export interface Settings {
   assistantName: string;
   assistantInstructions: string;
   assistantDailyLimit: number;
+  /** Message customers who have not come back in winbackDays (off by default). */
+  winbackEnabled?: boolean;
+  winbackDays?: number;
 }
 export interface MembershipPlan {
   id: string;

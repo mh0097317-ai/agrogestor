@@ -130,6 +130,8 @@ Agenda e reservas:
 - Quando o cliente escolher um horário (tocando na lista ou escrevendo), confira se é para o serviço e o dia certos. Se você ainda não sabe o nome dele, pergunte como ele prefere ser chamado. Com nome, serviço, profissional, dia e horário definidos e o cliente de acordo, use agendar. Escolher um horário oferecido já é concordar; não peça "posso confirmar?" duas vezes.
 - Só diga que marcou depois que agendar der certo. Se o horário acabou de ser ocupado, ofereça outros.
 - Se o cliente não tiver preferência de profissional, consulte com profissional "any" e diga com quem é cada horário. Quando ele escolher um horário sem dizer com quem e mais de um profissional estiver livre, não pergunte: marque com um deles e diga com quem ficou. Só pergunte se ele mostrou que tem preferência.
+- Cliente da casa (aparece nos dados do cliente): trate como conhecido. Quando ele quiser marcar sem dizer o quê, ofereça o de sempre com quem costuma atender ("o corte de sempre com o Matheus?") e já consulte os horários dele. Se faz tempo desde a última visita, comente de leve que sentiu falta, sem cobrar.
+- Venda com bom senso: quando fizer sentido, sugira uma vez um serviço do catálogo que combina com o que ele vai fazer (por exemplo, barba junto com o corte), dizendo o valor. Se ele não quiser, siga sem insistir.
 - Um horário já marcado aparece nos dados do cliente. Agradecimento ou "ok" depois de marcar não é pedido de novo horário: responda com simpatia e não use agendar de novo.
 - Cancelar ou remarcar um horário já marcado: o sistema cuida quando o cliente pede. Se ele tiver dificuldade, use chamar_humano.
 - ${channel === "whatsapp" ? "Marque pela conversa mesmo; não mande o cliente para o site." : "Marque pela conversa mesmo."}${onlineBookingEnabled(settings) ? "" : " Não existe página de agendamento online para oferecer."}
@@ -634,6 +636,60 @@ export async function receptionistTurn(input: {
 }
 
 /** Bookings this number already has ahead, so the receptionist knows. */
+/**
+ * What the shop knows about a returning customer, in words the model can
+ * sell with: how often they come, what they usually do and with whom.
+ */
+export function customerProfile(store: Store, phone: string, now: Date) {
+  const digits = (value: string) =>
+    value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  const own = digits(phone);
+  if (!own) return "";
+  const done = store.appointments
+    .filter(
+      (a) =>
+        a.status === "completed" &&
+        Date.parse(a.start) < now.getTime() &&
+        digits(a.customerPhone) === own,
+    )
+    .sort((a, b) => a.start.localeCompare(b.start));
+  if (!done.length) return "";
+  const most = (values: string[]) =>
+    [...new Set(values)].sort(
+      (a, b) =>
+        values.filter((v) => v === b).length -
+        values.filter((v) => v === a).length,
+    )[0];
+  const service = store.services.find(
+    (s) => s.active && s.id === most(done.flatMap((a) => a.serviceIds)),
+  );
+  const person = store.professionals.find(
+    (p) => p.active && p.id === most(done.map((a) => a.professionalId)),
+  );
+  const last = done.at(-1)!;
+  const days = Math.floor(
+    (now.getTime() - Date.parse(last.start)) / 86_400_000,
+  );
+  const gaps = done
+    .slice(1)
+    .map(
+      (a, i) => (Date.parse(a.start) - Date.parse(done[i].start)) / 86_400_000,
+    )
+    .filter((d) => d >= 1);
+  const every =
+    gaps.length >= 2
+      ? Math.round(gaps.reduce((sum, d) => sum + d, 0) / gaps.length)
+      : 0;
+  return [
+    `Cliente da casa: ${done.length} ${done.length === 1 ? "visita" : "visitas"}, a última ${days === 0 ? "hoje" : days === 1 ? "ontem" : `há ${days} dias`}`,
+    service ? `costuma fazer ${display(service.name).toLowerCase()}` : "",
+    person ? `costuma ser atendido por ${display(person.name)}` : "",
+    every ? `volta em média a cada ${every} dias` : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
 export function upcomingFor(store: Store, phone: string, now: Date) {
   const digits = (value: string) =>
     value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
