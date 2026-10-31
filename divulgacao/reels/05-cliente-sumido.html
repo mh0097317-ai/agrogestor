@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; }
+  #s1 .days { font-family: "Fraunces", serif; font-size: 360px; line-height: .9; letter-spacing: -0.04em; }
+  #s1 .lbl { font-size: 54px; margin-top: 20px; opacity: .85; }
+  #s1 .who { margin-top: 70px; font-family: "Fraunces", serif; font-style: italic; font-size: 72px; color: var(--brass); }
+  #s2 .cap { top: 70px; }
+  #s2 .phone { top: 330px; }
+  .tag { position: absolute; left: 70px; right: 70px; top: 1856px; text-align: center; font-size: 28px; color: var(--muted); }
+  #s3 { padding: 300px 70px 0; }
+  #s3 .cap { position: static; }
+  .stat { margin-top: 70px; background: var(--paper); border-radius: 40px; padding: 44px 48px; box-shadow: 0 30px 70px rgba(22,19,15,.12); }
+  .stat .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 44px; padding: 22px 0; }
+  .stat .row b { font-family: "Fraunces", serif; font-weight: 450; font-size: 76px; }
+  .stat .row + .row { border-top: 2px solid #ece4d6; }
+  .note { margin-top: 40px; font-size: 36px; color: var(--muted); line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="kicker">Último corte do Rafael</div>
+      <div class="days" id="d">0</div>
+      <div class="lbl">dias sem aparecer</div>
+      <div class="who" id="who">Foi pro concorrente?</div>
+    </div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">O StudioFlow <em>chama ele de volta.</em></div>
+    <div class="phone" id="ph">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="wa-head"><div class="av"><img src="img/logo.svg"></div><div><b>Barbearia</b><small>online</small></div></div>
+        <div class="chat">
+          <div class="msg out" id="m1">Oi, Rafael! Aqui é da barbearia 💈 Faz um tempinho que você não aparece por aqui. Quer que eu veja o seu corte com o Lucas essa semana? <small>10:02</small></div>
+          <div class="typing in" id="t1"><span></span><span></span><span></span></div>
+          <div class="msg in" id="m2">pior que tô precisando kkk sábado de manhã tem? <small>10:09</small></div>
+          <div class="typing" id="t2"><span></span><span></span><span></span></div>
+          <div class="msg out" id="m3">Tem sim! Sábado às 9:30 com o Lucas. Marquei pra você ✅ <small>10:09</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="tag" id="tg">Mensagem automática · só pra quem sumiu · ligada pelo dono</div>
+  </section>
+  <section class="scene" id="s3">
+    <div class="cap" id="c3">Cliente que some <em>é dinheiro parado.</em></div>
+    <div class="stat" id="st">
+      <div class="row"><span>Sumidos há +35 dias</span><b id="v1">0</b></div>
+      <div class="row"><span>Voltaram com 1 mensagem</span><b id="v2">0</b></div>
+      <div class="row"><span>Voltou pro caixa</span><b id="v3">R$ 0</b></div>
+    </div>
+    <p class="note" id="nt">Exemplo de uma barbearia com 40 clientes sumidos, 1 em cada 4 voltando, corte a R$ 40.</p>
+  </section>
+  <section class="scene dark end" id="s4">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Quem sumiu <em>volta pra cadeira.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta VOLTA</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+window.DURATION = 18;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 3.0);
+  $("#d").textContent = Math.round(p(t, 0.2, 1.6, ease.out) * 37);
+  pop($("#who"), t, 1.8, 0.5, 30);
+
+  scene($("#s2"), t, 2.8, 10.4);
+  words($("#c2"), t, 3.0);
+  const k = p(t, 2.8, 3.7);
+  $("#ph").style.transform = `translateY(${(1 - k) * 260}px)`;
+  pop($("#m1"), t, 3.9);
+  dots($("#t1"), t, 5.6, 6.6);
+  pop($("#m2"), t, 6.6);
+  dots($("#t2"), t, 7.4, 8.2);
+  pop($("#m3"), t, 8.2);
+  pop($("#tg"), t, 4.4, 0.4, 0);
+
+  scene($("#s3"), t, 10.2, 14.6);
+  words($("#c3"), t, 10.3);
+  pop($("#st"), t, 10.9, 0.5, 60);
+  $("#v1").textContent = Math.round(p(t, 11.2, 11.9) * 40);
+  $("#v2").textContent = Math.round(p(t, 11.8, 12.5) * 10);
+  $("#v3").textContent = money(p(t, 12.4, 13.4, ease.inOut) * 400);
+  pop($("#nt"), t, 12.6, 0.4, 0);
+
+  scene($("#s4"), t, 14.4, 99);
+  pop($("#lg"), t, 14.5, 0.5, 0);
+  words($("#h"), t, 14.7, 0.1);
+  pop($("#cta"), t, 15.8);
+};
+window.render(0);
+</script>
+</body>
+</html>

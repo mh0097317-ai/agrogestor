@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; }
+  #s1 .q { font-family: "Fraunces", serif; font-size: 120px; line-height: 1.02; padding: 0 70px; }
+  #s1 .q em { font-style: italic; color: var(--brass); }
+  #s2 { padding: 220px 70px 0; }
+  .line { display: flex; justify-content: space-between; align-items: baseline; font-size: 52px; padding: 34px 0; border-bottom: 2px solid #e3d8c6; }
+  .line b { font-family: "Fraunces", serif; font-weight: 450; font-size: 84px; }
+  .total { margin-top: 80px; }
+  .total .kicker { color: var(--red); }
+  .total .big { font-family: "Fraunces", serif; font-size: 230px; letter-spacing: -0.03em; color: var(--red); line-height: 1; margin-top: 10px; }
+  .total p { font-size: 46px; color: var(--muted); margin-top: 20px; }
+  .strike { position: absolute; left: 70px; height: 10px; background: var(--red); top: 1308px; width: 0; border-radius: 6px; }
+  #s3 .cap { top: 110px; }
+  .rem { position: absolute; left: 70px; right: 70px; background: var(--paper); border-radius: 40px; padding: 36px 42px; box-shadow: 0 30px 70px rgba(22,19,15,.12); }
+  .rem .when { font-size: 30px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--brass-d); }
+  .rem .bub { margin-top: 18px; background: var(--green); border-radius: 28px; border-bottom-right-radius: 8px; padding: 24px 30px; font-size: 38px; line-height: 1.3; }
+  #r1 { top: 470px; } #r2 { top: 900px; } #r3 { top: 1330px; }
+  #s4 { display: grid; place-items: center; text-align: center; padding: 0 70px; }
+  #s4 .chairs { display: flex; gap: 30px; justify-content: center; margin: 60px 0; }
+  #s4 .chair { width: 150px; height: 150px; border-radius: 40px; border: 6px dashed #cdbfa8; display: grid; place-items: center; font-size: 30px; font-weight: 650; color: var(--muted); }
+  #s4 .chair.on { border: 6px solid var(--ink); background: var(--ink); color: var(--cream); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="kicker">Barbeiro, faz essa conta</div>
+      <div class="q" id="q" style="margin-top:40px">Quanto te custa <em>um cliente que não aparece?</em></div>
+    </div>
+  </section>
+
+  <section class="scene" id="s2">
+    <div class="kicker">Por semana</div>
+    <div class="line" id="l1"><span>Faltas</span><b id="v1">0</b></div>
+    <div class="line" id="l2"><span>Valor do corte</span><b id="v2">R$ 0</b></div>
+    <div class="line" id="l3"><span>Semanas no mês</span><b>4</b></div>
+    <div class="total" id="tot">
+      <div class="kicker">Cadeira vazia no mês</div>
+      <div class="big" id="v3">R$ 0</div>
+      <p>e o horário nem dava pra vender pra outro.</p>
+    </div>
+  </section>
+
+  <section class="scene" id="s3">
+    <div class="cap" id="c3">O StudioFlow <em>lembra por você.</em></div>
+    <div class="rem" id="r1"><div class="when">Na véspera</div><div class="bub">Oi, Bruno! Passando pra lembrar do seu corte amanhã às 10:00 com o Lucas. Até lá!</div></div>
+    <div class="rem" id="r2"><div class="when">2 horas antes</div><div class="bub">Daqui a 2 horas é o seu corte com o Lucas. Se precisar remarcar, é só responder aqui.</div></div>
+    <div class="rem" id="r3"><div class="when">1 hora antes</div><div class="bub">Bruno, falta 1 hora pro seu corte. Te esperamos! 💈</div></div>
+  </section>
+
+  <section class="scene" id="s4">
+    <div>
+      <div class="cap" style="position:static" id="c4">Menos falta. <em>Cadeira cheia.</em></div>
+      <div class="chairs">
+        <div class="chair" id="ch1">09h</div><div class="chair" id="ch2">10h</div><div class="chair" id="ch3">11h</div><div class="chair" id="ch4">12h</div>
+      </div>
+      <p style="font-size:44px;color:var(--muted)">Lembrete automático no WhatsApp,<br>sem você digitar nada.</p>
+    </div>
+  </section>
+
+  <section class="scene dark end" id="s5">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h5">Para de perder <em>dinheiro com falta.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta LEMBRETE</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+window.DURATION = 18;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 2.8);
+  words($("#q"), t, 0.15, 0.1);
+
+  scene($("#s2"), t, 2.6, 7.6);
+  pop($("#l1"), t, 2.8, 0.4, 30);
+  $("#v1").textContent = Math.round(p(t, 3.0, 3.6) * 4);
+  pop($("#l2"), t, 3.4, 0.4, 30);
+  $("#v2").textContent = money(p(t, 3.6, 4.2) * 40);
+  pop($("#l3"), t, 4.0, 0.4, 30);
+  pop($("#tot"), t, 4.6, 0.5, 60);
+  $("#v3").textContent = money(p(t, 4.8, 6.0, ease.inOut) * 640);
+  $("#v3").style.transform = `scale(${1 + Math.max(0, Math.sin(p(t, 6.0, 6.5, ease.lin) * Math.PI)) * 0.06})`;
+
+  scene($("#s3"), t, 7.4, 12.6);
+  words($("#c3"), t, 7.5);
+  pop($("#r1"), t, 8.2, 0.5, 80);
+  pop($("#r2"), t, 9.3, 0.5, 80);
+  pop($("#r3"), t, 10.4, 0.5, 80);
+
+  scene($("#s4"), t, 12.4, 15.2);
+  words($("#c4"), t, 12.5);
+  ["#ch1", "#ch2", "#ch3", "#ch4"].forEach((c, i) => {
+    const on = t > 13.1 + i * 0.3;
+    $(c).classList.toggle("on", on);
+    $(c).style.transform = `scale(${on ? lerp(1.15, 1, p(t, 13.1 + i * 0.3, 13.4 + i * 0.3)) : 1})`;
+  });
+
+  scene($("#s5"), t, 15.0, 99);
+  pop($("#lg"), t, 15.1, 0.5, 0);
+  words($("#h5"), t, 15.3, 0.1);
+  pop($("#cta"), t, 16.3);
+};
+window.render(0);
+</script>
+</body>
+</html>

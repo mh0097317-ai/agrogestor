@@ -1,0 +1,61 @@
+@font-face { font-family: "Fraunces"; src: url("../fonts/fraunces-450.ttf"); font-weight: 450; }
+@font-face { font-family: "Fraunces"; src: url("../fonts/fraunces-italic-450.ttf"); font-style: italic; font-weight: 450; }
+@font-face { font-family: "Hanken"; src: url("../fonts/hanken-400.ttf"); font-weight: 400; }
+@font-face { font-family: "Hanken"; src: url("../fonts/hanken-650.ttf"); font-weight: 650; }
+:root {
+  --ink: #16130f;
+  --cream: #f4efe6;
+  --paper: #fffdf9;
+  --brass: #b08a4e;
+  --brass-d: #8a6430;
+  --muted: #6e655b;
+  --green: #dcf3cf;
+  --red: #b3402e;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+body { background: var(--cream); color: var(--ink); font-family: "Hanken", sans-serif; }
+.stage { position: absolute; inset: 0; overflow: hidden; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.serif { font-family: "Fraunces", serif; font-weight: 450; }
+.serif i, .serif em { font-style: italic; color: var(--brass-d); }
+.dark { background: var(--ink); color: var(--cream); }
+.dark .serif i, .dark .serif em { color: var(--brass); }
+.kicker { font-size: 30px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 650; color: var(--brass-d); }
+.dark .kicker { color: var(--brass); }
+
+/* Phone */
+.phone { position: absolute; width: 760px; height: 1500px; left: 160px; top: 250px;
+  border-radius: 92px; background: #0d0b09; padding: 22px; box-shadow: 0 60px 120px rgba(22,19,15,.28); }
+.phone .screen { position: relative; width: 100%; height: 100%; border-radius: 72px; overflow: hidden; background: #ece5dd; }
+.phone .notch { position: absolute; top: 34px; left: 50%; width: 190px; height: 50px; margin-left: -95px; background: #0d0b09; border-radius: 30px; z-index: 5; }
+.wa-head { position: absolute; top: 0; left: 0; right: 0; height: 210px; background: #1f2c25; color: #fff; display: flex; align-items: flex-end; gap: 24px; padding: 0 40px 30px; z-index: 3; }
+.wa-head .av { width: 86px; height: 86px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); }
+.wa-head .av img { width: 70px; }
+.wa-head b { display: block; font-size: 36px; font-weight: 650; }
+.wa-head small { font-size: 26px; opacity: .75; }
+.chat { position: absolute; top: 230px; left: 0; right: 0; bottom: 0; padding: 20px 34px; display: flex; flex-direction: column; gap: 22px; justify-content: flex-end; padding-bottom: 60px; }
+.msg { max-width: 82%; padding: 22px 28px 18px; border-radius: 30px; font-size: 34px; line-height: 1.3; box-shadow: 0 2px 2px rgba(0,0,0,.06); transform-origin: bottom; }
+.msg small { display: block; text-align: right; font-size: 22px; color: #7a8a80; margin-top: 6px; }
+.msg.in { align-self: flex-start; background: #fff; border-bottom-left-radius: 8px; }
+.msg.out { align-self: flex-end; background: var(--green); border-bottom-right-radius: 8px; }
+.typing { align-self: flex-end; background: var(--green); border-radius: 30px; padding: 24px 30px; display: flex; gap: 12px; }
+.typing.in { align-self: flex-start; background: #fff; }
+.typing span { width: 16px; height: 16px; border-radius: 50%; background: #6b7d72; }
+
+/* Caption bar */
+.cap { position: absolute; left: 70px; right: 70px; font-family: "Fraunces", serif; font-size: 78px; line-height: 1.08; letter-spacing: -0.01em; }
+.cap em { font-style: italic; color: var(--brass-d); }
+.dark .cap em { color: var(--brass); }
+
+/* End card */
+.end { display: grid; place-items: center; text-align: center; }
+.end .mark { width: 200px; height: 200px; margin: 0 auto 50px; }
+.end h2 { font-family: "Fraunces", serif; font-size: 104px; line-height: 1.04; font-weight: 450; padding: 0 70px; }
+.end h2 em { font-style: italic; color: var(--brass); }
+.end .brand { margin-top: 60px; font-family: "Fraunces", serif; font-size: 64px; }
+.end .brand em { font-style: italic; color: var(--brass); }
+.end .url { margin-top: 18px; font-size: 38px; letter-spacing: .04em; opacity: .8; }
+.end .cta { display: inline-block; margin-top: 70px; padding: 30px 54px; border-radius: 999px; background: var(--brass); color: var(--ink); font-size: 40px; font-weight: 650; }
+.grain { position: absolute; inset: 0; pointer-events: none; opacity: .05;
+  background-image: radial-gradient(rgba(0,0,0,.6) 1px, transparent 1px); background-size: 6px 6px; }

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; }
+  #s1 .clock { font-family: "Fraunces", serif; font-size: 300px; letter-spacing: -0.03em; line-height: 1; }
+  #s1 .clock b { font-weight: 450; display: inline-block; }
+  #s1 .sub { margin-top: 40px; font-size: 52px; opacity: .8; }
+  #s1 .moon { position: absolute; top: 300px; right: 190px; width: 120px; height: 120px; border-radius: 50%;
+    box-shadow: -34px 18px 0 0 var(--brass); transform: rotate(-20deg); }
+  #s2 .cap { top: 70px; }
+  #s2 .phone { top: 330px; transform-origin: 50% 100%; }
+  #s3 { display: block; }
+  #s3 .cap { top: 150px; }
+  .notif { position: absolute; left: 70px; right: 70px; top: 560px; background: var(--paper); border-radius: 44px;
+    padding: 44px 48px; box-shadow: 0 40px 90px rgba(22,19,15,.18); display: flex; gap: 34px; align-items: center; }
+  .notif .ic { width: 120px; height: 120px; flex: none; }
+  .notif b { font-size: 40px; display: block; }
+  .notif p { font-size: 34px; color: var(--muted); margin-top: 6px; line-height: 1.3; }
+  .slot { position: absolute; left: 70px; right: 70px; top: 960px; height: 620px; border-radius: 44px; background: var(--paper);
+    box-shadow: 0 30px 70px rgba(22,19,15,.12); padding: 44px 48px; overflow: hidden; }
+  .slot .row { display: flex; align-items: center; gap: 30px; height: 120px; border-bottom: 1px solid #ece4d6; font-size: 34px; color: var(--muted); }
+  .slot .row span { width: 110px; font-weight: 650; color: var(--ink); }
+  .slot .new { position: absolute; left: 188px; right: 48px; top: 164px; height: 104px; border-radius: 22px; background: var(--ink); color: var(--cream);
+    padding: 18px 30px; font-size: 34px; }
+  .slot .new small { display: block; font-size: 26px; opacity: .7; margin-top: 4px; }
+  .badge { position: absolute; right: 70px; top: 1630px; background: var(--brass); color: var(--ink); padding: 22px 34px; border-radius: 999px; font-size: 34px; font-weight: 650; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div class="moon"></div>
+    <div>
+      <div class="kicker">Sábado · barbearia fechada</div>
+      <div class="clock"><b id="hh">02</b>:<b id="mm">14</b></div>
+      <div class="sub">Você dormindo. O cliente, não.</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">Quem respondeu <em>foi ela.</em></div>
+    <div class="phone" id="ph">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="wa-head"><div class="av"><img src="img/logo.svg"></div><div><b>Barbearia</b><small>online</small></div></div>
+        <div class="chat">
+          <div class="msg in" id="m1">boa noite, tem horário amanhã cedo? <small>02:14</small></div>
+          <div class="typing" id="t1"><span></span><span></span><span></span></div>
+          <div class="msg out" id="m2">Boa noite! Amanhã tenho 9:00 ou 10:00 com o Lucas. Qual fica melhor? <small>02:14</small></div>
+          <div class="typing in" id="t2"><span></span><span></span><span></span></div>
+          <div class="msg in" id="m3">10h, sou o Bruno <small>02:15</small></div>
+          <div class="typing" id="t3"><span></span><span></span><span></span></div>
+          <div class="msg out" id="m4">Fechado, Bruno! Corte amanhã às 10:00 com o Lucas. Te mando um lembrete antes 👊 <small>02:15</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="s3">
+    <div class="cap" id="c3">Você acorda com a <em>agenda cheia.</em></div>
+    <div class="notif" id="n">
+      <img class="ic" src="img/logo.svg">
+      <div><b>Novo horário marcado</b><p>Bruno · Corte · sáb 10:00 com Lucas<br>Marcado pela recepcionista às 02:15</p></div>
+    </div>
+    <div class="slot" id="slot">
+      <div class="row"><span>09:00</span>Felipe · Corte + barba</div>
+      <div class="row"><span>10:00</span></div>
+      <div class="row"><span>11:00</span>Henrique · Corte</div>
+      <div class="row"><span>12:00</span>Livre</div>
+      <div class="row"><span>13:00</span>André · Pigmentação</div>
+      <div class="new" id="nb">Bruno · Corte<small>pelo WhatsApp, de madrugada</small></div>
+    </div>
+    <div class="badge" id="bd">0 mensagens respondidas por você</div>
+  </section>
+
+  <section class="scene dark end" id="s4">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h4">Sua recepcionista <em>não dorme.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta EU que eu te mostro</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+window.DURATION = 17;
+window.render = (t) => {
+  // 1. Hook: the clock (0–3.2)
+  scene($("#s1"), t, -1, 3.2);
+  $("#mm").textContent = String(14 + Math.floor(p(t, 0.3, 2.6, ease.lin) * 0.99)).padStart(2, "0");
+  $("#s1 .clock").style.transform = `scale(${lerp(1.12, 1, p(t, 0, 1.2))})`;
+  $("#s1 .moon").style.transform = `rotate(-20deg) translateY(${lerp(-30, 0, p(t, 0, 2))}px)`;
+
+  // 2. The chat (3.0–10.6)
+  scene($("#s2"), t, 3.0, 10.6);
+  words($("#c2"), t, 3.2);
+  const k = p(t, 3.0, 3.9);
+  $("#ph").style.transform = `translateY(${(1 - k) * 260}px) rotate(${(1 - k) * -4}deg)`;
+  dots($("#t1"), t, 4.6, 5.4);
+  pop($("#m1"), t, 3.9);
+  pop($("#m2"), t, 5.4);
+  dots($("#t2"), t, 6.5, 7.2);
+  pop($("#m3"), t, 7.2);
+  dots($("#t3"), t, 7.9, 8.6);
+  pop($("#m4"), t, 8.6);
+
+  // 3. Wake up to the booking (10.4–14.2)
+  scene($("#s3"), t, 10.4, 14.2);
+  words($("#c3"), t, 10.5);
+  pop($("#n"), t, 10.9, 0.55, 120);
+  const s = p(t, 11.4, 12.1);
+  $("#slot").style.opacity = s;
+  $("#slot").style.transform = `translateY(${(1 - s) * 80}px)`;
+  const nb = p(t, 12.0, 12.6, ease.back);
+  $("#nb").style.opacity = p(t, 12.0, 12.3, ease.lin);
+  $("#nb").style.transform = `translateX(${(1 - nb) * 400}px)`;
+  pop($("#bd"), t, 12.9);
+
+  // 4. End card (14.0–17)
+  scene($("#s4"), t, 14.0, 99);
+  pop($("#lg"), t, 14.1, 0.5, 0);
+  words($("#h4"), t, 14.3, 0.11);
+  pop($("#cta"), t, 15.4);
+};
+window.render(0);
+</script>
+</body>
+</html>

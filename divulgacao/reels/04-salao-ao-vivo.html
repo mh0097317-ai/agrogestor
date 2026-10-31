@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 { display: grid; place-items: center; text-align: center; padding: 0 70px; }
+  #s1 .q { font-family: "Fraunces", serif; font-size: 118px; line-height: 1.04; }
+  #s1 .q em { font-style: italic; color: var(--brass); }
+  #s1 .pin { margin: 0 auto 60px; width: 34px; height: 34px; border-radius: 50%; background: #3d8a5a; box-shadow: 0 0 0 0 rgba(61,138,90,.5); }
+  #s2 .cap { top: 90px; font-size: 70px; }
+  #s2 .phone { top: 330px; }
+  #s2 .screen { background: var(--cream); }
+  #s2 .screen img { position: absolute; left: 0; top: 0; width: 716px; }
+  .call { position: absolute; background: var(--ink); color: var(--cream); font-size: 36px; font-weight: 650; padding: 22px 32px; border-radius: 26px; box-shadow: 0 20px 50px rgba(22,19,15,.3); white-space: nowrap; }
+  .call::after { content: ""; position: absolute; width: 26px; height: 26px; background: var(--ink); transform: rotate(45deg); }
+  #k1 { left: 40px; top: 600px; } #k1::after { right: 60px; bottom: -10px; }
+  #k2 { right: 40px; top: 840px; } #k2::after { left: 60px; bottom: -10px; }
+  #k3 { left: 40px; top: 690px; } #k3::after { right: 80px; bottom: -10px; }
+  #k4 { right: 40px; top: 1165px; } #k4::after { left: 80px; top: -10px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene dark" id="s1">
+    <div>
+      <div class="pin" id="pin"></div>
+      <div class="kicker">Ao vivo</div>
+      <div class="q" id="q" style="margin-top:30px">Sua barbearia inteira <em>no bolso.</em></div>
+    </div>
+  </section>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">Abre o celular e <em>sabe tudo:</em></div>
+    <div class="phone" id="ph"><div class="screen"><div class="notch"></div><img src="img/salao-celular.png" id="im"></div></div>
+    <div class="call" id="k1">Quantos horários hoje</div>
+    <div class="call" id="k2">Cadeiras em uso agora</div>
+    <div class="call" id="k3">Quem está na cadeira</div>
+    <div class="call" id="k4">Quanto falta pra acabar</div>
+  </section>
+  <section class="scene dark end" id="s3">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Mesmo fora, <em>você está lá.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta AO VIVO</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+// salao-celular.png is 585x1500, shown 716px wide (scale 1.224).
+window.DURATION = 14;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 2.8);
+  const pulse = (t * 1.2) % 1;
+  $("#pin").style.boxShadow = `0 0 0 ${pulse * 40}px rgba(61,138,90,${0.5 * (1 - pulse)})`;
+  words($("#q"), t, 0.2, 0.1);
+
+  scene($("#s2"), t, 2.6, 11.0);
+  words($("#c2"), t, 2.8);
+  const k = p(t, 2.6, 3.5);
+  $("#ph").style.transform = `translateY(${(1 - k) * 300}px) scale(${lerp(0.94, 1, k)})`;
+  // Scroll the real screen: top cards, then the chair card.
+  const scroll = lerp(0, 380, p(t, 6.4, 7.6, ease.inOut));
+  $("#im").style.transform = `translateY(${-scroll}px)`;
+  pop($("#k1"), t, 3.8, 0.45, 30);
+  pop($("#k2"), t, 4.8, 0.45, 30);
+  ["#k1", "#k2"].forEach((c) => { if (t > 6.2) $(c).style.opacity = 1 - p(t, 6.2, 6.5, ease.lin); });
+  pop($("#k3"), t, 7.9, 0.45, 30);
+  pop($("#k4"), t, 9.0, 0.45, 30);
+
+  scene($("#s3"), t, 10.8, 99);
+  pop($("#lg"), t, 10.9, 0.5, 0);
+  words($("#h"), t, 11.1, 0.1);
+  pop($("#cta"), t, 12.2);
+};
+window.render(0);
+</script>
+</body>
+</html>

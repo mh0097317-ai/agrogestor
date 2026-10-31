@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="engine/motion.css">
+<style>
+  #s1 .cap { top: 120px; }
+  .book { position: absolute; left: 90px; right: 90px; top: 420px; height: 1250px; background: #fbf6ea; border-radius: 18px;
+    box-shadow: 0 40px 80px rgba(22,19,15,.2); transform-origin: 50% 50%;
+    background-image: repeating-linear-gradient(#fbf6ea 0 98px, #c9d8e6 98px 100px); padding: 60px 70px 0 150px; }
+  .book::before { content: ""; position: absolute; left: 110px; top: 0; bottom: 0; width: 3px; background: #e4a3a3; }
+  .hand { font-family: "Fraunces", serif; font-style: italic; font-size: 60px; color: #2a3b6b; height: 100px; line-height: 100px; position: relative; white-space: nowrap; }
+  .hand s { text-decoration-thickness: 6px; text-decoration-color: #b3402e; }
+  .clash { position: absolute; right: 50px; top: 236px; background: var(--red); color: #fff; font-size: 34px; font-weight: 650; padding: 16px 26px; border-radius: 999px; transform: rotate(4deg); }
+  .coffee { position: absolute; right: 120px; bottom: 140px; width: 260px; height: 260px; border-radius: 50%; border: 22px solid rgba(120,80,40,.22); }
+  #s2 { background: var(--ink); }
+  #s2 .cap { top: 110px; color: var(--cream); }
+  .shot { position: absolute; left: 0; top: 420px; width: 1080px; height: 1250px; overflow: hidden; }
+  .shot img { position: absolute; left: 0; top: 0; max-width: none; }
+  .ring { position: absolute; border: 8px solid var(--brass); border-radius: 26px; box-shadow: 0 0 0 9999px rgba(22,19,15,.45); }
+  .tag { position: absolute; background: var(--brass); color: var(--ink); font-size: 36px; font-weight: 650; padding: 18px 28px; border-radius: 999px; }
+  .wipe { position: absolute; inset: 0; background: var(--brass); z-index: 4; transform-origin: 0 50%; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="scene" id="s1">
+    <div class="cap" id="c1">Agenda no caderno <em>funciona…</em></div>
+    <div class="book" id="bk">
+      <div class="hand" id="h1">09h — Felipe</div>
+      <div class="hand" id="h2">10h — <s>Marcos</s> Léo</div>
+      <div class="hand" id="h3">10h — Bruno ???</div>
+      <div class="hand" id="h4">11h — ligar p/ Carlos</div>
+      <div class="hand" id="h5"><s>14h — Diego</s></div>
+      <div class="hand" id="h6">15h — Rafa (sinal?)</div>
+      <div class="hand" id="h7">16h — ????</div>
+      <div class="clash" id="cl">2 clientes às 10h</div>
+      <div class="coffee"></div>
+    </div>
+  </section>
+  <div class="wipe" id="wp"></div>
+  <section class="scene" id="s2">
+    <div class="cap" id="c2">…até o dia que <em>não funciona.</em></div>
+    <div class="shot"><img src="img/agenda-dia.png" id="im"></div>
+    <div class="ring" id="rg"></div>
+    <div class="tag" id="tg"></div>
+  </section>
+  <section class="scene dark end" id="s3">
+    <div>
+      <img class="mark" src="img/logo.svg" id="lg">
+      <h2 id="h">Aposenta o caderno. <em>Sem perder ninguém.</em></h2>
+      <div class="brand">Studio<em>Flow</em></div>
+      <div class="url">studioflowapp.tech</div>
+      <div class="cta" id="cta">Comenta AGENDA</div>
+    </div>
+  </section>
+  <div class="grain"></div>
+</div>
+<script src="engine/motion.js"></script>
+<script>
+// Agenda screenshot is 2880x1966, shown 1250px tall at zoom 1.
+const S = 1250 / 1966;
+// Focus boxes in original pixels: [x, y, w, h, label, from, to]
+const focus = [
+  [192, 1119, 466, 119, "Não deixa marcar dois no mesmo horário", 7.6, 9.6],
+  [685, 1300, 467, 60, "Horário livre aparece sozinho", 9.6, 11.6],
+  [2242, 688, 540, 169, "Mostra quem marcou, e como", 11.6, 13.8],
+];
+const camFor = (f, zz = 1.7) => {
+  const k = S * zz;
+  const cx = Math.max(1080 - 2880 * k, Math.min(0, 540 - (f[0] + f[2] / 2) * k));
+  const cy = Math.max(1250 - 1966 * k, Math.min(0, 625 - (f[1] + f[3] / 2) * k));
+  return [cx, cy, zz];
+};
+window.DURATION = 17;
+window.render = (t) => {
+  scene($("#s1"), t, -1, 6.0, 0.2);
+  words($("#c1"), t, 0.1);
+  $$(".hand").forEach((h, i) => {
+    const k = p(t, 0.3 + i * 0.35, 0.7 + i * 0.35);
+    h.style.clipPath = `inset(0 ${(1 - k) * 100}% 0 0)`;
+  });
+  pop($("#cl"), t, 3.2, 0.4, 0);
+  const shake = t > 3.2 && t < 4.2 ? Math.sin(t * 60) * 8 * (1 - p(t, 3.2, 4.2, ease.lin)) : 0;
+  $("#bk").style.transform = `translateX(${shake}px) rotate(${-1.5 + p(t, 0, 6, ease.lin) * 1.5}deg) scale(${lerp(1, 1.05, p(t, 0, 6, ease.lin))})`;
+
+  // Brass wipe between scenes
+  const w1 = p(t, 5.6, 6.0, ease.inOut), w2 = p(t, 6.0, 6.4, ease.inOut);
+  $("#wp").style.transform = `scaleX(${w1 - w2 >= 0 ? (t < 6.0 ? w1 : 1 - w2) : 0})`;
+  $("#wp").style.transformOrigin = t < 6.0 ? "0 50%" : "100% 50%";
+
+  scene($("#s2"), t, 6.0, 14.0, 0.1);
+  words($("#c2"), t, 6.3, 0.08);
+  // Camera: slow pan, then glide to each focus point
+  let cam = [-p(t, 6.0, 7.6, ease.lin) * 400, 0, 1];
+  let prev = [-400, 0, 1];
+  for (const f of focus) {
+    const c = camFor(f);
+    const k = p(t, f[5], f[5] + 0.8, ease.inOut);
+    if (t >= f[5]) cam = [lerp(prev[0], c[0], k), lerp(prev[1], c[1], k), lerp(prev[2], c[2], k)];
+    prev = c;
+  }
+  const [cx, cy, z] = cam;
+  Object.assign($("#im").style, { width: "2880px", height: "1966px", transformOrigin: "0 0",
+    transform: `translate(${cx}px, ${cy}px) scale(${S * z})` });
+  // Ring + tag on the current focus
+  const cur = focus.find((f) => t >= f[5] + 0.8 && t < f[6]);
+  if (cur) {
+    const x = cur[0] * S * z + cx, y = cur[1] * S * z + cy + 420;
+    const k = p(t, cur[5] + 0.8, cur[5] + 1.1, ease.back);
+    Object.assign($("#rg").style, { display: "", left: `${x - 12}px`, top: `${y - 12}px`, width: `${cur[2] * S * z + 24}px`, height: `${cur[3] * S * z + 24}px`, opacity: k });
+    $("#tg").textContent = cur[4];
+    Object.assign($("#tg").style, { display: "", left: "70px", top: `${Math.min(1700, y + cur[3] * S * z + 40)}px`, opacity: k, transform: `translateY(${(1 - k) * 30}px)` });
+  } else { $("#rg").style.display = "none"; $("#tg").style.display = "none"; }
+
+  scene($("#s3"), t, 13.8, 99);
+  pop($("#lg"), t, 13.9, 0.5, 0);
+  words($("#h"), t, 14.1, 0.1);
+  pop($("#cta"), t, 15.3);
+};
+window.render(0);
+</script>
+</body>
+</html>
