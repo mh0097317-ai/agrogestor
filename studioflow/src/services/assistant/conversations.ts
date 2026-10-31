@@ -39,6 +39,7 @@ import {
   customerWords,
 } from "./receptionist";
 import { winbackStop } from "./winback";
+import { errorText, recordError } from "../error-log";
 import { assistantScheduleOpen } from "@/lib/assistant-schedule";
 import {
   bookingMenu,
@@ -637,7 +638,7 @@ export async function processConversation(
         );
         return;
       }
-      console.error("StudioFlow assistant error:", {
+      const failure = {
         category: code,
         status:
           error &&
@@ -647,6 +648,16 @@ export async function processConversation(
             ? error.status
             : null,
         timeout: error instanceof Error && /Timeout/i.test(error.name),
+      };
+      console.error("StudioFlow assistant error:", failure);
+      await recordError("assistant", code, {
+        businessId: repo.businessId,
+        detail: {
+          ...failure,
+          stage: run?.state || null,
+          engine: receptionistV3(delivery.simulate) ? "v3" : "v2",
+          error: errorText(error),
+        },
       });
       await repo.progress?.(conversationId, {
         state: "FAILED",

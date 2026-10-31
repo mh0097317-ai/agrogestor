@@ -24,6 +24,17 @@ interface Day {
   failures: number;
   alerts: number;
 }
+interface LoggedError {
+  scope: string;
+  code: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+interface Check {
+  label: string;
+  ok: boolean;
+  note: string;
+}
 interface Run {
   passed: number;
   total: number;
@@ -48,6 +59,9 @@ export function AssistantEval({
   );
   const [run, setRun] = useState<Run | null>(null);
   const [health, setHealth] = useState<Day[]>([]);
+  const [errors, setErrors] = useState<LoggedError[]>([]);
+  const [checks, setChecks] = useState<Check[] | null>(null);
+  const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -61,10 +75,30 @@ export function AssistantEval({
       .then((data) => {
         setRun(data.runs?.[0] || null);
         setHealth(data.health || []);
+        setErrors(data.errors || []);
+        setChecks(null);
       })
       .catch(() => undefined);
     return () => abort.abort();
   }, [slug]);
+  async function preflight() {
+    setChecking(true);
+    setError("");
+    try {
+      const r = await fetch("/api/admin/assistant-eval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, action: "preflight" }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw Error(data.error || "Não foi possível checar.");
+      setChecks(data.items || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha na checagem.");
+    } finally {
+      setChecking(false);
+    }
+  }
   async function start() {
     setBusy(true);
     setError("");
@@ -110,11 +144,36 @@ export function AssistantEval({
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="is-secondary"
+            onClick={preflight}
+            disabled={checking || busy || !slug}
+          >
+            {checking ? "Checando…" : "Checar antes de apresentar"}
+          </button>
           <button type="button" onClick={start} disabled={busy || !slug}>
             {busy ? "Testando…" : "Rodar teste"}
           </button>
         </div>
       </div>
+      {checks && (
+        <ul className="pf-eval-checks" aria-live="polite">
+          <li className={checks.every((c) => c.ok) ? "is-ok" : "is-bad"}>
+            <strong>
+              {checks.every((c) => c.ok)
+                ? "Tudo pronto para apresentar."
+                : "Arrume os itens em vermelho antes de apresentar."}
+            </strong>
+          </li>
+          {checks.map((c) => (
+            <li key={c.label} className={c.ok ? "is-ok" : "is-bad"}>
+              <span aria-hidden="true">{c.ok ? "✓" : "✗"}</span> {c.label}
+              {c.note && <small> · {c.note}</small>}
+            </li>
+          ))}
+        </ul>
+      )}
       {health.length > 0 && (
         <div className="pf-eval-health">
           <strong>No WhatsApp, últimos 7 dias</strong>
@@ -136,6 +195,38 @@ export function AssistantEval({
                     {new Date(`${d.day}T12:00:00Z`).toLocaleDateString(
                       "pt-BR",
                       { weekday: "short", day: "2-digit", month: "2-digit" },
+                    )}
+                    {errors.length > 0 && (
+                      <div className="pf-eval-health">
+                        <strong>Erros guardados, últimos 7 dias</strong>
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Quando</th>
+                              <th>Onde</th>
+                              <th>O quê</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {errors.map((e, i) => (
+                              <tr key={`${e.created_at}-${i}`}>
+                                <td>
+                                  {new Date(e.created_at).toLocaleString(
+                                    "pt-BR",
+                                  )}
+                                </td>
+                                <td>{e.scope}</td>
+                                <td className="is-bad">
+                                  {e.code}
+                                  {typeof e.detail.error === "string"
+                                    ? ` · ${e.detail.error}`
+                                    : ""}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </td>
                   <td>{d.replies}</td>

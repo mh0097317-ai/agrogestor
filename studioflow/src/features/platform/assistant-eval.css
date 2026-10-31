@@ -166,3 +166,32 @@
   color: #9b2c1f;
   font-weight: 600;
 }
+.pf-eval-actions {
+  flex-wrap: wrap;
+}
+.pf-eval-actions button.is-secondary {
+  border: 1px solid #16130f;
+  background: #fff;
+  color: #16130f;
+}
+.pf-eval-checks {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #efe7da;
+  border-radius: 6px;
+  list-style: none;
+  font-size: 14px;
+}
+.pf-eval-checks .is-ok span,
+.pf-eval-checks li.is-ok:first-child strong {
+  color: #2f7a4a;
+}
+.pf-eval-checks .is-bad span,
+.pf-eval-checks li.is-bad:first-child strong {
+  color: #b3402e;
+}
+.pf-eval-checks small {
+  color: #6f6559;
+}

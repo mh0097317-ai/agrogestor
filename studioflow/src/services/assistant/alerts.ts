@@ -3,7 +3,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isDemo } from "../server-demo";
 import { getPublicStore } from "../server-store";
 import { ownerPhone } from "../attendance";
-import { shopSender } from "../whatsapp/link";
+import { noticeSender } from "../whatsapp/link";
 import { brandEmail } from "../email/brand-email";
 import { emailConfigured, sendEmail } from "../email/resend";
 import { platformAiEnabled } from "../platform-ai-control";
@@ -115,10 +115,8 @@ export async function alertOwner(input: {
     let channel: "whatsapp" | "email" | "none" = "none";
     if (input.kind !== "disconnected") {
       const store = await getPublicStore(business.slug as string);
-      const [to, send] = await Promise.all([
-        ownerPhone(store),
-        shopSender(input.businessId),
-      ]);
+      const to = await ownerPhone(store);
+      const send = to ? await noticeSender(input.businessId, to) : null;
       if (to && send)
         channel = await send(to, text).then(
           () => "whatsapp" as const,

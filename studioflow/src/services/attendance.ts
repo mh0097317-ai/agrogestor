@@ -6,8 +6,8 @@ import { isDemo, mutateDemo } from "./server-demo";
 import { getPublicStore } from "./server-store";
 import {
   conversationSender,
+  noticeSender,
   readProfessionalLinks,
-  shopSender,
 } from "./whatsapp/link";
 
 /*
@@ -25,7 +25,9 @@ function key() {
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     (isDemo() ? "studioflow-demo" : "");
   if (!secret) throw new DomainError("Link indisponível.", 503);
-  return createHash("sha256").update(`studioflow:attendance:${secret}`).digest();
+  return createHash("sha256")
+    .update(`studioflow:attendance:${secret}`)
+    .digest();
 }
 
 const sign = (payload: string) =>
@@ -114,8 +116,9 @@ async function professionalPhone(store: Store, professionalId: string) {
   if (professional?.phone) return professional.phone;
   const links = await readProfessionalLinks(store.business.id);
   return (
-    links.find((l) => l.professionalId === professionalId && l.status === "open")
-      ?.phone || ""
+    links.find(
+      (l) => l.professionalId === professionalId && l.status === "open",
+    )?.phone || ""
   );
 }
 
@@ -151,6 +154,14 @@ async function claim(
 export async function sendAttendanceChecks(origin: string) {
   const report = { checked: 0, sent: 0, skipped: 0, failed: 0 };
   if (isDemo()) return report;
+  // A notice claimed but never recorded (the function died mid-send) is
+  // closed as failed, so nothing waits on it forever.
+  await createSupabaseAdmin()
+    .from("appointment_whatsapp_notices")
+    .update({ status: "failed" })
+    .eq("status", "claimed")
+    .in("kind", ["professional_checkup", "owner_unsettled"])
+    .lt("created_at", new Date(Date.now() - 30 * 60_000).toISOString());
   const { data, error } = await createSupabaseAdmin().rpc(
     "due_attendance_checks",
   );
@@ -166,13 +177,16 @@ export async function sendAttendanceChecks(origin: string) {
         continue;
       }
       const phone = await professionalPhone(store, appointment.professionalId);
-      const send =
-        (await shopSender(store.business.id)) ||
-        (await conversationSender(
-          store.business.id,
-          appointment.professionalId,
-        ));
-      if (!phone || !send || !(await claim(appointment, "professional_checkup"))) {
+      const send = phone
+        ? await noticeSender(store.business.id, phone, () =>
+            conversationSender(store.business.id, appointment.professionalId),
+          )
+        : null;
+      if (
+        !phone ||
+        !send ||
+        !(await claim(appointment, "professional_checkup"))
+      ) {
         report.skipped++;
         continue;
       }
@@ -225,7 +239,7 @@ export async function sendOwnerUnsettledAlerts(origin: string) {
     try {
       const store = await getPublicStore(slug);
       const phone = await ownerPhone(store);
-      const send = await shopSender(store.business.id);
+      const send = phone ? await noticeSender(store.business.id, phone) : null;
       if (!phone || !send) {
         report.skipped += ids.length;
         continue;
@@ -233,7 +247,10 @@ export async function sendOwnerUnsettledAlerts(origin: string) {
       const claimed: Appointment[] = [];
       for (const id of ids) {
         const appointment = store.appointments.find((a) => a.id === id);
-        if (appointment?.status === "confirmed" && (await claim(appointment, "owner_unsettled")))
+        if (
+          appointment?.status === "confirmed" &&
+          (await claim(appointment, "owner_unsettled"))
+        )
           claimed.push(appointment);
       }
       if (!claimed.length) continue;
@@ -284,7 +301,10 @@ export async function attendanceView(token: string) {
   };
 }
 
-export async function answerAttendance(token: string, answer: AttendanceAnswer) {
+export async function answerAttendance(
+  token: string,
+  answer: AttendanceAnswer,
+) {
   const ref = readAttendanceToken(token);
   if (!ref) throw new DomainError("Este link expirou ou não é válido.", 404);
   if (isDemo()) {

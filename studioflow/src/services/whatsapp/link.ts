@@ -389,6 +389,36 @@ export type Sender = (
   body: string,
   menu?: BookingMenu | null,
 ) => Promise<string | void>;
+/**
+ * A sender for a notice to `to` (owner, professional). The shop's number
+ * cannot message itself: then the notice goes out from the StudioFlow
+ * number, or not at all. Every send gives up after 25 seconds, so the
+ * caller always gets to record what happened.
+ */
+export async function noticeSender(
+  businessId: string,
+  to: string,
+  fallback?: () => Promise<Sender | null>,
+): Promise<Sender | null> {
+  const row = await readRow(businessId).catch(() => null);
+  let send: Sender | null;
+  if (row?.status === "open" && sameNumber(row.phone, to)) {
+    const { platformSend } = await import("./platform");
+    send = async (phone, body) => {
+      if (!(await platformSend(phone, body)))
+        throw new Error("platform-whatsapp-off");
+    };
+  } else send = (await shopSender(businessId)) || (await fallback?.()) || null;
+  if (!send) return null;
+  const inner = send;
+  return (phone, body, menu) =>
+    Promise.race([
+      inner(phone, body, menu),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("whatsapp-send-timeout")), 25_000),
+      ),
+    ]);
+}
 export async function pdfSender(businessId: string, professionalId?: string) {
   const row = await readRow(businessId, professionalId);
   if (row?.status !== "open" || !(await evolutionReady())) return null;

@@ -19,6 +19,7 @@ import {
 import { checkAssistantHealth } from "@/services/assistant/alerts";
 import { runNightlyEval } from "@/services/assistant/nightly-eval";
 import { sendWinbacks } from "@/services/assistant/winback";
+import { failedJob, pruneErrors } from "@/services/error-log";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -52,23 +53,31 @@ export async function POST(request: Request) {
   ] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(origin),
-    sendEmailNotices().catch(() => ({ checked: 0, sent: 0, failed: 1 })),
-    sendAttendanceChecks(origin).catch(() => failed),
-    sendOwnerUnsettledAlerts(origin).catch(() => failed),
-    sendWeeklyReports().catch(() => failed),
-    sendDailyReports().catch(() => failed),
-    sendPlatformWeeklyReport().catch(() => "failed"),
+    sendEmailNotices().catch(
+      failedJob("emailNotices", { checked: 0, sent: 0, failed: 1 }),
+    ),
+    sendAttendanceChecks(origin).catch(failedJob("attendance", failed)),
+    sendOwnerUnsettledAlerts(origin).catch(failedJob("ownerUnsettled", failed)),
+    sendWeeklyReports().catch(failedJob("weeklyReports", failed)),
+    sendDailyReports().catch(failedJob("dailyReports", failed)),
+    sendPlatformWeeklyReport().catch(failedJob("platformWeekly", "failed")),
     // Segunda, 9h: o mesmo relatório em PDF no e-mail de cada dono.
     weeklySendWindow()
-      ? sendWeeklyEmails().catch(() => ({ checked: 0, sent: 0, failed: 1 }))
+      ? sendWeeklyEmails().catch(
+          failedJob("weeklyEmails", { checked: 0, sent: 0, failed: 1 }),
+        )
       : { checked: 0, sent: 0, failed: 0 },
     // Customers waiting and a disconnected WhatsApp reach the owner.
-    checkAssistantHealth().catch(() => "failed"),
+    checkAssistantHealth().catch(failedJob("assistantHealth", "failed")),
     // Madrugada: as conversas de teste da recepcionista, uma loja por vez.
-    runNightlyEval().catch(() => "failed"),
+    runNightlyEval().catch(failedJob("nightlyEval", "failed")),
     // 10h: quem sumiu, nas lojas que ligaram a mensagem de retorno.
-    sendWinbacks().catch(() => "failed"),
+    sendWinbacks().catch(failedJob("winbacks", "failed")),
   ]);
+  // Errors older than 30 days go, once a day.
+  const now = new Date();
+  if (now.getUTCHours() === 6 && now.getUTCMinutes() < 5)
+    await pruneErrors().catch(() => undefined);
   return Response.json({
     ...customers,
     professionals,
