@@ -17,6 +17,7 @@ import {
   sendOwnerUnsettledAlerts,
 } from "@/services/attendance";
 import { checkAssistantHealth } from "@/services/assistant/alerts";
+import { runNightlyEval } from "@/services/assistant/nightly-eval";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     platformWeeklyReport,
     weeklyEmails,
     assistantHealth,
+    nightlyEval,
   ] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(origin),
@@ -60,6 +62,8 @@ export async function POST(request: Request) {
       : { checked: 0, sent: 0, failed: 0 },
     // Customers waiting and a disconnected WhatsApp reach the owner.
     checkAssistantHealth().catch(() => "failed"),
+    // Madrugada: as conversas de teste da recepcionista, uma loja por vez.
+    runNightlyEval().catch(() => "failed"),
   ]);
   return Response.json({
     ...customers,
@@ -72,5 +76,6 @@ export async function POST(request: Request) {
     platformWeeklyReport,
     weeklyEmails,
     assistantHealth,
+    nightlyEval,
   });
 }

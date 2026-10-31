@@ -29,6 +29,7 @@ interface Run {
   total: number;
   results: Result[];
   created_at?: string;
+  created_by?: string | null;
   model?: string;
 }
 
@@ -157,12 +158,19 @@ export function AssistantEval({
       )}
       {run && (
         <div className="pf-eval-run">
-          <strong className={run.passed === run.total ? "is-ok" : "is-bad"}>
-            {run.passed} de {run.total} conversas certas
+          <strong
+            className={
+              run.total && run.passed === run.total ? "is-ok" : "is-bad"
+            }
+          >
+            {run.total
+              ? `${run.passed} de ${run.total} conversas certas`
+              : "Teste rodando…"}
           </strong>
           {run.created_at && (
             <small>
               {new Date(run.created_at).toLocaleString("pt-BR")}
+              {run.created_by === null ? " · rodada da madrugada" : ""}
               {run.model ? ` · ${run.model}` : ""}
             </small>
           )}

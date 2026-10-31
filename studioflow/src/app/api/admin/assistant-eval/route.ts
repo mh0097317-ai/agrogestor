@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const [{ data, error }, health] = await Promise.all([
       admin
         .from("assistant_eval_runs")
-        .select("id,model,passed,total,results,created_at")
+        .select("id,model,passed,total,results,created_at,created_by")
         .eq("business_id", store.business.id)
         .order("created_at", { ascending: false })
         .limit(5),
