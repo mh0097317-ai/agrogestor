@@ -83,6 +83,7 @@ import "./platform.css";
 import { MarketingPanel } from "./marketing-panel";
 import { EmailPanel } from "./email-panel";
 import { OperationsPanel } from "./operations-panel";
+import { TrialSetting } from "./trial-setting";
 
 type Filter = "all" | AccessState | "closed";
 const filters: { id: Filter; label: string }[] = [
@@ -739,6 +740,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
                 </button>
               </div>
             )}
+            <TrialSetting />
             <div className="pf-section-head" id="businesses">
               <div>
                 <h2>Estabelecimentos</h2>

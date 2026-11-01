@@ -21,6 +21,8 @@ type PreviewProps = {
   days: number[];
   start: string;
   end: string;
+  /** Cadastro curto: sem a barra de "quanto está pronta", que só sobe com fotos. */
+  quick?: boolean;
 };
 
 export function OnboardingPreview(props: PreviewProps) {
@@ -52,14 +54,16 @@ export function OnboardingPreview(props: PreviewProps) {
     >
       <span className="onboarding-step-label">PRÉVIA DA SUA PÁGINA</span>
       <p className="onboarding-preview-intro">É assim que o cliente vai ver.</p>
-      <div className="onboarding-score" aria-label={`Sua página está ${score}% pronta`}>
-        <span>
-          Sua página está <b>{score}%</b> pronta
-        </span>
-        <i>
-          <em style={{ width: `${score}%` }} />
-        </i>
-      </div>
+      {!props.quick && (
+        <div className="onboarding-score" aria-label={`Sua página está ${score}% pronta`}>
+          <span>
+            Sua página está <b>{score}%</b> pronta
+          </span>
+          <i>
+            <em style={{ width: `${score}%` }} />
+          </i>
+        </div>
+      )}
       <div className="onboarding-preview-page">
         <div className="onboarding-preview-cover">
           {hasCover ? (

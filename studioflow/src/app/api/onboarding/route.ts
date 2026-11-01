@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { onboardingSchema } from "@/services/server-validation";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 import { isDemo, createDemoBusiness } from "@/services/server-demo";
+import { notifyNewBusiness } from "@/services/platform-trial";
 import {
   createSupabaseAdmin,
   createSupabaseServer,
@@ -144,7 +146,19 @@ export async function POST(request: Request) {
       .select("id")
       .eq("slug", data)
       .single();
-    if (business) await completeWorkspace(business.id, input);
+    if (business) {
+      await completeWorkspace(business.id, input);
+      const id = business.id as string;
+      after(() =>
+        notifyNewBusiness({
+          id,
+          name: input.name,
+          slug: data as string,
+          ownerEmail: user.email || "",
+          phone: input.phone || "",
+        }),
+      );
+    }
     if (business)
       (await cookies()).set("studioflow-business", business.id, {
         httpOnly: true,
@@ -153,7 +167,21 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 24 * 30,
       });
-    return respond({ slug: data }, 201);
+    const { data: access } = business
+      ? await admin
+          .from("platform_access")
+          .select("status,access_until")
+          .eq("business_id", business.id)
+          .maybeSingle()
+      : { data: null };
+    return respond(
+      {
+        slug: data,
+        trialUntil:
+          access?.status === "active" ? access.access_until || null : null,
+      },
+      201,
+    );
   } catch (error) {
     return failure(error);
   }

@@ -44,16 +44,44 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
         "select id,tenant_id from public.businesses where slug='casa'",
       )
     ).rows[0];
-    // New sign-ups wait for the platform to release them.
+    // New sign-ups start on the free trial (30 days by default).
+    const trial = (
+      await db.query<{ status: string; days: number }>(
+        "select status, round(extract(epoch from access_until - now()) / 86400)::int as days from public.platform_access where business_id=$1",
+        [biz.id],
+      )
+    ).rows[0];
+    assert.equal(trial.status, "active");
+    assert.equal(trial.days, 30);
+    // Trial set to 0: the next sign-up waits for the platform again.
+    await db.exec("update public.platform_settings set trial_days = 0;");
+    await db.exec("reset role;");
+    await db.query("insert into auth.users(id,email)values($1,'outro@casa.test')", [
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    ]);
+    await db.exec("set role service_role;");
+    await db.query("select public.create_workspace($1,'casa-2',$2::jsonb)", [
+      "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      JSON.stringify({
+        name: "Casa 2",
+        category: "Barbearia",
+        cover: "",
+        services: [{ name: "Corte", duration: 40, price: 50 }],
+        professionalNames: ["Rafa"],
+        openDays: [1, 2, 3, 4, 5, 6],
+        openStart: "09:00",
+        openEnd: "19:00",
+      }),
+    ]);
     assert.equal(
       (
         await db.query<{ status: string }>(
-          "select status from public.platform_access where business_id=$1",
-          [biz.id],
+          "select a.status from public.platform_access a join public.businesses b on b.id = a.business_id where b.slug = 'casa-2'",
         )
       ).rows[0].status,
       "pending",
     );
+    await db.exec("update public.platform_settings set trial_days = 30;");
     // Plan and modules picked for the client.
     const planned = (
       await db.query<{
@@ -73,7 +101,7 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
     );
     const overview = (
       await db.query<{ value: { plan: string; modules: string[] } }>(
-        "select value from public.platform_overview() as value",
+        "select value from public.platform_overview() as value where value->>'slug' = 'casa'",
       )
     ).rows[0].value;
     assert.equal(overview.plan, "Profissional");

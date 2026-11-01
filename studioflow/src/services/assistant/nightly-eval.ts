@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isDemo } from "../server-demo";
 import { getPublicStore } from "../server-store";
 import { demoSlugs } from "../platform";
+import { platformEmails } from "../platform-trial";
 import { platformAiEnabled } from "../platform-ai-control";
 import { brandEmail } from "../email/brand-email";
 import { emailConfigured, sendEmail } from "../email/resend";
@@ -21,18 +22,6 @@ import { runReceptionistEval } from "./receptionist-eval";
 
 /** 3h–4h in Brasília (UTC-3, no daylight saving). */
 export const nightlyWindow = (now = new Date()) => now.getUTCHours() === 6;
-
-async function platformEmails() {
-  const admin = createSupabaseAdmin();
-  const { data } = await admin.from("platform_admins").select("user_id");
-  const emails = await Promise.all(
-    (data || []).map(async (row) => {
-      const user = await admin.auth.admin.getUserById(row.user_id as string);
-      return user.data.user?.email || "";
-    }),
-  );
-  return [...new Set(emails.filter(Boolean))];
-}
 
 /** Next shop due for its nightly test, already claimed; null when none. */
 async function nextShop(now: Date) {

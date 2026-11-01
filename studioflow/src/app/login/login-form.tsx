@@ -79,6 +79,23 @@ export function LoginForm({
         setMessage(
           "Se esse e-mail tiver uma conta, o link para criar a nova senha chega em instantes. Confira também o spam.",
         );
+      } else if (signup && !next) {
+        // Dono novo: conta criada já confirmada, entra direto no cadastro da loja.
+        const response = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw new Error(result.error || "Não foi possível criar sua conta.");
+        const { error } = await client.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.push("/onboarding");
+        router.refresh();
       } else if (signup) {
         const { data, error } = await client.auth.signUp({
           email,
