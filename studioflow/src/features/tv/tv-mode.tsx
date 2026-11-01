@@ -144,7 +144,8 @@ function TvScreen({ store }: { store: Store }) {
         list.firstElementChild?.getBoundingClientRect().height || 0;
       if (rowHeight && list.clientHeight)
         setQueueSize(
-          Math.max(1, Math.min(6, Math.floor(list.clientHeight / rowHeight))),
+          // Folga de alguns pixels: a última borda pode encostar no fim.
+          Math.max(1, Math.min(6, Math.floor((list.clientHeight + 8) / rowHeight))),
         );
     };
     const frame = requestAnimationFrame(fit);
@@ -369,6 +370,40 @@ function TvScreen({ store }: { store: Store }) {
   const iso = now.toISOString();
   const current = slides.length ? slides[slide % slides.length] : null;
 
+  // Faixa que corre embaixo: o que vende sem ninguém perguntar.
+  const ticker = (() => {
+    const items: string[] = [];
+    const free = slides.find((item) => item.kind === "free");
+    if (free?.kind === "free") {
+      // "16:00 e 16:30 com Lucas · 17:00 com Ana": um nome por grupo.
+      const groups = new Map<string, string[]>();
+      for (const item of free.times)
+        groups.set(item.who, [...(groups.get(item.who) || []), item.time]);
+      const join = (list: string[]) =>
+        list.length > 1 ? `${list.slice(0, -1).join(", ")} e ${list.at(-1)}` : list[0];
+      items.push(
+        `Tem vaga hoje para ${free.service}: ${[...groups]
+          .map(([who, times]) => `${join(times)}${who ? ` com ${who}` : ""}`)
+          .join(" · ")}`,
+      );
+    }
+    if (online) items.push("Agende o próximo pelo QR Code, leva 20 segundos");
+    const reviews = slides.find((item) => item.kind === "reviews");
+    if (reviews?.kind === "reviews")
+      items.push(
+        `Nota ${reviews.average.toFixed(1).replace(".", ",")} de 5 em ${reviews.count} avaliações`,
+      );
+    const insta = slides.find((item) => item.kind === "instagram");
+    if (insta?.kind === "instagram") items.push(`Siga @${insta.handle}`);
+    const loyalty = slides.find((item) => item.kind === "loyalty");
+    if (loyalty?.kind === "loyalty")
+      items.push(`Fidelidade: a cada ${loyalty.goal} atendimentos, ${loyalty.reward}`);
+    if (!items.length) items.push(`Boas-vindas à ${business.name}`);
+    return items;
+  })();
+  const compactTeam = board.team.length > 4;
+  const teamShown = board.team.slice(0, compactTeam ? 6 : 4);
+
   return (
     <main className="tv">
       <section className="tv-main">
@@ -379,14 +414,10 @@ function TvScreen({ store }: { store: Store }) {
             ) : (
               <span className="tv-monogram">{monogram(business.name)}</span>
             )}
-            <div>
-              <span className="tv-eyebrow">Boas-vindas à nossa casa</span>
-              <strong>{business.name}</strong>
-              <small>{dateLabel(iso, "EEEE, d 'de' MMMM")}</small>
-            </div>
+            <strong>{business.name}</strong>
           </div>
           <div className="tv-clock-wrap">
-            <span className="tv-live">Recepção · ao vivo</span>
+            <small>{dateLabel(iso, "EEEE, d 'de' MMMM")}</small>
             <time className="tv-clock" dateTime={iso}>
               {dateLabel(iso, "HH")}
               <span className="tv-colon">:</span>
@@ -395,36 +426,25 @@ function TvScreen({ store }: { store: Store }) {
           </div>
         </header>
 
-        <div className="tv-day-strip" aria-label="Movimento de hoje">
-          <span>
-            <strong>{board.serving.toString().padStart(2, "0")}</strong>
-            <span>Em atendimento</span>
-          </span>
-          <span>
-            <strong>{board.arrivals.length.toString().padStart(2, "0")}</strong>
-            <span>Na recepção</span>
-          </span>
-          <span>
-            <strong>{board.expected.toString().padStart(2, "0")}</strong>
-            <span>A caminho</span>
-          </span>
-          <span>
-            <strong>{board.completed.toString().padStart(2, "0")}</strong>
-            <span>Atendidos hoje</span>
-          </span>
-        </div>
-
         <section className="tv-team-section" aria-label="Equipe agora">
           <h2 className="tv-section-label">
-            Nossa equipe <span>Agora</span>
+            <span className="tv-live-dot" aria-hidden="true" /> Na cadeira agora
           </h2>
-          <div className="tv-team">
-            {board.team.length === 0 ? (
-              <p className="tv-quiet">
-                Nenhum profissional em expediente agora.
-              </p>
-            ) : (
-              board.team.slice(0, 6).map((seat) => (
+          {teamShown.length === 0 ? (
+            <div className="tv-closed">
+              <strong>Nenhum profissional em expediente agora.</strong>
+              <span>
+                {online
+                  ? "Agende pelo QR Code ao lado e garanta seu horário."
+                  : "Fale com a equipe para agendar."}
+              </span>
+            </div>
+          ) : (
+            <div
+              className={`tv-team ${compactTeam ? "is-compact" : ""}`}
+              style={{ "--tv-cols": compactTeam ? 3 : teamShown.length } as CSSProperties}
+            >
+              {teamShown.map((seat) => (
                 <article
                   key={seat.professional.id}
                   className={`tv-seat is-${seat.state}`}
@@ -436,38 +456,43 @@ function TvScreen({ store }: { store: Store }) {
                       monogram(seat.professional.name)
                     )}
                   </span>
-                  <div>
+                  <div className="tv-seat-info">
                     <strong>{seat.professional.name.split(" ")[0]}</strong>
                     {seat.state === "busy" && seat.current ? (
-                      <span>
-                        <Scissors size={16} weight="fill" />{" "}
-                        {seat.current.status === "in_progress"
-                          ? "Atendendo"
-                          : "Horário de"}{" "}
-                        {tvName(seat.current.customerName)}
-                        <small>
-                          {" "}
-                          · até {dateLabel(seat.current.end, "HH:mm")}
-                        </small>
+                      <span className="tv-status">
+                        <i aria-hidden="true" />
+                        <span>
+                          <b>Até {dateLabel(seat.current.end, "HH:mm")}</b>
+                          <small>Atendendo {tvName(seat.current.customerName)}</small>
+                        </span>
                       </span>
                     ) : seat.state === "next" && seat.next ? (
-                      <span>
-                        Próximo: {tvName(seat.next.customerName)}
-                        <small> · {dateLabel(seat.next.start, "HH:mm")}</small>
+                      <span className="tv-status">
+                        <i aria-hidden="true" />
+                        <span>
+                          <b>Às {dateLabel(seat.next.start, "HH:mm")}</b>
+                          <small>Próximo: {tvName(seat.next.customerName)}</small>
+                        </span>
                       </span>
                     ) : (
-                      <span className="tv-free">Livre agora</span>
+                      <span className="tv-status">
+                        <i aria-hidden="true" />
+                        <span>
+                          <b>Livre agora</b>
+                          <small>{online ? "Encaixe na hora" : "Fale com a recepção"}</small>
+                        </span>
+                      </span>
                     )}
                   </div>
                 </article>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        <div className="tv-list">
-          <h2>
-            Próximos atendimentos{" "}
+        <section className="tv-list" aria-label="A seguir">
+          <h2 className="tv-section-label">
+            A seguir
             {queuePages > 1 && (
               <small>
                 {(queuePage % queuePages) + 1} / {queuePages}
@@ -476,14 +501,11 @@ function TvScreen({ store }: { store: Store }) {
           </h2>
           {board.upcoming.length === 0 ? (
             <div className="tv-empty">
-              <span className="tv-empty-icon">
-                <Clock size={34} weight="light" />
-              </span>
-              <strong>Tudo em dia por aqui.</strong>
-              <p>Sem próximos agendamentos hoje.</p>
+              <Clock size={30} weight="light" />
               <span>
+                <strong>Agenda em dia.</strong>{" "}
                 {online
-                  ? "Seu próximo momento? Agende pelo QR Code."
+                  ? "Quer o próximo horário? Use o QR Code."
                   : "Fale com a equipe para agendar."}
               </span>
             </div>
@@ -493,27 +515,19 @@ function TvScreen({ store }: { store: Store }) {
                 const person = store.professionals.find(
                   (p) => p.id === item.professionalId,
                 );
+                const late = new Date(item.start).getTime() < now.getTime();
                 return (
-                  <li
-                    key={item.id}
-                    className={item.checkedInAt ? "is-here" : ""}
-                  >
+                  <li key={item.id} className={item.checkedInAt ? "is-here" : ""}>
                     <time>{dateLabel(item.start, "HH:mm")}</time>
                     <strong>{tvName(item.customerName)}</strong>
-                    <span>{person?.name.split(" ")[0]}</span>
+                    <span>{person ? `com ${person.name.split(" ")[0]}` : ""}</span>
                     {item.checkedInAt ? (
-                      <em>
-                        <DoorOpen size={16} weight="fill" /> Chegou
+                      <em className="is-here">
+                        <DoorOpen size={18} weight="fill" /> Chegou
                       </em>
                     ) : (
-                      <em
-                        className={
-                          new Date(item.start).getTime() < now.getTime()
-                            ? "is-late"
-                            : ""
-                        }
-                      >
-                        {new Date(item.start).getTime() < now.getTime()
+                      <em className={late ? "is-late" : ""}>
+                        {late
                           ? "Horário passou"
                           : item.status === "pending"
                             ? "A confirmar"
@@ -525,31 +539,10 @@ function TvScreen({ store }: { store: Store }) {
               })}
             </ol>
           )}
-        </div>
+        </section>
       </section>
 
       <aside className="tv-side">
-        <div className="tv-showcase-label">
-          <span>Da nossa casa para você</span>
-          <span aria-hidden="true">✳</span>
-        </div>
-        <div className="tv-qrs">
-          <figure>
-            {checkinQr && <img src={checkinQr} alt="QR Code de check-in" />}
-            <figcaption>
-              <strong>Já chegou?</strong> Aponte a câmera e faça seu check-in
-            </figcaption>
-          </figure>
-          {online && (
-            <figure>
-              {bookQr && <img src={bookQr} alt="QR Code de agendamento" />}
-              <figcaption>
-                <strong>Seu próximo horário</strong> Escolha e agende pelo
-                celular
-              </figcaption>
-            </figure>
-          )}
-        </div>
         <div className="tv-slide" key={slide}>
           {!current && (
             <div className="tv-slide-card tv-brand-card">
@@ -629,9 +622,6 @@ function TvScreen({ store }: { store: Store }) {
               <p>Inspirações e novidades no nosso Instagram.</p>
             </div>
           )}
-          {slides.length > 1 && (
-            <span className="tv-progress" aria-hidden="true" />
-          )}
           {current?.kind === "products" && (
             <div className="tv-slide-card">
               <small>Na casa você encontra</small>
@@ -668,27 +658,51 @@ function TvScreen({ store }: { store: Store }) {
               </p>
             </div>
           )}
+          {slides.length > 1 && <span className="tv-progress" aria-hidden="true" />}
         </div>
-        <footer className="tv-foot">
-          <span>
-            Agenda por <b>StudioFlow</b>
-          </span>
-          <span className="tv-controls">
-            {!full && (
-              <button
-                type="button"
-                onClick={() => void toggleFull()}
-                aria-label="Tela cheia"
-              >
-                <ArrowsOut size={18} />
-              </button>
-            )}
-            <Link href="/dashboard" aria-label="Sair do modo TV">
-              <X size={18} />
-            </Link>
-          </span>
-        </footer>
+        <div className={`tv-qrs ${online ? "" : "is-single"}`}>
+          {online && (
+            <figure className="is-main">
+              {bookQr && <img src={bookQr} alt="QR Code de agendamento" />}
+              <figcaption>
+                <strong>Agende o próximo</strong>
+                <span>Aponte a câmera</span>
+              </figcaption>
+            </figure>
+          )}
+          <figure>
+            {checkinQr && <img src={checkinQr} alt="QR Code de check-in" />}
+            <figcaption>
+              <strong>Chegou?</strong>
+              <span>Faça seu check-in aqui</span>
+            </figcaption>
+          </figure>
+        </div>
       </aside>
+
+      <footer className="tv-ticker" aria-label="Avisos">
+        <div className="tv-ticker-track">
+          {[0, 1].map((copy) => (
+            <span key={copy} aria-hidden={copy === 1}>
+              {ticker.map((item, index) => (
+                <span key={index} className="tv-ticker-item">
+                  <Scissors size={18} weight="fill" /> {item}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+        <span className="tv-controls">
+          {!full && (
+            <button type="button" onClick={() => void toggleFull()} aria-label="Tela cheia">
+              <ArrowsOut size={18} />
+            </button>
+          )}
+          <Link href="/dashboard" aria-label="Sair do modo TV">
+            <X size={18} />
+          </Link>
+        </span>
+      </footer>
 
       {announce && (
         <TvWelcome
