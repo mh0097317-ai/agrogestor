@@ -286,7 +286,7 @@ export function DateStep({
           </div>
         ) : loading ? (
           <div className="bk-times" aria-live="polite" aria-busy="true">
-            <span className="bk-skeleton bk-skeleton-title" />
+            <p className="bk-times-loading">Separando a sua cadeira…</p>
             <div className="bk-slot-grid">
               {Array.from({ length: 9 }).map((_, index) => (
                 <span key={index} className="bk-skeleton bk-skeleton-slot" />

@@ -31,7 +31,6 @@ import { CustomerStep, type CustomerFields } from "./customer-step";
 import { bookingTime } from "./date-format";
 import { servicesSummary } from "./booking-summary";
 import { flyTo, RollingMoney } from "./motion";
-import { BarberCut, markCutSeen, shouldPlayCut } from "./barber-cut";
 import { finishHandoff, handoffActive } from "./intro-handoff";
 import { haptic } from "@/lib/haptic";
 import { track } from "@/lib/track";
@@ -195,12 +194,6 @@ function BookingWizard({
   }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  // The barber clip plays on the first trip to the times of this visit; it
-  // stays mounted (and preloaded) only until then.
-  const [cutPending, setCutPending] = useState(() =>
-    shouldPlayCut(business.slug),
-  );
-  const [cut, setCut] = useState(false);
   const [clubToken] = useClubToken(business.slug);
   const { member } = useMembership(business.slug, clubToken);
   const stepHeading = useRef<HTMLDivElement>(null);
@@ -223,10 +216,6 @@ function BookingWizard({
   );
   useEffect(() => track(business.slug, "etapa", "inicio"), [business.slug]);
   function changeStep(next: number) {
-    if (next === 3 && step < 3 && cutPending && shouldPlayCut(business.slug)) {
-      markCutSeen(business.slug);
-      setCut(true);
-    }
     setDirection(next > step ? "forward" : "back");
     if (next > step)
       track(
@@ -400,22 +389,6 @@ function BookingWizard({
       backDisabled={busy}
       after={
         <>
-          {cutPending && (
-            <BarberCut
-              active={cut}
-              name={business.name}
-              logo={business.logo}
-              photos={[
-                ...(business.photos || []),
-                business.cover,
-                ...services.map((service) => service.image),
-              ]}
-              onDone={() => {
-                setCut(false);
-                setCutPending(false);
-              }}
-            />
-          )}
           <div
             className={`bk-bar ${showBar ? "is-visible" : ""} ${step === 3 && slot ? "is-ready" : ""}`}
             aria-hidden={!showBar}
