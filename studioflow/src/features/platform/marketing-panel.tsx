@@ -27,6 +27,7 @@ import "./ai-control.css";
 
 interface State {
   account: { username: string } | null;
+  authError: { at: string; message: string } | null;
   settings: MarketingSettings;
   posts: MarketingPost[];
   ai: boolean;
@@ -163,6 +164,13 @@ export function MarketingPanel() {
         <p className="mk-note">Na demonstração local o Marketing só mostra a tela. Ele funciona no app publicado.</p>
       )}
       <Power state={state} onChange={(enabled) => setState({ ...state, enabled })} />
+      {state.authError && (
+        <p className="mk-alert" role="alert">
+          <strong>Instagram desconectado.</strong> A Meta recusou o token em{" "}
+          {new Date(state.authError.at).toLocaleDateString("pt-BR")}. Nada sai até
+          reconectar no quadro &quot;Instagram da StudioFlow&quot; logo abaixo.
+        </p>
+      )}
       <div className="mk-top">
         <div className="mk-stack">
           <Account state={state} onChange={load} />
@@ -218,7 +226,7 @@ export function MarketingPanel() {
               <PostCard
                 key={post.id}
                 post={post}
-                connected={!!state.account}
+                connected={!!state.account && !state.authError}
                 canReel={state.enabled && !state.demo}
                 onChange={replace}
                 onCreated={(reel) => setState((s) => (s ? { ...s, posts: [reel, ...s.posts] } : s))}
@@ -703,58 +711,91 @@ function Account({ state, onChange }: { state: State; onChange: () => void }) {
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  async function run(body: unknown) {
+  const [note, setNote] = useState("");
+  async function run(body: { kind: string; token?: string }) {
     setBusy(true);
     setError("");
+    setNote("");
     try {
-      await api("/api/admin/marketing", "POST", body);
+      const result = await api<{ restored?: number; username?: string }>(
+        "/api/admin/marketing",
+        "POST",
+        body,
+      );
       setToken("");
+      if (body.kind === "check")
+        setNote(`Conexão ok com @${result?.username || state.account?.username}.`);
+      if (result?.restored)
+        setNote(
+          `Conectado. ${result.restored} post(s) que falharam pelo token voltaram para Aguardando.`,
+        );
       onChange();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível.");
+      if (body.kind === "check") onChange();
     } finally {
       setBusy(false);
     }
   }
+  const broken = !!state.authError;
+  const form = (
+    <form
+      className="mk-inline"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void run({ kind: "connect", token });
+      }}
+    >
+      <input
+        type="password"
+        autoComplete="off"
+        placeholder="IGAA…"
+        value={token}
+        onChange={(e) => setToken(e.target.value)}
+        aria-label="Token do Instagram"
+      />
+      <button type="submit" className="mk-primary" disabled={busy || token.trim().length < 20 || state.demo}>
+        {busy ? "Conferindo…" : broken ? "Reconectar" : "Conectar"}
+      </button>
+    </form>
+  );
   return (
-    <section className="pf-panel mk-account">
+    <section className={`pf-panel mk-account ${broken ? "is-broken" : ""}`}>
       <div className="mk-account-head">
         <InstagramLogo size={26} />
         <div>
           <strong>Instagram da StudioFlow</strong>
           <span>
-            {state.account
-              ? `Conectado como @${state.account.username}. Os posts aprovados saem por ele.`
-              : "Cole o token do Instagram (API com login do Instagram, conta profissional). O token começa com IG."}
+            {broken
+              ? `A Meta recusou o acesso de @${state.account?.username} em ${new Date(state.authError!.at).toLocaleDateString("pt-BR")}. Nada é publicado nem criado até reconectar; os posts esperam na fila.`
+              : state.account
+                ? `Conectado como @${state.account.username}. Os posts aprovados saem por ele.`
+                : "Cole o token do Instagram (API com login do Instagram, conta profissional). O token começa com IG."}
           </span>
         </div>
       </div>
+      {broken && (
+        <ol className="mk-steps">
+          <li>Abra developers.facebook.com → seu app → Instagram → Configuração da API com login do Instagram.</li>
+          <li>Em &quot;Gerar tokens de acesso&quot;, clique em Gerar token na conta @{state.account?.username} e autorize publicar conteúdo.</li>
+          <li>Copie o token (começa com IG) e cole aqui embaixo.</li>
+        </ol>
+      )}
+      {broken && form}
       {state.account ? (
-        <button type="button" className="pf-text-button" disabled={busy} onClick={() => void run({ kind: "disconnect" })}>
-          Desconectar
-        </button>
-      ) : (
-        <form
-          className="mk-inline"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void run({ kind: "connect", token });
-          }}
-        >
-          <input
-            type="password"
-            autoComplete="off"
-            placeholder="IGAA…"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            aria-label="Token do Instagram"
-          />
-          <button type="submit" className="mk-primary" disabled={busy || token.trim().length < 20 || state.demo}>
-            {busy ? "Conferindo…" : "Conectar"}
+        <div className="mk-account-actions">
+          <button type="button" className="pf-text-button" disabled={busy || state.demo} onClick={() => void run({ kind: "check" })}>
+            {busy ? "Testando…" : "Testar conexão"}
           </button>
-        </form>
+          <button type="button" className="pf-text-button" disabled={busy} onClick={() => void run({ kind: "disconnect" })}>
+            Desconectar
+          </button>
+        </div>
+      ) : (
+        form
       )}
       {error && <em className="mk-error">{error}</em>}
+      {note && <em className="mk-ok">{note}</em>}
     </section>
   );
 }

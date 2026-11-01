@@ -40,6 +40,8 @@ import {
 
 export interface MarketingState {
   account: { username: string } | null;
+  /** A Meta recusou o token: nada sai até reconectar. */
+  authError: { at: string; message: string } | null;
   settings: MarketingSettings;
   posts: MarketingPost[];
   ai: boolean;
@@ -182,6 +184,7 @@ export async function marketingState(): Promise<MarketingState> {
   if (isDemo())
     return {
       account: null,
+      authError: null,
       settings: settingsOf(null),
       posts: [],
       ai: marketingAiConfigured(),
@@ -207,6 +210,13 @@ export async function marketingState(): Promise<MarketingState> {
     account: account?.access_token_enc
       ? { username: (account.username as string) || "" }
       : null,
+    authError:
+      account?.access_token_enc && account.auth_failed_at
+        ? {
+            at: account.auth_failed_at as string,
+            message: (account.auth_error as string) || AUTH_MESSAGE,
+          }
+        : null,
     settings: settingsOf(account),
     posts: (data || []).map(rowToPost),
     ai: !!aiKeyOf(account),
@@ -249,10 +259,67 @@ export async function connectMarketingAccount(token: string) {
       ig_user_id: igUserId,
       username,
       access_token_enc: encryptSecret(token),
+      auth_failed_at: null,
+      auth_error: null,
       updated_at: new Date().toISOString(),
     });
   if (error) throw new DomainError("Não foi possível salvar a conexão.", 503);
-  return { username };
+  const restored = await restoreAuthFailures();
+  return { username, restored };
+}
+
+/** Posts que falharam só porque a Meta recusou o token voltam para rascunho. */
+async function restoreAuthFailures() {
+  const { data } = await createSupabaseAdmin()
+    .from("marketing_posts")
+    .update({ status: "draft", error: null, updated_at: new Date().toISOString() })
+    .eq("status", "failed")
+    .like("error", `${AUTH_MESSAGE.slice(0, 30)}%`)
+    .select("id");
+  return data?.length || 0;
+}
+
+/** Confere o token salvo na Meta agora; acerta o aviso de conexão. */
+export async function checkMarketingConnection() {
+  await requirePlatformAdmin();
+  demoOnly();
+  const creds = await credentials();
+  if (!creds) throw new DomainError("Conecte o Instagram primeiro.", 400);
+  try {
+    const { username } = await checkInstagram(creds.token);
+    await createSupabaseAdmin()
+      .from("marketing_account")
+      .update({ auth_failed_at: null, auth_error: null, username })
+      .eq("id", 1);
+    const restored = creds.account.auth_failed_at
+      ? await restoreAuthFailures()
+      : 0;
+    return { ok: true, username, restored };
+  } catch (cause) {
+    const message =
+      cause instanceof Error ? cause.message : "A Meta não respondeu.";
+    // Meta fora do ar não é token ruim: só marca quando ela recusa.
+    if (/recusou/i.test(message)) await markAuthFailed(message);
+    throw new DomainError(message, 400);
+  }
+}
+
+const AUTH_MESSAGE =
+  "A Meta recusou a autorização do Instagram. Reconecte a conta no Marketing e autorize a publicação de conteúdo.";
+const authProblem = (message: string) =>
+  /not authorized application|error validating access token|oauth|session has been invalidated|has expired|access token|recusou/i.test(
+    message,
+  );
+
+async function markAuthFailed(detail: string) {
+  await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({
+      auth_failed_at: new Date().toISOString(),
+      auth_error: detail.slice(0, 300),
+    })
+    .eq("id", 1)
+    .is("auth_failed_at", null);
 }
 
 export async function disconnectMarketingAccount() {
@@ -265,6 +332,8 @@ export async function disconnectMarketingAccount() {
       username: null,
       access_token_enc: null,
       autopilot: false,
+      auth_failed_at: null,
+      auth_error: null,
     })
     .eq("id", 1);
   return { ok: true };
@@ -799,7 +868,9 @@ export async function createReel(input: z.infer<typeof createReelSchema>) {
 export async function reelFromPost(id: string) {
   await requirePlatformAdmin();
   demoOnly();
-  assertOn(await readAccount());
+  const account = await readAccount();
+  assertOn(account);
+  if (account?.auth_failed_at) throw new DomainError(AUTH_MESSAGE, 409);
   z.string().uuid().parse(id);
   const admin = createSupabaseAdmin();
   const { data: source } = await admin
@@ -1068,17 +1139,24 @@ async function publishOne(post: MarketingPost) {
   } catch (cause) {
     const message =
       cause instanceof Error ? cause.message : "Falha ao publicar";
-    const errorMessage =
-      /not authorized application|error validating access token|oauth exception|invalid oauth access token/i.test(
-        message,
-      )
-        ? "A Meta recusou a autorização do Instagram. Reconecte a conta no Marketing e autorize a publicação de conteúdo."
-        : message;
+    if (creds && authProblem(message)) {
+      // Token recusado: o post espera na fila em vez de virar erro, e o
+      // Marketing para de tentar até reconectar.
+      await markAuthFailed(message);
+      await admin
+        .from("marketing_posts")
+        .update({
+          status: post.scheduledFor ? "scheduled" : "draft",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", post.id);
+      throw new DomainError(AUTH_MESSAGE, 409);
+    }
     await admin
       .from("marketing_posts")
       .update({
         status: "failed",
-        error: errorMessage.slice(0, 500),
+        error: message.slice(0, 500),
         updated_at: new Date().toISOString(),
       })
       .eq("id", post.id);
@@ -1133,6 +1211,8 @@ export async function runMarketing(now = new Date()) {
   // A chave geral pausa recursos de IA, não publicações manuais já aprovadas.
   const mode = marketingRunMode(isOn(account), await platformAiEnabled());
   if (mode === "paused") return report;
+  // Token recusado: nada é publicado nem criado (a IA não gasta) até reconectar.
+  if (account?.auth_failed_at) return report;
   const admin = createSupabaseAdmin();
   // Posts esquecidos em "publicando" por queda do servidor voltam para a fila.
   await admin
@@ -1150,8 +1230,12 @@ export async function runMarketing(now = new Date()) {
         .eq("id", id)
         .single();
       if (!data) continue;
-      if (await publishOne(rowToPost(data))) report.published++;
-      else report.failed++;
+      try {
+        if (await publishOne(rowToPost(data))) report.published++;
+        else report.failed++;
+      } catch {
+        return report; // token recusado: para a rodada
+      }
     }
   } else {
     // Posts uploaded and scheduled by the admin are not AI actions. Keep them
@@ -1178,8 +1262,12 @@ export async function runMarketing(now = new Date()) {
       if (claimError)
         throw new DomainError("Não foi possível iniciar a publicação agendada.", 503);
       if (!data) continue;
-      if (await publishOne(rowToPost(data))) report.published++;
-      else report.failed++;
+      try {
+        if (await publishOne(rowToPost(data))) report.published++;
+        else report.failed++;
+      } catch {
+        return report; // token recusado: para a rodada
+      }
     }
     return report;
   }

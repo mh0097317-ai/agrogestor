@@ -6,6 +6,7 @@ import {
   createReel,
   createReelSchema,
   disconnectMarketingAccount,
+  checkMarketingConnection,
   generateMarketingPosts,
   generateSchema,
   generateMarketingVideoSchema,
@@ -45,6 +46,7 @@ export async function GET() {
 const action = z.discriminatedUnion("kind", [
   connectSchema.extend({ kind: z.literal("connect") }),
   z.object({ kind: z.literal("disconnect") }),
+  z.object({ kind: z.literal("check") }),
   settingsSchema.extend({ kind: z.literal("settings") }),
   generateSchema.extend({ kind: z.literal("generate") }),
   createReelSchema.extend({ kind: z.literal("reel") }),
@@ -73,6 +75,8 @@ export async function POST(request: Request) {
         return respond(await connectMarketingAccount(input.token));
       case "disconnect":
         return respond(await disconnectMarketingAccount());
+      case "check":
+        return respond(await checkMarketingConnection());
       case "settings":
         return respond(
           await saveMarketingSettings({
