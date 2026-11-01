@@ -805,3 +805,134 @@
 .share-page [hidden] {
   display: none !important;
 }
+
+/* Divulgar enxuto: link no topo, depois "Criar post". */
+.share-hero {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 24px;
+  animation: sf-fade-up 420ms var(--ease-out) both;
+}
+.share-hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.share-eyebrow {
+  color: #8a6430;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.share-hero .share-url {
+  font-size: 18px;
+}
+.share-wa-button svg {
+  color: #25d366;
+}
+.share-hero-note {
+  margin: 0;
+  color: #6e655b;
+  font-size: 13px;
+}
+.share-hero-note button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #16130f;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.share-ready-texts {
+  border-top: 1px solid #ece4d6;
+  padding-top: 12px;
+}
+.share-ready-texts summary {
+  color: #16130f;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.share-ready-texts ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.share-ready-texts li {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #ece4d6;
+  border-radius: 10px;
+  background: #fffdf9;
+}
+.share-ready-texts li > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.share-ready-texts li p {
+  margin: 0;
+  color: #5b5249;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.share-ready-texts li button {
+  justify-self: start;
+}
+.share-section-title {
+  margin: 36px 0 0;
+  font: 500 24px/1.2 var(--serif);
+}
+.share-page .share-mode-nav {
+  margin-top: 14px;
+}
+.share-qr-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 24px;
+  align-items: start;
+}
+.share-qr-side {
+  display: grid;
+  gap: 16px;
+}
+.share-qr-side .share-tip {
+  margin: 0;
+}
+.share-actions.is-stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .share-ready-texts ul,
+  .share-qr-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .share-page .share-mode-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .share-hero {
+    padding: 18px;
+  }
+  .share-hero .share-url {
+    font-size: 15px;
+  }
+  .share-hero .share-actions > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
