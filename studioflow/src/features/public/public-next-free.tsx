@@ -41,6 +41,8 @@ export function PublicNextFree({
   professionals: PublicProfessional[];
 }) {
   const [next, setNext] = useState<(Slot & { when: string }) | null>(null);
+  // Enquanto busca, guarda o lugar: a página não pula quando a vaga chega.
+  const [loading, setLoading] = useState(!!serviceId);
   useEffect(() => {
     if (!serviceId) return;
     let alive = true;
@@ -54,12 +56,15 @@ export function PublicNextFree({
         )[0];
         if (alive && first) setNext({ ...first, when: whenLabel(first.start) });
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, [slug, serviceId]);
-  if (!next || !serviceId) return null;
+  if (!serviceId) return null;
+  if (!next)
+    return loading ? <span className="pp-next is-loading" aria-hidden="true" /> : null;
   const { when } = next;
   const who = professionals
     .find((person) => person.id === next.professionalId)

@@ -181,7 +181,8 @@ function BookingWizard({
     name: remembered?.name || "",
     phone: remembered?.phone || "",
     email: remembered?.email || "",
-    reminder: remembered?.reminder ?? false,
+    // Lembrete ligado de fábrica: é o que evita a falta. Quem não quiser desmarca.
+    reminder: remembered?.reminder ?? true,
   });
   function forgetCustomer() {
     try {
@@ -190,7 +191,7 @@ function BookingWizard({
       // Storage unavailable: nothing to forget.
     }
     setRemembered(null);
-    setCustomer({ name: "", phone: "", email: "", reminder: false });
+    setCustomer({ name: "", phone: "", email: "", reminder: true });
   }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

@@ -312,7 +312,7 @@ export function CustomerStep({
           <span className="bk-check-box" aria-hidden="true">
             <Check weight="bold" size={12} />
           </span>
-          <span>Quero receber lembretes do meu agendamento pelo WhatsApp.</span>
+          <span>Me lembrar do horário pelo WhatsApp.</span>
         </label>
         {error && (
           <div className="bk-alert" role="alert">

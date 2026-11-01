@@ -54,11 +54,11 @@ export function BarberCut({
     if (!active) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the timed scene when it is asked for
     setPhase("play");
-    const lift = window.setTimeout(() => setPhase("lift"), 2300);
+    const lift = window.setTimeout(() => setPhase("lift"), 1500);
     const end = window.setTimeout(() => {
       setPhase("idle");
       done.current();
-    }, 3000);
+    }, 2100);
     return () => {
       window.clearTimeout(lift);
       window.clearTimeout(end);

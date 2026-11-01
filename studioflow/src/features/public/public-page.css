@@ -1382,3 +1382,21 @@ html:not([data-pp-seen]) .pp-intro > .repeat-booking {
     animation: none !important;
   }
 }
+/* Lugar guardado enquanto a próxima vaga carrega. */
+.pp-next.is-loading {
+  min-height: 64px;
+  border-color: transparent;
+  background: linear-gradient(90deg, #ece4d6 0%, #f4efe6 50%, #ece4d6 100%) 0 0 / 200% 100%;
+  box-shadow: none;
+  animation: pp-next-shimmer 1.4s linear infinite;
+}
+@keyframes pp-next-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-next.is-loading {
+    animation: none;
+  }
+}
