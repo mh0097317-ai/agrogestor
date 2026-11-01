@@ -3369,3 +3369,104 @@
     animation: none;
   }
 }
+/* Assinatura da casa na etapa de horário: a tesoura corta por cima do nome. */
+.bk-sign {
+  position: relative;
+  display: inline-grid;
+  justify-items: start;
+  gap: 6px;
+  margin: 2px 0 12px;
+  padding-top: 22px;
+  --bk-sign-time: 1.25s;
+  --bk-sign-ease: cubic-bezier(0.55, 0, 0.35, 1);
+}
+.bk-sign-name {
+  padding-right: 0.3em;
+  background: linear-gradient(90deg, #8a6430 0 50%, #cfc4b3 50% 100%) 100% 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: bk-sign-reveal var(--bk-sign-time) var(--bk-sign-ease) 0.15s forwards;
+}
+.bk-sign-line {
+  width: 100%;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8a6430, #d9b77a);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: bk-sign-line var(--bk-sign-time) var(--bk-sign-ease) 0.15s forwards;
+}
+.bk-sign-blade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  color: #8a6430;
+  transform: translateX(-50%);
+  animation:
+    bk-sign-run var(--bk-sign-time) var(--bk-sign-ease) 0.15s forwards,
+    bk-sign-fade 0.35s ease calc(var(--bk-sign-time) + 0.15s) forwards;
+}
+.bk-sign-blade svg {
+  animation: bk-sign-snip 0.22s ease-in-out 0.15s 6 alternate;
+}
+.bk-sign.is-loading .bk-sign-name,
+.bk-sign.is-loading .bk-sign-line,
+.bk-sign.is-loading .bk-sign-blade {
+  animation-iteration-count: infinite;
+}
+.bk-sign.is-loading .bk-sign-blade svg {
+  animation-iteration-count: infinite;
+}
+.bk-sign.is-loading .bk-sign-blade {
+  animation-name: bk-sign-run, none;
+}
+@keyframes bk-sign-reveal {
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes bk-sign-line {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes bk-sign-run {
+  to {
+    left: 100%;
+  }
+}
+@keyframes bk-sign-fade {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6);
+  }
+}
+@keyframes bk-sign-snip {
+  to {
+    transform: scaleY(0.62);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-sign-name,
+  .bk-sign-line,
+  .bk-sign-blade,
+  .bk-sign-blade svg {
+    animation: none !important;
+  }
+  .bk-sign-name {
+    background-position: 0 0;
+  }
+  .bk-sign-line {
+    transform: none;
+  }
+  .bk-sign-blade {
+    display: none;
+  }
+}

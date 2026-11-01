@@ -493,6 +493,7 @@ function BookingWizard({
             }}
             professionals={professionals}
             waitlist={catalog.features?.waitlist !== false}
+            shopName={business.name}
           />
         )}
         {step === 4 && chosen.length > 0 && slot && (

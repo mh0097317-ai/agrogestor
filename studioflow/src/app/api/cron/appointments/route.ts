@@ -20,6 +20,7 @@ import { checkAssistantHealth } from "@/services/assistant/alerts";
 import { runNightlyEval } from "@/services/assistant/nightly-eval";
 import { sendWinbacks } from "@/services/assistant/winback";
 import { failedJob, pruneErrors } from "@/services/error-log";
+import { refreshDemoAgendas } from "@/services/demo-agenda";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function POST(request: Request) {
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     assistantHealth,
     nightlyEval,
     winbacks,
+    demoAgendas,
   ] = await Promise.all([
     sendAppointmentReminders(),
     recoverProfessionalBookingNotices(origin),
@@ -73,6 +75,8 @@ export async function POST(request: Request) {
     runNightlyEval().catch(failedJob("nightlyEval", "failed")),
     // 10h: quem sumiu, nas lojas que ligaram a mensagem de retorno.
     sendWinbacks().catch(failedJob("winbacks", "failed")),
+    // Casas em modo apresentação: agenda sempre cheia, sem mandar mensagem.
+    refreshDemoAgendas().catch(failedJob("demoAgendas", 0)),
   ]);
   // Errors older than 30 days go, once a day.
   const now = new Date();
@@ -91,5 +95,6 @@ export async function POST(request: Request) {
     assistantHealth,
     nightlyEval,
     winbacks,
+    demoAgendas,
   });
 }

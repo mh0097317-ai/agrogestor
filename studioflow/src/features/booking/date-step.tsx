@@ -28,6 +28,7 @@ import type { PublicProfessional } from "@/features/public/types";
 import { bookingDate, bookingTime } from "./date-format";
 import { freeLabel, StepHead } from "./selection-steps";
 import { WaitlistForm } from "./waitlist-form";
+import { ScissorSign } from "./scissor-sign";
 
 type CalendarData = Record<string, Slot[]>;
 const labels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
@@ -44,7 +45,10 @@ export function DateStep({
   embedded = false,
   waitlist = false,
   professionals,
+  shopName,
 }: {
+  /** Nome da casa, para a tesoura cortar por cima. */
+  shopName?: string;
   /** Names for the "first free time" shortcut. */
   professionals?: PublicProfessional[];
   slug: string;
@@ -166,6 +170,7 @@ export function DateStep({
       : "";
   return (
     <section className="bk-step">
+      {!embedded && shopName && <ScissorSign name={shopName} loading={loading} />}
       {!embedded && (
         <StepHead
           title="Quando você deseja agendar?"

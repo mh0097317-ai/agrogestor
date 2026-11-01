@@ -105,6 +105,42 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
       )
     ).rows[0].value;
     assert.equal(overview.plan, "Profissional");
+    // Agenda de demonstração: horários de exemplo sem lembrete e com os
+    // avisos já encerrados; desligar apaga tudo o que ela criou.
+    const seeded = (
+      await db.query<{ n: number }>("select public.seed_demo_agenda($1, 7, 7) as n", [biz.id])
+    ).rows[0].n;
+    assert.ok(seeded > 0);
+    const demo = (
+      await db.query<{ total: number; reminders: number; notices: number }>(
+        "select count(*)::int total, count(*) filter (where reminder)::int reminders, (select count(*)::int from public.appointment_whatsapp_notices n join public.appointments x on x.id = n.appointment_id where x.demo) notices from public.appointments where demo and business_id = $1",
+        [biz.id],
+      )
+    ).rows[0];
+    assert.equal(demo.total, seeded);
+    assert.equal(demo.reminders, 0);
+    assert.equal(demo.notices, seeded * 4);
+    assert.equal(
+      (await db.query<{ n: number }>("select public.seed_demo_agenda($1, 7, 7) as n", [biz.id])).rows[0].n,
+      0,
+    );
+    await db.query("select public.refresh_demo_agendas()");
+    const paid = (
+      await db.query<{ done: number; paid: number }>(
+        "select count(*) filter (where status = 'completed')::int done, (select count(*)::int from public.payments p join public.appointments x on x.id = p.appointment_id where x.demo) paid from public.appointments where demo and business_id = $1",
+        [biz.id],
+      )
+    ).rows[0];
+    assert.ok(paid.done > 0);
+    assert.equal(paid.paid, paid.done);
+    assert.equal(
+      (await db.query<{ n: number }>("select public.clear_demo_agenda($1) as n", [biz.id])).rows[0].n,
+      seeded,
+    );
+    assert.equal(
+      (await db.query<{ n: number }>("select count(*)::int n from public.customers where business_id = $1 and phone like '6290000%'", [biz.id])).rows[0].n,
+      0,
+    );
     const insert = (ref: string) =>
       db.query(
         "insert into public.conversations(tenant_id,business_id,channel,contact_ref)values($1,$2,'instagram',$3)",

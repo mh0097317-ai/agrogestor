@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { hasModule } from "@/lib/modules";
 import type { ChannelEvent, PlatformBusiness } from "@/services/platform";
 
@@ -122,12 +122,80 @@ export function PlatformControls({
             para atender pelo WhatsApp.
           </p>
         )}
+      <DemoAgendaToggle businessId={item.id} />
       {error && (
         <p className="pf-error" role="alert">
           {error}
         </p>
       )}
     </section>
+  );
+}
+
+/** Casa de apresentação: agenda sempre cheia, sem mandar mensagem a ninguém. */
+function DemoAgendaToggle({ businessId }: { businessId: string }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/admin/platform/demo?businessId=${businessId}`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => alive && setEnabled(result?.enabled === true))
+      .catch(() => alive && setEnabled(false));
+    return () => {
+      alive = false;
+    };
+  }, [businessId]);
+  async function toggle(next: boolean) {
+    if (
+      !next &&
+      !window.confirm("Desligar apaga todos os horários e clientes de exemplo desta casa. Continuar?")
+    )
+      return;
+    setBusy(true);
+    setNote("");
+    try {
+      const response = await fetch("/api/admin/platform/demo", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId, enabled: next }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Não foi possível salvar.");
+      setEnabled(result.enabled);
+      setNote(
+        result.enabled
+          ? `${result.changed} horários de exemplo na agenda.`
+          : `${result.changed} horários de exemplo removidos.`,
+      );
+    } catch (cause) {
+      setNote(cause instanceof Error ? cause.message : "Não foi possível salvar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <label className="pf-toggle">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={!!enabled}
+          disabled={enabled === null || busy}
+          onChange={(e) => void toggle(e.target.checked)}
+        />
+        <span>
+          <strong>Agenda de demonstração</strong>
+          <small>
+            Para apresentar: agenda cheia com clientes de exemplo, renovada todo dia.
+            Nenhuma mensagem sai para clientes ou barbeiros.
+          </small>
+        </span>
+        <b>{busy ? "Salvando…" : enabled ? "Ligada" : "Desligada"}</b>
+      </label>
+      {note && <p className="pf-muted" role="status">{note}</p>}
+    </>
   );
 }
 
