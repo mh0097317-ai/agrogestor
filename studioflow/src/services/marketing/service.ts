@@ -230,6 +230,17 @@ export async function marketingState(): Promise<MarketingState> {
   };
 }
 
+/**
+ * Chave e modelo do Marketing para outras ferramentas de venda da própria
+ * StudioFlow (Captação). Sem chave, null: quem chama usa o texto de reserva.
+ */
+export async function marketingAiCredentials() {
+  if (isDemo()) return null;
+  const account = await readAccount();
+  const ai = aiKeyOf(account);
+  return ai ? { apiKey: ai.key, model: modelOf(account?.ai_model) } : null;
+}
+
 /** O modelo escolhido no Marketing (Econômico, Equilibrado ou Máximo). */
 export async function marketingModelChoice() {
   if (isDemo()) return modelOf(null);

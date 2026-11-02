@@ -84,6 +84,7 @@ import { MarketingPanel } from "./marketing-panel";
 import { EmailPanel } from "./email-panel";
 import { OperationsPanel } from "./operations-panel";
 import { TrialSetting } from "./trial-setting";
+import { LeadsPanel } from "./leads-panel";
 
 type Filter = "all" | AccessState | "closed";
 const filters: { id: Filter; label: string }[] = [
@@ -123,6 +124,11 @@ const viewCopy: Record<string, { title: string; description: string }> = {
     title: "Marketing da StudioFlow.",
     description:
       "A IA cria posts, carrosséis e stories para o Instagram. Você aprova ou deixa no piloto automático.",
+  },
+  captacao: {
+    title: "Captação de barbearias.",
+    description:
+      "Ache barbearias no Google Maps, veja quais valem a pena e mande a primeira mensagem pelo seu WhatsApp.",
   },
   emails: {
     title: "E-mails para os clientes.",
@@ -380,6 +386,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             ["businesses", "Estabelecimentos"],
             ["receptionists", "StudioFlow no WhatsApp"],
             ["billing", "Cobranças"],
+            ["captacao", "Captação"],
             ["marketing", "Marketing"],
             ["emails", "E-mails"],
             ["activity", "Histórico"],
@@ -416,6 +423,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
           <option value="businesses">Estabelecimentos</option>
           <option value="receptionists">StudioFlow no WhatsApp</option>
           <option value="billing">Cobranças</option>
+          <option value="captacao">Captação</option>
           <option value="marketing">Marketing</option>
           <option value="emails">E-mails</option>
           <option value="activity">Histórico</option>
@@ -543,7 +551,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
         )}
         <div
           className="pf-period-bar"
-          style={view === "marketing" || view === "emails" ? { display: "none" } : undefined}
+          style={view === "marketing" || view === "emails" || view === "captacao" ? { display: "none" } : undefined}
         >
           <label>
             Período dos indicadores{" "}
@@ -709,9 +717,10 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             onOpen={setOpen}
           />
         )}
+        {view === "captacao" && <LeadsPanel />}
         {view === "marketing" && <MarketingPanel />}
         {view === "emails" && <EmailPanel />}
-        {view !== "businesses" && view !== "marketing" && view !== "emails" && !items && (
+        {view !== "businesses" && view !== "marketing" && view !== "emails" && view !== "captacao" && !items && (
           <p className="pf-empty">
             {loading
               ? "Carregando o painel…"
