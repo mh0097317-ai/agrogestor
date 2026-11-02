@@ -30,6 +30,11 @@ import {
   createManualPhoto,
   manualPhotoSchema,
   photoUploadUrl,
+  saveZernioKey,
+  zernioConnectLink,
+  zernioKeySchema,
+  zernioRelease,
+  zernioSync,
 } from "@/services/marketing/service";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -64,6 +69,14 @@ const action = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("videoAiKeyRemove") }),
   generateMarketingVideoSchema.extend({ kind: z.literal("generateVideo") }),
   z.object({ kind: z.literal("checkVideo") }).extend({ id: z.string().uuid() }),
+  zernioKeySchema.extend({ kind: z.literal("zernioKey") }),
+  z.object({ kind: z.literal("zernioKeyRemove") }),
+  z.object({ kind: z.literal("zernioConnect") }),
+  z.object({
+    kind: z.literal("zernioSync"),
+    accountId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+  }),
+  z.object({ kind: z.literal("zernioRelease") }),
 ]);
 
 export async function POST(request: Request) {
@@ -73,6 +86,16 @@ export async function POST(request: Request) {
     switch (input.kind) {
       case "connect":
         return respond(await connectMarketingAccount(input.token));
+      case "zernioKey":
+        return respond(await saveZernioKey(input.key));
+      case "zernioKeyRemove":
+        return respond(await saveZernioKey(null));
+      case "zernioConnect":
+        return respond(await zernioConnectLink());
+      case "zernioSync":
+        return respond(await zernioSync(input.accountId));
+      case "zernioRelease":
+        return respond(await zernioRelease());
       case "disconnect":
         return respond(await disconnectMarketingAccount());
       case "check":

@@ -77,21 +77,30 @@ function inTab(lead: Lead, tab: Tab, now: number) {
 
 /** Captação: ache barbearias, veja por que valem a pena e fale com o dono. */
 export function LeadsPanel() {
-  const [view, setView] = useState<LeadsView | null>(null);
+  const [view, setViewState] = useState<LeadsView | null>(null);
+  // "Agora" de quando a lista chegou: os retornos de hoje são contados nele.
+  const [now, setNow] = useState(0);
+  const setView = (next: LeadsView) => {
+    setViewState(next);
+    setNow(Date.now());
+  };
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("open");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
-  async function load() {
-    try {
-      setView(await call<LeadsView>());
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível carregar.");
-    }
-  }
   useEffect(() => {
-    void load();
+    let alive = true;
+    call<LeadsView>()
+      .then((next) => {
+        if (!alive) return;
+        setViewState(next);
+        setNow(Date.now());
+      })
+      .catch((cause) => alive && setError(cause instanceof Error ? cause.message : "Não foi possível carregar."));
+    return () => {
+      alive = false;
+    };
   }, []);
   async function act(key: string, body: Record<string, unknown>, done?: (result: Record<string, unknown>) => void) {
     setBusy(key);
@@ -107,7 +116,6 @@ export function LeadsPanel() {
       setBusy("");
     }
   }
-  const now = Date.now();
   const list = useMemo(() => {
     const term = query.trim().toLowerCase();
     return (view?.leads || [])
@@ -190,7 +198,7 @@ export function LeadsPanel() {
         {list.length ? (
           <div className="ld-cards">
             {list.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} busy={busy} act={act} />
+              <LeadCard key={`${lead.id}:${lead.message}`} lead={lead} now={now} busy={busy} act={act} />
             ))}
           </div>
         ) : (
@@ -358,21 +366,22 @@ function ManualLead({
 
 function LeadCard({
   lead,
+  now,
   busy,
   act,
 }: {
   lead: Lead;
+  now: number;
   busy: string;
   act: (key: string, body: Record<string, unknown>, done?: (result: Record<string, unknown>) => void) => Promise<void>;
 }) {
   const [message, setMessage] = useState(lead.message);
   const [notes, setNotes] = useState(lead.notes);
   const [open, setOpen] = useState(false);
-  useEffect(() => setMessage(lead.message), [lead.message]);
   const out = lead.status === "opted_out";
   const canWhatsApp = !out && isMobile(lead.phone);
   const tone = lead.score >= 70 ? "is-hot" : lead.score >= 45 ? "is-warm" : "";
-  const due = lead.followUpAt && Date.parse(lead.followUpAt) <= Date.now() && ["contacted", "replied", "demo"].includes(lead.status);
+  const due = lead.followUpAt && Date.parse(lead.followUpAt) <= now && ["contacted", "replied", "demo"].includes(lead.status);
   return (
     <article className={`ld-card ${out ? "is-out" : ""}`}>
       <header>

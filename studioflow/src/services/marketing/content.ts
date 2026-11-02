@@ -32,6 +32,11 @@ export interface MarketingPost {
   error: string | null;
   likes: number | null;
   comments: number | null;
+  /** Pela Zernio: views, alcance, salvamentos e compartilhamentos. */
+  views: number | null;
+  reach: number | null;
+  saves: number | null;
+  shares: number | null;
   origin: "ia" | "admin";
   createdAt: string;
   updatedAt: string;
@@ -196,6 +201,10 @@ export function rowToPost(row: Record<string, unknown>): MarketingPost {
     error: (row.error as string) || null,
     likes: (row.likes as number | null) ?? null,
     comments: (row.comments as number | null) ?? null,
+    views: (row.views as number | null) ?? null,
+    reach: (row.reach as number | null) ?? null,
+    saves: (row.saves as number | null) ?? null,
+    shares: (row.shares as number | null) ?? null,
     origin: (row.origin as "ia" | "admin") || "ia",
     createdAt: row.created_at as string,
     updatedAt: (row.updated_at as string) || (row.created_at as string),

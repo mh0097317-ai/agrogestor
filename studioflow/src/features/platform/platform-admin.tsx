@@ -204,6 +204,13 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
   const [error, setError] = useState("");
   const [denied, setDenied] = useState(false);
   const [view, setView] = useState("operations");
+  // Volta de um login externo (ex.: Instagram pela Zernio) direto na aba certa.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("view");
+    if (!wanted || !(wanted in viewCopy)) return;
+    const timer = setTimeout(() => setView(wanted), 0);
+    return () => clearTimeout(timer);
+  }, []);
   const [openEvolution, setOpenEvolution] = useState(false);
   const [openTab, setOpenTab] = useState<"assistant" | "vault" | "billing">(
     "assistant",

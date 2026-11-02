@@ -150,6 +150,25 @@ export type MarketingSuggestion = z.infer<
  * Lê o que já foi publicado (com curtidas e comentários) e o que a equipe
  * colou para análise, e devolve pautas curtas. Resposta pequena: custa pouco.
  */
+/** Números de um post para a IA ver o que funcionou (salvar e compartilhar pesam mais). */
+function historyStats(p: {
+  likes: number | null;
+  comments: number | null;
+  views?: number | null;
+  saves?: number | null;
+  shares?: number | null;
+}) {
+  return [
+    p.views != null ? `${p.views} views` : "",
+    `${p.likes ?? 0} curtidas`,
+    `${p.comments ?? 0} comentários`,
+    p.saves != null ? `${p.saves} salvamentos` : "",
+    p.shares != null ? `${p.shares} compartilhamentos` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 export async function suggestIdeas(input: {
   voice: string;
   history: {
@@ -157,6 +176,9 @@ export async function suggestIdeas(input: {
     format: string;
     likes: number | null;
     comments: number | null;
+    views?: number | null;
+    saves?: number | null;
+    shares?: number | null;
     published: boolean;
   }[];
   note: string;
@@ -169,7 +191,7 @@ export async function suggestIdeas(input: {
     ? input.history
         .map(
           (p) =>
-            `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
+            `- [${p.format}] ${p.theme}${p.published ? ` · ${historyStats(p)}` : " · ainda não publicado"}`,
         )
         .join("\n")
     : "Nada publicado ainda.";
@@ -235,7 +257,7 @@ export async function suggestVoice(input: {
     ? input.history
         .map(
           (p) =>
-            `- [${p.format}] ${p.theme}${p.published ? ` · ${p.likes ?? 0} curtidas, ${p.comments ?? 0} comentários` : " · ainda não publicado"}`,
+            `- [${p.format}] ${p.theme}${p.published ? ` · ${historyStats(p)}` : " · ainda não publicado"}`,
         )
         .join("\n")
     : "Nada publicado ainda.";

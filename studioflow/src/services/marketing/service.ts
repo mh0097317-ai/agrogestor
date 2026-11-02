@@ -29,7 +29,20 @@ import {
   type MarketingPost,
   type MarketingSettings,
 } from "./content";
-import { mediaInsights, publishToInstagram } from "./instagram";
+import { mediaInsights, publishToInstagram, type PublishInput } from "./instagram";
+import {
+  ZERNIO_ACCOUNT_MESSAGE,
+  ZernioError,
+  zernioConnectUrl,
+  zernioDefaultProfile,
+  zernioInstagramAccounts,
+  zernioKeyLooksValid,
+  zernioMetrics,
+  zernioPostStatus,
+  zernioPublish,
+  type ZernioAccount,
+} from "./zernio";
+import { randomUUID } from "node:crypto";
 import { renderReelMp4 } from "./reel";
 import {
   downloadGoogleVideo,
@@ -39,7 +52,16 @@ import {
 } from "./video-generation";
 
 export interface MarketingState {
-  account: { username: string } | null;
+  /** Conta que publica: pela Zernio (preferida) ou pelo token da Meta. */
+  account: { username: string; via: "zernio" | "meta" } | null;
+  zernio: {
+    /** Onde está a chave da Zernio. */
+    key: "panel" | "server" | null;
+    hint: string;
+    username: string | null;
+    /** Contas de Instagram na Zernio quando ainda falta escolher uma. */
+    choices: { id: string; username: string }[];
+  };
   /** A Meta recusou o token: nada sai até reconectar. */
   authError: { at: string; message: string } | null;
   settings: MarketingSettings;
@@ -70,7 +92,7 @@ export interface MarketingVideoJob {
 }
 
 const columns =
-  "id,source_id,status,format,theme,slides,caption,video_url,scheduled_for,published_at,permalink,error,likes,comments,origin,created_at,updated_at";
+  "id,source_id,status,format,theme,slides,caption,video_url,scheduled_for,published_at,permalink,error,likes,comments,views,reach,saves,shares,origin,created_at,updated_at";
 
 export const imageUrl = (
   post: Pick<MarketingPost, "id" | "updatedAt" | "slides">,
@@ -112,6 +134,35 @@ function aiKeyOf(row: Record<string, unknown> | null) {
     ? { key: undefined, source: "server" as const }
     : null;
 }
+
+/** Chave da Zernio: a do painel vence a do servidor. */
+function zernioKeyOf(row: Record<string, unknown> | null) {
+  if (row?.zernio_key_enc)
+    try {
+      return { key: decryptSecret(row.zernio_key_enc as string), source: "panel" as const };
+    } catch {
+      // Segredo do servidor trocado: cai para a variável.
+    }
+  const env = process.env.ZERNIO_API_KEY?.trim();
+  return env ? { key: env, source: "server" as const } : null;
+}
+
+/** Publica pela Zernio quando há chave e um Instagram escolhido nela. */
+function zernioOf(row: Record<string, unknown> | null) {
+  const key = zernioKeyOf(row);
+  if (!key || !row?.zernio_account_id) return null;
+  return {
+    key: key.key,
+    accountId: row.zernio_account_id as string,
+    username: (row.zernio_username as string) || "",
+  };
+}
+
+function metaOf(row: Record<string, unknown> | null) {
+  return row?.access_token_enc && row.ig_user_id ? row : null;
+}
+
+const hasPublisher = (row: Record<string, unknown> | null) => !!zernioOf(row) || !!metaOf(row);
 
 const isOn = (row: Record<string, unknown> | null) => row?.enabled !== false;
 
@@ -184,6 +235,7 @@ export async function marketingState(): Promise<MarketingState> {
   if (isDemo())
     return {
       account: null,
+      zernio: { key: process.env.ZERNIO_API_KEY ? "server" : null, hint: "", username: null, choices: [] },
       authError: null,
       settings: settingsOf(null),
       posts: [],
@@ -206,12 +258,32 @@ export async function marketingState(): Promise<MarketingState> {
     .order("created_at", { ascending: false })
     .limit(120);
   if (error) throw new DomainError("Não foi possível ler os posts.", 503);
+  const zernio = zernioOf(account);
+  const zernioKey = zernioKeyOf(account);
+  let choices: { id: string; username: string }[] = [];
+  if (zernioKey && !zernio)
+    choices = await zernioInstagramAccounts(zernioKey.key, (account?.zernio_profile_id as string) || undefined)
+      .then((list) => list.map((item) => ({ id: item.id, username: item.username })))
+      .catch(() => []);
   return {
-    account: account?.access_token_enc
-      ? { username: (account.username as string) || "" }
-      : null,
+    account: zernio
+      ? { username: zernio.username, via: "zernio" }
+      : account?.access_token_enc
+        ? { username: (account.username as string) || "", via: "meta" }
+        : null,
+    zernio: {
+      key: zernioKey?.source ?? null,
+      hint:
+        zernioKey?.source === "panel"
+          ? (account?.zernio_hint as string) || ""
+          : zernioKey
+            ? zernioKey.key.slice(-4)
+            : "",
+      username: zernio?.username || null,
+      choices,
+    },
     authError:
-      account?.access_token_enc && account.auth_failed_at
+      hasPublisher(account) && account?.auth_failed_at
         ? {
             at: account.auth_failed_at as string,
             message: (account.auth_error as string) || AUTH_MESSAGE,
@@ -294,6 +366,25 @@ async function restoreAuthFailures() {
 export async function checkMarketingConnection() {
   await requirePlatformAdmin();
   demoOnly();
+  const current = await readAccount();
+  const zernio = zernioOf(current);
+  if (zernio) {
+    const list = await zernioInstagramAccounts(zernio.key).catch((cause) => {
+      if (cause instanceof ZernioError && cause.kind === "key") void markAuthFailed(cause.message);
+      throw new DomainError(cause instanceof Error ? cause.message : "A Zernio não respondeu.", 400);
+    });
+    const found = list.find((item) => item.id === zernio.accountId);
+    if (!found || found.needsReconnection) {
+      await markAuthFailed(ZERNIO_ACCOUNT_MESSAGE);
+      throw new DomainError(ZERNIO_ACCOUNT_MESSAGE, 400);
+    }
+    await createSupabaseAdmin()
+      .from("marketing_account")
+      .update({ auth_failed_at: null, auth_error: null, zernio_username: found.username })
+      .eq("id", 1);
+    const restored = current?.auth_failed_at ? await restoreAuthFailures() : 0;
+    return { ok: true, username: found.username, restored };
+  }
   const creds = await credentials();
   if (!creds) throw new DomainError("Conecte o Instagram primeiro.", 400);
   try {
@@ -342,10 +433,122 @@ export async function disconnectMarketingAccount() {
       ig_user_id: null,
       username: null,
       access_token_enc: null,
+      zernio_account_id: null,
+      zernio_username: null,
       autopilot: false,
       auth_failed_at: null,
       auth_error: null,
     })
+    .eq("id", 1);
+  return { ok: true };
+}
+
+export const zernioKeySchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .refine(zernioKeyLooksValid, "Cole a chave da Zernio completa (começa com sk_)."),
+});
+
+/** Guarda a chave da Zernio cifrada, depois de conferir com a própria Zernio. */
+export async function saveZernioKey(key: string | null) {
+  await requirePlatformAdmin();
+  demoOnly();
+  let profileId: string | null = null;
+  if (key) profileId = await zernioDefaultProfile(key).catch((cause) => {
+    throw new DomainError(cause instanceof Error ? cause.message : "A Zernio não aceitou a chave.", 400);
+  });
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update(
+      key
+        ? { zernio_key_enc: encryptSecret(key), zernio_hint: key.slice(-4), zernio_profile_id: profileId }
+        : { zernio_key_enc: null, zernio_hint: "" },
+    )
+    .eq("id", 1);
+  if (error) throw new DomainError("Não foi possível salvar a chave.", 503);
+  return { ok: true };
+}
+
+function zernioKeyOrFail(row: Record<string, unknown> | null) {
+  const key = zernioKeyOf(row);
+  if (!key) throw new DomainError("Salve a chave da Zernio primeiro.", 409);
+  return key.key;
+}
+
+const zernioFailure = (cause: unknown) =>
+  new DomainError(cause instanceof Error ? cause.message : "A Zernio não respondeu.", cause instanceof ZernioError && cause.status === 429 ? 429 : 400);
+
+/** Link do login do Instagram pela Zernio (ou de reconexão, se já houver conta). */
+export async function zernioConnectLink() {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  const key = zernioKeyOrFail(account);
+  try {
+    const profileId = (account?.zernio_profile_id as string) || (await zernioDefaultProfile(key));
+    if (!account?.zernio_profile_id)
+      await createSupabaseAdmin().from("marketing_account").update({ zernio_profile_id: profileId }).eq("id", 1);
+    const url = await zernioConnectUrl(key, {
+      profileId,
+      redirectUrl: `${appUrl}/admin?view=marketing&zernio=1`,
+      reconnectAccountId: (account?.zernio_account_id as string) || null,
+    });
+    return { url };
+  } catch (cause) {
+    throw zernioFailure(cause);
+  }
+}
+
+async function adoptZernioAccount(found: ZernioAccount) {
+  const { error } = await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({
+      zernio_account_id: found.id,
+      zernio_username: found.username,
+      auth_failed_at: null,
+      auth_error: null,
+    })
+    .eq("id", 1);
+  if (error) throw new DomainError("Não foi possível salvar a conta.", 503);
+  return { username: found.username, restored: await restoreAuthFailures() };
+}
+
+/**
+ * Depois do login na Zernio: acha o Instagram conectado. Com uma conta só,
+ * já passa a publicar por ela; com várias, o painel pede para escolher.
+ */
+export async function zernioSync(accountId?: string) {
+  await requirePlatformAdmin();
+  demoOnly();
+  const account = await readAccount();
+  const key = zernioKeyOrFail(account);
+  let list: ZernioAccount[];
+  try {
+    list = await zernioInstagramAccounts(key, (account?.zernio_profile_id as string) || undefined);
+  } catch (cause) {
+    throw zernioFailure(cause);
+  }
+  const healthy = list.filter((item) => !item.needsReconnection);
+  const wanted = accountId || (account?.zernio_account_id as string) || "";
+  const found = wanted ? list.find((item) => item.id === wanted) : healthy.length === 1 ? healthy[0] : null;
+  if (wanted && !found) throw new DomainError("Essa conta não está mais na Zernio. Conecte de novo.", 404);
+  if (found?.needsReconnection) throw new DomainError(ZERNIO_ACCOUNT_MESSAGE, 409);
+  if (!found)
+    return {
+      connected: false,
+      choices: healthy.map((item) => ({ id: item.id, username: item.username })),
+    };
+  return { connected: true, ...(await adoptZernioAccount(found)) };
+}
+
+/** Para de publicar pela Zernio. A conta continua lá; só a StudioFlow solta. */
+export async function zernioRelease() {
+  await requirePlatformAdmin();
+  demoOnly();
+  await createSupabaseAdmin()
+    .from("marketing_account")
+    .update({ zernio_account_id: null, zernio_username: null, auth_failed_at: null, auth_error: null })
     .eq("id", 1);
   return { ok: true };
 }
@@ -742,7 +945,7 @@ export async function suggestMarketing(input: z.infer<typeof suggestSchema>) {
 async function postHistory() {
   const { data } = await createSupabaseAdmin()
     .from("marketing_posts")
-    .select("theme,format,status,likes,comments")
+    .select("theme,format,status,likes,comments,views,saves,shares")
     .neq("status", "discarded")
     .order("created_at", { ascending: false })
     .limit(30);
@@ -751,6 +954,9 @@ async function postHistory() {
     format: p.format as string,
     likes: p.likes as number | null,
     comments: p.comments as number | null,
+    views: (p.views as number | null) ?? null,
+    saves: (p.saves as number | null) ?? null,
+    shares: (p.shares as number | null) ?? null,
     published: p.status === "published",
   }));
 }
@@ -1069,10 +1275,7 @@ export async function createManualPhoto(
           settings.postDays,
         )[0]
       : undefined;
-  if (
-    settings.autoPublish &&
-    (!account?.access_token_enc || !account.ig_user_id)
-  )
+  if (settings.autoPublish && !hasPublisher(account))
     throw new DomainError(
       "Conecte o Instagram antes de agendar publicação automática.",
       409,
@@ -1115,64 +1318,153 @@ async function credentials() {
   };
 }
 
-async function publishOne(post: MarketingPost) {
+function publishInput(post: MarketingPost): PublishInput {
+  return post.format === "reel"
+    ? { format: "reel", videoUrl: post.videoUrl || "", caption: post.caption }
+    : {
+        format: post.format,
+        imageUrls: post.slides.map((_, i) => imageUrl(post, i)),
+        caption: post.caption,
+      };
+}
+
+async function markPublished(
+  id: string,
+  result: { mediaId: string | null; permalink: string | null; zernioPostId?: string },
+) {
+  await createSupabaseAdmin()
+    .from("marketing_posts")
+    .update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      ig_media_id: result.mediaId,
+      permalink: result.permalink,
+      ...(result.zernioPostId ? { zernio_post_id: result.zernioPostId } : {}),
+      error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+}
+
+/** Acesso recusado: o post volta para a fila e o Marketing para até reconectar. */
+async function holdForReconnect(post: MarketingPost, message: string, notice: string): Promise<never> {
+  await markAuthFailed(message);
+  await createSupabaseAdmin()
+    .from("marketing_posts")
+    .update({
+      status: post.scheduledFor ? "scheduled" : "draft",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", post.id);
+  throw new DomainError(notice, 409);
+}
+
+async function markFailed(id: string, message: string, extra: Record<string, unknown> = {}) {
+  await createSupabaseAdmin()
+    .from("marketing_posts")
+    .update({
+      status: "failed",
+      error: message.slice(0, 500),
+      updated_at: new Date().toISOString(),
+      ...extra,
+    })
+    .eq("id", id);
+}
+
+/** Publica pela Zernio. Devolve false quando falhou de vez. */
+async function publishViaZernio(post: MarketingPost, zernio: NonNullable<ReturnType<typeof zernioOf>>) {
   const admin = createSupabaseAdmin();
+  // A mesma chave de tentativa sobrevive a uma queda do servidor: a Zernio
+  // devolve o resultado da primeira vez em vez de publicar de novo.
+  const { data: row } = await admin
+    .from("marketing_posts")
+    .select("zernio_attempt")
+    .eq("id", post.id)
+    .maybeSingle();
+  let attempt = (row?.zernio_attempt as string | null) || null;
+  if (!attempt) {
+    attempt = randomUUID();
+    await admin.from("marketing_posts").update({ zernio_attempt: attempt }).eq("id", post.id);
+  }
+  let outcome;
+  try {
+    outcome = await zernioPublish(zernio.key, zernio.accountId, publishInput(post), attempt);
+  } catch (cause) {
+    if (cause instanceof ZernioError && (cause.kind === "key" || cause.kind === "account"))
+      return holdForReconnect(post, cause.message, cause.message);
+    if (cause instanceof ZernioError && [409, 429, 502, 503, 504].includes(cause.status)) {
+      // Zernio ocupada ou a tentativa anterior ainda em andamento: volta para
+      // a fila com a mesma chave e tenta na próxima rodada.
+      await admin
+        .from("marketing_posts")
+        .update({ status: post.scheduledFor ? "scheduled" : "failed", error: cause.message.slice(0, 500) })
+        .eq("id", post.id);
+      return false;
+    }
+    await markFailed(post.id, cause instanceof Error ? cause.message : "Falha ao publicar", { zernio_attempt: null });
+    return false;
+  }
+  if (outcome.state === "published") {
+    await markPublished(post.id, { ...outcome, zernioPostId: outcome.postId });
+    return true;
+  }
+  if (outcome.state === "pending") {
+    // A Zernio segue tentando sozinha; a rodada seguinte confere o resultado.
+    await admin
+      .from("marketing_posts")
+      .update({ status: "publishing", zernio_post_id: outcome.postId, updated_at: new Date().toISOString() })
+      .eq("id", post.id);
+    return true;
+  }
+  if (outcome.accountProblem) return holdForReconnect(post, outcome.error, ZERNIO_ACCOUNT_MESSAGE);
+  await markFailed(post.id, outcome.error, { zernio_attempt: null, zernio_post_id: outcome.postId });
+  return false;
+}
+
+async function publishOne(post: MarketingPost) {
+  const account = await readAccount();
+  const zernio = zernioOf(account);
+  if (zernio) return publishViaZernio(post, zernio);
   const creds = await credentials();
   try {
     if (!creds) throw new Error("Instagram da StudioFlow não conectado.");
-    const result = await publishToInstagram(
-      creds.igUserId,
-      creds.token,
-      post.format === "reel"
-        ? {
-            format: "reel",
-            videoUrl: post.videoUrl || "",
-            caption: post.caption,
-          }
-        : {
-            format: post.format,
-            imageUrls: post.slides.map((_, i) => imageUrl(post, i)),
-            caption: post.caption,
-          },
-    );
-    await admin
-      .from("marketing_posts")
-      .update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        ig_media_id: result.mediaId,
-        permalink: result.permalink,
-        error: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", post.id);
+    const result = await publishToInstagram(creds.igUserId, creds.token, publishInput(post));
+    await markPublished(post.id, result);
     return true;
   } catch (cause) {
     const message =
       cause instanceof Error ? cause.message : "Falha ao publicar";
-    if (creds && authProblem(message)) {
-      // Token recusado: o post espera na fila em vez de virar erro, e o
-      // Marketing para de tentar até reconectar.
-      await markAuthFailed(message);
-      await admin
-        .from("marketing_posts")
-        .update({
-          status: post.scheduledFor ? "scheduled" : "draft",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", post.id);
-      throw new DomainError(AUTH_MESSAGE, 409);
-    }
-    await admin
-      .from("marketing_posts")
-      .update({
-        status: "failed",
-        error: message.slice(0, 500),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", post.id);
+    // Token recusado: o post espera na fila em vez de virar erro.
+    if (creds && authProblem(message)) return holdForReconnect(post, message, AUTH_MESSAGE);
+    await markFailed(post.id, message);
     return false;
   }
+}
+
+/** Posts que a Zernio ainda estava publicando: confere e fecha cada um. */
+async function settleZernioPosts(key: string) {
+  const { data } = await createSupabaseAdmin()
+    .from("marketing_posts")
+    .select("id,zernio_post_id")
+    .eq("status", "publishing")
+    .not("zernio_post_id", "is", null)
+    .limit(10);
+  let settled = 0;
+  for (const row of data || []) {
+    try {
+      const outcome = await zernioPostStatus(key, row.zernio_post_id as string);
+      if (outcome.state === "published") {
+        await markPublished(row.id as string, outcome);
+        settled++;
+      } else if (outcome.state === "failed") {
+        await markFailed(row.id as string, outcome.error, { zernio_attempt: null });
+        settled++;
+      }
+    } catch {
+      // Zernio fora do ar: confere na próxima rodada.
+    }
+  }
+  return settled;
 }
 
 /** Publicar agora, pelo admin. */
@@ -1226,11 +1518,15 @@ export async function runMarketing(now = new Date()) {
   if (account?.auth_failed_at) return report;
   const admin = createSupabaseAdmin();
   // Posts esquecidos em "publicando" por queda do servidor voltam para a fila.
+  // Os que a Zernio já recebeu não: ela segue tentando e a rodada confere.
   await admin
     .from("marketing_posts")
     .update({ status: "scheduled" })
     .eq("status", "publishing")
+    .is("zernio_post_id", null)
     .lt("updated_at", new Date(now.getTime() - 20 * 60_000).toISOString());
+  const zernio = zernioOf(account);
+  if (zernio) report.published += await settleZernioPosts(zernio.key);
   if (mode === "full") {
     for (let i = 0; i < 3; i++) {
       const { data: id } = await admin.rpc("claim_marketing_post");
@@ -1282,13 +1578,13 @@ export async function runMarketing(now = new Date()) {
     }
     return report;
   }
-  const creds = await credentials();
-  if (!creds) return report;
-  const settings = settingsOf(creds.account);
-  const last = creds.account.last_generated_at
-    ? Date.parse(creds.account.last_generated_at as string)
+  const creds = zernio ? null : await credentials();
+  if (!zernio && !creds) return report;
+  const settings = settingsOf(account);
+  const last = account?.last_generated_at
+    ? Date.parse(account.last_generated_at as string)
     : 0;
-  const ai = aiKeyOf(creds.account);
+  const ai = aiKeyOf(account);
   if (
     settings.autopilot &&
     ai &&
@@ -1322,7 +1618,7 @@ export async function runMarketing(now = new Date()) {
       try {
         const ideas = await generateIdeas({
           apiKey: ai.key,
-          model: modelOf(creds.account.ai_model),
+          model: modelOf(account?.ai_model),
           count: Math.min(missing, 6),
           voice: settings.voice,
           recentThemes: await recentThemes(),
@@ -1352,27 +1648,34 @@ export async function runMarketing(now = new Date()) {
   if (now.getUTCMinutes() < 15) {
     const { data: recent } = await admin
       .from("marketing_posts")
-      .select("id,ig_media_id")
+      .select("id,ig_media_id,zernio_post_id")
       .eq("status", "published")
       .gte(
         "published_at",
         new Date(now.getTime() - 30 * 86_400_000).toISOString(),
       )
-      .not("ig_media_id", "is", null)
+      .not(zernio ? "zernio_post_id" : "ig_media_id", "is", null)
       .limit(30);
     for (const row of recent || []) {
       try {
-        const m = await mediaInsights(row.ig_media_id as string, creds.token);
-        await admin
-          .from("marketing_posts")
-          .update({
-            likes: m.like_count ?? null,
-            comments: m.comments_count ?? null,
-          })
-          .eq("id", row.id);
+        if (zernio) {
+          // Pela Zernio vêm views, alcance, salvamentos e compartilhamentos.
+          const m = await zernioMetrics(zernio.key, row.zernio_post_id as string);
+          if (!m) continue;
+          await admin.from("marketing_posts").update(m).eq("id", row.id);
+        } else if (creds) {
+          const m = await mediaInsights(row.ig_media_id as string, creds.token);
+          await admin
+            .from("marketing_posts")
+            .update({
+              likes: m.like_count ?? null,
+              comments: m.comments_count ?? null,
+            })
+            .eq("id", row.id);
+        }
         report.insights++;
       } catch {
-        // Post apagado no Instagram ou token sem permissão: segue.
+        // Post apagado no Instagram ou acesso sem permissão: segue.
       }
     }
   }

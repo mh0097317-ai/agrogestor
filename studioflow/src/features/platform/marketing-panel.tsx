@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowSquareOut,
+  BookmarkSimple,
+  Eye,
+  ShareFat,
   Key,
   Megaphone,
   CalendarBlank,
@@ -26,7 +29,13 @@ import "./marketing.css";
 import "./ai-control.css";
 
 interface State {
-  account: { username: string } | null;
+  account: { username: string; via: "zernio" | "meta" } | null;
+  zernio: {
+    key: "panel" | "server" | null;
+    hint: string;
+    username: string | null;
+    choices: { id: string; username: string }[];
+  };
   authError: { at: string; message: string } | null;
   settings: MarketingSettings;
   posts: MarketingPost[];
@@ -166,7 +175,8 @@ export function MarketingPanel() {
       <Power state={state} onChange={(enabled) => setState({ ...state, enabled })} />
       {state.authError && (
         <p className="mk-alert" role="alert">
-          <strong>Instagram desconectado.</strong> A Meta recusou o token em{" "}
+          <strong>Instagram desconectado.</strong>{" "}
+          {state.account?.via === "zernio" ? "A Zernio perdeu o acesso" : "A Meta recusou o token"} em{" "}
           {new Date(state.authError.at).toLocaleDateString("pt-BR")}. Nada sai até
           reconectar no quadro &quot;Instagram da StudioFlow&quot; logo abaixo.
         </p>
@@ -707,38 +717,74 @@ function AiKey({ state, onChange }: { state: State; onChange: () => void }) {
   );
 }
 
+type AccountResult = {
+  restored?: number;
+  username?: string;
+  url?: string;
+  connected?: boolean;
+  choices?: { id: string; username: string }[];
+};
+
 function Account({ state, onChange }: { state: State; onChange: () => void }) {
   const [token, setToken] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [zernioKey, setZernioKey] = useState("");
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
-  async function run(body: { kind: string; token?: string }) {
-    setBusy(true);
-    setError("");
-    setNote("");
-    try {
-      const result = await api<{ restored?: number; username?: string }>(
-        "/api/admin/marketing",
-        "POST",
-        body,
-      );
-      setToken("");
-      if (body.kind === "check")
-        setNote(`Conexão ok com @${result?.username || state.account?.username}.`);
-      if (result?.restored)
-        setNote(
-          `Conectado. ${result.restored} post(s) que falharam pelo token voltaram para Aguardando.`,
-        );
-      onChange();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível.");
-      if (body.kind === "check") onChange();
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [choice, setChoice] = useState("");
+  const username = state.account?.username;
+  const run = useCallback(
+    async (body: { kind: string; token?: string; key?: string; accountId?: string }) => {
+      setBusy(body.kind);
+      setError("");
+      setNote("");
+      try {
+        const result = await api<AccountResult>("/api/admin/marketing", "POST", body);
+        setToken("");
+        setZernioKey("");
+        if (body.kind === "zernioConnect" && result?.url) {
+          // Login oficial do Instagram na Zernio; ela devolve para cá.
+          window.location.href = result.url;
+          return;
+        }
+        if (body.kind === "check") setNote(`Conexão ok com @${result?.username || username}.`);
+        if (body.kind === "zernioSync" && result?.connected === false)
+          setNote(
+            result.choices?.length
+              ? "Escolha qual Instagram da Zernio publica pela StudioFlow."
+              : "Nenhum Instagram conectado na Zernio ainda. Clique em Conectar Instagram.",
+          );
+        if (body.kind === "zernioSync" && result?.connected) setNote(`Pronto: os posts saem por @${result.username}, pela Zernio.`);
+        if (result?.restored)
+          setNote(`Conectado. ${result.restored} post(s) que falharam pelo acesso voltaram para Aguardando.`);
+        onChange();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Não foi possível.");
+        if (body.kind === "check") onChange();
+      } finally {
+        setBusy("");
+      }
+    },
+    [onChange, username],
+  );
+  // Voltou do login da Zernio: acha a conta conectada e limpa o endereço.
+  useEffect(() => {
+    if (state.demo || !state.zernio.key) return;
+    if (new URLSearchParams(window.location.search).get("zernio") !== "1") return;
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("zernio");
+      const rest = params.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}`);
+      void run({ kind: "zernioSync" });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [run, state.demo, state.zernio.key]);
   const broken = !!state.authError;
-  const form = (
+  const viaZernio = state.account?.via === "zernio";
+  const viaMeta = state.account?.via === "meta";
+  const z = state.zernio;
+  const metaForm = (
     <form
       className="mk-inline"
       onSubmit={(event) => {
@@ -754,45 +800,140 @@ function Account({ state, onChange }: { state: State; onChange: () => void }) {
         onChange={(e) => setToken(e.target.value)}
         aria-label="Token do Instagram"
       />
-      <button type="submit" className="mk-primary" disabled={busy || token.trim().length < 20 || state.demo}>
-        {busy ? "Conferindo…" : broken ? "Reconectar" : "Conectar"}
+      <button type="submit" className="mk-ghost" disabled={!!busy || token.trim().length < 20 || state.demo}>
+        {busy === "connect" ? "Conferindo…" : viaMeta && broken ? "Reconectar" : "Conectar"}
       </button>
     </form>
   );
+  const keyForm = (
+    <form
+      className="mk-inline"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void run({ kind: "zernioKey", key: zernioKey.trim() });
+      }}
+    >
+      <input
+        type="password"
+        autoComplete="off"
+        placeholder="sk_…"
+        value={zernioKey}
+        onChange={(e) => setZernioKey(e.target.value)}
+        aria-label="Chave da Zernio"
+      />
+      <button type="submit" className={z.key ? "mk-ghost" : "mk-primary"} disabled={!!busy || zernioKey.trim().length < 20 || state.demo}>
+        {busy === "zernioKey" ? "Conferindo…" : "Salvar chave"}
+      </button>
+    </form>
+  );
+  const summary = viaZernio
+    ? broken
+      ? `A Zernio perdeu o acesso de @${state.account?.username} em ${new Date(state.authError!.at).toLocaleDateString("pt-BR")}. Nada é publicado nem criado até reconectar; os posts esperam na fila.`
+      : `Conectado pela Zernio como @${state.account?.username}. Os posts aprovados saem por ele, com views, alcance, salvamentos e compartilhamentos.`
+    : viaMeta
+      ? broken
+        ? `A Meta recusou o acesso de @${state.account?.username} em ${new Date(state.authError!.at).toLocaleDateString("pt-BR")}. Conecte pela Zernio para não depender mais do token.`
+        : `Conectado pelo token da Meta como @${state.account?.username}. Dica: conecte pela Zernio e o token não vence mais.`
+      : z.key
+        ? "Clique em Conectar Instagram e entre com a conta da StudioFlow. A Zernio guarda e renova o acesso sozinha."
+        : "Salve a chave da Zernio (zernio.com → API Keys) e conecte o Instagram com o login oficial, sem token que vence.";
   return (
     <section className={`pf-panel mk-account ${broken ? "is-broken" : ""}`}>
       <div className="mk-account-head">
         <InstagramLogo size={26} />
         <div>
           <strong>Instagram da StudioFlow</strong>
-          <span>
-            {broken
-              ? `A Meta recusou o acesso de @${state.account?.username} em ${new Date(state.authError!.at).toLocaleDateString("pt-BR")}. Nada é publicado nem criado até reconectar; os posts esperam na fila.`
-              : state.account
-                ? `Conectado como @${state.account.username}. Os posts aprovados saem por ele.`
-                : "Cole o token do Instagram (API com login do Instagram, conta profissional). O token começa com IG."}
-          </span>
+          <span>{summary}</span>
         </div>
       </div>
-      {broken && (
-        <ol className="mk-steps">
-          <li>Abra developers.facebook.com → seu app → Instagram → Configuração da API com login do Instagram.</li>
-          <li>Em &quot;Gerar tokens de acesso&quot;, clique em Gerar token na conta @{state.account?.username} e autorize publicar conteúdo.</li>
-          <li>Copie o token (começa com IG) e cole aqui embaixo.</li>
-        </ol>
-      )}
-      {broken && form}
-      {state.account ? (
-        <div className="mk-account-actions">
-          <button type="button" className="pf-text-button" disabled={busy || state.demo} onClick={() => void run({ kind: "check" })}>
-            {busy ? "Testando…" : "Testar conexão"}
+      {!viaZernio && z.key && (
+        <div className="mk-zernio">
+          {z.choices.length > 1 ? (
+            <span className="mk-inline">
+              <select value={choice} onChange={(e) => setChoice(e.target.value)} aria-label="Instagram na Zernio">
+                <option value="">Escolha o Instagram…</option>
+                {z.choices.map((item) => (
+                  <option key={item.id} value={item.id}>@{item.username}</option>
+                ))}
+              </select>
+              <button type="button" className="mk-primary" disabled={!!busy || !choice} onClick={() => void run({ kind: "zernioSync", accountId: choice })}>
+                Usar esta conta
+              </button>
+            </span>
+          ) : z.choices.length === 1 ? (
+            <button type="button" className="mk-primary" disabled={!!busy} onClick={() => void run({ kind: "zernioSync", accountId: z.choices[0].id })}>
+              Publicar por @{z.choices[0].username}
+            </button>
+          ) : (
+            <button type="button" className="mk-primary" disabled={!!busy || state.demo} onClick={() => void run({ kind: "zernioConnect" })}>
+              <InstagramLogo size={16} /> {busy === "zernioConnect" ? "Abrindo o Instagram…" : "Conectar Instagram"}
+            </button>
+          )}
+          <button type="button" className="pf-text-button" disabled={!!busy} onClick={() => void run({ kind: "zernioSync" })}>
+            {busy === "zernioSync" ? "Procurando…" : "Já conectei, atualizar"}
           </button>
-          <button type="button" className="pf-text-button" disabled={busy} onClick={() => void run({ kind: "disconnect" })}>
+        </div>
+      )}
+      {!z.key && keyForm}
+      {viaZernio && (
+        <div className="mk-account-actions">
+          {broken ? (
+            <button type="button" className="mk-primary" disabled={!!busy || state.demo} onClick={() => void run({ kind: "zernioConnect" })}>
+              {busy === "zernioConnect" ? "Abrindo…" : "Reconectar"}
+            </button>
+          ) : (
+            <button type="button" className="pf-text-button" disabled={!!busy || state.demo} onClick={() => void run({ kind: "check" })}>
+              {busy === "check" ? "Testando…" : "Testar conexão"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="pf-text-button"
+            disabled={!!busy}
+            onClick={() => {
+              if (window.confirm("Parar de publicar por esta conta? Ela continua conectada na Zernio.")) void run({ kind: "zernioRelease" });
+            }}
+          >
+            Trocar conta
+          </button>
+        </div>
+      )}
+      {viaMeta && (
+        <div className="mk-account-actions">
+          <button type="button" className="pf-text-button" disabled={!!busy || state.demo} onClick={() => void run({ kind: "check" })}>
+            {busy === "check" ? "Testando…" : "Testar conexão"}
+          </button>
+          <button type="button" className="pf-text-button" disabled={!!busy} onClick={() => void run({ kind: "disconnect" })}>
             Desconectar
           </button>
         </div>
-      ) : (
-        form
+      )}
+      {z.key && (
+        <details className="mk-more">
+          <summary>
+            Chave da Zernio {z.key === "server" ? "do servidor" : "salva"}
+            {z.hint ? ` · final ${z.hint}` : ""}
+          </summary>
+          {keyForm}
+          {z.key === "panel" && (
+            <button type="button" className="pf-text-button" disabled={!!busy} onClick={() => void run({ kind: "zernioKeyRemove" })}>
+              Remover chave do painel
+            </button>
+          )}
+        </details>
+      )}
+      {!viaZernio && (
+        <details className="mk-more" open={viaMeta && broken}>
+          <summary>Token da Meta (jeito antigo)</summary>
+          {viaMeta && broken && (
+            <ol className="mk-steps">
+              <li>Abra developers.facebook.com → seu app → Instagram → Configuração da API com login do Instagram.</li>
+              <li>Em &quot;Gerar tokens de acesso&quot;, clique em Gerar token na conta @{state.account?.username} e autorize publicar conteúdo.</li>
+              <li>Copie o token (começa com IG) e cole aqui embaixo.</li>
+            </ol>
+          )}
+          {(!viaMeta || broken) && metaForm}
+        </details>
       )}
       {error && <em className="mk-error">{error}</em>}
       {note && <em className="mk-ok">{note}</em>}
@@ -1313,8 +1454,11 @@ function PostCard({
         <strong className="mk-theme">{post.theme}</strong>
         {post.status === "published" && (
           <div className="mk-stats">
-            <span><Heart size={14} /> {post.likes ?? "–"}</span>
-            <span><ChatCircle size={14} /> {post.comments ?? "–"}</span>
+            {post.views != null && <span title="Visualizações"><Eye size={14} /> {post.views}</span>}
+            <span title="Curtidas"><Heart size={14} /> {post.likes ?? "–"}</span>
+            <span title="Comentários"><ChatCircle size={14} /> {post.comments ?? "–"}</span>
+            {post.saves != null && <span title="Salvamentos"><BookmarkSimple size={14} /> {post.saves}</span>}
+            {post.shares != null && <span title="Compartilhamentos"><ShareFat size={14} /> {post.shares}</span>}
             {post.permalink && (
               <a href={post.permalink} target="_blank" rel="noreferrer">
                 Ver no Instagram <ArrowSquareOut size={13} />
