@@ -1,0 +1,154 @@
+# Harvey para a StudioFlow: e-mail frio para donos de barbearia no Brasil.
+# Copie este arquivo para harvey.local.yaml (ele vence o harvey.yaml):
+#   cp harvey.studioflow.yaml harvey.local.yaml
+# Troque o que estiver entre <...> antes de rodar. Veja LEIA-ME.md.
+
+persona:
+  name: "<SEU NOME>"
+  company: "StudioFlow"
+  role: "Atendimento comercial"
+  email: "<voce@seudominio.com.br>"
+  linkedin: ""
+  tone: "informal e respeitoso, de barbeiro para barbeiro, direto, sem gíria forçada"
+
+product:
+  name: "StudioFlow"
+  description: "Agenda online para barbearias: o cliente marca sozinho pelo link da barbearia, recebe lembrete automático no WhatsApp, a recepcionista com IA responde no WhatsApp da casa e o dono vê financeiro e comissão de cada barbeiro."
+  pricing: "30 dias para testar sem pagar nada; depois, mensalidade conforme o plano"
+  key_benefits:
+    - "Cliente marca sozinho pelo link, 24 horas, sem o barbeiro parar o corte para responder WhatsApp"
+    - "Lembrete automático no WhatsApp antes do horário: a falta cai bastante"
+    - "Recepcionista com IA responde e marca horário no WhatsApp da barbearia"
+    - "Financeiro e comissão de cada barbeiro no mesmo painel"
+  objection_responses:
+    "muito caro": "Entendo. Por isso são 30 dias para testar sem pagar: dá para ver se as faltas caem antes de decidir."
+    "já uso outro sistema": "Faz sentido. O que mais te incomoda nele hoje? O lembrete no WhatsApp e a recepcionista com IA costumam ser o que muda."
+    "não tenho tempo": "É justamente para isso: o cliente marca sozinho. A configuração leva uns 10 minutos e eu posso te ajudar."
+    "não tenho interesse": "Tranquilo, obrigado por responder. Não mando mais."
+  offer:
+    primary: "Agenda online StudioFlow para a barbearia"
+    entry: "30 dias para testar, sem cartão"
+    goal: "start_trial"
+    booking_method: "calendar_link"
+    booking_url: "https://app.studioflowapp.tech/login?signup=1"
+    meeting_duration: "10 minutos"
+    meeting_owner: "<SEU NOME>"
+
+icp:
+  industries:
+    - "barbearia"
+  company_size: "1-15 profissionais"
+  titles:
+    - "Dono"
+    - "Proprietário"
+    - "Sócio"
+    - "Owner"
+  geography:
+    - "Goiânia, GO"
+    - "Aparecida de Goiânia, GO"
+    - "Anápolis, GO"
+    - "Brasília, DF"
+  geo_coordinates:
+    "Goiânia, GO": "-16.6869,-49.2648,25"
+    "Aparecida de Goiânia, GO": "-16.8233,-49.2439,15"
+    "Anápolis, GO": "-16.3281,-48.9530,15"
+    "Brasília, DF": "-15.7939,-47.8828,30"
+  keyword_variants:
+    "barbearia": ["barbershop", "barbeiro"]
+  hiring_signals: []
+
+channels:
+  email:
+    enabled: true
+    provider: "gmail"          # gmail (recommended) | microsoft | smtp | instantly
+    max_daily_sends: 30
+    require_approval: true      # native: review in Outbox; Instantly: sending held
+    # link_domains: ["mainsite.com"]   # your own sites besides the sending
+    #                                  # domain and booking link; on autopilot,
+    #                                  # an email linking elsewhere waits for you
+    send_to_risky: false        # also send to catch-all domains (off = safest)
+    max_bounce_rate: 0.05       # pause all sending if bounces exceed this
+    # New sending domain? Set start_date to the day your warmup service went
+    # on: no cold email for min_days, then the cold cap climbs from
+    # start_sends by daily_increase a day up to max_daily_sends. Replies are
+    # never held. Gmail/Microsoft/SMTP only (Instantly has its own warmup).
+    # Check readiness any time with `harvey warmup`.
+    # We recommend TrulyInbox for warmup: https://trulyinbox.com/?via=harvey
+    # Connect it (`harvey trulyinbox connect`) and `harvey warmup` reads
+    # whether this mailbox is actually warmed.
+    warmup:
+      start_date: ""            # YYYY-MM-DD; blank = no ramp
+      min_days: 14
+      start_sends: 5
+      daily_increase: 3
+      dkim_selector: ""         # only if your provider uses an unusual one
+    # Send cold email only in office hours in each recipient's own time zone,
+    # worked out from the company's location or the country Precleared finds.
+    # Anyone Harvey can't place gets the window in usage.quiet_hours.timezone.
+    # Follow-ups move into the window; replies are never held. Quiet hours
+    # then stop prospecting and writing, not mail that's due.
+    # Gmail/Microsoft/SMTP only. Remove the # marks to switch it on.
+    # Barbearia: manhã cedo e meio da tarde de dia útil (sábado é dia cheio).
+    send_window:
+      start: "08:30"
+      end: "17:00"
+      weekdays_only: true
+      recipient_timezone: false
+    # A logo under every email, cold or reply: the email goes out as HTML
+    # with the image embedded. Blank logo = plain text, as before. If the
+    # file can't be used, approved email waits instead of going out without
+    # it. Gmail/Microsoft/SMTP only.
+    # Plain text usually lands better for cold email: images and HTML can push
+    # a new mailbox toward spam. Warm up first, and test placement after adding it.
+    signature:
+      logo: ""                  # PNG/JPEG/GIF up to 100 KB, e.g. "data/assets/logo.png"
+      width: 120                # display width in pixels
+      alt: ""                   # text when images are off; blank = persona.company
+      link: ""                  # optional web address the logo opens
+      direction: "auto"         # rtl for Hebrew or Arabic email
+  linkedin:
+    enabled: false             # explicit opt-in; credentials alone do not enable it
+    max_daily_connections: 20
+    max_daily_messages: 10
+
+usage:
+  max_daily_claude_percent: 80
+  heartbeat_interval_minutes: 15
+  quiet_hours:
+    start: "22:00"
+    end: "07:00"
+    timezone: "America/New_York"
+
+# Optional: check each new recipient with Precleared (precleared.dev) before
+# the first cold email: may cold marketing email go to this address under UK
+# PECR, US CAN-SPAM, Canada's CASL, Germany's UWG and France's rules? Any other
+# answer holds the email back, with the reason in the Outbox. One check per
+# address; 10 a day free without a key, 25 with a free key (PRECLEARED_API_KEY
+# in .env). Applies to the native providers (gmail, microsoft, smtp). If all
+# your prospects are in one country, set prospect_country: Precleared uses it
+# only when it can't tell the country from the address, company records or the
+# company's website.
+usage:
+  max_daily_claude_percent: 80
+  heartbeat_interval_minutes: 15
+  quiet_hours:
+    start: "21:00"
+    end: "07:00"
+    timezone: "America/Sao_Paulo"
+
+# LGPD (Lei 13.709/2018): e-mail comercial para empresa com base no legítimo
+# interesse (art. 7º, IX). Identifique quem envia, diga de onde veio o contato
+# se perguntarem, e atenda o pedido de saída na hora e para sempre (art. 18).
+compliance:
+  # Identificação de quem envia, em toda mensagem fria.
+  postal_address: "StudioFlow · <CNPJ ou nome da empresa> · <Cidade/UF>"
+  opt_out_line: 'Não quer receber? Responda "SAIR" e eu não mando mais.'
+  do_not_contact: []
+  precleared:
+    enabled: false
+    sender_country: ""
+    address_source: "published"
+    prospect_country: "BR"
+
+writer:
+  email_rules: "skills/regras_email_studioflow.md"
