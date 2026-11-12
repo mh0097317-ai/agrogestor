@@ -6,7 +6,7 @@ import {
 import { randomBytes, randomUUID } from "node:crypto";
 import QRCode from "qrcode";
 import { z } from "zod";
-import { DomainError, servicesFor } from "@/lib/availability";
+import { DomainError, assertBookingRoom, servicesFor } from "@/lib/availability";
 import {
   applyMembership,
   confirmDeposit,
@@ -275,6 +275,7 @@ export async function bookWithPayments(
       assertPublicOpen(store.access ?? { status: "active", until: null });
       if (channel === "public_link") assertOnlineBookingEnabled(store.settings);
       expireHolds(store);
+      if (channel === "public_link") assertBookingRoom(store.appointments, input.phone);
       const ready = !!store.paymentAccount;
       const price = servicesFor(store, input.serviceIds).reduce(
         (sum, service) => sum + service.price,
@@ -326,7 +327,10 @@ export async function bookWithPayments(
     }, slug);
 
   const store = await getPublicStore(slug);
-  if (channel === "public_link") assertOnlineBookingEnabled(store.settings);
+  if (channel === "public_link") {
+    assertOnlineBookingEnabled(store.settings);
+    assertBookingRoom(store.appointments, input.phone);
+  }
   const businessId = store.business.id;
   const account = await getPaymentAccount(businessId);
   const price = servicesFor(store, input.serviceIds).reduce(

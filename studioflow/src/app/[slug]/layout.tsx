@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { HandoffLayer } from "@/features/booking/intro-handoff";
 import { AppManifest } from "@/features/public/app-manifest";
-import { businessApp } from "@/services/business-app";
+import { notFound } from "next/navigation";
+import { businessApp, businessMissing } from "@/services/business-app";
 import { appUrl } from "@/lib/app-url";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -34,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
     },
+    alternates: { canonical: `/${slug}` },
     manifest: `/${slug}/manifest.webmanifest`,
     applicationName: app.name,
     appleWebApp: { capable: true, title: app.name, statusBarStyle: "default" },
@@ -56,6 +58,9 @@ export default async function BusinessLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // Endereço que não é de nenhuma casa responde 404 de verdade (o Google e
+  // quem digitou errado não ficam numa página em branco com status 200).
+  if (await businessMissing(slug)) notFound();
   return (
     <>
       <AppManifest slug={slug} />

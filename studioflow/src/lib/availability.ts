@@ -349,3 +349,28 @@ export function chooseProfessional(
     );
   return professional;
 }
+
+/** Quantos horários futuros o mesmo telefone pode ter em aberto numa casa. */
+export const MAX_OPEN_BOOKINGS = 4;
+
+/**
+ * Link público: um telefone não segura a agenda inteira. Quem já tem o teto
+ * de horários futuros em aberto cancela um ou fala com a casa.
+ */
+export function assertBookingRoom(
+  appointments: { customerPhone: string; status: string; start: string }[],
+  phone: string,
+  now = new Date(),
+) {
+  const open = appointments.filter(
+    (item) =>
+      item.customerPhone === phone &&
+      ["confirmed", "pending"].includes(item.status) &&
+      new Date(item.start).getTime() > now.getTime(),
+  ).length;
+  if (open >= MAX_OPEN_BOOKINGS)
+    throw new DomainError(
+      `Você já tem ${MAX_OPEN_BOOKINGS} horários marcados aqui. Cancele um pelo link do seu agendamento ou fale com a casa para marcar mais.`,
+      409,
+    );
+}

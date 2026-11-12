@@ -51,3 +51,23 @@ export const businessApp = cache(async (slug: string): Promise<BusinessApp | nul
 export function safeColor(color?: string | null) {
   return /^#[0-9a-f]{6}$/i.test(color || "") ? color! : "#16130F";
 }
+
+/**
+ * Falso só quando dá para afirmar que a casa não existe (endereço inválido ou
+ * consulta respondida sem linha). Banco fora do ar não vira "página não
+ * encontrada": a página segue e mostra o próprio aviso.
+ */
+export const businessMissing = cache(async (slug: string) => {
+  if (!/^[a-z0-9-]{3,80}$/.test(slug)) return true;
+  if (isDemo()) return false;
+  try {
+    const { data, error } = await createSupabaseAdmin()
+      .from("businesses")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    return !error && !data;
+  } catch {
+    return false;
+  }
+});
