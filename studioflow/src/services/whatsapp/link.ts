@@ -403,10 +403,15 @@ export async function noticeSender(
   const row = await readRow(businessId).catch(() => null);
   let send: Sender | null;
   if (row?.status === "open" && sameNumber(row.phone, to)) {
+    // O destino é o próprio número da casa. O WhatsApp da StudioFlow avisa
+    // (chega como mensagem de outra pessoa, com notificação); com ele fora
+    // do ar, a casa escreve para si mesma em vez de perder o aviso.
     const { platformSend } = await import("./platform");
-    send = async (phone, body) => {
-      if (!(await platformSend(phone, body)))
-        throw new Error("platform-whatsapp-off");
+    const own = (await shopSender(businessId)) || (await fallback?.()) || null;
+    send = async (phone, body, menu) => {
+      if (await platformSend(phone, body).catch(() => false)) return;
+      if (!own) throw new Error("platform-whatsapp-off");
+      await own(phone, body, menu);
     };
   } else send = (await shopSender(businessId)) || (await fallback?.()) || null;
   if (!send) return null;

@@ -71,6 +71,11 @@ export interface MarketingState {
   aiSource: "panel" | "server" | null;
   /** Chave geral: desligado, nada é criado, publicado ou lido. */
   enabled: boolean;
+  /**
+   * Controle geral da IA desligado: posts criados pela IA esperam na fila;
+   * só saem os que a equipe enviou à mão.
+   */
+  aiPaused: boolean;
   /** Modelo que escreve os posts: o mais barato gasta bem menos por ideia. */
   model: MarketingModel;
   videoAi: boolean;
@@ -242,6 +247,7 @@ export async function marketingState(): Promise<MarketingState> {
       ai: marketingAiConfigured(),
       aiSource: marketingAiConfigured() ? "server" : null,
       enabled: true,
+      aiPaused: false,
       model: modelOf(null),
       videoAi: !!process.env.STUDIOFLOW_MARKETING_GEMINI_KEY,
       videoAiSource: process.env.STUDIOFLOW_MARKETING_GEMINI_KEY
@@ -294,6 +300,7 @@ export async function marketingState(): Promise<MarketingState> {
     ai: !!aiKeyOf(account),
     aiSource: aiKeyOf(account)?.source ?? null,
     enabled: isOn(account),
+    aiPaused: !(await platformAiEnabled()),
     model: modelOf(account?.ai_model),
     videoAi: !!videoAiKeyOf(account),
     videoAiSource: videoAiKeyOf(account)?.source ?? null,
@@ -1501,6 +1508,54 @@ export async function publishMarketingNow(id: string) {
 }
 
 /** Roda a cada 15 minutos: publica o que venceu, mantém a fila do piloto automático e lê curtidas. */
+/**
+ * Números dos posts publicados, uma vez por hora. Não é trabalho de IA: roda
+ * também com o controle geral da IA desligado.
+ */
+async function syncMetrics(
+  zernio: ReturnType<typeof zernioOf>,
+  metaToken: string | null,
+  now: Date,
+) {
+  if (now.getUTCMinutes() >= 15 || (!zernio && !metaToken)) return 0;
+  const admin = createSupabaseAdmin();
+  const creds = metaToken ? { token: metaToken } : null;
+  let synced = 0;
+    const { data: recent } = await admin
+      .from("marketing_posts")
+      .select("id,ig_media_id,zernio_post_id")
+      .eq("status", "published")
+      .gte(
+        "published_at",
+        new Date(now.getTime() - 30 * 86_400_000).toISOString(),
+      )
+      .not(zernio ? "zernio_post_id" : "ig_media_id", "is", null)
+      .limit(30);
+    for (const row of recent || []) {
+      try {
+        if (zernio) {
+          // Pela Zernio vêm views, alcance, salvamentos e compartilhamentos.
+          const m = await zernioMetrics(zernio.key, row.zernio_post_id as string);
+          if (!m) continue;
+          await admin.from("marketing_posts").update(m).eq("id", row.id);
+        } else if (creds) {
+          const m = await mediaInsights(row.ig_media_id as string, creds.token);
+          await admin
+            .from("marketing_posts")
+            .update({
+              likes: m.like_count ?? null,
+              comments: m.comments_count ?? null,
+            })
+            .eq("id", row.id);
+        }
+        synced++;
+      } catch {
+        // Post apagado no Instagram ou acesso sem permissão: segue.
+      }
+    }
+  return synced;
+}
+
 export async function runMarketing(now = new Date()) {
   const report = {
     published: 0,
@@ -1576,6 +1631,8 @@ export async function runMarketing(now = new Date()) {
         return report; // token recusado: para a rodada
       }
     }
+    const meta = zernio ? null : await credentials().catch(() => null);
+    report.insights = await syncMetrics(zernio, meta?.token || null, now);
     return report;
   }
   const creds = zernio ? null : await credentials();
@@ -1645,40 +1702,7 @@ export async function runMarketing(now = new Date()) {
         // Vídeo falhou: tenta de novo no próximo dia.
       }
   }
-  if (now.getUTCMinutes() < 15) {
-    const { data: recent } = await admin
-      .from("marketing_posts")
-      .select("id,ig_media_id,zernio_post_id")
-      .eq("status", "published")
-      .gte(
-        "published_at",
-        new Date(now.getTime() - 30 * 86_400_000).toISOString(),
-      )
-      .not(zernio ? "zernio_post_id" : "ig_media_id", "is", null)
-      .limit(30);
-    for (const row of recent || []) {
-      try {
-        if (zernio) {
-          // Pela Zernio vêm views, alcance, salvamentos e compartilhamentos.
-          const m = await zernioMetrics(zernio.key, row.zernio_post_id as string);
-          if (!m) continue;
-          await admin.from("marketing_posts").update(m).eq("id", row.id);
-        } else if (creds) {
-          const m = await mediaInsights(row.ig_media_id as string, creds.token);
-          await admin
-            .from("marketing_posts")
-            .update({
-              likes: m.like_count ?? null,
-              comments: m.comments_count ?? null,
-            })
-            .eq("id", row.id);
-        }
-        report.insights++;
-      } catch {
-        // Post apagado no Instagram ou acesso sem permissão: segue.
-      }
-    }
-  }
+  report.insights = await syncMetrics(zernio, creds?.token || null, now);
   return report;
 }
 

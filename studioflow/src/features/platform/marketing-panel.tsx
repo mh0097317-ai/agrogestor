@@ -42,6 +42,7 @@ interface State {
   ai: boolean;
   aiSource: "panel" | "server" | null;
   enabled: boolean;
+  aiPaused: boolean;
   model: Model;
   videoAi: boolean;
   videoAiSource: "panel" | "server" | null;
@@ -173,6 +174,18 @@ export function MarketingPanel() {
         <p className="mk-note">Na demonstração local o Marketing só mostra a tela. Ele funciona no app publicado.</p>
       )}
       <Power state={state} onChange={(enabled) => setState({ ...state, enabled })} />
+      {state.aiPaused && state.enabled && (
+        <p className="mk-alert" role="alert">
+          <strong>Controle geral da IA desligado.</strong>{" "}
+          {(() => {
+            const waiting = state.posts.filter((p) => p.status === "scheduled" && p.origin === "ia").length;
+            return waiting
+              ? `${waiting} post(s) criados pela IA estão agendados e não saem enquanto ele estiver desligado. `
+              : "Posts criados pela IA não saem e nada novo é criado. ";
+          })()}
+          Fotos que você mesmo agendou continuam saindo. Para liberar, ligue em Central de controle → Controle geral da IA.
+        </p>
+      )}
       {state.authError && (
         <p className="mk-alert" role="alert">
           <strong>Instagram desconectado.</strong>{" "}

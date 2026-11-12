@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { DomainError } from "@/lib/availability";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import type { Appointment, Store } from "@/types";
+import { errorText, recordError } from "./error-log";
 import { isDemo, mutateDemo } from "./server-demo";
 import { getPublicStore } from "./server-store";
 import {
@@ -195,8 +196,13 @@ export async function sendAttendanceChecks(origin: string) {
         await send(phone, attendanceQuestion(store, appointment, link));
         await markNotice(appointment, "professional_checkup", "sent");
         report.sent++;
-      } catch {
+      } catch (cause) {
         await markNotice(appointment, "professional_checkup", "failed");
+        // O motivo fica no /admin: aviso que falha calado ninguém conserta.
+        void recordError("whatsapp", "attendance-check", {
+          businessId: store.business.id,
+          detail: { error: errorText(cause) },
+        });
         report.failed++;
       }
     } catch {

@@ -177,6 +177,8 @@ export async function requirePlatformAdmin() {
 }
 
 export async function demoSlugs() {
+  // Publicado não há arquivos de demonstração (e o disco é só leitura).
+  if (!isDemo()) return [];
   const directory = join(process.cwd(), ".data");
   await mkdir(directory, { recursive: true });
   const files = (await readdir(directory)).filter((file) =>

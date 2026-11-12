@@ -1,3 +1,4 @@
+import { errorText, recordError } from "../error-log";
 import { formatPhone, money } from "@/lib/utils";
 import type { Appointment, Store } from "@/types";
 import { isDemo, mutateDemo } from "../server-demo";
@@ -200,7 +201,11 @@ async function notifyProfessionalBooking(
         .eq("appointment_start", appointment.start);
       if (receiptError) throw new Error("professional notice receipt failed");
       return "sent";
-    } catch {
+    } catch (cause) {
+      void recordError("whatsapp", "professional-new", {
+        businessId: store.business.id,
+        detail: { error: errorText(cause) },
+      });
       await admin
         .from("appointment_whatsapp_notices")
         .update({ status: "failed" })
