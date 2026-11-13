@@ -207,7 +207,7 @@ test("a second unreadable media goes to the team instead of repeating", async ()
   assert.doesNotMatch(second.reply, /Não consegui ler/);
 });
 
-test("the assistant greets back, then answers only about the business", async () => {
+test("the assistant answers any written message", async () => {
   const { assistantMayAnswer, pureGreeting } =
     await import("../src/services/assistant/contact-scope");
   const { store, service } = fixture();
@@ -234,14 +234,16 @@ test("the assistant greets back, then answers only about the business", async ()
   // Greetings always get a greeting back.
   assert.ok(await may("Boa noite", staffChat));
   assert.ok(await may("Oi, tudo bem?", staffChat));
-  // After the greeting: small talk once, business always, the rest silent.
+  // Qualquer mensagem escrita é respondida; só a vazia não.
+  assert.equal(await may("   ", staffChat), false);
+  assert.ok(await may("teste", staffChat));
   assert.ok(await may("Tudo ótimo, e você?", greeted));
   assert.ok(await may("Quanto custa o corte?", greeted));
   assert.ok(await may("tem horário amanhã?", greeted));
-  assert.equal(await may("Ok meu filho", greeted), false);
-  assert.equal(await may("agorinha ligo para te explicar", greeted), false);
-  assert.equal(await may("OK", staffChat), false);
-  assert.equal(await may("ta otimo", staffChat), false);
+  assert.ok(await may("Ok meu filho", greeted));
+  assert.ok(await may("agorinha ligo para te explicar", greeted));
+  assert.ok(await may("OK", staffChat));
+  assert.ok(await may("ta otimo", staffChat));
   assert.ok(await may(`Consultar horários para ${service.name}`, staffChat));
   for (const text of ["Dá pra marcar pra sábado?", "vocês atendem hoje?"])
     assert.ok(await may(text, staffChat), text);
@@ -261,15 +263,14 @@ test("the assistant greets back, then answers only about the business", async ()
     "tá demorando muito a fila?",
   ])
     assert.ok(await may(text, staffChat), text);
-  // A personal chat stays personal.
+  // Conversa solta também é respondida.
   for (const text of [
     "amanhã te ligo",
     "vc viu o jogo ontem?",
-    "te amo",
     "chego em 10 minutos",
     "manda foto",
   ])
-    assert.equal(await may(text, staffChat), false, text);
+    assert.ok(await may(text, staffChat), text);
   // Mid-flow answers to a business question keep going.
   assert.ok(
     await may("sim", [

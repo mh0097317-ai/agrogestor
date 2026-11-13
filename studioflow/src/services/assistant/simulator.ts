@@ -28,7 +28,7 @@ export interface SimulatedTurn {
 }
 
 const silentNote =
-  "A recepcionista ficou em silêncio: no WhatsApp ela só responde mensagens sobre a barbearia (horários, preços, serviços).";
+  "A recepcionista ficou em silêncio: a mensagem veio vazia.";
 
 /**
  * One customer message through the same answer path as WhatsApp, in the

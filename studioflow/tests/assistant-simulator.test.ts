@@ -105,12 +105,12 @@ test("the test chat cancels like WhatsApp but leaves the agenda untouched", asyn
   }
 });
 
-test("a message that is not about the shop gets no reply, with a note why", async () => {
+test("an empty message gets no reply, with a note why", async () => {
   const t = await setup("silent");
   try {
-    const turn = await t.say("Você viu o jogo ontem?");
+    const turn = await t.say("   ");
     assert.equal(turn.replies.length, 0);
-    assert.match(turn.notes[0], /só responde mensagens sobre a barbearia/);
+    assert.equal(turn.notes.length, 1);
     assert.equal(t.turns(), 0, "no AI turn is spent on it");
   } finally {
     await t.cleanup();
