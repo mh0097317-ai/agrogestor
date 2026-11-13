@@ -49,7 +49,7 @@ test("WhatsApp menu offers live dates, professionals and times, never foreign se
   assert.equal(welcome?.forceList, true);
   assert.deepEqual(
     welcome?.rows.map((row) => row.title),
-    ["Agendar horário", "Serviços e preços", "Falar com a equipe"],
+    ["📅 Agendar horário", "💈 Serviços e preços", "💬 Falar com equipe"],
   );
   assert.ok(
     bookingMenu(

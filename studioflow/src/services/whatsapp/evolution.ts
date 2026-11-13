@@ -1,6 +1,6 @@
 import { DomainError } from "@/lib/availability";
 import QRCode from "qrcode";
-import type { BookingMenu } from "../assistant/booking-menu";
+import { menuSections, menuText, type BookingMenu } from "../assistant/booking-menu";
 import { evolutionCredential } from "../admin-vault";
 
 /**
@@ -260,7 +260,9 @@ export async function sendBookingMenu(
   const digits = number.replace(/\D/g, "");
   if (!/^[0-9]{10,15}$/.test(digits))
     throw new DomainError("Número de WhatsApp inválido.");
-  const fallback = () => sendText(instance, number, text, role);
+  // Lista recusada: as mesmas opções vão em texto numerado, nunca só o
+  // "veja a lista abaixo" sem lista nenhuma.
+  const fallback = () => sendText(instance, number, menuText(text, menu), role);
   // This connector has already been verified with a real WhatsApp device.
   // Keep a deployment-level escape hatch for older Evolution installations.
   if (process.env.STUDIOFLOW_WHATSAPP_NATIVE_LISTS === "false")
@@ -275,16 +277,14 @@ export async function sendBookingMenu(
         description: text.slice(0, 1024),
         buttonText: menu.button,
         footerText: "Escolha uma opção ou responda por texto",
-        sections: [
-          {
-            title: menu.title,
-            rows: menu.rows.map((r) => ({
-              title: r.title,
-              description: r.description,
-              rowId: r.id,
-            })),
-          },
-        ],
+        sections: menuSections(menu).map((section) => ({
+          title: section.title,
+          rows: section.rows.map((r) => ({
+            title: r.title,
+            description: r.description,
+            rowId: r.id,
+          })),
+        })),
       }),
     });
   } catch (e) {

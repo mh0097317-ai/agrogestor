@@ -13,7 +13,13 @@ import { resolveBookingDate } from "./booking-date";
 export interface BookingMenu {
   title: string;
   button: string;
-  rows: { id: string; title: string; description: string }[];
+  rows: {
+    id: string;
+    title: string;
+    description: string;
+    /** Bloco da lista no WhatsApp (Manhã, Tarde, categoria do serviço...). */
+    group?: string;
+  }[];
   /** Keep a short welcome menu in WhatsApp's native list sheet, not quick replies. */
   forceList?: boolean;
 }
@@ -37,6 +43,18 @@ const confirmationDayLabel = (date: string) =>
     timeZone: "America/Sao_Paulo",
     weekday: "long",
   }).format(new Date(`${date}T12:00:00Z`))}, ${dateText(date)}`;
+const navigation = /^(?:Mais horários|Outros dias|Mais serviços)$/;
+/** Horário vira bloco do período; o que só troca de página fica no fim. */
+function groupOf(row: BookingMenu["rows"][number]) {
+  if (row.group) return row.group;
+  if (navigation.test(row.title)) return "Mais opções";
+  const time =
+    /^SF_SLOT\|\d{4}-\d{2}-\d{2}\|(\d{2}):/.exec(row.id)?.[1] ||
+    /^(\d{2}):\d{2}$/.exec(row.title)?.[1];
+  if (!time) return undefined;
+  const hour = Number(time);
+  return hour < 12 ? "☀️ Manhã" : hour < 18 ? "🌤️ Tarde" : "🌙 Noite";
+}
 function menu(
   title: string,
   button: string,
@@ -46,12 +64,81 @@ function menu(
   return {
     title: title.slice(0, 60),
     button: button.slice(0, 20),
-    rows: rows.slice(0, 10).map((r) => ({
-      ...r,
-      title: r.title.slice(0, 24),
-      description: r.description.slice(0, 72),
-    })),
+    rows: rows.slice(0, 10).map((r) => {
+      const group = groupOf(r);
+      return {
+        ...r,
+        title: r.title.slice(0, 24),
+        description: r.description.slice(0, 72),
+        ...(group ? { group: group.slice(0, 24) } : {}),
+      };
+    }),
   };
+}
+
+/**
+ * A lista em blocos, na ordem das linhas (o WhatsApp mostra um título por
+ * bloco). Sem bloco em nenhuma linha, um bloco só com o título da lista.
+ */
+export function menuSections(menu: BookingMenu) {
+  const sections: { title: string; rows: BookingMenu["rows"] }[] = [];
+  const grouped = menu.rows.some((row) => row.group);
+  for (const row of menu.rows) {
+    const title = (grouped ? row.group || "Opções" : menu.title).slice(0, 24);
+    const last = sections.at(-1);
+    if (last && last.title === title) last.rows.push(row);
+    else sections.push({ title, rows: [row] });
+  }
+  return sections;
+}
+
+const digits = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+
+/**
+ * A mesma lista em texto, para quando o WhatsApp não aceita a lista nativa:
+ * o cliente vê todas as opções e responde só com o número.
+ */
+export function menuText(body: string, menu: BookingMenu) {
+  const lines: string[] = [body.trim(), "", `*${menu.title}*`];
+  let index = 0;
+  const sections = menuSections(menu);
+  for (const section of sections) {
+    if (sections.length > 1) lines.push("", `_${section.title}_`);
+    for (const row of section.rows) {
+      lines.push(
+        `${digits[index] || `${index + 1}.`} *${row.title}*${row.description ? ` · ${row.description}` : ""}`,
+      );
+      index++;
+    }
+  }
+  lines.push("", "Responda com o *número* da opção ou escreva o que precisa.");
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** O registro da lista na conversa: numerado, para achar a opção pelo número. */
+export function menuEvent(menu: BookingMenu) {
+  return `Lista enviada: ${menu.title} (${menu.rows
+    .map((row, index) => `${index + 1}. ${row.title}`)
+    .join("; ")})`.slice(0, 600);
+}
+
+/**
+ * "2", "opção 2", "a 2": vira o título da opção 2 da última lista enviada.
+ * Só vale logo depois de uma lista; qualquer outra coisa passa como veio.
+ */
+export function numberedPick(text: string, lastEvent: string | undefined) {
+  const picked =
+    /^(?:(?:quero|pode ser|vou querer|prefiro)\s+)?(?:(?:a|o)\s+)?(?:op[cç][aã]o\s+|n[uú]mero\s+)?(\d{1,2})\s*[.)!]?$/i.exec(
+      text.trim(),
+    );
+  if (!picked || !lastEvent?.startsWith("Lista enviada: ")) return null;
+  const list = /^Lista enviada: (.+?) \((.+)\)$/.exec(lastEvent);
+  if (!list) return null;
+  const options = [...list[2].matchAll(/(\d{1,2})\. (.+?)(?=; \d{1,2}\. |$)/g)];
+  const option = options.find((item) => item[1] === String(Number(picked[1])));
+  return option
+    ? `[Respondeu ${Number(picked[1])} na lista "${list[1]}"] ${option[2]}`
+    : null;
 }
 
 /** All options come from this business's live public catalog/availability. */
@@ -75,12 +162,12 @@ export function bookingMenu(
     return menu("Confirmar horário", "Responder", [
       {
         id: "Sim",
-        title: "Confirmar",
+        title: "✅ Confirmar",
         description: "Reservar este horário",
       },
       {
         id: `Consultar horários para ${chosen.map((s) => readable(s.name)).join(" + ")} no dia ${day[0]}`,
-        title: "Outro horário",
+        title: "🕐 Outro horário",
         description: "Ver os outros horários do dia",
       },
     ]);
@@ -120,18 +207,18 @@ export function bookingMenu(
     const welcome = menu("Como posso ajudar?", "Ver opções", [
       {
         id: "Quero agendar um horário",
-        title: "Agendar horário",
-        description: "Escolher serviço, barbeiro e horário",
+        title: "📅 Agendar horário",
+        description: "Escolher serviço, profissional e horário",
       },
       {
         id: "Quero ver serviços e preços",
-        title: "Serviços e preços",
-        description: "Consultar o catálogo da barbearia",
+        title: "💈 Serviços e preços",
+        description: "Ver o que a casa oferece e quanto custa",
       },
       {
         id: "Quero falar com a equipe",
-        title: "Falar com a equipe",
-        description: "Pedir ajuda de uma pessoa",
+        title: "💬 Falar com equipe",
+        description: "Ser atendido por uma pessoa",
       },
     ]);
     return welcome ? { ...welcome, forceList: true } : null;
@@ -151,6 +238,8 @@ export function bookingMenu(
       id: `Consultar horários para ${readable(s.name)}`,
       title: name(s.name),
       description: `${money(s.price)} · ${s.duration} min`,
+      // Catálogo em blocos pela categoria que a casa cadastrou.
+      ...(s.category ? { group: name(readable(s.category)) } : {}),
     }));
     if (services.length > page * 9)
       rows.push({
@@ -256,7 +345,7 @@ export function bookingMenu(
           {
             id: `SF_SLOT|${date}|${slot.time}|${person.id}|${ids.join(",")}`,
             title: `${professionalName.slice(0, 16)} · ${slot.time}`,
-            description: `Disponível · ${dayLabel(date)} · ${serviceNames}`,
+            description: `Disponível · ${serviceNames}`,
           },
         ];
       });

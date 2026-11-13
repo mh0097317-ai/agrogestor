@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { DomainError } from "@/lib/availability";
-import type { BookingMenu } from "./booking-menu";
+import { menuSections, type BookingMenu } from "./booking-menu";
 
 /** Graph API version used for the WhatsApp Cloud API. */
 export const graphVersion = "v23.0";
@@ -163,16 +163,16 @@ export async function sendWhatsApp(input: {
                       }
                     : {
                         button: input.menu!.button,
-                        sections: [
-                          {
-                            title: input.menu!.title.slice(0, 24),
-                            rows: input.menu!.rows.map((r) => ({
+                        sections: menuSections(input.menu!).map(
+                          (section) => ({
+                            title: section.title,
+                            rows: section.rows.map((r) => ({
                               id: r.id,
                               title: r.title,
                               description: r.description,
                             })),
-                          },
-                        ],
+                          }),
+                        ),
                       },
                 },
               }

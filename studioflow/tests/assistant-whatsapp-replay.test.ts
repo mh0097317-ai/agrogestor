@@ -186,7 +186,7 @@ test("a summary to approve comes with Confirmar, and Confirmar books", async () 
     const ask = await t.say("Me chama de dudu");
     if (/Posso confirmar/.test(ask.body)) {
       assert.match(ask.body, new RegExp(pro.name.split(" ")[0], "i"));
-      const done = await t.say(tap(ask.menu, /^Confirmar$/));
+      const done = await t.say(tap(ask.menu, /Confirmar$/));
       assert.match(done.body, /Agendamento confirmado|registrado/);
     }
     const store = await readDemo(t.slug);
@@ -212,7 +212,7 @@ test("a known customer gets Confirmar right after tapping the slot", async () =>
       `SF_SLOT|${day}|${slot.time}|${pro.id}|${t.service.id}`,
     );
     assert.match(ask.body, /Posso confirmar esse horário em seu nome/);
-    const done = await t.say(tap(ask.menu, /^Confirmar$/));
+    const done = await t.say(tap(ask.menu, /Confirmar$/));
     assert.match(done.body, /Agendamento confirmado|registrado/);
     const store = await readDemo(t.slug);
     assert.equal(store.appointments.length, 1);

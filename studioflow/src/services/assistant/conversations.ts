@@ -44,7 +44,9 @@ import { assistantScheduleOpen } from "@/lib/assistant-schedule";
 import {
   bookingMenu,
   menuChoiceReply,
+  menuEvent,
   menuPageReply,
+  numberedPick,
   whatsappText,
   type BookingMenu,
 } from "./booking-menu";
@@ -1422,7 +1424,12 @@ export async function answerPending(
               professionalId: conversation.whatsappProfessionalId || undefined,
             },
             earlier,
-            text,
+            // "2" logo depois de uma lista é a opção 2 dela, não um número solto.
+            text:
+              numberedPick(
+                text,
+                transcript.filter((m) => m.role !== "customer").at(-1)?.body,
+              ) || text,
             known,
             context: [
               conversation.channel === "whatsapp"
@@ -1548,9 +1555,7 @@ export async function answerPending(
     await repo.addMessage(
       conversationId,
       "event",
-      `Lista enviada: ${result.menu.title} (${result.menu.rows
-        .map((row) => row.title)
-        .join(", ")})`.slice(0, 600),
+      menuEvent(result.menu),
     );
   if (understanding || v3)
     await repo.progress?.(conversationId, {
