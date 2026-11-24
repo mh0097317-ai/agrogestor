@@ -3,7 +3,8 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isDemo } from "../server-demo";
 import { getPublicStore } from "../server-store";
 import { ownerPhone } from "../attendance";
-import { noticeSender } from "../whatsapp/link";
+import { noticeSender, saveLinkState } from "../whatsapp/link";
+import { connectInstance, instanceState } from "../whatsapp/evolution";
 import { brandEmail } from "../email/brand-email";
 import { emailConfigured, sendEmail } from "../email/resend";
 import { platformAiEnabled } from "../platform-ai-control";
@@ -31,11 +32,14 @@ async function claim(
   const admin = createSupabaseAdmin();
   const since = new Date(Date.now() - repeatHours * 3_600_000).toISOString();
   const day = new Date(Date.now() - 86_400_000).toISOString();
+  // Aviso que não chegou a ninguém (channel "none") não conta: o próximo sai.
+  const delivered = "channel.is.null,channel.neq.none";
   let same = admin
     .from("assistant_alerts")
     .select("id", { count: "exact", head: true })
     .eq("business_id", businessId)
     .eq("kind", kind)
+    .or(delivered)
     .gte("created_at", since);
   same = conversationId
     ? same.eq("conversation_id", conversationId)
@@ -46,6 +50,7 @@ async function claim(
       .from("assistant_alerts")
       .select("id", { count: "exact", head: true })
       .eq("business_id", businessId)
+      .or(delivered)
       .gte("created_at", day),
   ]);
   if (repeated.error || today.error) return null;
@@ -74,12 +79,18 @@ async function ownerEmail(businessId: string) {
   return user.data.user?.email || "";
 }
 
-function message(kind: AlertKind, shop: string, phone: string, minutes = 0) {
+function message(
+  kind: AlertKind,
+  shop: string,
+  phone: string,
+  minutes = 0,
+  who = "",
+) {
   if (kind === "failed")
     return `⚠️ StudioFlow: a recepcionista da ${shop} não conseguiu responder o cliente de final ${tail(phone)}. A conversa passou para a equipe, responda por aqui: ${panel}`;
   if (kind === "no_reply")
     return `⏱️ StudioFlow: o cliente de final ${tail(phone)} está esperando resposta há ${minutes} min na ${shop}. Dá uma olhada: ${panel}`;
-  return `⚠️ StudioFlow: o WhatsApp da ${shop} desconectou e a recepcionista não está recebendo mensagens. Reconecte lendo o QR Code em Configurações → WhatsApp: ${appUrl}/dashboard/configuracoes`;
+  return `⚠️ StudioFlow: o WhatsApp ${who ? `de ${who}, na ${shop},` : `da ${shop}`} desconectou. Lembretes e a recepcionista param até reconectar. Leia o QR Code de novo em Configurações → WhatsApp: ${appUrl}/dashboard/configuracoes?aba=whatsapp`;
 }
 
 /** Tells the owner, once, by WhatsApp and otherwise by e-mail. Never throws. */
@@ -89,6 +100,8 @@ export async function alertOwner(input: {
   conversationId?: string | null;
   phone?: string;
   minutes?: number;
+  /** De quem é o número que caiu, quando não é o da casa. */
+  who?: string;
 }) {
   if (isDemo()) return "none" as const;
   try {
@@ -111,19 +124,28 @@ export async function alertOwner(input: {
       business.name as string,
       input.phone || "",
       input.minutes,
+      input.who,
     );
     let channel: "whatsapp" | "email" | "none" = "none";
+    const store = await getPublicStore(business.slug as string);
+    const to = await ownerPhone(store);
     if (input.kind !== "disconnected") {
-      const store = await getPublicStore(business.slug as string);
-      const to = await ownerPhone(store);
       const send = to ? await noticeSender(input.businessId, to) : null;
       if (to && send)
         channel = await send(to, text).then(
           () => "whatsapp" as const,
           () => "none" as const,
         );
+    } else if (to) {
+      // O WhatsApp da casa caiu: o aviso sai pelo número da StudioFlow, e o
+      // e-mail vai junto (quem não olha o celular não perde).
+      const { platformSend } = await import("../whatsapp/platform");
+      if (await platformSend(to, text).catch(() => false)) channel = "whatsapp";
     }
-    if (channel === "none" && (await emailConfigured())) {
+    if (
+      (channel === "none" || input.kind === "disconnected") &&
+      (await emailConfigured())
+    ) {
       const to = await ownerEmail(input.businessId);
       if (to)
         channel = await sendEmail(
@@ -143,14 +165,14 @@ export async function alertOwner(input: {
               input.kind === "disconnected"
                 ? {
                     label: "Reconectar",
-                    url: `${appUrl}/dashboard/configuracoes`,
+                    url: `${appUrl}/dashboard/configuracoes?aba=whatsapp`,
                   }
                 : { label: "Abrir conversas", url: panel },
           }),
           `assistant-alert-${id}`,
         ).then(
-          () => "email" as const,
-          () => "none" as const,
+          () => (channel === "whatsapp" ? channel : ("email" as const)),
+          () => channel,
         );
     }
     await admin.from("assistant_alerts").update({ channel }).eq("id", id);
@@ -165,12 +187,21 @@ export async function alertOwner(input: {
  * WhatsApp is disconnected while the receptionist is on.
  */
 export async function checkAssistantHealth() {
-  const report = { waiting: 0, disconnected: 0, sent: 0 };
-  if (isDemo() || !(await platformAiEnabled())) return report;
+  const report = {
+    waiting: 0,
+    disconnected: 0,
+    reconnecting: 0,
+    reconnected: 0,
+    sent: 0,
+  };
+  if (isDemo()) return report;
   const admin = createSupabaseAdmin();
-  const { data: waiting, error } = await admin.rpc(
-    "assistant_waiting_customers",
-  );
+  // Cliente esperando só importa com a IA ligada; WhatsApp caído importa
+  // sempre (lembretes e avisos também saem por ele).
+  const aiOn = await platformAiEnabled();
+  const { data: waiting, error } = aiOn
+    ? await admin.rpc("assistant_waiting_customers")
+    : { data: [], error: null };
   if (error) throw new Error("assistant health query failed");
   for (const row of (waiting || []) as {
     conversation_id: string;
@@ -191,28 +222,95 @@ export async function checkAssistantHealth() {
     });
     if (sent !== "none") report.sent++;
   }
-  const { data: links } = await admin
-    .from("whatsapp_links")
-    .select("business_id,status,updated_at")
-    .neq("status", "open");
-  for (const link of links || []) {
-    const { data: settings } = await admin
-      .from("business_settings")
-      .select("assistant_enabled")
-      .eq("business_id", link.business_id)
-      .maybeSingle();
-    // A link that was just being reconnected gets a few minutes first.
-    if (
-      !settings?.assistant_enabled ||
-      Date.now() - Date.parse(link.updated_at as string) < 10 * 60_000
-    )
-      continue;
-    report.disconnected++;
-    const sent = await alertOwner({
-      businessId: link.business_id as string,
-      kind: "disconnected",
-    });
-    if (sent !== "none") report.sent++;
+  for (const table of ["whatsapp_links", "professional_whatsapp_links"] as const) {
+    const { data: links } = await admin
+      .from(table)
+      .select(
+        table === "whatsapp_links"
+          ? "business_id,instance,status,updated_at,down_since,reconnect_tried_at"
+          : "business_id,professional_id,instance,status,updated_at,down_since,reconnect_tried_at",
+      )
+      .neq("status", "open");
+    for (const link of (links || []) as unknown as DownLink[]) {
+      const step = linkRecovery(link);
+      if (step.reconnect) {
+        report.reconnecting++;
+        if (await reconnectLink(table, link)) {
+          report.reconnected++;
+          continue;
+        }
+      }
+      if (!step.alert) continue;
+      report.disconnected++;
+      const who = link.professional_id
+        ? (
+            await admin
+              .from("professionals")
+              .select("name")
+              .eq("id", link.professional_id)
+              .maybeSingle()
+          ).data?.name
+        : "";
+      const sent = await alertOwner({
+        businessId: link.business_id,
+        kind: "disconnected",
+        who: (who as string) || "",
+      });
+      if (sent !== "none") report.sent++;
+    }
   }
   return report;
+}
+
+export interface DownLink {
+  business_id: string;
+  professional_id?: string | null;
+  instance: string;
+  status: string;
+  updated_at: string;
+  down_since: string | null;
+  reconnect_tried_at: string | null;
+}
+
+/**
+ * Número fora do ar: depois de 5 min a StudioFlow tenta reconectar sozinha
+ * (no máximo a cada 30 min); depois de 10 min o dono é avisado.
+ */
+export function linkRecovery(link: DownLink, now = new Date()) {
+  const since = Date.parse(link.down_since || link.updated_at);
+  const down = now.getTime() - since;
+  const tried = link.reconnect_tried_at
+    ? now.getTime() - Date.parse(link.reconnect_tried_at)
+    : Infinity;
+  return {
+    reconnect: down >= 5 * 60_000 && tried >= 30 * 60_000,
+    alert: down >= 10 * 60_000,
+  };
+}
+
+/**
+ * Pede para a Evolution religar a sessão salva. Quando o celular ainda está
+ * pareado, volta sem QR Code; quando não está, nada muda e o dono é avisado.
+ */
+async function reconnectLink(
+  table: "whatsapp_links" | "professional_whatsapp_links",
+  link: DownLink,
+  wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+) {
+  const admin = createSupabaseAdmin();
+  let mark = admin
+    .from(table)
+    .update({ reconnect_tried_at: new Date().toISOString() })
+    .eq("business_id", link.business_id);
+  if (link.professional_id) mark = mark.eq("professional_id", link.professional_id);
+  await mark;
+  try {
+    await connectInstance(link.instance);
+    await wait(5_000);
+    if ((await instanceState(link.instance)) !== "open") return false;
+    await saveLinkState(link.business_id, "open", link.professional_id || undefined);
+    return true;
+  } catch {
+    return false;
+  }
 }

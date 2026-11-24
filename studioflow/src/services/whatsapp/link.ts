@@ -503,6 +503,9 @@ export async function saveLinkState(
     }
     patch.connected_at = new Date().toISOString();
   }
+  // Desde quando está fora: só a primeira queda conta, os eventos seguintes
+  // da Evolution não reiniciam a espera do aviso.
+  if (state === "open") patch.down_since = null;
   let update = scoped(professionalId)
     .update(patch)
     .eq("business_id", businessId);
@@ -513,6 +516,14 @@ export async function saveLinkState(
       "Não foi possível atualizar o status do WhatsApp.",
       503,
     );
+  if (state !== "open") {
+    let mark = scoped(professionalId)
+      .update({ down_since: new Date().toISOString() })
+      .eq("business_id", businessId)
+      .is("down_since", null);
+    if (professionalId) mark = mark.eq("professional_id", professionalId);
+    await mark;
+  }
 }
 
 export async function readProfessionalLinks(
