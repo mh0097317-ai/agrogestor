@@ -27,6 +27,7 @@ import {
   Crown,
   DotsThree,
   GearSix,
+  Heartbeat,
   MagnifyingGlass,
   Megaphone,
   Money,
@@ -47,6 +48,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { Avatar, Card, Modal } from "@/components/ui";
 import { AppointmentForm } from "@/features/agenda/appointment-form";
 import { businessDay } from "@/lib/utils";
+import { inboxQueue } from "@/lib/inbox";
+import { useConversations } from "@/hooks/use-conversations";
 import { useToast } from "@/components/toast";
 import { SegmentIcon } from "@/lib/segments";
 import { Brand } from "@/components/brand";
@@ -92,6 +95,12 @@ const links = [
     icon: ChartLineUp,
   },
   { path: "/dashboard/divulgar", label: "Divulgar", icon: Megaphone },
+  {
+    path: "/dashboard/operacao",
+    label: "Saúde da operação",
+    icon: Heartbeat,
+    management: true,
+  },
   { path: "/dashboard/configuracoes", label: "Configurações", icon: GearSix },
 ];
 const navigationGroups: Record<string, string> = {
@@ -107,6 +116,7 @@ const navigationGroups: Record<string, string> = {
   "/dashboard/clube": "Cadastro",
   "/dashboard/divulgar": "Crescer",
   "/dashboard/treinamento": "Crescer",
+  "/dashboard/operacao": "Preferências",
   "/dashboard/configuracoes": "Preferências",
 };
 const navigationOrder = [
@@ -118,7 +128,6 @@ const navigationOrder = [
 ];
 /** Pages outside the menu still name themselves in the top bar. */
 const pageLabels: Record<string, string> = {
-  "/dashboard/operacao": "Saúde da operação",
   "/dashboard/ativacao": "Ativação",
 };
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -257,9 +266,19 @@ function Shell({ children }: { children: ReactNode }) {
           "/dashboard/treinamento",
           "/dashboard/configuracoes",
         ].includes(link.path)) &&
+      (!("management" in link) ||
+        ["owner", "admin", "manager"].includes(data?.viewer?.role || "")) &&
       (!("module" in link && link.module) ||
         (!!data && hasModule(data.access?.modules, link.module))),
   );
+  // Conversas esperando resposta da equipe (mesma regra do "Precisam de você").
+  const inbox = useConversations(
+    !!data &&
+      data.viewer?.role !== "professional" &&
+      hasModule(data.access?.modules, "recepcionista"),
+  );
+  const waiting =
+    inbox.list?.filter((item) => inboxQueue(item) === "attention").length || 0;
   const ownerName = data?.viewer?.name || "Seu perfil";
   const mobileContactPath = "/dashboard/clientes";
   const ownerRole =
@@ -317,6 +336,14 @@ function Shell({ children }: { children: ReactNode }) {
                     weight={active(link.path) ? "fill" : "regular"}
                   />
                   {link.label}
+                  {link.path === "/dashboard/conversas" && waiting > 0 && (
+                    <span
+                      className="nav-badge is-alert"
+                      aria-label={`${waiting} esperando resposta`}
+                    >
+                      {waiting}
+                    </span>
+                  )}
                   {link.label === "Agenda" && data && (
                     <span className="nav-badge">
                       {
@@ -567,6 +594,12 @@ function Shell({ children }: { children: ReactNode }) {
         >
           <DotsThree size={24} weight="bold" />
           Mais
+          {waiting > 0 && (
+            <span
+              className="bottom-nav-dot"
+              aria-label={`${waiting} conversas esperando`}
+            />
+          )}
         </button>
       </nav>
       <Modal
@@ -599,6 +632,9 @@ function Shell({ children }: { children: ReactNode }) {
               >
                 <link.icon size={20} weight="regular" />
                 <span>{link.label}</span>
+                {link.path === "/dashboard/conversas" && waiting > 0 && (
+                  <b className="mobile-module-badge">{waiting}</b>
+                )}
               </Link>
             ))}
         </nav>

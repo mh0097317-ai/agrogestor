@@ -2015,3 +2015,80 @@ a.ov-checklist-row:hover {
     grid-column: 1 / -1;
   }
 }
+
+/* "Precisa de você": problemas que pedem ação do dono, no topo do Início. */
+.ov-needs {
+  margin-bottom: 18px;
+  border: 1px solid #ecd3b4;
+  border-left: 3px solid #b45309;
+  background: #fbf3e8;
+  color: #4a3218;
+}
+.ov-needs h2 {
+  margin: 0;
+  padding: 12px 16px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9a4a07;
+}
+.ov-needs ul {
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+}
+.ov-needs li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.ov-needs li + li {
+  border-top: 1px solid #f0dfc8;
+}
+.ov-needs li > svg {
+  color: #b45309;
+}
+.ov-needs li[data-kind="whatsapp"] > svg,
+.ov-needs li[data-kind="ai"] > svg {
+  color: #b42318;
+}
+.ov-needs li span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ov-needs strong {
+  font-size: 14.5px;
+  color: #16130f;
+}
+.ov-needs small {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b4a26;
+}
+.ov-needs li > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 2px;
+  background: #16130f;
+  color: #fffdf9;
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  text-decoration: none;
+}
+@media (max-width: 560px) {
+  .ov-needs li {
+    grid-template-columns: auto 1fr;
+  }
+  .ov-needs li > a {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

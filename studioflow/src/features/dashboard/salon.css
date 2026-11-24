@@ -271,6 +271,13 @@
 .sl-ai strong {
   color: var(--sl-gold-soft);
 }
+.sl-ai.is-down {
+  text-decoration: none;
+  background: #7a1d14;
+}
+.sl-ai.is-down i {
+  background: #f4a99f;
+}
 .sl-side {
   flex: 1 1 320px;
   min-width: 0;

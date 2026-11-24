@@ -621,3 +621,8 @@ a.sidebar-support {
     margin-top: 0;
   }
 }
+.nav-link .nav-badge.is-alert {
+  background: #b45309;
+  color: #fffdf9;
+  font-weight: 700;
+}

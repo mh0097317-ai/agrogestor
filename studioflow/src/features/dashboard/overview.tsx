@@ -6,6 +6,7 @@ import { StudioFlowResults } from "./studioflow-results";
 import { MonthRecapCard } from "./month-recap";
 import "./experience.css";
 import { OverviewWhatsApp } from "./overview-whatsapp";
+import { AttentionStrip } from "./attention-strip";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -116,6 +117,7 @@ export function Overview() {
 
   return (
     <div className="ov">
+      <AttentionStrip data={data} now={now} />
       {today && (
         <SalonLive
           data={data}

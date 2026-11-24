@@ -2383,3 +2383,30 @@
 @media (prefers-reduced-motion: reduce) {
   .calendar-drag-ghost { box-shadow: none; }
 }
+/* Concluir já registrando como o cliente pagou. */
+.appointment-methods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.appointment-methods > p {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: #433a31;
+}
+.appointment-methods > .btn {
+  min-height: 48px;
+  justify-content: center;
+}
+.appointment-methods-skip {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  border: 0;
+  background: none;
+  color: #6e655b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}

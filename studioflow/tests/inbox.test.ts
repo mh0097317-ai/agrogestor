@@ -166,5 +166,11 @@ test("inbox queues exclude personal silence from StudioFlow and never double-cou
   assert.equal(
     inboxQueue({ ...pending, latestRole: "assistant", runState: "SENT" }, now),
     "ai",
-  );
+  );  // A IA passou para a equipe ("já chamei alguém") e ninguém respondeu.
+  const handedOff = { ...pending, status: "human" as const, latestRole: "assistant" as const, unread: 1 };
+  assert.equal(inboxQueue(handedOff, now), "attention");
+  assert.equal(inboxQueue({ ...handedOff, runState: "FAILED" }, now), "attention");
+  // Equipe já leu (sem não lidas) ou respondeu: sai da fila de atenção.
+  assert.equal(inboxQueue({ ...handedOff, unread: 0 }, now), "human");
+  assert.equal(inboxQueue({ ...handedOff, latestRole: "staff" }, now), "human");
 });

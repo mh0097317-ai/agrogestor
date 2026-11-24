@@ -24,7 +24,8 @@ import {
   Spinner,
 } from "@/components/ui";
 import { money, dateLabel, formatPhone } from "@/lib/utils";
-import type { Appointment, AppointmentStatus } from "@/types";
+import type { Appointment, AppointmentStatus, PaymentMethod } from "@/types";
+import { amountDue, finishAppointment, paymentMethods } from "./finish";
 import { AppointmentForm } from "./appointment-form";
 import { appointmentServices } from "./agenda-helpers";
 import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
@@ -46,12 +47,16 @@ export function AppointmentDetail({
   const [editing, setEditing] = useState(false);
   const [selling, setSelling] = useState(false);
   const [confirm, setConfirm] = useState<AppointmentStatus | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [openedAt, setOpenedAt] = useState(() => Date.now());
   const [error, setError] = useState("");
   useEffect(() => {
     queueMicrotask(() => {
       setConfirm(null);
       setEditing(false);
       setSelling(false);
+      setPaying(false);
+      setOpenedAt(Date.now());
       setError("");
     });
   }, [appointment?.id]);
@@ -70,26 +75,64 @@ export function AppointmentDetail({
     (new Date(current.end).getTime() - new Date(current.start).getTime()) /
       60000,
   );
+  // Horário que já passou e ficou "confirmado": o próximo passo é concluir,
+  // não iniciar (vem do "Finalizar" do Início).
+  const past = new Date(current.end).getTime() < openedAt;
+  const due = amountDue(current, data);
+  const charge = due > 0 && canMutate("payments");
   const nextAction =
-    current.status === "pending"
+    current.status === "confirmed" && past
       ? {
-          status: "confirmed" as const,
-          label: "Confirmar agendamento",
-          Icon: Check,
+          status: "completed" as const,
+          label: charge
+            ? `Concluir e cobrar ${money(due)}`
+            : "Concluir atendimento",
+          Icon: Checks,
         }
-      : current.status === "confirmed"
+      : current.status === "pending"
         ? {
-            status: "in_progress" as const,
-            label: "Iniciar atendimento",
-            Icon: Play,
+            status: "confirmed" as const,
+            label: "Confirmar agendamento",
+            Icon: Check,
           }
-        : current.status === "in_progress"
+        : current.status === "confirmed"
           ? {
-              status: "completed" as const,
-              label: "Concluir atendimento",
-              Icon: Checks,
+              status: "in_progress" as const,
+              label: "Iniciar atendimento",
+              Icon: Play,
             }
-          : null;
+          : current.status === "in_progress"
+            ? {
+                status: "completed" as const,
+                label: "Concluir atendimento",
+                Icon: Checks,
+              }
+            : null;
+  async function finish(method?: PaymentMethod) {
+    if (!appointment || !canEdit || !data) return;
+    setBusy(true);
+    setError("");
+    try {
+      const paid = await finishAppointment(mutate, data, current, method);
+      toast(
+        paid
+          ? `Concluído e ${money(paid)} recebido.`
+          : charge
+            ? "Atendimento concluído. O valor ficou em aberto no financeiro."
+            : "Atendimento concluído.",
+      );
+      setPaying(false);
+      onClose();
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "Não foi possível concluir o atendimento.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function update(status: AppointmentStatus) {
     if (!appointment || !canEdit) return;
     setBusy(true);
@@ -129,7 +172,9 @@ export function AppointmentDetail({
     canEdit &&
     hasModule(data.access?.modules, "produtos") &&
     !["cancelled", "no_show"].includes(current.status) &&
-    (data.products || []).some((product) => product.active && product.stock > 0);
+    (data.products || []).some(
+      (product) => product.active && product.stock > 0,
+    );
   const planName = current.membershipId
     ? data?.plans?.find(
         (plan) =>
@@ -205,7 +250,9 @@ export function AppointmentDetail({
           </div>
         )}
         {paymentNote && (
-          <div className={`appointment-loyalty appointment-payment ${paymentNote.tone}`}>
+          <div
+            className={`appointment-loyalty appointment-payment ${paymentNote.tone}`}
+          >
             {current.membershipId ? (
               <Seal size={18} weight="duotone" />
             ) : (
@@ -286,18 +333,60 @@ export function AppointmentDetail({
           </div>
         ) : (
           <>
-            {canEdit && nextAction && (
+            {canEdit && nextAction && paying && (
+              <div className="appointment-detail-action">
+                <div
+                  className="appointment-methods"
+                  role="group"
+                  aria-label={`Como ${current.customerName.split(" ")[0]} pagou ${money(due)}?`}
+                >
+                  <p>
+                    Como pagou <strong>{money(due)}</strong>?
+                  </p>
+                  {paymentMethods.map((m) => (
+                    <Button
+                      key={m.value}
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => void finish(m.value)}
+                    >
+                      {m.label}
+                    </Button>
+                  ))}
+                  <button
+                    type="button"
+                    className="appointment-methods-skip"
+                    disabled={busy}
+                    onClick={() => void finish()}
+                  >
+                    Concluir sem registrar pagamento
+                  </button>
+                  <button
+                    type="button"
+                    className="appointment-methods-skip"
+                    disabled={busy}
+                    onClick={() => setPaying(false)}
+                  >
+                    Voltar
+                  </button>
+                </div>
+              </div>
+            )}
+            {canEdit && nextAction && !paying && (
               <div className="appointment-detail-action">
                 <Button
-                  onClick={() => update(nextAction.status)}
+                  onClick={() =>
+                    nextAction.status !== "completed"
+                      ? update(nextAction.status)
+                      : charge
+                        ? setPaying(true)
+                        : void finish()
+                  }
                   disabled={busy}
                 >
                   {busy ? <Spinner /> : <nextAction.Icon size={17} />}
                   {nextAction.label}
                 </Button>
-                {current.status === "in_progress" && (
-                  <p>Após concluir, registre o recebimento no financeiro.</p>
-                )}
               </div>
             )}
             <div className="appointment-detail-secondary">
@@ -331,14 +420,18 @@ export function AppointmentDetail({
                 </>
               )}
               {canSell && (
-                <Button variant="secondary" onClick={() => setSelling(true)} disabled={busy}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelling(true)}
+                  disabled={busy}
+                >
                   <ShoppingBagOpen size={17} />
                   Vender produto
                 </Button>
               )}
               <a
                 className="btn btn-secondary"
-                href={`https://wa.me/55${current.customerPhone.replace(/\D/g, "")}`}
+                href={`https://wa.me/55${current.customerPhone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "")}`}
                 target="_blank"
                 rel="noreferrer"
               >

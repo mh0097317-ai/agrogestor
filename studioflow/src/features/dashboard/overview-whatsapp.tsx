@@ -1,55 +1,22 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowClockwise, ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { inboxQueue } from "@/lib/inbox";
-import type { ConversationSummary, Store } from "@/types";
+import { useConversations } from "@/hooks/use-conversations";
+import type { Store } from "@/types";
 
 export function OverviewWhatsApp({ data }: { data: Store }) {
-  const [list, setList] = useState<ConversationSummary[] | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [updated, setUpdated] = useState("");
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setBusy(true);
-    try {
-      const response = await fetch("/api/workspace/conversations", {
-        cache: "no-store",
-        signal,
-      });
-      if (!response.ok)
-        throw new Error("Não foi possível atualizar as conversas.");
-      const result = (await response.json()) as ConversationSummary[];
-      if (signal?.aborted) return;
-      setList(result.filter((item) => item.channel === "whatsapp"));
-      setError("");
-      setUpdated(
-        new Intl.DateTimeFormat("pt-BR", {
-          timeZone: "America/Sao_Paulo",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date()),
-      );
-    } catch (e) {
-      if (!signal?.aborted)
-        setError(
-          e instanceof Error ? e.message : "Não foi possível atualizar.",
-        );
-    } finally {
-      if (!signal?.aborted) setBusy(false);
-    }
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- external live inbox summary
-    void load(controller.signal);
-    const timer = setInterval(() => void load(controller.signal), 60000);
-    return () => {
-      controller.abort();
-      clearInterval(timer);
-    };
-  }, [load]);
+  const { list: all, error, busy, updatedAt, reload } = useConversations();
+  const list = all?.filter((item) => item.channel === "whatsapp") ?? null;
+  const updated = updatedAt
+    ? new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(updatedAt)
+    : "";
+  const load = () => void reload();
   const count = (queue: string) =>
     list?.filter((item) => inboxQueue(item) === queue).length ?? "—";
   const connections =
@@ -77,7 +44,7 @@ export function OverviewWhatsApp({ data }: { data: Store }) {
           type="button"
           aria-label="Atualizar resumo do WhatsApp"
           disabled={busy}
-          onClick={() => void load()}
+          onClick={load}
         >
           <ArrowClockwise size={18} />
         </button>
@@ -106,8 +73,8 @@ export function OverviewWhatsApp({ data }: { data: Store }) {
           {updated ? `Consultado às ${updated}` : "Consultando conversas…"} ·
           últimas 60 conversas
         </small>
-        <Link href="/dashboard/treinamento">
-          Treinar atendimento <ArrowUpRight size={16} />
+        <Link href="/dashboard/conversas">
+          Abrir conversas <ArrowUpRight size={16} />
         </Link>
       </footer>
     </section>

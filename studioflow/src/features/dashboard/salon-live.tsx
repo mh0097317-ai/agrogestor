@@ -19,8 +19,11 @@ import { Avatar } from "@/components/ui";
 import { WhatsAppIcon } from "@/components/brand-icons";
 import { dateLabel, money } from "@/lib/utils";
 import { hasModule } from "@/lib/modules";
+import { aiCredentialProblem } from "@/lib/owner-alerts";
+import { useLatestRun } from "@/hooks/use-conversations";
 import type { Appointment, PaymentMethod, Store } from "@/types";
 import { balanceFor, reais } from "@/features/management/finance-helpers";
+import { finishAppointment, paymentMethods } from "@/features/agenda/finish";
 import { salonModel, type Chair, type ChairState } from "./salon-model";
 import { Salon3D } from "./salon-3d";
 import "./salon.css";
@@ -33,12 +36,7 @@ const looks: Record<ChairState, { label: string; tone: string }> = {
   break: { label: "Intervalo", tone: "break" },
   off: { label: "Fora do expediente", tone: "off" },
 };
-const methods: { value: PaymentMethod; label: string }[] = [
-  { value: "pix", label: "Pix" },
-  { value: "cash", label: "Dinheiro" },
-  { value: "credit", label: "Crédito" },
-  { value: "debit", label: "Débito" },
-];
+const methods = paymentMethods;
 const first = (name: string) => name.trim().split(/\s+/)[0] || name;
 const services = (a: Appointment, data: Store) =>
   a.serviceIds
@@ -156,6 +154,19 @@ export function SalonLive({
   const assistant =
     hasModule(data.access?.modules, "recepcionista") &&
     data.settings.assistantEnabled;
+  const latestRun = useLatestRun(
+    assistant &&
+      ["owner", "admin", "manager"].includes(data.viewer?.role || ""),
+  );
+  // Só diz "atendendo" quando dá para atender: número conectado e IA sem
+  // erro de chave. Fora disso, mostra o que está parado.
+  const assistantIssue = !assistant
+    ? ""
+    : data.whatsappLink && data.whatsappLink.status !== "open" && !data.whatsapp
+      ? "WhatsApp desconectado"
+      : aiCredentialProblem(latestRun)
+        ? "IA parada: chave recusada"
+        : "";
   return (
     <section className="sl" aria-label="Salão ao vivo">
       <header className="sl-head">
@@ -790,12 +801,26 @@ export function SalonLive({
                   <em>ninguém agora</em>
                 )}
               </div>
-              {assistant && (
-                <span className="sl-ai">
-                  <i aria-hidden="true" />
-                  <strong>Recepcionista IA</strong> atendendo no WhatsApp
-                </span>
-              )}
+              {assistant &&
+                (assistantIssue ? (
+                  <Link
+                    className="sl-ai is-down"
+                    href={
+                      assistantIssue.startsWith("WhatsApp")
+                        ? "/dashboard/configuracoes?aba=whatsapp"
+                        : "/dashboard/operacao"
+                    }
+                  >
+                    <i aria-hidden="true" />
+                    <strong>Recepcionista IA</strong> sem atender ·{" "}
+                    {assistantIssue}
+                  </Link>
+                ) : (
+                  <span className="sl-ai">
+                    <i aria-hidden="true" />
+                    <strong>Recepcionista IA</strong> atendendo no WhatsApp
+                  </span>
+                ))}
             </div>
           </div>
           <aside className="sl-side">
@@ -971,18 +996,12 @@ function ChairPanel({
   const finish = (method?: PaymentMethod) =>
     run(
       async () => {
-        await mutate("appointments", "update", {
-          id: a!.id,
-          status: "completed",
-        });
-        if (method && due > 0 && canMutate("payments"))
-          await mutate("payments", "create", {
-            id: crypto.randomUUID(),
-            businessId: data.business.id,
-            appointmentId: a!.id,
-            amount: due,
-            method,
-          });
+        await finishAppointment(
+          mutate,
+          data,
+          a!,
+          canMutate("payments") ? method : undefined,
+        );
       },
       method && due > 0
         ? `Concluído e ${money(due)} recebido.`

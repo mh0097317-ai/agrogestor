@@ -17,8 +17,17 @@ const processing = new Set([
 ]);
 
 export function needsAttention(item: ConversationSummary, now = Date.now()) {
-  if (item.status === "closed" || item.latestRole !== "customer") return false;
+  if (item.status === "closed" || item.latestRole === "staff") return false;
+  // A IA falhou ou passou a conversa para a equipe e ninguém respondeu ainda:
+  // mesmo que a última mensagem seja o "já chamei alguém" da própria IA.
   if (item.runState === "FAILED") return true;
+  if (
+    item.status === "human" &&
+    item.unread > 0 &&
+    item.latestRole === "assistant"
+  )
+    return true;
+  if (item.latestRole !== "customer") return false;
   return (
     item.latestRole === "customer" &&
     item.runState !== "SILENT" &&
