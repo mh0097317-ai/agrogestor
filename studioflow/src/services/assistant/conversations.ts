@@ -348,6 +348,7 @@ export function liveRepo(
     async lease(id) {
       const { data } = await admin.rpc("conversation_lease", {
         p_conversation_id: id,
+        p_seconds: LEASE_SECONDS,
       });
       return data === true;
     },
@@ -591,6 +592,45 @@ const handoffNotice =
   "Chamei alguém da equipe para continuar com você. Em breve respondem por aqui.";
 
 /**
+ * Teto de um atendimento. A função da Vercel vive 300 s (60 s no chat do
+ * site e no Instagram); se o turno passar disso a plataforma mata o processo
+ * e nada registra a falha, deixando o cliente sem resposta e o run em
+ * "gerando" para sempre. Com o teto, o atraso vira um erro comum de tempo,
+ * que tenta de novo ou passa para a equipe com aviso ao dono.
+ */
+export const TURN_BUDGET_MS = 200_000;
+const MIN_CALL_MS = 15_000;
+/** O lease cobre a vida inteira da função: nunca dois trabalhando juntos. */
+const LEASE_SECONDS = 300;
+
+export class TurnDeadlineError extends Error {
+  constructor() {
+    super("assistant turn timeout");
+    this.name = "TimeoutError";
+  }
+}
+
+/** Cada chamada ao modelo respeita o tempo que sobra do atendimento. */
+export function boundedCreate(
+  create: CreateMessage,
+  deadline: number,
+  now: () => number = Date.now,
+  minCallMs = MIN_CALL_MS,
+): CreateMessage {
+  return (params) => {
+    const left = deadline - now();
+    if (left < minCallMs) return Promise.reject(new TurnDeadlineError());
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    return Promise.race([
+      create(params),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new TurnDeadlineError()), left);
+      }),
+    ]).finally(() => clearTimeout(timer));
+  };
+}
+
+/**
  * Answers every customer message not yet handled, one answer at a time per
  * conversation. Messages that arrive meanwhile are picked up next round.
  */
@@ -599,8 +639,13 @@ export async function processConversation(
   conversationId: string,
   delivery: Delivery,
   create?: CreateMessage | null,
+  options: { budgetMs?: number } = {},
 ) {
+  const deadline = Date.now() + (options.budgetMs ?? TURN_BUDGET_MS);
   for (let round = 0; round < 3; round++) {
+    // Rodada nova só com tempo para uma resposta inteira; o resto fica para a
+    // recuperação, que pega a mensagem pendente no minuto seguinte.
+    if (round > 0 && deadline - Date.now() < 60_000) return;
     if (!(await platformAiEnabled())) {
       // Keep the AI assignment intact. The global switch pauses generation;
       // switching it back on should resume eligible chats automatically.
@@ -609,16 +654,18 @@ export async function processConversation(
     if (!(await repo.lease(conversationId))) return;
     let say: string | null = null;
     try {
-      say = await answerPending(
-        repo,
-        conversationId,
-        delivery,
+      const model =
         create === undefined
           ? await businessCreate(
               repo.businessId,
               receptionistV3(delivery.simulate) ? receptionistModel : undefined,
             )
-          : create,
+          : create;
+      say = await answerPending(
+        repo,
+        conversationId,
+        delivery,
+        model ? boundedCreate(model, deadline) : model,
       );
     } catch (error) {
       const code = failureCode(error);
@@ -1637,7 +1684,10 @@ export async function webChat(
       unreadDelta: 1,
       ...(conversation.status === "closed" ? { status: "human" as const } : {}),
     });
-  else await processConversation(repo, conversation.id, { origin, slug });
+  else
+    await processConversation(repo, conversation.id, { origin, slug }, undefined, {
+      budgetMs: 45_000,
+    });
   const fresh = await repo.get(conversation.id);
   return {
     token,
@@ -2175,7 +2225,7 @@ export async function receiveInstagram(
             to,
             body,
           }),
-      });
+      }, undefined, { budgetMs: 45_000 });
     }
   };
 }

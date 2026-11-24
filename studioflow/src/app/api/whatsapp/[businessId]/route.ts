@@ -12,7 +12,7 @@ import {
 import { requestOrigin } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 // The answer runs after the 200 goes back to Meta.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const id = z.string().uuid();
 const plain = (body: string, status = 200) =>

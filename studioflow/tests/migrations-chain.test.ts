@@ -405,6 +405,58 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
       [biz.tenant_id, biz.id, pending.id],
     );
     assert.equal(await analyze(), "answered");
+    // Atendimento travado: um run parado no meio aparece para a varredura
+    // quando a recuperação não vai retomá-lo, e diz se alguém já respondeu.
+    const stale = async () =>
+      (
+        await db.query<{ conversation_id: string; answered: boolean; state: string }>(
+          "select conversation_id,answered,state from public.stale_assistant_runs()",
+        )
+      ).rows;
+    const stuck = (
+      await db.query<{ id: string }>(
+        "insert into public.conversations(tenant_id,business_id,channel,contact_phone,status,ai_cursor)values($1,$2,'whatsapp','11911112222','human',now()-interval '1 hour') returning id",
+        [biz.tenant_id, biz.id],
+      )
+    ).rows[0];
+    const asked = (
+      await db.query<{ created_at: string }>(
+        "insert into public.conversation_messages(tenant_id,business_id,conversation_id,role,body,created_at)values($1,$2,$3,'customer','Quanto está o corte?',now()-interval '20 minutes') returning created_at",
+        [biz.tenant_id, biz.id, stuck.id],
+      )
+    ).rows[0];
+    await db.query("select public.start_assistant_run($1,$2)", [stuck.id, asked.created_at]);
+    await db.query(
+      "update public.assistant_runs set state='GENERATING',updated_at=now()-interval '2 minutes' where conversation_id=$1",
+      [stuck.id],
+    );
+    assert.ok(!(await stale()).some((r) => r.conversation_id === stuck.id), "ainda pode estar rodando");
+    await db.query(
+      "update public.assistant_runs set updated_at=now()-interval '10 minutes' where conversation_id=$1",
+      [stuck.id],
+    );
+    const found = (await stale()).find((r) => r.conversation_id === stuck.id);
+    assert.ok(found, "conversa com a equipe e run parado entra na varredura");
+    assert.equal(found.answered, false);
+    assert.equal(found.state, "GENERATING");
+    await db.query(
+      "insert into public.conversation_messages(tenant_id,business_id,conversation_id,role,body)values($1,$2,$3,'staff','R$ 30')",
+      [biz.tenant_id, biz.id, stuck.id],
+    );
+    assert.equal((await stale()).find((r) => r.conversation_id === stuck.id)?.answered, true);
+    // Conversa ainda com a IA e tentativas sobrando é da recuperação, não da varredura.
+    await db.query("update public.conversations set status='ai' where id=$1", [stuck.id]);
+    assert.ok(!(await stale()).some((r) => r.conversation_id === stuck.id));
+    await db.query(
+      "update public.assistant_runs set updated_at=now()-interval '40 minutes' where conversation_id=$1",
+      [stuck.id],
+    );
+    assert.ok((await stale()).some((r) => r.conversation_id === stuck.id), "parado há mais de 30 min");
+    await db.query(
+      "update public.assistant_runs set state='FAILED' where conversation_id=$1",
+      [stuck.id],
+    );
+    assert.ok(!(await stale()).some((r) => r.conversation_id === stuck.id), "já fechado");
     await db.exec("reset role;set role authenticated;");
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
       owner,
@@ -419,6 +471,7 @@ test("migrations: todas em sequência, como no Supabase, e o Instagram nas conve
     await assert.rejects(
       db.query("select public.due_assistant_conversations()"),
     );
+    await assert.rejects(db.query("select public.stale_assistant_runs()"));
     await assert.rejects(
       db.query("select public.request_assistant_analysis($1,$2)", [
         biz.id,

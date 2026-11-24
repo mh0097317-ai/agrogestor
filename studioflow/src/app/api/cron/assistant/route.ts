@@ -3,7 +3,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { recoverPendingConversations } from "@/services/assistant/recovery";
 import { requestOrigin } from "@/services/server-http";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 export async function POST(request: Request) {
   const token = (request.headers.get("authorization") || "").replace(
     /^Bearer /,
