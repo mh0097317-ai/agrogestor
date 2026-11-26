@@ -1,4 +1,5 @@
 import type { PublishInput } from "./instagram";
+import { assertOutboundAllowed } from "../outbound-guard";
 
 /*
  * Zernio: publica no Instagram da StudioFlow e traz as métricas. A conta é
@@ -196,6 +197,7 @@ export function zernioOutcome(post: ZernioPost | undefined, fallbackError = ""):
 
 /** Publica agora. Repetir a mesma chave de tentativa não publica duas vezes. */
 export async function zernioPublish(key: string, accountId: string, input: PublishInput, attempt: string) {
+  assertOutboundAllowed("instagram", "studioflow-instagram");
   const { data } = await call<{ post?: ZernioPost; error?: string }>(key, "/posts", {
     method: "POST",
     body: zernioPostBody(accountId, input),

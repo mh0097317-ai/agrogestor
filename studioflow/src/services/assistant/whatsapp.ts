@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { assertOutboundAllowed } from "../outbound-guard";
 import { DomainError } from "@/lib/availability";
 import { menuSections, type BookingMenu } from "./booking-menu";
 
@@ -130,6 +131,7 @@ export async function sendWhatsApp(input: {
   body: string;
   menu?: BookingMenu | null;
 }) {
+  assertOutboundAllowed("whatsapp", input.to);
   let response: Response;
   const useButtons =
     !!input.menu &&
@@ -163,16 +165,14 @@ export async function sendWhatsApp(input: {
                       }
                     : {
                         button: input.menu!.button,
-                        sections: menuSections(input.menu!).map(
-                          (section) => ({
-                            title: section.title,
-                            rows: section.rows.map((r) => ({
-                              id: r.id,
-                              title: r.title,
-                              description: r.description,
-                            })),
-                          }),
-                        ),
+                        sections: menuSections(input.menu!).map((section) => ({
+                          title: section.title,
+                          rows: section.rows.map((r) => ({
+                            id: r.id,
+                            title: r.title,
+                            description: r.description,
+                          })),
+                        })),
                       },
                 },
               }
@@ -212,6 +212,8 @@ export async function sendWhatsAppAudio(input: {
   to: string;
   audio: Uint8Array;
 }) {
+  assertOutboundAllowed("whatsapp", input.to);
+
   if (!input.audio.length || input.audio.length > 4_000_000)
     throw new DomainError("O áudio ficou grande demais para o WhatsApp.", 413);
   const form = new FormData();

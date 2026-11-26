@@ -1,4 +1,5 @@
 import { DomainError } from "@/lib/availability";
+import { assertOutboundAllowed } from "../outbound-guard";
 import QRCode from "qrcode";
 import { menuSections, menuText, type BookingMenu } from "../assistant/booking-menu";
 import { evolutionCredential } from "../admin-vault";
@@ -197,6 +198,7 @@ export async function sendText(
   role: "staff" | "assistant" = "staff",
 ) {
   const digits = number.replace(/\D/g, "");
+  assertOutboundAllowed("whatsapp", digits);
   if (!/^[0-9]{10,15}$/.test(digits))
     throw new DomainError("Número de WhatsApp inválido.");
   const sent = await evo<{ key?: { id?: string } }>(
@@ -220,6 +222,7 @@ export async function sendWhatsAppAudio(
   audio: Uint8Array,
 ) {
   const digits = number.replace(/\D/g, "");
+  assertOutboundAllowed("whatsapp", digits);
   if (
     !/^[0-9]{10,15}$/.test(digits) ||
     !audio.length ||
@@ -258,6 +261,7 @@ export async function sendBookingMenu(
   role: "staff" | "assistant" = "assistant",
 ) {
   const digits = number.replace(/\D/g, "");
+  assertOutboundAllowed("whatsapp", digits);
   if (!/^[0-9]{10,15}$/.test(digits))
     throw new DomainError("Número de WhatsApp inválido.");
   // Lista recusada: as mesmas opções vão em texto numerado, nunca só o
@@ -314,6 +318,7 @@ export async function sendPdf(
   caption: string,
 ) {
   const digits = number.replace(/\D/g, "");
+  assertOutboundAllowed("whatsapp", digits);
   if (
     !/^\d{10,15}$/.test(digits) ||
     bytes.length > 5_000_000 ||

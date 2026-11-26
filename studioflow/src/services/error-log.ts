@@ -54,4 +54,11 @@ export async function pruneErrors() {
     .from("app_errors")
     .delete()
     .lt("created_at", new Date(Date.now() - keep).toISOString());
+  // Contadores do limite persistente parados há mais de um dia.
+  await createSupabaseAdmin()
+    .rpc("prune_rate_limits")
+    .then(
+      () => undefined,
+      () => undefined,
+    );
 }

@@ -1,0 +1,170 @@
+/* Pendências: fechar atendimentos passados, um a um ou em lote. */
+.pending-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border: 1px solid #e2d9ca;
+  border-left: 3px solid #b45309;
+  background: #fbf3e8;
+}
+.pending-summary div {
+  display: grid;
+  gap: 2px;
+}
+.pending-summary strong {
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1;
+  color: #16130f;
+}
+.pending-summary span {
+  font-size: 13px;
+  color: #6b4a26;
+}
+.pending-summary p {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #6b4a26;
+}
+.pending-bulk {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  background: #16130f;
+  color: #fffdf9;
+}
+.pending-bulk > span {
+  margin-right: auto;
+  font-weight: 650;
+}
+.pending-day {
+  margin-bottom: 22px;
+}
+.pending-day header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2d9ca;
+}
+.pending-day h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 19px;
+}
+/* "Quarta-feira, 25 de novembro": só a primeira letra em maiúscula. */
+.pending-day h2::first-letter {
+  text-transform: uppercase;
+}
+.pending-select-day {
+  border: 0;
+  background: none;
+  color: #8a6430;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.pending-day ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pending-day li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #efe8dc;
+}
+.pending-day li.is-busy {
+  opacity: 0.55;
+}
+.pending-day li input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #16130f;
+}
+.pending-what {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 0;
+}
+.pending-what time {
+  font-family: var(--serif);
+  font-size: 17px;
+}
+.pending-what strong {
+  font-size: 15px;
+}
+.pending-what > span {
+  grid-column: 2;
+  font-size: 13px;
+  color: #6e655b;
+}
+.pending-what .status-badge,
+.pending-what > :last-child {
+  grid-row: 1;
+  grid-column: 3;
+}
+.pending-actions,
+.pending-methods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+.pending-methods > span {
+  width: 100%;
+  text-align: right;
+  font-size: 13px;
+  color: #433a31;
+}
+.pending-clear {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.pending-clear svg {
+  color: #3f7a5a;
+}
+.pending-clear h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+}
+.pending-clear p {
+  max-width: 440px;
+  margin: 0;
+  color: #6e655b;
+}
+@media (max-width: 720px) {
+  .pending-day li {
+    grid-template-columns: auto 1fr;
+  }
+  .pending-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .pending-methods > span {
+    text-align: left;
+  }
+}

@@ -86,3 +86,35 @@ export function limitPublicMutation(
       429,
     );
 }
+
+/**
+ * Limite que vale entre instâncias (banco). Fica atrás do limite em memória
+ * e só nas rotas caras. Se o banco não responder, deixa passar: o limite em
+ * memória e o teto diário da IA continuam valendo.
+ */
+export async function limitPersistent(
+  request: Request,
+  options: { scope: string; max: number; windowSeconds?: number },
+) {
+  if (process.env.STUDIOFLOW_DEMO_MODE || !process.env.NEXT_PUBLIC_SUPABASE_URL)
+    return;
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const { createHash } = await import("node:crypto");
+  const key = `${options.scope}:${createHash("sha256").update(ip).digest("hex").slice(0, 32)}`;
+  try {
+    const { createSupabaseAdmin } = await import("@/lib/supabase/server");
+    const { data, error } = await createSupabaseAdmin().rpc("rate_limit_hit", {
+      p_key: key,
+      p_max: options.max,
+      p_window_seconds: options.windowSeconds ?? 600,
+    });
+    if (!error && data === false)
+      throw new DomainError(
+        "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+        429,
+      );
+  } catch (cause) {
+    if (cause instanceof DomainError) throw cause;
+  }
+}

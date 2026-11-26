@@ -361,3 +361,65 @@ O pacote inclui código, configurações, lockfile, SQL, testes, fonte local com
 - Termos de Uso (`/termos`) e Política de Privacidade (`/privacidade`) com links no cadastro, na página pública e no agendamento. Contato em `NEXT_PUBLIC_SUPPORT_EMAIL` (padrão `contato@studioflowapp.tech`, criar essa caixa ou trocar). Revisão por advogado recomendada.
 - CI no GitHub (`.github/workflows/ci.yml`): lint, tipos e testes a cada push e PR.
 - Teste grátis no cadastro está preparado mas NÃO publicado (muda quem entra sem liberação): aguarda decisão do dono.
+
+## Evolução comercial (26 de novembro de 2026), branch `feature/studioflow-commercial-evolution`
+
+**Ainda não publicada.** Para publicar:
+1. Aplique as 7 migrações `20261126*` no Supabase (todas aditivas).
+2. Mescle na `main`.
+
+O passo a passo e o rollback estão em `STUDIOFLOW_COMMERCIAL_EVOLUTION_RELATORIO.md`. O que depende do dono (credenciais, custos, decisões) está em `STUDIOFLOW_AUTORIZACOES_PENDENTES.md`.
+
+**Operação:**
+- **Pendências** (`/dashboard/pendencias`): fecha horários passados.
+  - Nada é finalizado sozinho; pagamento só com a forma escolhida; lote sem pagamento.
+  - O alerta do Início leva para lá.
+- **Trava de envio** (`src/services/outbound-guard.ts`):
+  - `STUDIOFLOW_OUTBOUND_MODE` = `live`, `sandbox` ou `off`.
+  - Preview da Vercel e `STUDIOFLOW_STAGING=1` viram `sandbox`: só envia para `STUDIOFLOW_OUTBOUND_ALLOWLIST`, e cobrança real no Asaas fica bloqueada.
+  - Toda nova integração que envia algo deve chamar `assertOutboundAllowed` ou `assertPaymentAllowed`.
+- **Prontidão:** `/admin` → Central de controle mostra o que falta configurar (só presença das variáveis). Para incluir um item novo, use `src/lib/platform-readiness.ts`.
+- **Limite persistente:** `limitPersistent()` em `server-http.ts` (tabela `rate_limits`). Já aplicado no agendamento público, no chat e na lista de espera.
+
+**Comercial:**
+- **Planos** em `platform_plans`.
+  - Preço nulo = "Sob consulta": não inventar valor; quem define é o dono, em `/admin` → Cobranças.
+  - `/precos` é a vitrine pública.
+- **Pedidos de troca/cancelamento:** `platform_subscription_requests`, um aberto por casa.
+- **Cartão recorrente:** `subscribeCard` em `src/services/billing.ts`. O webhook `/api/billing/asaas` trata `payment.subscription` via `platform_subscription_charge` (idempotente; +30 dias uma vez).
+
+**IA:**
+- **Custo em R$ por casa:**
+  - `assistant_model_usage` e `src/lib/ai-cost.ts` (preços por modelo em USD/MTok);
+  - câmbio em `platform_settings.usd_brl`.
+- **Teto:** `business_ai_plan.monthly_budget_cents`. Ao atingir, o erro `budget-limit` passa a conversa para a equipe.
+- **Rastro:** `assistant_tool_events`, exibido em Conversas como "O que a recepcionista fez".
+
+**Agenda e financeiro:**
+- **Agenda:**
+  - recorrência (`src/lib/recurrence.ts`); cada repetição usa a mesma RPC com trava;
+  - "Agendar o próximo" no detalhe do atendimento concluído;
+  - bloqueio com "Até o dia".
+- **Despesas:**
+  - tabela `business_expenses`, só servidor; rota `/api/workspace/expenses`; regras em `src/lib/expenses.ts`;
+  - nunca apagar: estornar (`voided_at` + motivo);
+  - DRE por regime de caixa no Financeiro.
+
+**CRM e LGPD:**
+- **Colunas novas em `customers`:** `birth_date`, `marketing_consent` (padrão falso) e `consent_updated_at`.
+- **Histórico:** `customer_consent_events`, só servidor.
+- **"SAIR" no WhatsApp** (`optOutPattern`) tira do marketing.
+- **Exportação:** `/api/workspace/customers/[id]/export`, só gerência.
+- **Avaliação:** o pedido é neutro (`reviewRequestMessage`). Não filtrar por satisfação antes de mandar o link público.
+
+**Homologação:**
+1. Copie `.env.staging.example` para `.env.staging.local`.
+2. Confira com `node scripts/staging/check-env.mjs .env.staging.local` (recusa banco de produção, envio live, Asaas de produção e a instância `sf-studioflow`).
+3. Aplique as migrações com `STAGING_DB_URL=... scripts/staging/apply-migrations.sh`.
+
+**Cuidados:**
+- **Não envie esta branch ao repositório `studioflow`** antes de separar as variáveis de preview: hoje o preview da Vercel usa o banco de produção.
+- **Validação desta rodada:**
+  - 416 testes, TypeScript, ESLint, build e `npm audit` sem pendências;
+  - smoke HTTP PASS;
+  - capturas em `docs/capturas-evolucao/`.

@@ -15,6 +15,9 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { dateLabel, formatPhone, money } from "@/lib/utils";
 import type { Customer } from "@/types";
 import { WhatsAppLink } from "./shared";
+import { CustomerPrivacy } from "./customer-privacy";
+import { birthdayMessage, canMarket, daysToBirthday } from "@/lib/crm";
+import { businessDay } from "@/lib/utils";
 import {
   customerDays,
   customerNeedsReturn,
@@ -31,6 +34,8 @@ export function CustomerProfile({
   onEdit: (customer: Customer) => void;
 }) {
   const { data } = useWorkspace();
+  const role = data?.viewer?.role;
+  const canExport = !role || ["owner", "admin", "manager"].includes(role);
   const { canMutate } = usePermissions();
   const loyalty =
     customer && data?.settings.loyaltyEnabled
@@ -118,6 +123,19 @@ export function CustomerProfile({
               <WhatsAppIcon size={18} />
               Chamar no WhatsApp
             </WhatsAppLink>
+            {customer.birthDate &&
+              canMarket(customer) &&
+              daysToBirthday(customer.birthDate, businessDay()) <= 7 && (
+                <WhatsAppLink
+                  phone={customer.phone}
+                  message={birthdayMessage(customer, data?.business.name || "")}
+                >
+                  <Gift size={18} />
+                  {daysToBirthday(customer.birthDate, businessDay()) === 0
+                    ? "Mandar parabéns hoje"
+                    : `Aniversário em ${daysToBirthday(customer.birthDate, businessDay())} dias`}
+                </WhatsAppLink>
+              )}
             {canMutate("customers") && (
               <Button variant="secondary" onClick={() => onEdit(customer)}>
                 <PencilSimple size={16} />
@@ -144,6 +162,12 @@ export function CustomerProfile({
               </div>
             </dl>
           </FormSection>
+          <CustomerPrivacy
+            key={customer.id}
+            customer={customer}
+            canEdit={canMutate("customers")}
+            canExport={canExport}
+          />
           <FormSection
             title="Histórico de atendimentos"
             description={`${history.length} agendamentos registrados.`}

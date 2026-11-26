@@ -1,4 +1,5 @@
 import { DomainError } from "@/lib/availability";
+import { assertPaymentAllowed } from "../outbound-guard";
 
 export type AsaasEnvironment = "sandbox" | "production";
 
@@ -49,6 +50,7 @@ export class AsaasClient {
     path: string,
     init: { method?: string; body?: unknown } = {},
   ): Promise<T> {
+    assertPaymentAllowed(this.environment, init.method || "GET");
     let response: Response;
     try {
       response = await fetch(`${baseUrl[this.environment]}${path}`, {
@@ -183,6 +185,8 @@ export class AsaasClient {
     nextDueDate: string;
     description: string;
     reference: string;
+    /** CREDIT_CARD: o cartão fica salvo no Asaas e é cobrado todo mês. */
+    billingType?: "UNDEFINED" | "CREDIT_CARD";
   }) {
     return this.request<{ id: string; status: string; nextDueDate: string }>(
       "/subscriptions",
@@ -190,7 +194,7 @@ export class AsaasClient {
         method: "POST",
         body: {
           customer: input.customer,
-          billingType: "UNDEFINED",
+          billingType: input.billingType || "UNDEFINED",
           cycle: "MONTHLY",
           value: input.value,
           nextDueDate: input.nextDueDate,

@@ -32,6 +32,8 @@ import { completedVisits, loyaltyProgress } from "@/lib/loyalty";
 import { SaleSheet } from "@/features/management/sale-sheet";
 import { ArrivedTag } from "@/features/agenda/arrived-tag";
 import { hasModule } from "@/lib/modules";
+import { dayAfter, suggestedReturnDays } from "@/lib/recurrence";
+import { reviewRequestMessage } from "@/lib/crm";
 
 export function AppointmentDetail({
   appointment,
@@ -46,6 +48,7 @@ export function AppointmentDetail({
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [selling, setSelling] = useState(false);
+  const [booking, setBooking] = useState(false);
   const [confirm, setConfirm] = useState<AppointmentStatus | null>(null);
   const [paying, setPaying] = useState(false);
   const [openedAt, setOpenedAt] = useState(() => Date.now());
@@ -55,6 +58,7 @@ export function AppointmentDetail({
       setConfirm(null);
       setEditing(false);
       setSelling(false);
+      setBooking(false);
       setPaying(false);
       setOpenedAt(Date.now());
       setError("");
@@ -419,6 +423,16 @@ export function AppointmentDetail({
                   </Button>
                 </>
               )}
+              {canEdit && current.status === "completed" && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setBooking(true)}
+                  disabled={busy}
+                >
+                  <CalendarDots size={17} />
+                  Agendar o próximo
+                </Button>
+              )}
               {canSell && (
                 <Button
                   variant="secondary"
@@ -428,6 +442,24 @@ export function AppointmentDetail({
                   <ShoppingBagOpen size={17} />
                   Vender produto
                 </Button>
+              )}
+              {current.status === "completed" && (
+                // Pedido neutro: mesmo texto para todo atendimento concluído,
+                // sem filtrar por satisfação antes de mandar o link público.
+                <a
+                  className="btn btn-ghost"
+                  href={`https://wa.me/55${current.customerPhone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "")}?text=${encodeURIComponent(
+                    reviewRequestMessage({
+                      customerName: current.customerName,
+                      businessName: data.business.name,
+                      reviewUrl: data.business.mapsUrl || undefined,
+                    }),
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Pedir avaliação
+                </a>
               )}
               <a
                 className="btn btn-secondary"
@@ -459,6 +491,35 @@ export function AppointmentDetail({
         }}
         appointment={current}
       />
+      {booking && (
+        <AppointmentForm
+          open
+          onClose={() => {
+            setBooking(false);
+            onClose();
+          }}
+          // Sugestão: o intervalo que este cliente costuma levar entre visitas.
+          date={dayAfter(
+            current.start,
+            suggestedReturnDays(
+              data.appointments
+                .filter(
+                  (entry) =>
+                    entry.status === "completed" &&
+                    entry.customerPhone === current.customerPhone,
+                )
+                .map((entry) => entry.start),
+            ),
+          )}
+          time={dateLabel(current.start, "HH:mm")}
+          professionalId={current.professionalId}
+          initialServiceId={current.serviceIds[0]}
+          initialCustomer={{
+            name: current.customerName,
+            phone: current.customerPhone,
+          }}
+        />
+      )}
     </>
   );
 }

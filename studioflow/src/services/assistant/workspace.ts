@@ -364,6 +364,14 @@ export async function conversationDetail(id: string) {
     .maybeSingle();
   if (runError)
     throw new DomainError("Não foi possível consultar o atendimento.", 503);
+  // O que a recepcionista executou nesta conversa (últimas 20 operações).
+  const { data: toolEvents } = await createSupabaseAdmin()
+    .from("assistant_tool_events")
+    .select("tool,ok,summary,created_at")
+    .eq("business_id", businessId)
+    .eq("conversation_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
   let transcript = camel((messages || []).reverse()) as (ConversationMessage & {
     providerMessageId?: string;
   })[];
@@ -400,6 +408,12 @@ export async function conversationDetail(id: string) {
     conversation: camel(data) as ConversationSummary,
     messages: transcript,
     syncUnavailable,
+    toolEvents: camel(toolEvents || []) as {
+      tool: string;
+      ok: boolean;
+      summary: string;
+      createdAt: string;
+    }[],
     run:
       newerRequest && ["SENT", "SILENT", "FAILED"].includes(run.state)
         ? null

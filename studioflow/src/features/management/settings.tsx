@@ -1,4 +1,5 @@
 "use client";
+import { SubscriptionRequests } from "./subscription-requests";
 import { onlineBookingEnabled } from "@/lib/online-booking";
 import { OnlineBookingSettings } from "./online-booking-settings";
 import { CompanyLookup } from "./company-lookup";
@@ -1369,6 +1370,7 @@ function SettingsContent({ store }: { store: Store }) {
           {tab === "plan" && (
             <>
               <PlanSection store={store} />
+              <SubscriptionRequests store={store} />
               <FeePayment
                 showHistory
                 demo={store.mode === "demo"}

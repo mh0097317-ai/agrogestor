@@ -9,6 +9,7 @@ import {
   assertSameOrigin,
   failure,
   limitPublicMutation,
+  limitPersistent,
   requestOrigin,
   respond,
 } from "@/services/server-http";
@@ -20,6 +21,7 @@ export async function POST(
   try {
     assertSameOrigin(request);
     limitPublicMutation(request);
+    await limitPersistent(request, { scope: "book", max: 30 });
     const input = bookSchema.parse(await request.json());
     const appointment = await bookWithPayments(slug, input);
     // Whoever will attend gets a WhatsApp, after the answer goes back.
@@ -30,7 +32,10 @@ export async function POST(
     after(() =>
       logActivity(appointment.businessId, {
         source: "cliente",
-        action: appointment.depositStatus === "pending" ? "Reservou e foi pagar o sinal" : "Agendou pela página",
+        action:
+          appointment.depositStatus === "pending"
+            ? "Reservou e foi pagar o sinal"
+            : "Agendou pela página",
         detail: `${appointment.customerName} · ${activityWhen(appointment.start)}`,
         actor: appointment.customerName,
       }),
@@ -42,7 +47,11 @@ export async function POST(
       after(async () => {
         const businessId = await businessIdForSlug(slug);
         if (businessId)
-          await logActivity(businessId, { source: "cliente", action: "Não conseguiu agendar", detail: error.message });
+          await logActivity(businessId, {
+            source: "cliente",
+            action: "Não conseguiu agendar",
+            detail: error.message,
+          });
       });
     return failure(error);
   }

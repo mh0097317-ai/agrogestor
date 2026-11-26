@@ -632,6 +632,9 @@ function Thread({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [syncUnavailable, setSyncUnavailable] = useState(false);
+  const [toolEvents, setToolEvents] = useState<
+    { tool: string; ok: boolean; summary: string; createdAt: string }[]
+  >([]);
   const [analysisReason, setAnalysisReason] = useState<string | null>(
     "Carregando o pedido pendente…",
   );
@@ -649,6 +652,7 @@ function Thread({
         conversation: ConversationSummary;
         messages: ConversationMessage[];
         syncUnavailable?: boolean;
+        toolEvents?: { tool: string; ok: boolean; summary: string; createdAt: string }[];
         analysis?: { reason: string | null };
         run?: {
           state: string;
@@ -659,6 +663,7 @@ function Thread({
       }>(`/api/workspace/conversations/${summary.id}`);
       setMessages(data.messages);
       setSyncUnavailable(!!data.syncUnavailable);
+      setToolEvents(data.toolEvents || []);
       setStatus(data.conversation.status);
       setRun(data.run || null);
       setAnalysisReason(data.analysis?.reason ?? null);
@@ -976,13 +981,15 @@ function Thread({
                     ? "Confira o saldo e os limites do provedor."
                     : run.error_code === "delivery-unconfirmed"
                       ? "Confira a entrega no WhatsApp antes de reenviar."
-                      : run.error_code === "daily-limit"
-                        ? "Limite diário atingido. Aguarde a renovação ou ajuste nas configurações."
-                        : run.error_code === "missing-key"
-                          ? "Cadastre a chave de IA no cofre."
-                          : run.error_code === "appointment-created"
-                            ? "O agendamento já está na agenda. Confirme ao cliente sem criar outro."
-                            : "Confira a configuração da IA ou assuma a conversa."}
+                      : run.error_code === "budget-limit"
+                        ? "Orçamento mensal da IA atingido. Fale com o StudioFlow para ajustar o teto."
+                        : run.error_code === "daily-limit"
+                          ? "Limite diário atingido. Aguarde a renovação ou ajuste nas configurações."
+                          : run.error_code === "missing-key"
+                            ? "Cadastre a chave de IA no cofre."
+                            : run.error_code === "appointment-created"
+                              ? "O agendamento já está na agenda. Confirme ao cliente sem criar outro."
+                              : "Confira a configuração da IA ou assuma a conversa."}
             </span>
           )}
         </div>
@@ -994,6 +1001,41 @@ function Thread({
             Tentar novamente
           </Button>
         </div>
+      )}
+      {toolEvents.length > 0 && (
+        <details className="chat-tool-trace">
+          <summary>O que a recepcionista fez ({toolEvents.length})</summary>
+          <ol>
+            {toolEvents.map((event, i) => (
+              <li key={i} data-ok={event.ok ? "" : undefined}>
+                <time>
+                  {new Intl.DateTimeFormat("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(event.createdAt))}
+                </time>
+                <strong>
+                  {(
+                    {
+                      ver_horarios: "Consultou horários",
+                      mostrar_lista: "Mostrou opções",
+                      agendar: "Agendou",
+                      cancelar_horario: "Cancelou",
+                      remarcar_horario: "Remarcou",
+                      chamar_humano: "Chamou a equipe",
+                      ficar_em_silencio: "Não respondeu (sem pedido)",
+                    } as Record<string, string>
+                  )[event.tool] || event.tool}
+                  {!event.ok && " · não deu certo"}
+                </strong>
+                {event.summary && <span>{event.summary}</span>}
+              </li>
+            ))}
+          </ol>
+        </details>
       )}
       {syncUnavailable && (
         <p className="chat-analysis-notice" role="status">

@@ -15,16 +15,49 @@ import {
   customerNeedsReturn,
   customerVisitLabel,
 } from "@/lib/customer-metrics";
+import { daysToBirthday } from "@/lib/crm";
+import { businessDay } from "@/lib/utils";
 import "./customers.css";
 
-type Filter = "all" | "new" | "active" | "inactive" | "return";
+type Filter = "all" | "new" | "active" | "inactive" | "return" | "birthday";
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "Todos" },
   { id: "return", label: "Em atraso" },
   { id: "new", label: "Novos" },
   { id: "active", label: "Ativos" },
   { id: "inactive", label: "Inativos" },
+  { id: "birthday", label: "Aniversariantes" },
 ];
+
+const emptyCopy: Record<Filter, { title: string; description: string }> = {
+  all: {
+    title: "Seus clientes aparecem aqui",
+    description:
+      "Cada agendamento, pela página, pela recepcionista ou pelo painel, cria o cadastro sozinho.",
+  },
+  return: {
+    title: "Ninguém atrasado para voltar",
+    description:
+      "Quem passa do intervalo habitual entre visitas aparece aqui, com mensagem pronta para convidar.",
+  },
+  new: {
+    title: "Nenhum cliente novo em 30 dias",
+    description: "Divulgue o link da página em Divulgar para trazer gente nova.",
+  },
+  active: {
+    title: "Nenhum cliente ativo",
+    description: "Ativo é quem veio nos últimos 45 dias.",
+  },
+  inactive: {
+    title: "Nenhum cliente inativo",
+    description: "Todos vieram nos últimos 45 dias. Ótimo sinal.",
+  },
+  birthday: {
+    title: "Nenhum aniversário nos próximos 7 dias",
+    description:
+      "Preencha a data de nascimento no perfil do cliente para lembrar aqui. Parabéns só para quem aceitou mensagens.",
+  },
+};
 
 export default function CustomersPage() {
   const { data } = useWorkspace();
@@ -60,7 +93,10 @@ export default function CustomersPage() {
               (filter === "new" &&
                 (customerDays(customer.createdAt) ?? Infinity) <= 30) ||
               (filter === "active" && days !== undefined && days <= 45) ||
-              (filter === "inactive" && (days === undefined || days > 45)))
+              (filter === "inactive" && (days === undefined || days > 45)) ||
+              (filter === "birthday" &&
+                !!customer.birthDate &&
+                daysToBirthday(customer.birthDate, businessDay()) <= 7))
           );
         })
         .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
@@ -203,11 +239,15 @@ export default function CustomersPage() {
           </div>
         ) : (
           <EmptyState
-            title="Nenhum cliente encontrado"
+            title={
+              search
+                ? `Ninguém com "${search}"`
+                : emptyCopy[filter].title
+            }
             description={
-              search || filter !== "all"
-                ? "Ajuste a busca ou o filtro para encontrar seu cliente."
-                : "Os clientes aparecem aqui após o primeiro agendamento."
+              search
+                ? "Confira a grafia ou busque pelo telefone, só com números."
+                : emptyCopy[filter].description
             }
             action={
               (search || filter !== "all") && (

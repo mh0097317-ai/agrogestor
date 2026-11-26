@@ -1,5 +1,5 @@
 import { auditPanel } from "@/services/activity";
-import { billingView, payFee, paySchema } from "@/services/billing";
+import { billingView, payFee, paySchema, subscribeCard } from "@/services/billing";
 import { assertSameOrigin, failure, respond } from "@/services/server-http";
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    const result = await payFee(paySchema.parse(await request.json().catch(() => ({}))));
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    if (body.mode === "card") {
+      const result = await subscribeCard(paySchema.parse(body));
+      auditPanel("Assinou a mensalidade no cartão");
+      return respond(result);
+    }
+    const result = await payFee(paySchema.parse(body));
     auditPanel("Gerou a cobrança da mensalidade");
     return respond(result);
   } catch (error) {

@@ -7,7 +7,6 @@ import {
   ArrowCounterClockwise,
   Eye,
   EyeSlash,
-  Package,
   PencilSimple,
   Plus,
   ShoppingBagOpen,
@@ -19,7 +18,7 @@ import { Button, Card, EmptyState, MetricStrip, Modal, PageHeader } from "@/comp
 import { useToast } from "@/components/toast";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { usePermissions } from "@/hooks/use-permissions";
-import { money } from "@/lib/utils";
+import { money, monogram } from "@/lib/utils";
 import type { Product, ProductSale, Store } from "@/types";
 import { FormError, FormField, ManagementBoundary } from "./shared";
 import { SaleSheet } from "./sale-sheet";
@@ -150,7 +149,13 @@ function ProductsContent({ store }: { store: Store }) {
                 style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
               >
                 <div className="shop-photo">
-                  {product.image ? <img src={product.image} alt="" /> : <Package size={30} weight="duotone" />}
+                  {product.image ? (
+                    <img src={product.image} alt="" />
+                  ) : (
+                    <span className="product-monogram" aria-hidden="true">
+                      {monogram(product.name)}
+                    </span>
+                  )}
                   <span className="shop-stock">
                     {product.stock === 0
                       ? "Sem estoque"

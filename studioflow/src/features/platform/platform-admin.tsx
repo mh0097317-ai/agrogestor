@@ -1,4 +1,7 @@
 "use client";
+import { ReadinessCard } from "./readiness-card";
+import { AiCostsCard } from "./ai-costs-card";
+import { SubscriptionsAdmin } from "./subscriptions-admin";
 
 import {
   ClientConfigurationPanel,
@@ -686,6 +689,8 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             }}
           />
         )}
+        {view === "operations" && <ReadinessCard />}
+        {view === "operations" && <AiCostsCard />}
         {view === "operations" && items && (
           <OperationsPanel
             items={items}
@@ -709,6 +714,7 @@ export function PlatformAdmin({ demo = false }: { demo?: boolean }) {
             onOpen={setOpen}
           />
         )}
+        {view === "billing" && <SubscriptionsAdmin />}
         {view === "billing" && items && monitoring && (
           <BillingPanel
             items={items}

@@ -7,6 +7,7 @@ export const credentialFailures = new Set([
   "provider-auth",
   "missing-key",
   "provider-balance",
+  "budget-limit",
 ]);
 
 export interface OwnerAlert {
@@ -47,20 +48,24 @@ export function aiCredentialProblem(
   );
 }
 
-/** Horários dos últimos 7 dias que passaram e ninguém finalizou. */
+const openStatuses = new Set(["confirmed", "pending", "in_progress"]);
+
+/**
+ * Atendimentos que já terminaram e ninguém fechou (atendido, falta ou
+ * cancelado). Nada muda de status sozinho: o dono revisa em Pendências.
+ */
+export function pastOpenAppointments(data: Store, now = Date.now()) {
+  return data.appointments
+    .filter((a) => openStatuses.has(a.status) && Date.parse(a.end) < now)
+    .sort((a, b) => a.start.localeCompare(b.start));
+}
+
+/** Os de dias anteriores (os de hoje o Salão ao vivo já mostra). */
 export function unfinishedAppointments(data: Store, now = Date.now()) {
   const today = businessDay(new Date(now));
-  const from = businessDay(new Date(now - 7 * 86400000));
-  return data.appointments
-    .filter((a) => {
-      const day = businessDay(a.start);
-      return (
-        (a.status === "confirmed" || a.status === "in_progress") &&
-        day < today &&
-        day >= from
-      );
-    })
-    .sort((a, b) => a.start.localeCompare(b.start));
+  return pastOpenAppointments(data, now).filter(
+    (a) => businessDay(a.start) < today,
+  );
 }
 
 export function ownerAlerts(
@@ -97,9 +102,11 @@ export function ownerAlerts(
       id: "ai",
       title: "A recepcionista IA parou de responder",
       detail:
-        input.latestRun?.errorCode === "provider-balance"
-          ? "O provedor da IA recusou por saldo. As conversas estão indo para a equipe."
-          : "A chave da IA foi recusada. As conversas estão indo para a equipe.",
+        input.latestRun?.errorCode === "budget-limit"
+          ? "O orçamento mensal da IA foi atingido. As conversas estão indo para a equipe."
+          : input.latestRun?.errorCode === "provider-balance"
+            ? "O provedor da IA recusou por saldo. As conversas estão indo para a equipe."
+            : "A chave da IA foi recusada. As conversas estão indo para a equipe.",
       action: input.support
         ? {
             label: "Avisar o StudioFlow",
@@ -128,10 +135,10 @@ export function ownerAlerts(
           ? "1 horário passado sem finalizar"
           : `${late.length} horários passados sem finalizar`,
       detail:
-        "Marque como concluído ou falta para o caixa e os relatórios ficarem certos.",
+        "Diga o que aconteceu em cada um (atendido, falta ou cancelado) para o caixa e os relatórios ficarem certos.",
       action: {
-        label: "Finalizar",
-        href: `/dashboard/agenda?date=${businessDay(late[0].start)}`,
+        label: "Regularizar",
+        href: "/dashboard/pendencias",
       },
     });
   return alerts;

@@ -69,6 +69,11 @@ export interface Customer {
   favoriteProfessional?: string;
   returnInterval?: number;
   createdAt: string;
+  /** yyyy-mm-dd; opcional. */
+  birthDate?: string | null;
+  /** Aceitou receber mensagens de marketing (LGPD). Padrão: não. */
+  marketingConsent?: boolean;
+  consentUpdatedAt?: string | null;
 }
 export interface Appointment {
   /** Trusted server attribution; old bookings have no recoverable channel. */
@@ -347,6 +352,9 @@ export interface Store {
   access?: BusinessAccess & { state?: AccessState };
   /** Histórico de liberações no modo demonstração. */
   accessEvents?: AccessEvent[];
+  /** Demo only: pedidos de troca de plano ou cancelamento. */
+  subscriptionRequests?: import("@/lib/platform-plans").SubscriptionRequest[];
+  expenses?: import("@/lib/expenses").Expense[];
 }
 /** Mensalidade do StudioFlow (fatura do Asaas da plataforma). */
 export interface PlatformInvoice {

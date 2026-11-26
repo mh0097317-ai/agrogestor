@@ -132,10 +132,13 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #16130f, #3a3229);
-  color: white;
-  font-weight: 600;
+  /* Cartaz: cor chapada e monograma com serifa, sem degradê. */
+  background: #16130f;
+  color: #f4f0e8;
+  font-family: var(--serif, Georgia, serif);
+  font-weight: 500;
   font-size: 22px;
+  letter-spacing: 0.04em;
 }
 .public-eyebrow {
   display: inline-flex;

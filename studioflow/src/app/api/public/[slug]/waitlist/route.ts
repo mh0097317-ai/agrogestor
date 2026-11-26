@@ -4,6 +4,7 @@ import {
   assertSameOrigin,
   failure,
   limitPublicMutation,
+  limitPersistent,
   respond,
 } from "@/services/server-http";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export async function POST(
   try {
     assertSameOrigin(request);
     limitPublicMutation(request);
+    await limitPersistent(request, { scope: "waitlist", max: 15 });
     await getOnlineBookingStore((await params).slug);
     const input = waitlistJoinSchema.parse(await request.json());
     return respond(await joinWaitlist((await params).slug, input), 201);

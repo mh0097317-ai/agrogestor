@@ -511,6 +511,8 @@ export interface ReceptionistResult {
   silent?: boolean;
   usage: { input: number; output: number };
   messages: Message[];
+  /** Ferramentas usadas neste turno, na ordem (rastreabilidade). */
+  trace?: { tool: string; ok: boolean; summary: string }[];
 }
 
 /**
@@ -542,7 +544,8 @@ export async function receptionistTurn(input: {
   // chat, what the customer wrote or tapped, and what this turn consulted.
   const seen = new Set<string>([...(input.known || []), ...times(input.text)]);
   const said = customerWords(input.text, store);
-  const execute = async (name: string, args: Record<string, unknown>) => {
+  const trace: { tool: string; ok: boolean; summary: string }[] = [];
+  const operate = async (name: string, args: Record<string, unknown>) => {
     if (name === "ver_horarios")
       return slotsReport(store, args, now, ctx, seen);
     if (name === "mostrar_lista") {
@@ -696,6 +699,15 @@ export async function receptionistTurn(input: {
       return "Sem markdown, negrito ou marcadores: escreva como mensagem de WhatsApp.";
     return null;
   };
+  const execute = async (name: string, args: Record<string, unknown>) => {
+    const outcome = await operate(name, args);
+    trace.push({
+      tool: name,
+      ok: !outcome.isError,
+      summary: String(outcome.content || "").replace(/\s+/g, " ").slice(0, 200),
+    });
+    return outcome;
+  };
   const turn = await runAgentTurn({
     create: input.create,
     model: receptionistModel,
@@ -731,6 +743,7 @@ export async function receptionistTurn(input: {
     maxSteps: 6,
   });
   return {
+    trace,
     reply: state.silent
       ? ""
       : turn.reply.replace(/\*\*(.+?)\*\*/g, "$1").trim(),

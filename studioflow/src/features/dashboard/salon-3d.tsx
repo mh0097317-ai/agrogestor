@@ -18,7 +18,28 @@ function readView(): View {
     const saved = localStorage.getItem(viewKey);
     if (saved === "3d" || saved === "2d") return saved;
   } catch {}
-  return "3d";
+  return lightDevice() ? "2d" : "3d";
+}
+/**
+ * Sem escolha salva, celular, aparelho fraco, economia de dados ou "reduzir
+ * movimento" abrem na planta 2D (leve e imediata). O 3D continua a um toque.
+ */
+function lightDevice() {
+  try {
+    const nav = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: { saveData?: boolean };
+    };
+    return (
+      matchMedia("(max-width: 900px)").matches ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !!nav.connection?.saveData ||
+      (nav.deviceMemory !== undefined && nav.deviceMemory <= 4) ||
+      (nav.hardwareConcurrency > 0 && nav.hardwareConcurrency <= 4)
+    );
+  } catch {
+    return false;
+  }
 }
 function subscribeView(listener: () => void) {
   viewListeners.add(listener);
@@ -68,7 +89,7 @@ export function Salon3D({
   const tags = useRef(new Map<string, HTMLDivElement>());
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
-  const view = useSyncExternalStore(subscribeView, readView, () => "3d");
+  const view = useSyncExternalStore(subscribeView, readView, () => "2d");
   const flat = failed || view === "2d";
   const shown = chairs.slice(0, 8);
   const states = shown.map((c) => `${c.professional.id}:${c.state}`).join("|");

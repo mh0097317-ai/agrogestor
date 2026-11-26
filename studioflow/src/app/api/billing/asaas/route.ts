@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { markPaid } from "@/services/billing";
+import { markPaid, registerSubscriptionCharge } from "@/services/billing";
 import { paidStatuses } from "@/services/payments/asaas";
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,18 @@ export async function POST(request: Request) {
   const expected = process.env.STUDIOFLOW_ASAAS_WEBHOOK_TOKEN || "";
   const received = request.headers.get("asaas-access-token") || "";
   if (!expected || !same(received, expected)) return plain("forbidden", 401);
-  let body: { event?: string; payment?: { id?: string; status?: string } };
+  let body: {
+    event?: string;
+    payment?: {
+      id?: string;
+      status?: string;
+      value?: number;
+      dueDate?: string;
+      invoiceUrl?: string;
+      subscription?: string | null;
+      externalReference?: string | null;
+    };
+  };
   try {
     body = await request.json();
   } catch {
@@ -26,8 +37,14 @@ export async function POST(request: Request) {
   const paid =
     ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"].includes(body.event || "") ||
     paidStatuses.has(body.payment?.status || "");
-  if (!id || !paid) return plain("ok");
+  if (!id) return plain("ok");
   try {
+    // Cobrança da assinatura no cartão: registra (uma vez) e, se paga, libera.
+    if (body.payment?.subscription) {
+      await registerSubscriptionCharge({ ...body.payment, id }, paid);
+      return plain("ok");
+    }
+    if (!paid) return plain("ok");
     await markPaid(id);
   } catch {
     // Asaas tries again; marking twice does nothing.

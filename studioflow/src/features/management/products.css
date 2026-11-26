@@ -369,3 +369,15 @@
     animation: none;
   }
 }
+/* Produto sem foto: monograma em tinta e papel, no lugar do ícone genérico. */
+.shop-photo .product-monogram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: #16130f;
+  color: #f4f0e8;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 34px;
+  letter-spacing: 0.06em;
+}

@@ -34,6 +34,8 @@ export interface BillingView {
   document: string;
   open: PlatformInvoice | null;
   invoices: PlatformInvoice[];
+  /** Mensalidade no cartão, cobrada todo mês pelo Asaas. */
+  card?: boolean;
 }
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
@@ -77,7 +79,7 @@ export async function billingView(): Promise<BillingView> {
   const admin = createSupabaseAdmin();
   const [access, business, invoices] = await Promise.all([
     readBusinessAccess(businessId),
-    admin.from("businesses").select("cnpj").eq("id", businessId).single(),
+    admin.from("businesses").select("cnpj,platform_subscription_id").eq("id", businessId).single(),
     admin
       .from("platform_invoices")
       .select("id,value,due_date,status,invoice_url,paid_at,created_at")
@@ -96,6 +98,7 @@ export async function billingView(): Promise<BillingView> {
     document: ((business.data?.cnpj as string) || "").replace(/\D/g, ""),
     open: list.find((item) => item.status === "pending") || null,
     invoices: list,
+    card: !!business.data?.platform_subscription_id,
   };
 }
 
@@ -270,3 +273,122 @@ export function reminderText(input: {
     input.stage === "late" ? "volta na hora" : "renova sozinho"
   }:\n${input.link}\n\nQualquer dúvida, é só responder aqui.`;
 }
+
+/* ------------------------------------------------------------------ */
+/* Mensalidade recorrente no cartão                                     */
+/* ------------------------------------------------------------------ */
+
+/** Referência que liga a assinatura do Asaas à casa (conferida no banco). */
+export const subscriptionReference = (businessId: string) =>
+  `studioflow-sub:${businessId}`;
+export function businessFromReference(reference?: string | null) {
+  const match = /^studioflow-sub:([0-9a-f-]{36})$/.exec(reference || "");
+  return match ? match[1] : null;
+}
+
+/**
+ * O dono escolhe pagar no cartão todo mês: cria a assinatura no Asaas da
+ * plataforma (o cartão é digitado na página do Asaas, nunca aqui) e devolve o
+ * link da primeira cobrança.
+ */
+export async function subscribeCard(input: z.infer<typeof paySchema>) {
+  if (isDemo())
+    throw new DomainError("A assinatura no cartão funciona só no ambiente publicado.", 409);
+  const { businessId, role, user } = await requireMembership({ allowClosed: true });
+  if (!payers.includes(role)) throw new DomainError("Peça para o dono assinar.", 403);
+  if (!billingReady()) throw new DomainError("A cobrança online ainda está sendo ligada. Fale com o StudioFlow.", 503);
+  const admin = createSupabaseAdmin();
+  const access = await readBusinessAccess(businessId);
+  if (!billable(access)) throw new DomainError("Seu plano não tem mensalidade para pagar agora.", 409);
+  const { data: business } = await admin
+    .from("businesses")
+    .select("name,phone,cnpj,platform_subscription_id")
+    .eq("id", businessId)
+    .single();
+  if (business?.platform_subscription_id)
+    throw new DomainError("A assinatura no cartão já está ativa.", 409);
+  const doc = input.document || ((business?.cnpj as string) || "").replace(/\D/g, "");
+  if (doc.length !== 11 && doc.length !== 14)
+    throw new DomainError("Para assinar, informe o CPF ou o CNPJ do responsável.", 400);
+  const asaas = platformAsaas();
+  const customer = await asaas.findOrCreateCustomer({
+    name: business!.name,
+    cpf: doc,
+    phone: ((business!.phone as string) || "").replace(/\D/g, ""),
+    email: user.email || undefined,
+    reference: `studioflow:${businessId}`,
+  });
+  const subscription = await asaas.createSubscription({
+    customer,
+    value: access.price!,
+    nextDueDate: dueFor(access),
+    description: `StudioFlow ${access.plan || "mensalidade"} · ${business!.name}`,
+    reference: subscriptionReference(businessId),
+    billingType: "CREDIT_CARD",
+  });
+  const { error } = await admin
+    .from("businesses")
+    .update({ platform_subscription_id: subscription.id, ...(input.document && !business?.cnpj ? { cnpj: input.document } : {}) })
+    .eq("id", businessId);
+  if (error) {
+    await asaas.cancelSubscription(subscription.id).catch(() => undefined);
+    throw new DomainError("Não foi possível registrar a assinatura. Tente de novo.", 503);
+  }
+  const [first] = await asaas.subscriptionPayments(subscription.id).catch(() => []);
+  if (first)
+    await admin.rpc("platform_subscription_charge", {
+      p_business_id: businessId,
+      p_charge_id: first.id,
+      p_subscription_id: subscription.id,
+      p_value: first.value,
+      p_due_date: first.dueDate,
+      p_invoice_url: first.invoiceUrl || "",
+      p_paid: paidStatuses.has(first.status),
+    });
+  return { subscriptionId: subscription.id, invoiceUrl: first?.invoiceUrl || "" };
+}
+
+/** Para as próximas cobranças (cancelamento aplicado pela equipe). */
+export async function cancelPlatformSubscription(businessId: string) {
+  if (isDemo()) return;
+  const admin = createSupabaseAdmin();
+  const { data } = await admin
+    .from("businesses")
+    .select("platform_subscription_id")
+    .eq("id", businessId)
+    .maybeSingle();
+  const id = data?.platform_subscription_id as string | null;
+  if (!id) return;
+  if (billingReady()) await platformAsaas().cancelSubscription(id);
+  await admin.from("businesses").update({ platform_subscription_id: null }).eq("id", businessId);
+}
+
+/**
+ * Aviso do Asaas sobre cobrança gerada pela assinatura: registra a fatura
+ * (uma vez) e, se paga, soma os dias. A casa vem da referência e o banco
+ * confere que a assinatura é mesmo dela.
+ */
+export async function registerSubscriptionCharge(payment: {
+  id: string;
+  status?: string;
+  value?: number;
+  dueDate?: string;
+  invoiceUrl?: string;
+  subscription?: string | null;
+  externalReference?: string | null;
+}, paidEvent: boolean) {
+  const businessId = businessFromReference(payment.externalReference);
+  if (!businessId || !payment.subscription) return false;
+  const { error } = await createSupabaseAdmin().rpc("platform_subscription_charge", {
+    p_business_id: businessId,
+    p_charge_id: payment.id,
+    p_subscription_id: payment.subscription,
+    p_value: payment.value,
+    p_due_date: payment.dueDate,
+    p_invoice_url: payment.invoiceUrl || "",
+    p_paid: paidEvent || paidStatuses.has(payment.status || ""),
+  });
+  if (error) throw new DomainError("Não foi possível registrar a cobrança da assinatura.", 503);
+  return true;
+}
+

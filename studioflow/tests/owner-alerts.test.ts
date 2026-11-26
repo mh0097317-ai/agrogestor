@@ -4,6 +4,7 @@ import { createSeed } from "../src/lib/seed";
 import {
   aiCredentialProblem,
   ownerAlerts,
+  pastOpenAppointments,
   unfinishedAppointments,
   whatsappDown,
 } from "../src/lib/owner-alerts";
@@ -117,13 +118,13 @@ test("conversas esperando e horários passados sem finalizar", () => {
       appointment("2026-11-23", "confirmed"),
       appointment("2026-11-22", "confirmed"),
       appointment("2026-11-23", "completed"),
-      appointment("2026-11-10", "confirmed"), // mais de 7 dias: fica fora
+      appointment("2026-11-10", "confirmed"), // antigo também entra: nada some sozinho
       appointment("2026-11-24", "confirmed"), // hoje: o Salão cuida
     ],
   });
   assert.deepEqual(
     unfinishedAppointments(data, NOW).map((a) => a.id),
-    ["2026-11-22-confirmed", "2026-11-23-confirmed"],
+    ["2026-11-10-confirmed", "2026-11-22-confirmed", "2026-11-23-confirmed"],
   );
   const alerts = ownerAlerts(data, { now: NOW, attention: 3 });
   assert.deepEqual(
@@ -131,5 +132,14 @@ test("conversas esperando e horários passados sem finalizar", () => {
     ["conversations", "unfinished"],
   );
   assert.equal(alerts[0].title, "3 conversas esperando a equipe");
-  assert.equal(alerts[1].action.href, "/dashboard/agenda?date=2026-11-22");
+  assert.equal(alerts[1].action.href, "/dashboard/pendencias");
+  assert.equal(alerts[1].title, "3 horários passados sem finalizar");
+  // Hoje, já terminado: entra na revisão, mas não na faixa (o Salão mostra).
+  assert.equal(
+    pastOpenAppointments(
+      store({ appointments: [appointment("2026-11-24", "confirmed")] }),
+      NOW,
+    ).length,
+    1,
+  );
 });

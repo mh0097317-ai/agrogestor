@@ -1,4 +1,5 @@
 import { DomainError } from "@/lib/availability";
+import { assertOutboundAllowed } from "../outbound-guard";
 
 /** Instagram API com login do Instagram (mensagens do Direct). */
 export const instagramVersion = "v23.0";
@@ -69,6 +70,7 @@ export async function sendInstagram(input: {
   to: string;
   body: string;
 }) {
+  assertOutboundAllowed("instagram", input.to);
   let response: Response;
   try {
     response = await fetch(`${base}/${encodeURIComponent(input.igUserId)}/messages`, {

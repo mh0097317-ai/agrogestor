@@ -690,3 +690,67 @@
   font: inherit;
   text-align: center;
 }
+
+/* Configurações → Plano: pedir troca ou cancelamento */
+.subscription-requests {
+  margin: 22px 0;
+  padding-top: 18px;
+  border-top: 1px solid #e2d9ca;
+}
+.subscription-requests h3 {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: 19px;
+}
+.sub-actions,
+.sub-open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.sub-actions a {
+  color: #8a6430;
+  font-weight: 650;
+}
+.sub-open p {
+  flex: 1 1 260px;
+  margin: 0;
+}
+.sub-form {
+  display: grid;
+  gap: 12px;
+}
+.sub-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.sub-plans label {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.sub-plans label.is-on {
+  border-color: #16130f;
+  box-shadow: 0 0 0 1px #16130f;
+}
+.sub-plans input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.sub-plans span {
+  color: #6e655b;
+  font-size: 13px;
+}
+.sub-form textarea {
+  min-height: 72px;
+  padding: 10px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  font: inherit;
+}

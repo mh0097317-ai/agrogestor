@@ -9,6 +9,7 @@ import { money, localDay, businessDay, formatPhone } from "@/lib/utils";
 import type { Appointment } from "@/types";
 import { normalizePhone } from "@/lib/availability";
 import { minuteOf, timeOf } from "./agenda-helpers";
+import { recurrenceStarts } from "@/lib/recurrence";
 export function AppointmentForm({
   open,
   onClose,
@@ -17,6 +18,7 @@ export function AppointmentForm({
   professionalId,
   initialServiceId,
   appointment,
+  initialCustomer,
 }: {
   open: boolean;
   onClose: () => void;
@@ -25,6 +27,8 @@ export function AppointmentForm({
   professionalId?: string;
   initialServiceId?: string;
   appointment?: Appointment;
+  /** "Agendar o próximo": mesmo cliente já preenchido. */
+  initialCustomer?: { name: string; phone: string };
 }) {
   const { data, mutate } = useWorkspace();
   const { canMutate } = usePermissions();
@@ -63,9 +67,13 @@ export function AppointmentForm({
         `${form.get("date")}T${form.get("time")}:00-03:00`,
       ).toISOString();
       if (kind === "block") {
+        // "Até o dia": férias e indisponibilidades de vários dias num bloqueio só.
+        const endDay = String(form.get("endDate") || "") || String(form.get("date"));
         const end = new Date(
-          `${form.get("date")}T${form.get("endTime")}:00-03:00`,
+          `${endDay}T${form.get("endTime")}:00-03:00`,
         ).toISOString();
+        if (Date.parse(end) <= Date.parse(start))
+          throw new Error("O fim do bloqueio precisa ser depois do início.");
         await mutate("blockedTimes", "create", {
           professionalId: form.get("professionalId"),
           start,
@@ -74,21 +82,51 @@ export function AppointmentForm({
         });
         toast("Horário bloqueado.");
       } else {
-        await mutate("appointments", appointment ? "update" : "create", {
-          ...(appointment ? { id: appointment.id } : {}),
+        const payload = {
           serviceIds: [serviceId],
           professionalId: form.get("professionalId"),
-          start,
           customerName: form.get("name"),
           customerPhone: normalizePhone(String(form.get("phone") || "")),
           reminder: form.get("reminder") === "on",
           status: appointment?.status || "confirmed",
+        };
+        await mutate("appointments", appointment ? "update" : "create", {
+          ...(appointment ? { id: appointment.id } : {}),
+          ...payload,
+          start,
         });
-        toast(
-          appointment
-            ? "Agendamento atualizado."
-            : "Agendamento criado com sucesso.",
-        );
+        // Recorrência: cada repetição passa pela mesma trava do banco. Data
+        // ocupada não impede as outras; o dono vê quais ficaram de fora.
+        const every = Number(form.get("repeatEvery") || 0);
+        const times = Number(form.get("repeatCount") || 1);
+        if (!appointment && every > 0 && times > 1) {
+          const failed: string[] = [];
+          let made = 1;
+          for (const next of recurrenceStarts(start, every, times)) {
+            try {
+              await mutate("appointments", "create", { ...payload, start: next });
+              made++;
+            } catch {
+              failed.push(
+                new Intl.DateTimeFormat("pt-BR", {
+                  timeZone: "America/Sao_Paulo",
+                  day: "2-digit",
+                  month: "2-digit",
+                }).format(new Date(next)),
+              );
+            }
+          }
+          toast(
+            failed.length
+              ? `${made} horários criados. Ocupado em ${failed.join(", ")}: marque essas datas em outro horário.`
+              : `${made} horários criados, um a cada ${every === 1 ? "semana" : `${every} semanas`}.`,
+          );
+        } else
+          toast(
+            appointment
+              ? "Agendamento atualizado."
+              : "Agendamento criado com sucesso.",
+          );
       }
       onClose();
     } catch (err) {
@@ -160,7 +198,7 @@ export function AppointmentForm({
                       placeholder="Nome completo"
                       required
                       minLength={2}
-                      defaultValue={appointment?.customerName}
+                      defaultValue={appointment?.customerName || initialCustomer?.name}
                       list="existing-customers"
                     />
                     <datalist id="existing-customers">
@@ -181,7 +219,9 @@ export function AppointmentForm({
                       defaultValue={
                         appointment
                           ? formatPhone(appointment.customerPhone)
-                          : ""
+                          : initialCustomer
+                            ? formatPhone(initialCustomer.phone)
+                            : ""
                       }
                     />
                   </label>
@@ -274,6 +314,10 @@ export function AppointmentForm({
                     )}
                   />
                 </label>
+                <label>
+                  Até o dia (opcional)
+                  <input type="date" name="endDate" />
+                </label>
                 <label className="full">
                   Motivo
                   <input
@@ -284,14 +328,40 @@ export function AppointmentForm({
                 </label>
               </>
             ) : (
-              <label className="checkbox-label full">
-                <input
-                  type="checkbox"
-                  name="reminder"
-                  defaultChecked={appointment?.reminder || false}
-                />{" "}
-                Cliente autoriza lembretes por WhatsApp
-              </label>
+              <>
+                <label className="checkbox-label full">
+                  <input
+                    type="checkbox"
+                    name="reminder"
+                    defaultChecked={appointment?.reminder || false}
+                  />{" "}
+                  Cliente autoriza lembretes por WhatsApp
+                </label>
+                {!appointment && (
+                  <>
+                    <label>
+                      Repetir
+                      <select name="repeatEvery" defaultValue="0">
+                        <option value="0">Não repete</option>
+                        <option value="1">Toda semana</option>
+                        <option value="2">A cada 2 semanas</option>
+                        <option value="3">A cada 3 semanas</option>
+                        <option value="4">A cada 4 semanas</option>
+                      </select>
+                    </label>
+                    <label>
+                      Quantas vezes
+                      <input
+                        type="number"
+                        name="repeatCount"
+                        min={2}
+                        max={12}
+                        defaultValue={4}
+                      />
+                    </label>
+                  </>
+                )}
+              </>
             )}
           </div>
         </FormSection>

@@ -17,6 +17,7 @@ interface BillingView {
   until: string | null;
   state: string;
   billable: boolean;
+  card?: boolean;
   document: string;
   open: PlatformInvoice | null;
   invoices: PlatformInvoice[];
@@ -104,6 +105,19 @@ export function FeePayment({
       setBusy("");
     }
   }
+  async function subscribeCard() {
+    setBusy("card");
+    setError("");
+    try {
+      const result = await call<{ invoiceUrl: string }>("/api/workspace/billing", "POST", { document, mode: "card" });
+      setView((current) => (current ? { ...current, card: true } : current));
+      if (result.invoiceUrl) window.open(result.invoiceUrl, "_blank", "noopener");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível assinar.");
+    } finally {
+      setBusy("");
+    }
+  }
   async function check(quiet = false) {
     if (!quiet) setBusy("check");
     try {
@@ -179,7 +193,24 @@ export function FeePayment({
             {busy === "pay" ? <CircleNotch size={16} className="fee-spin" /> : <Receipt size={16} />}
             {busy === "pay" ? "Gerando cobrança…" : "Pagar mensalidade"}
           </button>
+          {!demo && !view.card && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!!busy || (!view.document && document.length !== 11 && document.length !== 14)}
+              onClick={() => void subscribeCard()}
+            >
+              {busy === "card" ? <CircleNotch size={16} className="fee-spin" /> : <Receipt size={16} />}
+              {busy === "card" ? "Abrindo…" : "Assinar no cartão (todo mês)"}
+            </button>
+          )}
         </form>
+      )}
+      {view.card && (
+        <p className="fee-note">
+          Assinatura no cartão ativa: a mensalidade é cobrada todo mês, sem
+          você precisar abrir fatura.
+        </p>
       )}
       {error && (
         <p className="fee-error" role="alert">

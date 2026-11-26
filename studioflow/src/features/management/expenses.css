@@ -1,0 +1,37 @@
+.expenses-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.expenses-result {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line, #dcd2c2); border-bottom: 1px solid var(--line, #dcd2c2);
+  margin: 8px 0 16px;
+}
+.expenses-result > div { padding: 14px 12px; display: grid; gap: 4px; }
+.expenses-result > div + div { border-left: 1px solid var(--line, #dcd2c2); }
+.expenses-result span { font-size: 12px; color: #6e655b; text-transform: uppercase; letter-spacing: .06em; }
+.expenses-result strong { font-family: var(--serif); font-size: 26px; font-weight: 500; color: #16130f; }
+.expenses-result strong.is-negative { color: #9b2c1f; }
+.expenses-overdue { font-style: normal; font-size: 13px; color: #9b2c1f; }
+.expenses-delta { font-size: 12px; color: #6e655b; margin-left: 4px; }
+.expenses-delta.is-good { color: #2f6b3a; }
+.expenses-delta.is-bad { color: #9b2c1f; }
+.expenses-dre tr.is-strong td { font-weight: 600; }
+.expenses-dre tr.is-total td { font-weight: 700; border-top: 2px solid #16130f; }
+.expenses-error, .expenses-loading, .expenses-empty { color: #6e655b; margin: 8px 0; }
+.expenses-error button { text-decoration: underline; color: #8a6430; background: none; border: 0; cursor: pointer; }
+.expenses-list { list-style: none; margin: 0; padding: 0; }
+.expenses-list li {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--line, #e2d9ca);
+}
+.expenses-list li > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.expenses-list li span { font-size: 13px; color: #6e655b; }
+.expenses-list li.is-overdue span { color: #9b2c1f; }
+.expenses-row-actions { display: flex; gap: 6px; align-items: center; }
+.expenses-row-actions select { min-height: 40px; border: 1px solid var(--line, #dcd2c2); border-radius: 3px; background: #fffdf9; padding: 0 8px; }
+.expenses-form { display: grid; gap: 14px; }
+.expenses-form label { display: grid; gap: 6px; }
+@media (max-width: 640px) {
+  .expenses-result { grid-template-columns: 1fr; }
+  .expenses-result > div + div { border-left: 0; border-top: 1px solid var(--line, #dcd2c2); }
+  .expenses-list li { grid-template-columns: 1fr auto; }
+  .expenses-row-actions { grid-column: 1 / -1; }
+}

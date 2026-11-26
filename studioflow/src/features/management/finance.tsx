@@ -40,6 +40,7 @@ import {
   type FinancePreset,
 } from "./finance-helpers";
 import { PeriodControl } from "./period-control";
+import { ExpensesPanel } from "./expenses-panel";
 const methods: PaymentMethod[] = ["pix", "cash", "credit", "debit", "other"];
 export default function FinancePage() {
   const { data, mutate } = useWorkspace(),
@@ -473,6 +474,13 @@ export default function FinancePage() {
               disponíveis.
             </p>
           </Card>
+          {data && validPeriod(period) && (
+            <ExpensesPanel
+              store={data}
+              period={period}
+              presetAll={preset === "all"}
+            />
+          )}
         </>
       )}
       <DetailPanel

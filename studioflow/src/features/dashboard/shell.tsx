@@ -129,6 +129,7 @@ const navigationOrder = [
 /** Pages outside the menu still name themselves in the top bar. */
 const pageLabels: Record<string, string> = {
   "/dashboard/ativacao": "Ativação",
+  "/dashboard/pendencias": "Pendências",
 };
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (

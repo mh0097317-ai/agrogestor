@@ -30,6 +30,7 @@ import { runAssistant, resumeHistory, type CreateMessage } from "./agent";
 import { businessCreate } from "./provider";
 import { platformAiEnabled } from "../platform-ai-control";
 import { alertOwner } from "./alerts";
+import { effectiveModel, recordModelTokens, withinAiBudget } from "./cost";
 import {
   receptionistTurn,
   receptionistModel,
@@ -80,6 +81,7 @@ import { generalReply } from "./general-reply";
 import { availabilityReply } from "./availability-reply";
 import { imageUnavailableText, understandImage } from "./vision";
 import type { AssistantContext } from "./agent";
+import { optOutByPhone, optOutPattern } from "@/services/customer-crm";
 import { manualPauseMs, whatsappBurstDelayMs } from "./idle-price-resume";
 import { assistantMayAnswer, pureGreeting } from "./contact-scope";
 
@@ -179,6 +181,10 @@ export interface ConversationRepo {
   ): Promise<void>;
   takeTurn(): Promise<boolean>;
   addTokens(input: number, output: number): Promise<void>;
+  /** Teto mensal em reais da casa (false = estourado). */
+  withinBudget?(): Promise<boolean>;
+  /** Ferramentas que a IA usou no turno (auditoria). */
+  trace?(conversationId: string, items: { tool: string; ok: boolean; summary: string }[]): Promise<void>;
   startRun?(id: string, cursor: string): Promise<number>;
   progress?(id: string, patch: RunProgress): Promise<void>;
   run?(id: string): Promise<{
@@ -408,6 +414,28 @@ export function liveRepo(
         p_input: input,
         p_output: output,
       });
+      // Custo em reais: os mesmos tokens, por modelo.
+      await recordModelTokens(businessId, await effectiveModel(businessId), input, output);
+    },
+    async withinBudget() {
+      return withinAiBudget(businessId);
+    },
+    async trace(conversationId, items) {
+      await admin
+        .from("assistant_tool_events")
+        .insert(
+          items.slice(0, 12).map((item) => ({
+            business_id: businessId,
+            conversation_id: conversationId,
+            tool: item.tool.slice(0, 60),
+            ok: item.ok,
+            summary: item.summary.slice(0, 300),
+          })),
+        )
+        .then(
+          () => undefined,
+          () => undefined,
+        );
     },
     async seen(providerId) {
       const { data, error } = await admin
@@ -1026,6 +1054,13 @@ export async function answerPending(
   }
   if (conversation.history.length > 160)
     return toHuman("Conversa longa: a atendente virtual passou para a equipe.");
+  if (repo.withinBudget && !(await repo.withinBudget())) {
+    await repo.progress?.(conversationId, {
+      state: "FAILED",
+      errorCode: "budget-limit",
+    });
+    return toHuman("Orçamento mensal da atendente virtual atingido.");
+  }
   if (!(await repo.takeTurn())) {
     await repo.progress?.(conversationId, {
       state: "FAILED",
@@ -1502,6 +1537,7 @@ export async function answerPending(
             booked: turn.booked,
             usage: turn.usage,
             menu: turn.menu,
+            trace: turn.trace,
           };
         })()
       : await runAssistant({
@@ -1525,6 +1561,9 @@ export async function answerPending(
   // A person may take over while the provider is generating a response.
   // Keep their control and charge the actual usage without publishing that reply.
   await repo.addTokens(result.usage.input, result.usage.output);
+  // Rastreabilidade: o que a IA executou neste turno (nunca no simulador).
+  const trace = (result as { trace?: { tool: string; ok: boolean; summary: string }[] }).trace;
+  if (trace?.length && !delivery.simulate) await repo.trace?.(conversationId, trace);
   if (result.reply && v3 && conversation.channel === "whatsapp")
     result.reply = whatsappText(result.reply);
   if (result.reply && !v3) {
@@ -1859,6 +1898,9 @@ export async function receiveWhatsAppMessages(input: {
         });
       continue;
     }
+    if (optOutPattern.test(message.text || ""))
+      // Best effort: a falha aqui não pode travar o atendimento.
+      await optOutByPhone(input.businessId, phone).catch(() => 0);
     // Transcribe before checking intent, including a new customer's first audio.
     let body = message.loadAudio
       ? assistantActive

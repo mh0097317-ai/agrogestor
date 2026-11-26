@@ -1187,3 +1187,42 @@
     background: #fffdf9;
   }
 }
+
+/* Rastreabilidade: o que a recepcionista executou na conversa */
+.chat-tool-trace {
+  margin: 8px 16px;
+  padding: 8px 12px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  background: #fffdf9;
+  font-size: 13px;
+}
+.chat-tool-trace summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: #8a6430;
+}
+.chat-tool-trace ol {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.chat-tool-trace li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+}
+.chat-tool-trace li time {
+  color: #6e655b;
+  font-variant-numeric: tabular-nums;
+}
+.chat-tool-trace li:not([data-ok]) strong {
+  color: #b42318;
+}
+.chat-tool-trace li span {
+  grid-column: 2;
+  color: #6e655b;
+  overflow-wrap: anywhere;
+}

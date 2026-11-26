@@ -120,7 +120,7 @@ export function Landing() {
         </Link>
         <nav aria-label="Seções">
           <a href="#como-funciona">Como funciona</a>
-          <a href="#precos">Planos</a>
+          <Link href="/precos">Planos</Link>
           <a href="#perguntas">Perguntas</a>
         </nav>
         <div className="lp-top-actions">

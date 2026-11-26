@@ -1,4 +1,5 @@
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { assertOutboundAllowed } from "../outbound-guard";
 import { isDemo } from "../server-demo";
 import { decryptSecret } from "../server-secrets";
 
@@ -50,6 +51,7 @@ export async function emailConfigured() {
 }
 
 export async function sendEmail(email: Email, idempotencyKey?: string) {
+  assertOutboundAllowed("email", email.to);
   const { key } = await resendKey();
   if (!key) throw new Error("email-not-configured");
   const response = await fetch("https://api.resend.com/emails", {

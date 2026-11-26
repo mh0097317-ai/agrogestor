@@ -382,3 +382,123 @@
   .lp-live *, .lp-day-card li { animation: none !important; }
   .lp-live-screen.is-agenda header em { opacity: 1; }
 }
+
+/* Página de preços (/precos) */
+.pr {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+}
+.pr-head {
+  max-width: 720px;
+  margin-bottom: 40px;
+}
+.pr-head h1 {
+  margin: 10px 0 14px;
+  font-family: var(--serif);
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.pr-head h1 em {
+  color: #8a6430;
+}
+.pr-head p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #6e655b;
+}
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.pr-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px solid #e2d9ca;
+  border-radius: 4px;
+  background: #fffdf9;
+}
+.pr-card.is-highlight {
+  border-color: #16130f;
+  box-shadow: 0 0 0 1px #16130f;
+}
+.pr-badge {
+  position: absolute;
+  top: -11px;
+  left: 24px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  background: #16130f;
+  color: #fffdf9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pr-card h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+}
+.pr-tagline {
+  margin: 0;
+  min-height: 44px;
+  color: #6e655b;
+  line-height: 1.5;
+}
+.pr-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pr-price strong {
+  font-family: var(--serif);
+  font-size: 34px;
+}
+.pr-price span,
+.pr-annual {
+  margin: 0;
+  color: #6e655b;
+  font-size: 14px;
+}
+.pr-card .lp-btn {
+  justify-content: center;
+}
+.pr-card .lp-btn.is-outline {
+  background: transparent;
+  color: #16130f;
+  border: 1px solid #16130f;
+}
+.pr-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #efe8dc;
+  list-style: none;
+  font-size: 14.5px;
+}
+.pr-card li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.pr-card li svg {
+  flex: none;
+  color: #8a6430;
+}
+.pr-card li.is-module {
+  font-weight: 600;
+}
+.pr-notes {
+  max-width: 760px;
+  margin-top: 36px;
+  color: #6e655b;
+  font-size: 14px;
+  line-height: 1.6;
+}

@@ -6,6 +6,7 @@ import {
   assertSameOrigin,
   failure,
   limitPublicMutation,
+  limitPersistent,
   requestOrigin,
   respond,
 } from "@/services/server-http";
@@ -25,6 +26,7 @@ export async function POST(
   try {
     assertSameOrigin(request);
     limitPublicMutation(request);
+    await limitPersistent(request, { scope: "chat", max: 60 });
     await getOnlineBookingStore((await params).slug);
     const input = messageSchema.parse(await request.json());
     return respond(
